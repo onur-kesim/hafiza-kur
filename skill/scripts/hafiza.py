@@ -34,6 +34,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 import threading as _threading
 import traceback as _tb
 import unicodedata
@@ -78,10 +79,94 @@ def oku(p):
     except OSError as e:
         oldur("DOSYA OKUNAMADI: %s\n  %s" % (p, e))
 
+# --------------------------------------------------------------- ATOMIK YAZIM
+# FAZ B (B4-3). Eskiden `yaz()` dogrudan truncate-write yapiyordu ve IKI kusur
+# tasiyordu:
+#   (a) Hedef salt-okunur (0444) ise ham PermissionError firliyor, _guvenli_calistir
+#       onu "BEKLENMEYEN DURUM — ARAC KUSURU" diye etiketliyordu. Oysa hukum ARAC
+#       kusuru DEGIL, dosya sisteminin hukmudur — yol_on_kontrol'un yaptigi ayrimin
+#       aynisi. Kullanici arac ICINDEN cikis yolu goremiyordu (B4-3: "kirmizi KALICI").
+#   (b) Yazim yarida kesilirse dosya YARIM kaliyordu: ne eski ne yeni.
+#
+# OLCULEMEDI (bilincli, gizlenmiyor): DIZIN girdisi fsync'LENMEZ. Surec cokmesine
+# ve yarim yazima karsi koruma OLCULUR (faz0/fazB_senaryolari.py); ani GUC KESINTISI
+# sinifi bu turda OLCULMEDI ve "kapandi" DENMEZ.
+#
+# HARDLINK: os.replace inode'u degistirir; proje DISINDAKI bir hardlink adi ESKI
+# icerikte KALIR. yol_on_kontrol'un uyari metni bu gercege gore yazilmistir —
+# metin ile davranis ayrisirsa fazB_senaryolari'nin B-B5 kolu isirir.
+
+_UMASK = os.umask(0)        # MODUL YUKLENIRKEN, hicbir is parcacigi yokken
+os.umask(_UMASK)            # ...ve hemen geri konur
+_YENI_DOSYA_MODU = 0o666 & ~_UMASK
+
+
+def _yazma_on_kontrol(p):
+    """Hedef ve dizini yazilabilir mi? Degilse TEMIZ teshis; ham traceback YOK.
+
+    ROOT NOTU: root icin os.access 0444'te de True doner (POSIX). Bu dal ancak
+    root OLMAYAN kullanicida olculebilir — fazB_senaryolari bunu OLCULEMEDI diye
+    yazar, "temiz" demez."""
+    d = os.path.dirname(p) or "."
+    if os.path.lexists(p) and not os.access(p, os.W_OK):
+        try:
+            mod = oct(stat.S_IMODE(os.stat(p).st_mode))
+        except OSError:
+            mod = "?"
+        oldur("DOSYA SALT-OKUNUR, YAZILAMAZ: %s\n"
+              "  Izin: %s. Bu bir ARAC KUSURU DEGIL, dosya sisteminin hukmudur;\n"
+              "  arac hicbir seye DOKUNMADI (dosyan oldugu gibi duruyor).\n"
+              "  CIKIS YOLU:  chmod u+w %s        (Windows:  attrib -r %s)\n"
+              "  Sonra komutu YINELE. Izni zorla asan bir bayrak YOKTUR."
+              % (p, mod, p, p))
+    if not os.access(d, os.W_OK | os.X_OK):
+        oldur("DIZIN YAZILAMAZ: %s\n"
+              "  Atomik yazim ayni dizinde gecici bir dosya kurar; bu dizin yazmaya kapali.\n"
+              "  Bu bir ARAC KUSURU DEGIL.\n"
+              "  CIKIS YOLU:  chmod u+w %s" % (d, d))
+
+
+def _atomik_yaz(p, s):
+    """Ayni dizinde gecici dosya -> fsync -> os.replace. Ya ESKI ya YENI; yarim YOK.
+
+    Gecici dosya HEDEFLE AYNI DIZINDE acilir: os.replace yalniz ayni dosya
+    sisteminde atomiktir, /tmp baska bir baglama olabilir."""
+    d = os.path.dirname(p) or "."
+    mod = _YENI_DOSYA_MODU
+    if os.path.lexists(p):
+        try:
+            mod = stat.S_IMODE(os.stat(p).st_mode)   # IZIN KAYMASI YOK
+        except OSError:
+            pass
+    fd, tmp = tempfile.mkstemp(dir=d, prefix=".hafiza_yaz_", suffix=".part")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
+            f.write(s)
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp, mod)
+        os.replace(tmp, p)
+        tmp = None
+    finally:
+        if tmp is not None:
+            # ARTIK BIRAKMA: yarim kalan .part dosyasi kapilara yem olur.
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+
+
 def yaz(p, s):
     os.makedirs(os.path.dirname(p) or ".", exist_ok=True)
-    with open(p, "w", encoding="utf-8", newline="\n") as f:
-        f.write(s)
+    _yazma_on_kontrol(p)
+    try:
+        _atomik_yaz(p, s)
+    except OSError as e:
+        oldur("DOSYA YAZILAMADI: %s\n"
+              "  %s\n"
+              "  Bu bir ARAC KUSURU DEGIL, dosya sisteminin hukmudur. Dosyanin ESKI\n"
+              "  icerigi DURUYOR (atomik yazim: ya eski ya yeni, yarim dosya birakilmaz)."
+              % (p, e))
 
 def satirlar(p):
     return oku(p).split("\n")
@@ -618,8 +703,9 @@ def yol_on_kontrol(y, dizinler=(), dosyalar=(), sessiz=False):
                   "Bu yol YAZILAMAZ." % f)
     if cok_adli and not sessiz:
         sys.stderr.write(
-            "UYARI: %d dosyanin proje DISINDA da bir adi var (hardlink). Bu dosyalara\n"
-            "  yazmak oradaki adi da degistirir (ornek: 'cp -al' ile alinmis bir yedek).\n"
+            "UYARI: %d dosyanin proje DISINDA da bir adi var (hardlink). Arac ATOMIK\n"
+            "  yazar (gecici dosya + os.replace), yani BAG KOPAR: proje DISINDAKI ad\n"
+            "  ESKI icerikte KALIR ('cp -al' ile alinmis yedek artik GUNCELLENMEZ).\n"
             "  Islem SURUYOR; olcum icin: python hafiza.py kapi\n  - %s\n"
             % (len(cok_adli), "\n  - ".join(os.path.relpath(x, y.kok).replace("\\", "/")
                                              for x in cok_adli[:4])))

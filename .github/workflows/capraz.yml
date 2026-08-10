@@ -221,6 +221,36 @@ jobs:
         run: python faz0/fazA_senaryolari.py
 
   # ---------------------------------------------------------------------------
+  # 2b-4) FAZ B SENARYOLARI — yaz() atomiklestirmesi ISIRIYOR MU?
+  #     Kapsam kararlari: yalniz yaz() · salt-okunur hedefte REDDET (izin ASILMAZ)
+  #     · fsync(dosya)+os.replace · hedefin izin bitleri kopyalanir · hardlink
+  #     BAG KOPAR ve UYARI METNI bunu soyler.
+  #     Cokme IZIN MODELIYLE DEGIL ENJEKSIYONLA uretilir (fazA'nin #7 dersi:
+  #     os.chmod Windows'ta dizinlerde etkisizdir, izinle cokme ureten senaryo
+  #     ARACI degil ORTAMI olcer).
+  #     Platforma bagli iki kol kendini OLCULEMEDI ilan eder, sessiz PASS vermez:
+  #     B-B2 root'ta (os.access 0444'te True doner) · B-B3 Windows'ta (mod bitleri).
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  fazB_senaryolari:
+    name: Faz B senaryolari (${{ matrix.os }} py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: atomik yazim isiriyor mu (sabotajla sinanmis)
+        shell: bash
+        run: python faz0/fazB_senaryolari.py
+
+  # ---------------------------------------------------------------------------
   # 2c) Y-3 PROBU — kirik boru HUKMU kaybediyor mu, VE HANGI MEKANIZMAYLA?
   #     Iki python surumu BILEREK ayri: run #3/#4'te ayni komut windows py3.11'de
   #     120, py3.13'te 3 dondu — iki AYRI mekanizma. Tek surumle kosmak birini
