@@ -157,9 +157,14 @@ hangisi" sorusunun iki cevabı olamaz). Paket `paketle.sh` ile `skill/`'ten üre
 Tuzak Avcısı uygulama/içerik geliştirmesi · TSK ve gelir hukuku · Reels-bülten
 operasyonu. Bunlar **ayrı projelerdir**, buraya karıştırılmaz.
 
-Depo `tuzakavcisi1-cloud` hesabı altındadır; bu bir **barındırma tercihidir**,
-marka kararı değildir — Tuzak Avcısı bu proje için **kapsam dışıdır**. Taşımak
-ileride her zaman mümkündür (GitHub transfer geçmişi korur).
+Depo `onur-kesim/hafiza-kur` altındadır (taşındı: 10 Ağu 2026 — önceki ev
+`tuzakavcisi1-cloud`). Gerekçe **kimliktir**, marka değil: bu depo dışarıya
+verilen tek denetlenebilir kanıt linkidir ve ürün markası hesabına bağlıyken
+kimlik karışıklığı yaratıyordu. Tuzak Avcısı bu proje için **kapsam dışıdır**.
+
+🔴 **URL ARTIK SABİTTİR.** 25 Ağu 2026'da yayımlanacak bir yazı gövdesinde bu
+adresi dışarı verecek; o tarihten sonra depo adresi **değişmez**. Taşıma
+gerekirse önce o kısıt konuşulur.
 
 ## 8. OTURUM KAPANIŞI
 
