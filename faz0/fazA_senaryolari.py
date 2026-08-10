@@ -93,10 +93,28 @@ def sab_b410_mesaj(m):
 
 
 def _degistir(metin, eski, yeni, etiket):
-    if metin.count(eski) != 1:
+    """Tek eslesmeli metin degistirme + SATIR SINIRI guvencesi.
+
+    KAYDA GECIYOR: ilk surumde satir siniri kontrolu YOKTU. `    fd = os.open(...)`
+    deseni, girintisi 8 bosluk olan gercek satirin ICINE alt-dize olarak esledi;
+    `count == 1` sagladigi icin sabotaj "kuruldu" sayildi ve motor kopyasi
+    SyntaxError ile coktu. Senaryo bunu "KACTI" diye raporladi — yani ARACI degil
+    KENDI YAMASINI olcuyordu. Kontrol: eslesme ya metnin basinda ya da bir satir
+    basinda olmali."""
+    n = metin.count(eski)
+    if n != 1:
         raise SenaryoKurulamadi(
             "%s sabotaji: hedef metin %d kez gecti (1 olmali). Duzeltme "
-            "tasindiysa SABOTAJ DA TASINMALI." % (etiket, metin.count(eski)))
+            "tasindiysa SABOTAJ DA TASINMALI." % (etiket, n))
+    i = metin.index(eski)
+    # Tehlike TAM OLARAK sudur: desen KENDI BASINDA girinti tasiyor ama eslesme
+    # bir satirin ORTASINA denk geliyor. O zaman desendeki girinti ile satirin
+    # gercek girintisi uyusmaz ve yamalanmis kopya bozulur. Girinti TASIMAYAN
+    # desenler (ornek: `return ...`) satirin girintisine dokunmaz; guvenlidir.
+    if eski[:1] in (" ", "\t") and i != 0 and metin[i - 1] != "\n":
+        raise SenaryoKurulamadi(
+            "%s sabotaji: desen girinti tasiyor ama eslesme SATIR BASINDA degil "
+            "(alt-dize eslesmesi) — yamalanmis kopya bozulur." % etiket)
     return metin.replace(eski, yeni, 1)
 
 
@@ -111,6 +129,15 @@ def motor_kur(hedef, sabotaj=None, ek_yama=None):
             metin = ek_yama(metin)
         if sabotaj:
             metin = sabotaj(metin)
+        # Yamalanmis kopya PARSE EDILEBILIYOR mu? Edilemiyorsa olculen sey arac
+        # degil YAMANIN KENDISIDIR; bu ARAC KUSURUDUR (Y-4 dersi), "KACTI" degil.
+        try:
+            import ast as _ast
+            _ast.parse(metin)
+        except SyntaxError as e:
+            raise SenaryoKurulamadi(
+                "yamalanmis motor PARSE EDILEMIYOR (satir %s: %s) — sabotaj/yama "
+                "kopyayi bozdu, hukum VERILEMEZ." % (e.lineno, e.msg))
         p = os.path.join(hedef, "hafiza.py")
         with open(p, "w", encoding="utf-8", newline="\n") as f:
             f.write(metin)
@@ -263,6 +290,28 @@ def s_b46_gecis(taban):
           % (rc, "VAR" if gecis else "YOK", "VAR" if asilsiz else "yok"))
 
 
+def _cokme_yamasi(m):
+    """Cokmeyi PLATFORMDAN BAGIMSIZ uretir.
+
+    ILK KURULUM YANLISTI, KAYDA GECIYOR: bu senaryo cokmeyi `arsiv/hafiza`yi
+    salt-okunur yaparak uretiyordu. Linux'ta (root olmayan) isirdi; CI'da
+    windows py3.11 ve py3.13'te KIRMIZI yandi ve root'ta da ayni sonucu verdi.
+    Sebep: `os.chmod` Windows'ta DIZINLERDE etkisizdir (yalniz dosyalarda
+    read-only bayragini kurar — y4_mutant'in salt-okunur KAYNAK kolu tam bu
+    yuzden Windows'ta gecti, bu kol gecmedi), root'ta ise hicbir yerde isirmaz.
+    Yani senaryo ARACI degil ORTAMIN IZIN MODELINI olcuyordu.
+
+    Olculen sinif "cokme aninda iz NEREYE yaziliyor"dur; cokmenin SEBEBI
+    onemsizdir. Cokme artik motor kopyasina enjekte edilir — `kilit_al`in
+    `os.open` satirindan hemen once, yani `Y()` kurulduktan SONRA (iz hedefi
+    projeye baglanmis olmali). Enjeksiyon noktasi gercek dunyada gozlenen
+    cokmenin ta kendisidir: PermissionError in kilit_al."""
+    eski = "\n    try:\n        fd = os.open(p, os.O_CREAT | os.O_EXCL | os.O_WRONLY)"
+    yeni = ('\n    raise RuntimeError("SENARYO: kasitli cokme (B4-5 iz hedefi olcumu)")'
+            + eski)
+    return _degistir(m, eski, yeni, "B4-5/cokme")
+
+
 def s_b45(taban):
     """B4-5 (M-IZDOSYA): cwd proje DISINDA iken cokme -> disarida dosya OLUSMAMALI."""
     ad = "B4-5 hata izi proje agacinin disina yazilmiyor"
@@ -270,22 +319,15 @@ def s_b45(taban):
         sonuclar = {}
         for kol, sab in (("temiz", None), ("sabotaj", sab_b45)):
             d = os.path.join(taban, "b45_" + kol)
-            motor = motor_kur(d, sabotaj=sab)
-            kok = proje_kur(motor, os.path.join(d, "p"))
+            # `kur` da kilit_al cagirir; kurulum YAMASIZ motorla yapilmali,
+            # yoksa proje hic kurulamadan coker.
+            kok = proje_kur(motor_kur(os.path.join(d, "kurulum")),
+                            os.path.join(d, "p"))
+            motor = motor_kur(d, sabotaj=sab, ek_yama=_cokme_yamasi)
             disari = os.path.join(d, "disari")     # PROJE AGACININ DISI
             os.makedirs(disari, exist_ok=True)
-            # Cokme uret: hafiza dizinini salt-okunur yap -> kilit_al PermissionError
-            hd = os.path.join(kok, "arsiv", "hafiza")
-            eski_mod = os.stat(hd).st_mode
-            os.chmod(hd, eski_mod & ~0o222)
-            if os.access(hd, os.W_OK):
-                kayit(ad, None, "salt-okunur etkisiz (root?) — cokme URETILEMEDI, "
-                                "bu senaryo OLCULEMEDI, PASS DEGIL")
-                os.chmod(hd, eski_mod)
-                return
             rc, c = kos(motor, ["muhur", "--kok=" + kok,
-                                "salt okunur dizinde muhurleme denemesi"], cwd=disari)
-            os.chmod(hd, eski_mod)
+                                "enjekte edilmis cokme ile iz hedefi olcumu"], cwd=disari)
             disarida = os.path.isfile(os.path.join(disari, "hafiza_hata_izi.txt"))
             # "Iceride" = proje agacinin HERHANGI bir yeri: hafiza dizini salt-okunur
             # oldugu icin (cokmenin sebebi bizzat o) iz koke dusebilir. Yalniz
@@ -384,9 +426,9 @@ def main():
     print("  python : %s" % sys.version.split()[0])
     print("  motor  : %s" % KAYNAK)
     print("=" * 82)
-    if hasattr(os, "geteuid") and os.geteuid() == 0:
-        SINIRLAR.append("ROOT: salt-okunur izinler ISIRMAZ — B4-5 senaryosu "
-                        "buyuk olasilikla OLCULEMEDI duser")
+    # NOT: burada bir zamanlar "ROOT ise B4-5 OLCULEMEDI duser" uyarisi vardi.
+    # B4-5 artik cokmeyi izin modeliyle DEGIL enjeksiyonla urettigi icin o uyari
+    # YALAN olurdu — ve belge de bir arayuzdur. Kaldirildi, gerekcesi burada.
     try:
         taban = tempfile.mkdtemp(prefix="fazA_")
     except OSError as e:
