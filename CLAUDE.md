@@ -134,6 +134,23 @@ Yeniden tartışma; değiştirmek istiyorsan **gerekçeyle** aç ve bir ADR yaz.
 
 ## 6. DEPO DÜZENİ
 
+**TEK KANONİK YEREL KLON** (ölçüldü 10 Ağu 2026):
+
+```
+C:\Users\gulci\Desktop\fable dosyalama\depo\hafiza-kur
+```
+
+Başka bir yerel klonda çalışma. Bir zamanlar `C:\dev\hafiza-kur` da vardı:
+mailmap yeniden yazımından sonra geçmişi ayrıştı (yereldeki 7 commit'in **hiçbiri**
+uzakta yoktu), Faz A'da dondu ve iki oturum boyunca hangi kopyanın gerçek olduğu
+belirsiz kaldı. Emekliye ayrıldı; geçmişi
+`fable dosyalama\hafiza-kur-eski-gecmis-f149407.bundle` içinde durur.
+
+Bu, aracın kendi **H5** doktrininin ta kendisidir: *"aktif sürüm hangisi"
+sorusunun iki cevabı olamaz.* İkinci bir klon açman gerekirse **önce bu satırı
+güncelle** — yoksa bir sonraki oturum yanlış kopyada çalışır ve bunu ancak
+`git fetch` "forced update" derken fark eder.
+
 ```
 skill/                  <- .skill paketinin TEK GERÇEK KAYNAĞI
   SKILL.md
