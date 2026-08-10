@@ -15,7 +15,9 @@ description: >-
 # Hafıza ve Arşivleme Düzeni — v2
 
 Bu skill bir projeye, **büyüdükçe bozulmayan** bir hafıza + dosyalama düzeni kurar ve
-onu her oturumda işletir. İki kaynaktan doğdu: sahada denenmiş bir sistem (ölçülen
+onu her oturumda işletir. Ama asıl ürün düzenin kendisi değil: **dosyalama alt
+katmandır**, ürün o düzenin gerçekten çalıştığını **ÖLÇEN kapı sistemidir** —
+ölçülmeyen kapının hükmü yoktur. İki kaynaktan doğdu: sahada denenmiş bir sistem (ölçülen
 bütünlük, kendi kapısını koşan araçlar, mutant kanıtı) ve sektörün olgun pratikleri
 (ADR, saklama planı, log-compaction, fragman modeli, checkpoint).
 
@@ -166,9 +168,11 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
 > kapatıldı. Mutant sayısı 15 → 29 → 35 → **36**; senaryo kanıtı 0 → 32 → **58**;
 > ham traceback avında **2 330 senaryo, 0 çökme**.
 >
-> ⚠️ **v2.4.1 dördüncü tur denetimini BEKLİYOR.** Üçüncü denetçinin onayı gelmeden bu
-> skill "denetimden geçti" diye sunulmaz. Ayrıntı ve düzeltmelerin *ürettiği* kusurlar
-> dâhil tam defter: `references/denetim-yaniti.md`.
+> ⚠️ **Dördüncü tur KOŞTU** (raporu denetim arşivinde); bulguları geliştirme
+> sürümünde kapatılıyor. Bu skill yine de **"denetimden geçti" diye sunulmaz** —
+> bir turun kapanışı, raporun teslim edilmesiyle değil, bulguların kapandığının
+> ÖLÇÜLMESİYLE olur. Ayrıntı ve düzeltmelerin *ürettiği* kusurlar dâhil tam
+> defter: `references/denetim-yaniti.md`.
 >
 > **Tek yazar kilidi:** yazan komutlar `arsiv/hafiza/.kilit` alır (`O_EXCL`). İki oturum
 > aynı anda `derle` koşarsa canlı hafızada kayıp güncelleme oluyordu; artık ikincisi
@@ -239,7 +243,10 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
 - `references/protokol.md` — oturum açılış/kapanış, devir notu, çok-ajan kullanımı
 - `references/sablonlar.md` — BETİKSİZ kullanım için elle açılacak dosya şablonları
 - `scripts/hafiza.py` — taşınabilir motor (yalnız Python stdlib; Windows/macOS/Linux).
-  v2.4.1 · 4 394 satır · SHA256 `738849C086512C7485048C58570EEDCA045E21550EF9BE357197FF577126F300`
+  **Sürüm, satır sayısı ve SHA buraya YAZILMAZ — bayatlar.** Bir kez yazıldı ve
+  bayatladı; kimse ölçmediği için iki sürüm boyunca görülmedi. Kendin ölç:
+  `sha256sum hafiza.py` · sürüm için dosyanın başındaki `SURUM` sabiti.
+  *(Motorun sürümünü soran bir bayrak henüz yok — bu bir eksiktir, ölçüldü.)*
 - `scripts/t_y3.py` — temiz-hata kanıtları (bozuk girdide ham traceback yok): 20 senaryo
 - `scripts/t_y42.py` — davranış kanıtları (kapı mutantıyla ölçülemeyenler): 58 senaryo
 
