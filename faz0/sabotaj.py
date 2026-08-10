@@ -42,6 +42,7 @@ CIKIS KODU
 """
 import argparse
 import ast
+import hashlib
 import json
 import os
 import re
@@ -183,6 +184,11 @@ def main():
         print("OLCULEMEDI: motor yok: %s" % motor)
         return 2
     kaynak = open(motor, encoding="utf-8").read()
+    # BAGLAM: bir kapsam raporu HANGI MOTORA ait oldugunu soylemek ZORUNDADIR.
+    # Olculdu (10 Agu 2026): eski bir rapor yalnizca YOL tasiyordu; o yol artik yok
+    # olan bir klonu gosteriyordu ve sayilar hangi baytlara ait bilinmiyordu.
+    # "Sayi baglamsiz beyan edilmez" — yol degisir, SHA degismez.
+    motor_sha = hashlib.sha256(open(motor, "rb").read()).hexdigest().upper()
 
     hedefler = fail_cagrilari(kaynak)
     if a.sadece:
@@ -191,6 +197,7 @@ def main():
     print(CIZGI)
     print("OTOMATIK SABOTAJ — kapsam envanteri")
     print("motor      : %s" % motor)
+    print("motor SHA  : %s" % motor_sha)
     print("fail() sayi: %d  (kosulacak: %d)" % (len(fail_cagrilari(kaynak)), len(hedefler)))
     print(CIZGI)
 
@@ -239,8 +246,9 @@ def main():
 
     if a.json:
         with open(a.json, "w", encoding="utf-8", newline="\n") as f:
-            json.dump({"motor": motor, "sonuclar": sonuclar}, f,
-                      ensure_ascii=False, indent=2)
+            json.dump({"motor": motor, "motor_sha256": motor_sha,
+                       "fail_sayisi": len(fail_cagrilari(kaynak)),
+                       "sonuclar": sonuclar}, f, ensure_ascii=False, indent=2)
         print("JSON rapor: %s" % a.json)
 
     if olculemedi and not kapsamsiz:

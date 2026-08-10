@@ -115,5 +115,9 @@ Açık bulgular kapanmadan bu araç "denetimden geçti" diye sunulmaz.
 
 ## Lisans
 
-Henüz seçilmedi. Lisans dosyası olmayan bir depo varsayılan olarak **tüm hakları
-saklıdır** demektir — yani bu bilinçli ve geri alınabilir bir bekleme hâlidir.
+**MIT.** Tam metin: [`LICENSE`](LICENSE).
+
+> Bu bölüm bir süre "henüz seçilmedi, tüm hakları saklıdır" diyordu. `LICENSE`
+> eklendikten sonra aynı depo iki farklı lisans durumu söyledi ve bunu **hiçbir
+> kapı ölçmüyordu** (ölçüldü: 10 Ağu 2026). Belge de bir arayüzdür ve yalan
+> söyleyebilir — bu depo bunu kendi kapağında bir kez yaşadı.
