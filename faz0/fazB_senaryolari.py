@@ -33,10 +33,36 @@ DORT HUKUM SINIFI — ve neden dort (CI #9'da kanla olculdu)
   yesil, ikincisi SAHTE KIRMIZI uretir ve sahte kirmizi ucuz degildir — kirmizinin
   anlamini oldurur.
 
-  UYGULANMAZ bir kacis kapisi OLMASIN diye uc kilit:
+  UYGULANMAZ bir kacis kapisi OLMASIN diye DORT kilit:
     (a) gerekce ZORUNLU, bossa ARAC KUSURU (exit 3);
     (b) sayisi SONUC satirinda her zaman basilir;
-    (c) senaryolarin TAMAMI UYGULANMAZ ise exit 2 — hicbir sey olculmemistir.
+    (c) senaryolarin TAMAMI UYGULANMAZ ise exit 2 — hicbir sey olculmemistir;
+    (d) her hukum SABOTAJ IZI tasimak ZORUNDADIR (asagida) — izsiz hukum ARAC
+        KUSURUDUR (exit 3). Sinif dogru olsa bile OLCUT yanlis olabilir; izi
+        basmayan bir senaryo bunu GIZLER.
+
+🔴 SINIF DOGRUYDU AMA OLCUT YANLISTI (CI #12 artefakti okununca gorundu)
+  UYGULANMAZ sinifi CI #9'un sahte kirmizisini kapatti, ama asil kusur OLCUTTE
+  duruyordu: eski B-B2 kapinin IKI AYRI vaadini tek olcuye sikistiriyordu —
+  (1) izin ASILMAZ, (2) TEMIZ TESHIS + CIKIS YOLU basilir. Windows'ta birinciyi
+  isletim sistemi zaten sagliyor (os.replace salt-okunur hedefe yazmaz), yani
+  olcut orada KORDU; ikincisi ise Windows'ta da PEKALA olculebilirdi ama hic
+  bakilmiyordu. Kapinin Windows'taki katkisi MESAJDIR:
+      kapi varken : "DOSYA SALT-OKUNUR, YAZILAMAZ ... CIKIS YOLU: chmod u+w"
+      kapi sokulu : "DOSYA YAZILAMADI: <ham OSError>"
+  Ikisi de exit 2, ikisinde de dosya degismiyor — eski olcut ikisini AYIRT
+  EDEMIYORDU. Bu yuzden B-B2 IKIYE BOLUNDU:
+      B-B2a "izin ASILMIYOR"        olcut: dosya DEGISTI mi
+      B-B2b "TESHIS SINIFI korunuyor" olcut: sabotaj kolunda SALT-OKUNUR teshisi
+                                      KAYBOLUYOR mu
+  Ikisi AYNI ham olcumu paylasir ama AYRI olcutle hukum verir. Bu ortusme DEGIL
+  ayrismadir: ayni sabotaj kapinin iki ayri vaadini iki ayri kanaldan olcer.
+
+SABOTAJ IZI — her senaryoda, her kosumda
+  Her hukum, iki kolun da (exit kodu + TESHIS SINIFI) izini tasir ve basar.
+  Sinif bir OLGUDUR (metinde su isaret var/yok), bir sebep degildir. CI #9'un
+  teshisi tam bu iz olmadigi icin bir tur gecikti: cikti "kacti" diyordu ama
+  sabotaj kolunun NE bastigi hicbir yerde yazmiyordu.
 
 COKME URETME YOLU (fazA dersi): cokme, IZIN MODELIYLE degil ENJEKSIYONLA uretilir.
 `os.chmod` Windows'ta dizinlerde etkisizdir; izinle cokme ureten senaryo aracin
@@ -89,17 +115,53 @@ class GerekcesizUygulanmaz(Exception):
     """UYGULANMAZ gerekcesiz kullanildi — bu bir ARAC KUSURUDUR, hukum degil."""
 
 
-def kayit(ad, hukum, ayrinti):
-    SONUC.append((ad, hukum, ayrinti))
+class IzsizHukum(Exception):
+    """Hukum SABOTAJ IZI olmadan verildi — ARAC KUSURUDUR, hukum degil.
+
+    Gerekcesi: CI #9'da sinif dogruydu ama OLCUT yanlisti ve bu ancak artefakt
+    elle okununca gorundu. Iki kolun exit + TESHIS SINIFI izi basilsaydi ayrisma
+    ilk kosumda goze carpardi. Izi istege bagli birakmak, teshisi tekrar sansa
+    birakmaktir."""
 
 
-def hukum_ver(ad, temiz_gorundu, sabotaj_uretti, ayrinti, muhtemel_sebep=None):
+# --------------------------------------------------------------- TESHIS SINIFI
+# Sinif bir OLGUDUR: "ciktida su isaret VAR/YOK". Sebep DEGILDIR ve sebep
+# soylemez. Sira onemlidir: ham traceback varsa teshis zaten bozulmustur.
+_SINIF_KURALLARI = (
+    ("HAM-TRACEBACK",      "Traceback (most recent call last)"),
+    ("SALT-OKUNUR-TESHIS", "DOSYA SALT-OKUNUR, YAZILAMAZ"),
+    ("DIZIN-YAZILAMAZ",    "DIZIN YAZILAMAZ"),
+    ("HAM-OSERROR-TESHIS", "DOSYA YAZILAMADI"),
+)
+
+
+def mesaj_sinifi(c):
+    for ad, isaret in _SINIF_KURALLARI:
+        if isaret in c:
+            return ad
+    return "SESSIZ"
+
+
+def iz(rc, c):
+    """Bir kolun IZI: exit kodu + teshis sinifi + cikis yolu var mi."""
+    return "exit=%s sinif=%s cikis-yolu=%s" % (
+        rc, mesaj_sinifi(c), "VAR" if "CIKIS YOLU" in c else "yok")
+
+
+def kayit(ad, hukum, ayrinti, izler=None):
+    SONUC.append((ad, hukum, ayrinti, izler))
+
+
+def hukum_ver(ad, temiz_gorundu, sabotaj_uretti, ayrinti, muhtemel_sebep=None,
+              izler=None):
     """TEK HUKUM KAPISI. Ayrimi burada yapar ve baska yerde yapilmasina izin vermez.
 
     KACTI yalnizca TEMIZ KOLUN kusurudur. Sabotajin kusuru uretememesi urunun
     degil OLCUMUN eksigidir ve KACTI diye raporlanamaz."""
+    if not izler:
+        raise IzsizHukum(ad)
     if not temiz_gorundu:
-        kayit(ad, KACTI, ayrinti)
+        kayit(ad, KACTI, ayrinti, izler)
         return
     if not sabotaj_uretti:
         if not muhtemel_sebep:
@@ -110,9 +172,9 @@ def hukum_ver(ad, temiz_gorundu, sabotaj_uretti, ayrinti, muhtemel_sebep=None):
         olgu = ("SABOTAJ KUSURU URETEMEDI (olculdu: sabotaj kolu beklenen eski "
                 "kusuru gostermedi) · muhtemel sebep (OLCULMEDI): ")
         SINIRLAR.append("%s UYGULANMAZ · %s%s" % (ad, olgu, muhtemel_sebep))
-        kayit(ad, UYGULANMAZ, ayrinti + " | " + olgu + muhtemel_sebep)
+        kayit(ad, UYGULANMAZ, ayrinti + " | " + olgu + muhtemel_sebep, izler)
         return
-    kayit(ad, ISIRDI, ayrinti)
+    kayit(ad, ISIRDI, ayrinti, izler)
 
 
 def _degistir(metin, eski, yeni, etiket):
@@ -298,12 +360,12 @@ def s_bb1(taban):
             rc, c = yeni_konu_yaz(motor, kok, ortam_ek={"FAZB_KES": "1"})
             sonrasi = open(konular(kok), encoding="utf-8").read()
             sonuc[kol] = (onceki == sonrasi, len(sonrasi), rc,
-                          "Traceback" in c, len(part_artiklari(kok)))
+                          "Traceback" in c, len(part_artiklari(kok)), iz(rc, c))
     except (SenaryoKurulamadi, OSError) as e:
         kayit(ad, OLCULEMEDI, "kurulamadi: %s" % e)
         return
-    t_ayni, t_n, t_rc, t_tb, t_part = sonuc["temiz"]
-    s_ayni, s_n, s_rc, s_tb, s_part = sonuc["sabotaj"]
+    t_ayni, t_n, t_rc, t_tb, t_part, t_iz = sonuc["temiz"]
+    s_ayni, s_n, s_rc, s_tb, s_part, s_iz = sonuc["sabotaj"]
     hukum_ver(
         ad,
         temiz_gorundu=t_ayni and (not t_tb) and t_part == 0,
@@ -312,19 +374,33 @@ def s_bb1(taban):
                 "SABOTAJ: korundu=%s (%d bayt) exit=%s"
                 % (t_ayni, t_n, t_rc, "VAR" if t_tb else "yok", t_part, s_ayni, s_n, s_rc),
         muhtemel_sebep="truncate-write bu platformda (%s) hedefi YARIM birakmiyor "
-                       "olabilir" % sys.platform)
+                       "olabilir" % sys.platform,
+        izler=(t_iz, s_iz))
 
 
-def s_bb2(taban):
-    """B-B2: salt-okunur hedefte REDDEDIYOR mu, yoksa izni asiyor mu?"""
-    ad = "B-B2 salt-okunur hedefte izin ASILMIYOR"
+# ---------------------------------------------------- B-B2: TEK OLCUM, IKI OLCUT
+# Ayni ham olcum (izin kapisi sokulu sabotaj) kapinin IKI AYRI vaadini olcer.
+# Onbellek bilinclidir: iki senaryo ayni kolu iki kez KURMASIN. Kurulum
+# basarisiz olursa IKISI DE OLCULEMEDI olur — dogru davranis.
+#
+# Bu ORTUSEN TESPIT DEGILDIR (CLAUDE.md'nin "ortusen tespit korlugu maskeler"
+# dersi): ortusme, iki kapinin ayni mutanti yakalamasidir. Burada TEK kapi ve
+# TEK sabotaj var; olculen sey sabotajin IKI AYRI SONUCU — biri dosyanin
+# degisip degismedigi, oteki basilan teshis sinifi. Windows'ta birincisi
+# olculemez, ikincisi olculur; ayrismayi gorunur kilan sey tam da budur.
+_BB2 = {}
+
+
+def _bb2_olc(taban):
+    if _BB2:
+        return _BB2
     if ROOT:
-        SINIRLAR.append("B-B2 root olarak kosuldu: os.access 0444'te de True doner, "
-                        "izin dali OLCULEMEZ. Root OLMAYAN kullanicida kosulmali.")
-        kayit(ad, OLCULEMEDI, "root (uid 0) — izin dali olculemez")
-        return
+        SINIRLAR.append(
+            "B-B2a/B-B2b root olarak kosuldu: os.access 0444'te de True doner, "
+            "salt-okunur dali OLCULEMEZ. Root OLMAYAN kullanicida kosulmali.")
+        _BB2["engel"] = "root (uid 0) — os.access 0444'te de True doner"
+        return _BB2
     try:
-        sonuc = {}
         for kol, sab in (("temiz", None), ("sabotaj", sab_bb2)):
             d = os.path.join(taban, "bb2_" + kol)
             motor = motor_kur(d, sabotaj=sab)
@@ -338,25 +414,66 @@ def s_bb2(taban):
             except OSError as e:
                 raise SenaryoKurulamadi("hedef okunamadi: %s" % e)
             os.chmod(hedef, 0o644)
-            sonuc[kol] = (onceki == sonrasi, rc, "SALT-OKUNUR" in c,
-                          "CIKIS YOLU" in c, "Traceback" in c)
+            _BB2[kol] = {"degisti": onceki != sonrasi, "rc": rc,
+                         "sinif": mesaj_sinifi(c), "yol": "CIKIS YOLU" in c,
+                         "iz": iz(rc, c)}
     except (SenaryoKurulamadi, OSError) as e:
-        kayit(ad, OLCULEMEDI, "kurulamadi: %s" % e)
+        _BB2.clear()
+        _BB2["engel"] = "kurulamadi: %s" % e
+    return _BB2
+
+
+def s_bb2a(taban):
+    """B-B2a: izin ASILIYOR mu? OLCUT: hedef dosya DEGISTI mi.
+
+    Windows'ta os.replace salt-okunur hedefin uzerine yazamaz; kapi sokulse de
+    izin-asma kusuru URETILEMEZ -> UYGULANMAZ, hukum YOKTUR. Bu, kapinin orada
+    gereksiz oldugunu SOYLEMEZ — oradaki katkisi MESAJDIR ve B-B2b onu olcer."""
+    ad = "B-B2a salt-okunur hedefte izin ASILMIYOR"
+    o = _bb2_olc(taban)
+    if "engel" in o:
+        kayit(ad, OLCULEMEDI, o["engel"])
         return
-    t_ayni, t_rc, t_msg, t_yol, t_tb = sonuc["temiz"]
-    s_ayni, s_rc, _, _, _ = sonuc["sabotaj"]
+    t, s = o["temiz"], o["sabotaj"]
     hukum_ver(
         ad,
-        temiz_gorundu=t_ayni and t_msg and t_yol and (not t_tb) and t_rc == 2,
-        sabotaj_uretti=not s_ayni,
-        ayrinti="TEMIZ: dosya degismedi=%s exit=%s SALT-OKUNUR=%s CIKIS-YOLU=%s ham-traceback=%s | "
-                "SABOTAJ (izin kapisi sokulu): dosya degismedi=%s exit=%s"
-                % (t_ayni, t_rc, "VAR" if t_msg else "YOK", "VAR" if t_yol else "YOK",
-                   "VAR" if t_tb else "yok", s_ayni, s_rc),
-        # 🔴 CI #9'da windows'ta TAM BURASI sahte kirmizi uretti.
+        temiz_gorundu=not t["degisti"],
+        sabotaj_uretti=s["degisti"],
+        ayrinti="TEMIZ: dosya degisti=%s exit=%s | SABOTAJ (izin kapisi sokulu): "
+                "dosya degisti=%s exit=%s" % (t["degisti"], t["rc"], s["degisti"], s["rc"]),
+        # 🔴 CI #9'da windows'ta TAM BURASI sahte kirmizi uretti; sinif dogruydu,
+        # olcut yanlisti — bu yuzden senaryo IKIYE bolundu.
         muhtemel_sebep="os.replace bu platformda (%s) salt-okunur hedefin uzerine "
                        "yazamiyor olabilir; oyleyse izin kapisi sokulse de izin-asma "
-                       "kusuru uretilemez (Windows'ta beklenen hal)" % sys.platform)
+                       "kusuru URETILEMEZ (Windows'ta beklenen hal)" % sys.platform,
+        izler=(t["iz"], s["iz"]))
+
+
+def s_bb2b(taban):
+    """B-B2b: salt-okunur TESHISI kapiya mi ait? OLCUT: sabotaj kolunda
+    SALT-OKUNUR teshis sinifi KAYBOLUYOR mu.
+
+    HER PLATFORMDA olculebilir — CI #9'da kor kalan sey tam buydu. Kapi
+    sokulunce sinif POSIX'te SESSIZ'e (yazim gecti), Windows'ta
+    HAM-OSERROR-TESHIS'e duser; iki halde de DEGISIR, cunku teshisi ureten sey
+    kapinin KENDISIDIR. Olculen: kullanicinin gordugu CIKIS YOLU'nun kaynagi."""
+    ad = "B-B2b salt-okunur TESHIS SINIFI kapiya ait"
+    o = _bb2_olc(taban)
+    if "engel" in o:
+        kayit(ad, OLCULEMEDI, o["engel"])
+        return
+    t, s = o["temiz"], o["sabotaj"]
+    hukum_ver(
+        ad,
+        temiz_gorundu=(t["sinif"] == "SALT-OKUNUR-TESHIS" and t["yol"] and t["rc"] == 2),
+        sabotaj_uretti=s["sinif"] != "SALT-OKUNUR-TESHIS",
+        ayrinti="TEMIZ: sinif=%s cikis-yolu=%s exit=%s | SABOTAJ (izin kapisi sokulu): "
+                "sinif=%s cikis-yolu=%s exit=%s"
+                % (t["sinif"], "VAR" if t["yol"] else "yok", t["rc"],
+                   s["sinif"], "VAR" if s["yol"] else "yok", s["rc"]),
+        muhtemel_sebep="kapi sokulunce de SALT-OKUNUR teshisi basildi (%s): teshisi "
+                       "ureten sey kapi DEGIL baska bir yol olabilir" % sys.platform,
+        izler=(t["iz"], s["iz"]))
 
 
 def s_bb3(taban):
@@ -365,6 +482,9 @@ def s_bb3(taban):
     if os.name == "nt":
         # OLCULEMEDI DEGIL: POSIX mod bitleri Windows'ta YOK. Olculebilecek bir
         # sinif yoksa "olcemedim" demek de yanlistir.
+        # IZ YOK ve olamaz: bu dalda hicbir kol KOSMAZ (olculebilecek bir sinif
+        # bulunmadigi icin). Iz zorunlulugu hukum_ver'e baglidir; buradaki dogrudan
+        # kayit bilinclidir ve gerekcesi SINIRLAR'a yazilir.
         SINIRLAR.append("B-B3 UYGULANMAZ: POSIX mod bitleri Windows'ta yok; "
                         "orada ayirt edilebilir iki yazilabilir mod hali BULUNMUYOR.")
         kayit(ad, UYGULANMAZ, "windows — POSIX mod bitleri bu platformda YOK")
@@ -378,12 +498,12 @@ def s_bb3(taban):
             hedef = konular(kok)
             os.chmod(hedef, 0o640)
             rc, c = yeni_konu_yaz(motor, kok)
-            sonuc[kol] = (stat.S_IMODE(os.stat(hedef).st_mode), rc)
+            sonuc[kol] = (stat.S_IMODE(os.stat(hedef).st_mode), rc, iz(rc, c))
     except (SenaryoKurulamadi, OSError) as e:
         kayit(ad, OLCULEMEDI, "kurulamadi: %s" % e)
         return
-    t_mod, t_rc = sonuc["temiz"]
-    s_mod, s_rc = sonuc["sabotaj"]
+    t_mod, t_rc, t_iz = sonuc["temiz"]
+    s_mod, s_rc, s_iz = sonuc["sabotaj"]
     hukum_ver(
         ad,
         temiz_gorundu=t_mod == 0o640 and t_rc == 0,
@@ -391,7 +511,8 @@ def s_bb3(taban):
         ayrinti="TEMIZ: 0o640 -> %s exit=%s | SABOTAJ (mod kopyasi sokulu): 0o640 -> %s"
                 % (oct(t_mod), t_rc, oct(s_mod)),
         muhtemel_sebep="mod kopyasi sokulunce de mod korundu (%s): gecici dosya "
-                       "hedefle ayni modda dogmus olabilir" % sys.platform)
+                       "hedefle ayni modda dogmus olabilir" % sys.platform,
+        izler=(t_iz, s_iz))
 
 
 def s_bb4(taban):
@@ -404,12 +525,12 @@ def s_bb4(taban):
             motor = motor_kur(d, sabotaj=sab, ek_yama=enj_temiz)
             kok = proje_kur(motor, os.path.join(d, "p"))
             rc, c = yeni_konu_yaz(motor, kok, ortam_ek={"FAZB_KES": "1"})
-            sonuc[kol] = (len(part_artiklari(kok)), rc)
+            sonuc[kol] = (len(part_artiklari(kok)), rc, iz(rc, c))
     except (SenaryoKurulamadi, OSError) as e:
         kayit(ad, OLCULEMEDI, "kurulamadi: %s" % e)
         return
-    t_n, t_rc = sonuc["temiz"]
-    s_n, s_rc = sonuc["sabotaj"]
+    t_n, t_rc, t_iz = sonuc["temiz"]
+    s_n, s_rc, s_iz = sonuc["sabotaj"]
     hukum_ver(
         ad,
         temiz_gorundu=t_n == 0,
@@ -417,7 +538,8 @@ def s_bb4(taban):
         ayrinti="TEMIZ: %d artik exit=%s | SABOTAJ (temizlik sokulu): %d artik exit=%s"
                 % (t_n, t_rc, s_n, s_rc),
         muhtemel_sebep="temizlik sokulunce de artik kalmadi (%s): gecici dosyayi "
-                       "baska bir yol siliyor olabilir" % sys.platform)
+                       "baska bir yol siliyor olabilir" % sys.platform,
+        izler=(t_iz, s_iz))
 
 
 def s_bb5(taban):
@@ -453,12 +575,12 @@ def s_bb5(taban):
             metin_kopmayi_soyluyor = ("BAG KOPAR" in c) or ("ESKI icerikte KALIR" in c)
             metin_yansimayi_soyluyor = "oradaki adi da degistirir" in c
             sonuc[kol] = (bag_koptu, metin_kopmayi_soyluyor,
-                          metin_yansimayi_soyluyor, rc, "hardlink" in c)
+                          metin_yansimayi_soyluyor, rc, "hardlink" in c, iz(rc, c))
     except (SenaryoKurulamadi, OSError) as e:
         kayit(ad, OLCULEMEDI, "kurulamadi: %s" % e)
         return
-    t_kop, t_dogru, t_yanlis, t_rc, t_uyari = sonuc["temiz"]
-    s_kop, s_dogru, s_yanlis, s_rc, s_uyari = sonuc["sabotaj"]
+    t_kop, t_dogru, t_yanlis, t_rc, t_uyari, t_iz = sonuc["temiz"]
+    s_kop, s_dogru, s_yanlis, s_rc, s_uyari, s_iz = sonuc["sabotaj"]
     hukum_ver(
         ad,
         temiz_gorundu=t_kop and t_dogru and (not t_yanlis) and t_uyari,
@@ -467,7 +589,8 @@ def s_bb5(taban):
                 "SABOTAJ (eski metin): bag koptu=%s metin 'yansir' diyor=%s"
                 % (t_kop, t_dogru, t_uyari, t_rc, s_kop, s_yanlis),
         muhtemel_sebep="eski uyari metni geri konunca ayrisma gorulmedi (%s): metin "
-                       "hic basilmamis ya da bag kopmamis olabilir" % sys.platform)
+                       "hic basilmamis ya da bag kopmamis olabilir" % sys.platform,
+        izler=(t_iz, s_iz))
 
 
 # --------------------------------------------------------------- RAPOR
@@ -486,18 +609,25 @@ def main():
         print("\nARAC KUSURU: gecici dizin acilamadi: %s" % e)
         return 3
     try:
-        for f in (s_bb1, s_bb2, s_bb3, s_bb4, s_bb5):
+        for f in (s_bb1, s_bb2a, s_bb2b, s_bb3, s_bb4, s_bb5):
             try:
                 f(taban)
             except GerekcesizUygulanmaz as e:
                 print("\nARAC KUSURU: '%s' UYGULANMAZ dedi ama GEREKCE VERMEDI. "
                       "Gerekcesiz UYGULANMAZ bir kacis kapisidir." % e)
                 return 3
+            except IzsizHukum as e:
+                print("\nARAC KUSURU: '%s' hukum verdi ama SABOTAJ IZI BASMADI. "
+                      "Izsiz hukum, olcutun yanlis olmasini gizler (CI #9 dersi)." % e)
+                return 3
         print()
         say = {ISIRDI: 0, KACTI: 0, UYGULANMAZ: 0, OLCULEMEDI: 0}
-        for ad, hukum, ayrinti in SONUC:
+        for ad, hukum, ayrinti, izler in SONUC:
             say[hukum] += 1
             print("  %-10s %-46s | %s" % (hukum, ad, ayrinti))
+            if izler:
+                print("  %-10s %-46s | IZ temiz  : %s" % ("", "", izler[0]))
+                print("  %-10s %-46s | IZ sabotaj: %s" % ("", "", izler[1]))
         SINIRLAR.append(
             "DIZIN GIRDISI fsync'LENMEZ: surec cokmesi ve yarim yazim OLCULDU (B-B1), "
             "ani GUC KESINTISINDE adin kaybi OLCULMEDI. 'Kapandi' DENMEZ.")

@@ -228,8 +228,14 @@ jobs:
   #     Cokme IZIN MODELIYLE DEGIL ENJEKSIYONLA uretilir (fazA'nin #7 dersi:
   #     os.chmod Windows'ta dizinlerde etkisizdir, izinle cokme ureten senaryo
   #     ARACI degil ORTAMI olcer).
-  #     Platforma bagli iki kol kendini OLCULEMEDI ilan eder, sessiz PASS vermez:
-  #     B-B2 root'ta (os.access 0444'te True doner) · B-B3 Windows'ta (mod bitleri).
+  #     B-B2 IKIYE BOLUNDU (CI #12 artefakti okununca gorulen OLCUT kusuru):
+  #     B-B2a "izin ASILMIYOR" (olcut: dosya degisti mi) Windows'ta UYGULANMAZ,
+  #     B-B2b "TESHIS SINIFI kapiya ait" (olcut: sabotaj kolunda SALT-OKUNUR
+  #     teshisi kayboluyor mu) HER platformda olculur. Her hukum artik iki kolun
+  #     SABOTAJ IZINI (exit + teshis sinifi) basar; izsiz hukum ARAC KUSURUDUR.
+  #     Platforma bagli kollar kendini OLCULEMEDI/UYGULANMAZ ilan eder, sessiz
+  #     PASS vermez: B-B2a/b root'ta (os.access 0444'te True doner) · B-B3
+  #     Windows'ta (POSIX mod bitleri yok).
   #     `continue-on-error` YOK.
   # ---------------------------------------------------------------------------
   fazB_senaryolari:
@@ -258,6 +264,42 @@ jobs:
         with:
           name: fazB-${{ matrix.os }}-py${{ matrix.python }}
           path: fazB-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-5) FAZ B OLCUT MUTANTI — §5'in kendisi ISIRIYOR MU?
+  #     Bir OLCUT duzeltmesi de bir kapidir: "olculmeyen kapinin hukmu YOKTUR".
+  #     Bu is B-B2 bolunmesinin katkisini olcer. Katki YALNIZ os.replace'in
+  #     salt-okunur hedefi reddettigi ortamda gorunur, bu yuzden mutant O ORTAMI
+  #     ENJEKSIYONLA URETIR ve ayni kosumda ESKI olcutu de kosar:
+  #         YENI olcut -> ISIRDI      ESKI olcut -> UYGULANMAZ
+  #     Ikisi ayni hukmu verirse duzeltme KORDUR ve mutant KACTI der.
+  #     Uretilen ortam GERCEK WINDOWS DEGILDIR; Windows'un kendi hukmunu yukaridaki
+  #     fazB_senaryolari isi olcer. Bu is onun YERINE GECMEZ.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  fazB_olcut_mutanti:
+    name: Faz B olcut mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: olcut duzeltmesi isiriyor mu (sabotajla sinanmis)
+        shell: bash
+        run: python faz0/fazB_olcut_mutanti.py 2>&1 | tee fazB-olcut-cikti.txt
+      - name: olcut mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fazB-olcut-${{ matrix.os }}
+          path: fazB-olcut-cikti.txt
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
