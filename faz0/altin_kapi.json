@@ -1,0 +1,64 @@
+{
+  "kume": [
+    {
+      "hal": "h1_taze",
+      "komut": "kapi",
+      "exit": 0,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H2: 1.9 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 2 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: YESIL (SINIRLI) — olculen her sey gecti, ama 1 SEY OLCULMEDI (yukarida '?' ile isaretli). Kapsam TAM DEGILDIR.\n"
+    },
+    {
+      "hal": "h1_taze",
+      "komut": "kapi --siki",
+      "exit": 0,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H2: 1.9 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 2 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: YESIL (SINIRLI) — olculen her sey gecti, ama 1 SEY OLCULMEDI (yukarida '?' ile isaretli). Kapsam TAM DEGILDIR.\n"
+    },
+    {
+      "hal": "h2_fragman",
+      "komut": "kapi",
+      "exit": 0,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H2: 1.9 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H12: 1 fragman DERLENMEYI bekliyor\n  · H13: 7 seri tanimli\n  · H2: defterler 2 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: YESIL (SINIRLI) — olculen her sey gecti, ama 1 SEY OLCULMEDI (yukarida '?' ile isaretli). Kapsam TAM DEGILDIR.\n"
+    },
+    {
+      "hal": "h2_fragman",
+      "komut": "kapi --siki",
+      "exit": 0,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H2: 1.9 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H12: 1 fragman DERLENMEYI bekliyor\n  · H13: 7 seri tanimli\n  · H2: defterler 2 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: YESIL (SINIRLI) — olculen her sey gecti, ama 1 SEY OLCULMEDI (yukarida '?' ile isaretli). Kapsam TAM DEGILDIR.\n"
+    },
+    {
+      "hal": "h3_derlenmis",
+      "komut": "kapi",
+      "exit": 0,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H1: +1 yeni satir (mesru buyume; KAYIP yok)\n  · H2: 1.9 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 3 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: YESIL (SINIRLI) — olculen her sey gecti, ama 1 SEY OLCULMEDI (yukarida '?' ile isaretli). Kapsam TAM DEGILDIR.\n"
+    },
+    {
+      "hal": "h3_derlenmis",
+      "komut": "kapi --siki",
+      "exit": 0,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H2: 1.9 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 3 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: YESIL (SINIRLI) — olculen her sey gecti, ama 1 SEY OLCULMEDI (yukarida '?' ile isaretli). Kapsam TAM DEGILDIR.\n"
+    },
+    {
+      "hal": "h4_kararli",
+      "komut": "kapi",
+      "exit": 0,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H1: +1 yeni satir (mesru buyume; KAYIP yok)\n  · H2: 1.9 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: 1 karar · 0 kabul\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 3 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: hafiza projeyle es (en yeni degisiklik <TARIH>, hafiza <TARIH>)\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: YESIL (SINIRLI) — olculen her sey gecti, ama 1 SEY OLCULMEDI (yukarida '?' ile isaretli). Kapsam TAM DEGILDIR.\n"
+    },
+    {
+      "hal": "h4_kararli",
+      "komut": "kapi --siki",
+      "exit": 0,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H2: 1.9 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: 1 karar · 0 kabul\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 3 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: hafiza projeyle es (en yeni degisiklik <TARIH>, hafiza <TARIH>)\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: YESIL (SINIRLI) — olculen her sey gecti, ama 1 SEY OLCULMEDI (yukarida '?' ile isaretli). Kapsam TAM DEGILDIR.\n"
+    },
+    {
+      "hal": "h5_gitli",
+      "komut": "kapi",
+      "exit": 0,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H1: +1 yeni satir (mesru buyume; KAYIP yok)\n  · H2: 1.9 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 3 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git deposu var ama HENUZ COMMIT YOK — izlenirlik OLCULEMEDI (ilk commit'ten sonra olculur)\n\nSONUC: YESIL (SINIRLI) — olculen her sey gecti, ama 1 SEY OLCULMEDI (yukarida '?' ile isaretli). Kapsam TAM DEGILDIR.\n"
+    },
+    {
+      "hal": "h5_gitli",
+      "komut": "kapi --siki",
+      "exit": 0,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H2: 1.9 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 3 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git deposu var ama HENUZ COMMIT YOK — izlenirlik OLCULEMEDI (ilk commit'ten sonra olculur)\n\nSONUC: YESIL (SINIRLI) — olculen her sey gecti, ama 1 SEY OLCULMEDI (yukarida '?' ile isaretli). Kapsam TAM DEGILDIR.\n"
+    }
+  ]
+}

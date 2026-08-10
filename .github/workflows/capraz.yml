@@ -303,6 +303,48 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
+  # 2b-6) ALTIN CIKTI — kapi ciktisi SESSIZCE degisti mi?
+  #     Faz C `_kapi_govde`'yi kapi basina saf fonksiyonlara boluyor. Bir
+  #     refactoring'in tek vaadi DAVRANISIN AYNI KALMASIDIR; mevcut kosucular ise
+  #     hukum/exit seviyesinde olcer ve bir kapinin NOTUNUN sessizce kaybolmasini
+  #     GORMEZ. Bu is o boslugu kapatir: 5 proje hali x 2 komut = 10 olcum,
+  #     BIT-BIT karsilastirma.
+  #     Arac ONCE KENDINI KANITLAR (`--kendini-sina`): motora kasitli bir NOT
+  #     degisikligi enjekte edilir ve aracin FARK demesi beklenir. Demezse arac
+  #     kordur ve is KIRMIZI olur — normallestirme fazla agresiflesirse bunu
+  #     yakalayan tek kapi budur.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  altin_cikti:
+    name: Altin cikti / kapi esdegerligi (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: arac once KENDINI kanitliyor mu
+        shell: bash
+        run: python faz0/altin_cikti.py --kendini-sina 2>&1 | tee altin-sina.txt
+      - name: kapi ciktisi altin kumeyle AYNI mi
+        shell: bash
+        run: python faz0/altin_cikti.py --karsilastir faz0/altin_kapi.json 2>&1 | tee altin-fark.txt
+      - name: altin cikti artefakti
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: altin-${{ matrix.os }}
+          path: |
+            altin-sina.txt
+            altin-fark.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
   # 2c) Y-3 PROBU — kirik boru HUKMU kaybediyor mu, VE HANGI MEKANIZMAYLA?
   #     Iki python surumu BILEREK ayri: run #3/#4'te ayni komut windows py3.11'de
   #     120, py3.13'te 3 dondu — iki AYRI mekanizma. Tek surumle kosmak birini
