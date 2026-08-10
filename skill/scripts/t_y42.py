@@ -14,7 +14,7 @@ import datetime as _dt
 def _cikti_kodlamasini_guvenceye_al():
     """Y-2 (Faz A-0): bu kosucunun KENDI raporunu basabilmesini guvenceye alir.
 
-    OLCULDU (CI run #2, f6f7fde, windows-latest py3.11 VE py3.13):
+    OLCULDU (CI run #2, windows-latest py3.11 VE py3.13):
       58 senaryonun TAMAMI kostu (91 sn / 110 sn), SONUC listesi doldu, ve rapor
       dongusunun ILK satirinda coktu:
         t_y42.py:1586  UnicodeEncodeError: 'charmap' codec can't encode

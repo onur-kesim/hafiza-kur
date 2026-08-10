@@ -8,7 +8,7 @@ NEYI OLCER
   Koruma gercekten isiriyorsa mutant kopya COKER ve hukum satirini BASAMAZ.
   Isirmiyorsa mutant KACAR -> kapi kordur.
 
-NEDEN GEREKLI (olculdu, CI run #2 / f6f7fde)
+NEDEN GEREKLI (olculdu, CI run #2)
   windows-latest py3.11 ve py3.13'te t_y42 58 senaryonun TAMAMINI kostu
   (91 sn / 110 sn) ve rapor dongusunun ILK satirinda coktu:
       t_y42.py:1586  UnicodeEncodeError: 'charmap' codec can't encode

@@ -7,7 +7,7 @@ NEYI OLCER — VE NEYI OLCMEZ
   OLCMEZ: o hukumlerin yesil olup olmadigini. Bu ayrim bilinclidir.
           Bu kapinin yakaladigi sinif "hukum KAYBOLDU"dur, "hukum kirmizi" degil.
 
-NEDEN VAR (Y-2, olculdu: CI run #2 / f6f7fde)
+NEDEN VAR (Y-2, olculdu: CI run #2)
   capraz.yml'de her adim `continue-on-error: true` ile kosuyordu (Faz 0'da
   bilerek). windows-latest py3.11 ve py3.13'te t_y42 58 senaryonun TAMAMINI
   kostu, sonra rapor dongusunun ILK satirinda UnicodeEncodeError ile coktu ve

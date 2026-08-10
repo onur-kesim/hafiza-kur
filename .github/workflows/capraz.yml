@@ -7,7 +7,7 @@
 #
 # FAZ A-0 (Y-2) SONRASI TEK İSTİSNA — "HUKUM KAPISI":
 #   Ölçüm adımı yumuşak kalır, ama HÜKMÜN VARLIĞI pazarlık konusu değildir.
-#   Ölçüldü (run #2 / f6f7fde): windows py3.11 ve py3.13'te t_y42 58 senaryonun
+#   Ölçüldü (CI run #2): windows py3.11 ve py3.13'te t_y42 58 senaryonun
 #   TAMAMINI koştu (91 sn / 110 sn) ve rapor döngüsünün İLK satırında
 #   UnicodeEncodeError ile çöktü; 58 hükmün tamamı basılmadan kayboldu.
 #   `continue-on-error` bunu yuttu, iş YEŞİL göründü — hatta API'de adımın
@@ -248,7 +248,17 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: atomik yazim isiriyor mu (sabotajla sinanmis)
         shell: bash
-        run: python faz0/fazB_senaryolari.py
+        run: python faz0/fazB_senaryolari.py 2>&1 | tee fazB-cikti.txt
+      # Actions API bulut konteynerinden 403 veriyor ve HTML is listesi GUVENILMEZ
+      # (run #7 ve #9'da iki kez yanlis okundu). Ciktinin INDIRILEBILIR olmasi,
+      # teshisi tahminden OLCUME ceviren tek yol.
+      - name: fazB ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fazB-${{ matrix.os }}-py${{ matrix.python }}
+          path: fazB-cikti.txt
+          if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
   # 2c) Y-3 PROBU — kirik boru HUKMU kaybediyor mu, VE HANGI MEKANIZMAYLA?
