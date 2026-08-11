@@ -392,7 +392,7 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
-  # 2b-8) ALTIN OLCUT MUTANTI — altin_cikti.py'nin IKI duzeltmesi ISIRIYOR MU?
+  # 2b-8) ALTIN OLCUT MUTANTI — altin_cikti.py'nin UC duzeltmesi ISIRIYOR MU?
   #     run #17/#18'de altin_cikti windows kolunda kirmizi yandi ve artefakt sunu
   #     gosterdi: 10 olcumde CIKTI DEGISTI · hicbirinde EXIT DEGISTI YOK · hepsinde
   #     "(satir farki bulunamadi)" · hukum "davranis DEGISTI" (exit 1). Yani arac bir
@@ -425,7 +425,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: olcut duzeltmeleri isiriyor mu (alti mutant)
+      - name: olcut duzeltmeleri isiriyor mu (yedi mutant)
         shell: bash
         run: python faz0/altin_olcut_mutanti.py 2>&1 | tee altin-olcut-cikti.txt
       - name: altin olcut mutanti ciktisi (artefakt)
