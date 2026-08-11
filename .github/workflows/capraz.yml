@@ -313,6 +313,19 @@ jobs:
   #     degisikligi enjekte edilir ve aracin FARK demesi beklenir. Demezse arac
   #     kordur ve is KIRMIZI olur — normallestirme fazla agresiflesirse bunu
   #     yakalayan tek kapi budur.
+  #     🔴 `--kendini-sina` YESILI, `--karsilastir` KIRMIZISI HAKKINDA HUKUM VERMEZ.
+  #     Ikisi AYRI eksen olcer: kendini-sina iki KOSUM-ANI kolunu karsilastirir
+  #     (ortama sistematik fark iki kolda da bulunup birbirini goturur), karsilastir
+  #     ise kosum-anini SAKLANMIS artefaktla kiyaslar. Olculdu (11 Agu 2026): temiz ·
+  #     CRLF · \x0b ortamlarinin ucunde de kendini-sina "10 fark · ISIRDI · exit 0".
+  #     CIKIS KODU SOZLESMESI: 0 fark yok · 1 FARK VAR (urun hukmu) · 2 OLCULEMEDI
+  #     (fark VAR ama SATIR duzeyinde adlandirilamiyor -> satir siniri karakteri sinifi
+  #     basilir; bu bir URUN regresyonu DEGIL, once ARAC/ORTAM ayrilir) · 3 ARAC KUSURU
+  #     (referansin SEKLI bozuk: eksik alan / yanlis tur — ham traceback ile exit 1
+  #     DEGIL). 2 ve 3 de isi KIRMIZI yakar; ayrim HUKMUN kendisindedir.
+  #     run #17/#18 tam bu ayrimin yoklugunda yanlis okundu: arac 10 adlandirilamayan
+  #     farki "davranis DEGISTI" (exit 1) diye raporladi. Asagidaki olcut mutanti
+  #     bu ayrimin ISIRDIGINI olcer.
   #     `continue-on-error` YOK.
   # ---------------------------------------------------------------------------
   altin_cikti:
@@ -342,6 +355,85 @@ jobs:
           path: |
             altin-sina.txt
             altin-fark.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-7) FAZ C BOLME MUTANTI — esdegerlik kapisi BOLMEYE OZGU kusurlari goruyor mu?
+  #     Faz C `_kapi_govde`'yi 16 kapi fonksiyonuna boldu. "FARK YOK" demek yeterli
+  #     degil: kapinin bu bolmeye ozgu kusurlari (kapi sirasi, bolumler arasi uc
+  #     kenar, kapi-ici kesilmede BULGU KAYBI, kapi dusurme) GORDUGU kanitlanmali.
+  #     Bu dosya kendi proje hallerini kurar, referansi kosum aninda temiz motordan
+  #     alir ve alti kusuru tek tek enjekte eder. Alti kusurun ALTISI da isirmalidir.
+  #     Teslim gunune kadar bu is CI'DA YOKTU: alti mutant tek makine, tek platformda
+  #     olculmustu. `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  fazC_bolme_mutanti:
+    name: Faz C bolme mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: bolmeye ozgu kusurlar OLCULUYOR mu
+        shell: bash
+        run: python faz0/fazC_bolme_mutanti.py 2>&1 | tee fazC-mutant-cikti.txt
+      - name: fazC mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fazC-mutant-${{ matrix.os }}
+          path: fazC-mutant-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-8) ALTIN OLCUT MUTANTI — altin_cikti.py'nin IKI duzeltmesi ISIRIYOR MU?
+  #     run #17/#18'de altin_cikti windows kolunda kirmizi yandi ve artefakt sunu
+  #     gosterdi: 10 olcumde CIKTI DEGISTI · hicbirinde EXIT DEGISTI YOK · hepsinde
+  #     "(satir farki bulunamadi)" · hukum "davranis DEGISTI" (exit 1). Yani arac bir
+  #     fark GORDU, ADLANDIRAMADI, ve buna ragmen URUN'u sucladi — Y-4 sinifi.
+  #     DUZELTME-1 kos(): `-X utf8` + text=True/encoding/errors (universal newline).
+  #                 Kodlama ACIK verilir: `LC_ALL=C PYTHONUTF8=0` altinda ciplak
+  #                 `text=True` UnicodeDecodeError + exit 1 verir (olculdu 11 Agu 2026).
+  #     DUZELTME-2 adlandirilamayan fark -> OLCULEMEDI (exit 2) + SATIR SINIRI
+  #                 karakterinin SINIFI ve repr penceresi. Tabloda yalniz satir siniri
+  #                 karakterleri vardir; NBSP/BOM/SEKME satir listesini degistirir,
+  #                 adlandirilabilir fark uretir ve teshise HIC ULASMAZ.
+  #     DUZELTME-3 referansin SEKLI kapida sinanir -> ARAC KUSURU (exit 3), ham
+  #                 traceback + exit 1 DEGIL. (Bagimsiz denetci teslimden once buldu.)
+  #     Bir OLCUT duzeltmesi de bir kapidir. Bu is ORTAMI ENJEKSIYONLA URETIR (cocugun
+  #     satir sonu kipi; iki karakter: \x0b ve \x85) ve ayni kosumda ESKI olcutu de
+  #     kosar. YEDI mutant, her biri AYRI bir korumayi olcer. Uretilen ortam GERCEK
+  #     WINDOWS DEGILDIR; Windows'un kendi hukmunu yukaridaki altin_cikti isi olcer.
+  #     Bu is onun YERINE GECMEZ. `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  altin_olcut_mutanti:
+    name: Altin olcut mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: olcut duzeltmeleri isiriyor mu (alti mutant)
+        shell: bash
+        run: python faz0/altin_olcut_mutanti.py 2>&1 | tee altin-olcut-cikti.txt
+      - name: altin olcut mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: altin-olcut-${{ matrix.os }}
+          path: altin-olcut-cikti.txt
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
