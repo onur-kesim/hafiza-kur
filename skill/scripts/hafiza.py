@@ -2967,6 +2967,74 @@ def _kapi_govde(a, F, N, O):
         fail("H-", "CANLI HAFIZA YOK: %s — hicbir kapi olculemez." % y.canli)
         return
 
+    # ---- KAPILAR -------------------------------------------------------
+    # Her kapi AYRI bir fonksiyondur; sira BURADA gorunur ve dosyadaki tanim
+    # sirasiyla aynidir — H15'in H14'ten ONCE kosmasi dahil (cikti sirasi
+    # sozlesmedir).
+    #
+    # 🔴 F/N/O NEDEN DISARIDAN VERILIR (kapilar neden "saf" DEGIL):
+    # Ilk tasarim her kapinin kendi (bulgular, notlar, olculemedi) uclusunu
+    # DONDURMESIYDI. OLCULDU (11 Agu 2026) ve GERI ALINDI: o bicimde bir kapi
+    # yarida SystemExit atarsa (or. H0 once CIPA BOZULDU yazar, sonra ayni
+    # kapida _ZINCIR.jsonl gecersiz UTF-8 cikip oldur() calisir) kapinin O ANA
+    # KADAR TOPLADIGI bulgu yerel listede kalir ve KAYBOLUR.
+    #     bolme oncesi : FAIL (2 bulgu) · [H0] CIPA BOZULDU var · exit 1
+    #     saf bicimde  : FAIL (1 bulgu) · [H0] KAYIP             · exit 3
+    # Yani OLCULMUS BIR KIRMIZI, "hukum yok"a donusuyordu. cmd_kapi'nin kendi
+    # sozlesmesi bunun tersini garanti eder: "ne olursa olsun O ANA KADAR
+    # TOPLANAN hukum basilir". Saflik bir tercih, o garanti bir KORUMADIR ve
+    # korumalar kanitsiz sokulmez. Kapilar toplayiciya DOGRUDAN yazar; boylece
+    # bolme oncesiyle ayni liste nesnesi, ayni anda dolar.
+    #
+    # Uc kapi bir sonrakine veri tasir ve bu bagimlilik IMZADA gizlenemez:
+    #     bl  H10 -> H12        ks  H11 -> H12        t_son  H12 -> H14
+    # Tuketici yeniden HESAPLAMAZ: canli_bloklar()/adr_listesi() ikinci kez
+    # tam tarama demektir ve B-6 (300k satirda kapi < 8 sn) zaten sinirdadir.
+    _kapi_h0(F, N, O, y)
+    _kapi_h1(F, N, O, kok, rc, y, siki)
+    _kapi_h2(F, N, O, rc, y)
+    _kapi_h3(F, N, O, rc, y)
+    _kapi_h4(F, N, O, kok, y)
+    _kapi_h5(F, N, O, rc, y)
+    _kapi_h6(F, N, O, y)
+    _kapi_h7(F, N, O, rc, y)
+    _kapi_h8(F, N, O, kok, y)
+    _kapi_h9(F, N, O, kok, y)
+    bl = _kapi_h10(F, N, O, y)
+    ks = _kapi_h11(F, N, O, y)
+    t_son = _kapi_h12(F, N, O, rc, y, bl, ks)
+    _kapi_h13(F, N, O, kok, rc, y)
+    _kapi_h15(F, N, O, rc, y)
+    _kapi_h14(F, N, O, kok, rc, y, t_son)
+
+    return
+
+
+# --------------------------------------------------------- KAPI GOVDELERI
+# FAZ C: her kapi AYRI bir fonksiyondur — girdisi imzasinda gorunur, hukmunu
+# imzada verilen toplayiciya (F/N/O) yazar. Hicbiri YAZDIRMAZ (print yok).
+# Toplayicinin neden DONUS DEGERI degil de PARAMETRE oldugu _kapi_govde'deki
+# KAPILAR blogunda olculmus gerekcesiyle yazilidir: saf donus bicimi, kapi
+# yarida kesilirse o ana kadarki bulguyu KAYBEDIYORDU.
+#
+# NEDEN BURADA (dosyanin sonunda, _kapi_govde'den SONRA): faz0/sabotaj.py her
+# hukum cagrisini (lineno, col) sirasina gore numaralandirir ve kapsam
+# envanteri o numaralara baglidir. Bu fonksiyonlar _kapi_govde'den ONCE
+# tanimlanirsa numaralandirma 3 kayar ve envanter karsilastirilamaz hale gelir.
+#
+# `fail` ADI DEGISTIRILEMEZ: sabotaj.py cagrilari AST'te Name.id == "fail"
+# diye arar. Ad degisirse hicbir hedef bulunmaz ve kapsam envanteri sessizce
+# 0'a duser — yani olcum kaybolur, kirmizi gorunmez.
+#
+# AYRICA: bu blokta ve asagidaki govdelerde, hukum cagrisinin metnini ACIK
+# YAZMAKTAN kacinilir. Olculdu (11 Agu 2026): esdegerlik olcutlerinden biri
+# duz bir metin aramasidir (grep -c) ve bir YORUM satiri bile onu kaydirir —
+# ilk uretimde sayi 61 yerine 63 cikti. Olcut kirilgandir; asil degismez olan
+# sabotaj.py'nin AST sayimidir, ama kirilgan olcutu kendi prozanla bozma.
+
+
+def _kapi_h0(F, N, O, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H0 CIPA -------------------------------------------------------
     if not os.path.isfile(y.snap) or not os.path.isfile(y.cipa):
         fail("H0", "_KAYNAK.md / _CIPA.json yok — kanit tabani kayip")
@@ -2991,6 +3059,9 @@ def _kapi_govde(a, F, N, O):
         N.append("H0: cipa %s · zincir %s" % ("saglam" if s == c.get("sha") else "BOZUK",
                  "saglam" if not _zh else "KIRIK"))
 
+
+def _kapi_h1(F, N, O, kok, rc, y, siki):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H1 BUTUNLUK + KOVA --------------------------------------------
     if os.path.isfile(y.snap):
         snapL = satirlar(y.snap)
@@ -3116,6 +3187,9 @@ def _kapi_govde(a, F, N, O):
                     fail("H1-KOVA", "beyan edilen tasima HEDEFTE YOK (%s): %d satir — sahte beyan"
                          % (r.get("hedef"), len(yok)))
 
+
+def _kapi_h2(F, N, O, rc, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H2 SISME ------------------------------------------------------
     bayt = os.path.getsize(y.canli)
     tavan = rc["tavan_kb"] * 1024
@@ -3126,12 +3200,18 @@ def _kapi_govde(a, F, N, O):
         N.append("H2: %.1f / %d KB (%%%d dolu)" % (bayt / 1024.0, rc["tavan_kb"],
                                                    round(100.0 * bayt / tavan)))
 
+
+def _kapi_h3(F, N, O, rc, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H3 BOLUM ------------------------------------------------------
     basliklar = [s for s in satirlar(y.canli) if s.startswith("#")]
     for b in rc["zorunlu_bolumler"]:
         if not any(bas_eslesir(x, b) for x in basliklar):
             fail("H3", "zorunlu bolum YOK: " + b)
 
+
+def _kapi_h4(F, N, O, kok, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H4 OLU BAGLANTI -----------------------------------------------
     metin = oku(y.canli)
     # Yalniz TAM backtick icerigi bir yol ise aday sayilir: `hafiza.py kapi` bir KOMUTTUR, yol degil.
@@ -3192,6 +3272,9 @@ def _kapi_govde(a, F, N, O):
         if len(olu) > 10:
             fail("H4", "… +%d OLU BAGLANTI daha (ekranda kirpildi, HEPSI sayildi)" % (len(olu) - 10))
 
+
+def _kapi_h5(F, N, O, rc, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H5 SURUM TEKILLIGI --------------------------------------------
     ka = rc.get("kanonik_artefakt", "")
     if ka:
@@ -3223,6 +3306,9 @@ def _kapi_govde(a, F, N, O):
     else:
         N.append("H5: kanonik_artefakt tanimsiz — uygulanmadi")
 
+
+def _kapi_h6(F, N, O, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H6 DIZIN ------------------------------------------------------
     arsivD = sorted(f for f in os.listdir(y.h) if re.match(r"^HAFIZA_.*\.md$", f))
     L6 = satirlar(y.canli)
@@ -3243,6 +3329,9 @@ def _kapi_govde(a, F, N, O):
             if f not in arsivD:
                 fail("H6", "DIZINDE var ama diskte YOK: " + f)
 
+
+def _kapi_h7(F, N, O, rc, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H7 KURAL-YERLESIMI --------------------------------------------
     L = satirlar(y.canli)
     evler = []
@@ -3262,6 +3351,9 @@ def _kapi_govde(a, F, N, O):
                 fail("H7", "KALICI KURAL yanlis evde (satir %d) — rotasyona girer, gorunmez olur:\n"
                            "      %s" % (n + 1, s.strip()[:100]))
 
+
+def _kapi_h8(F, N, O, kok, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H8 KORUNAN ----------------------------------------------------
     if os.path.isfile(y.korunan):
         kor = defter_liste(y.korunan, "bloklar", {"dosya": str, "bas": str, "son": str, "sha": str})["bloklar"]
@@ -3307,6 +3399,9 @@ def _kapi_govde(a, F, N, O):
                     fail("H8", "KORUNAN blok DEGISMIS (beyansiz): %s — bilincliyse: hafiza.py muhur" % b["dosya"])
         N.append("H8: %d korunan blok" % len(kor))
 
+
+def _kapi_h9(F, N, O, kok, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H9 GERCEK (git) -----------------------------------------------
     if shutil.which("git") and os.path.isdir(os.path.join(kok, ".git")):
         r = subprocess.run(["git", "-C", kok, "log", "--oneline", "-1"],
@@ -3346,6 +3441,9 @@ def _kapi_govde(a, F, N, O):
     else:
         O.append("H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)")
 
+
+def _kapi_h10(F, N, O, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H10 KONU TEKILLIGI (anahtar bazli sikistirma) -----------------
     bl = canli_bloklar(y)
     say = {}
@@ -3424,7 +3522,11 @@ def _kapi_govde(a, F, N, O):
         for k in say:
             if k not in bilinen:
                 fail("H10", "KONULAR.md'de tanimsiz konu: '%s' (once sozluge ekle)" % k)
+    return bl
 
+
+def _kapi_h11(F, N, O, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H11 KARAR BUTUNLUGU (ADR) -------------------------------------
     ks = adr_listesi(y)
     if ks:
@@ -3470,7 +3572,11 @@ def _kapi_govde(a, F, N, O):
         N.append("H11: %d karar · %d kabul" % (len(ks), sum(1 for k in ks if k["meta"].get("durum") == "kabul")))
     else:
         N.append("H11: henuz karar dosyasi yok")
+    return ks
 
+
+def _kapi_h12(F, N, O, rc, y, bl, ks):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H12 BAYATLIK --------------------------------------------------
     gun = rc["bayatlik_gun"]
     m = re.search(r"Son g[uü]ncelleme:\s*(.{0,40})", oku(y.canli))
@@ -3514,7 +3620,11 @@ def _kapi_govde(a, F, N, O):
         bekleyen = [f for f in os.listdir(y.gunluk) if f.endswith(".md")]
         if bekleyen:
             N.append("H12: %d fragman DERLENMEYI bekliyor" % len(bekleyen))
+    return t_son
 
+
+def _kapi_h13(F, N, O, kok, rc, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H13 SAKLAMA PLANI ---------------------------------------------
     if not os.path.isfile(y.plan):
         fail("H13", "SAKLAMA_PLANI.md yok — emeklilik karari yaziya dokulmemis")
@@ -3534,6 +3644,8 @@ def _kapi_govde(a, F, N, O):
                     fail("H13", "PLANSIZ SERI: 'arsiv/%s' dolu ama SAKLAMA_PLANI'nda gecmiyor" % t)
 
 
+def _kapi_h15(F, N, O, rc, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H15 POLITIKA (kapilarin kendisi gevsetildi mi) -----------------
     # BAGIMSIZ DENETIM DERSI: H15'in mesaji "bilincliyse gerekce yaz ve muhurle" diyordu
     # ama gerekceyi OKUYAN kod YOKTU -> yerine getirilemeyen talimat + kalici kirmizi
@@ -3587,6 +3699,9 @@ def _kapi_govde(a, F, N, O):
                 rc.get("hafiza_gecikme_gun"),
                 (" · %d beyanli gevseklik" % len(pg)) if pg else ""))
 
+
+def _kapi_h14(F, N, O, kok, rc, y, t_son):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H14 DISIPLIN (proje ilerledi mi, hafiza ilerledi mi) -----------
     gecikme = rc["hafiza_gecikme_gun"]
     if gecikme <= 0:
@@ -3690,7 +3805,6 @@ def _kapi_govde(a, F, N, O):
                 N.append("H14: hafiza projeyle es (en yeni degisiklik %s, hafiza %s)"
                          % (d_proje.isoformat(), t_son.isoformat()))
 
-    return
 
 # ---------------------------------------------------------------- ISIRMA KANITI
 
