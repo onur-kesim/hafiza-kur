@@ -111,12 +111,16 @@ def kos(motor, arglar, kok, saniye=300):
     o = dict(os.environ)
     o["PYTHONIOENCODING"] = "utf-8"
     try:
-        r = subprocess.run([sys.executable, motor] + arglar + ["--kok=" + kok],
-                           capture_output=True, timeout=saniye, env=o)
+        # DUZELTME-1: universal newline + acik kodlama. Cikplak `text=True` YETMEZ:
+        # ust surecin varsayilan kodlamasi UTF-8 degilse (LC_ALL=C) UnicodeDecodeError
+        # atar ve exit 1 = "FARK VAR" olarak raporlanir — Y-4 sinifi arac kusuru.
+        # `-X utf8` de eklendi: kardes araclarin (t_y3 · t_y42 · fazC) hepsi kullaniyor.
+        r = subprocess.run([sys.executable, "-X", "utf8", motor] + arglar + ["--kok=" + kok],
+                           capture_output=True, timeout=saniye, env=o,
+                           text=True, encoding="utf-8", errors="replace")
     except subprocess.TimeoutExpired:
         return None, "ZAMAN ASIMI (%d sn)" % saniye
-    return r.returncode, (r.stdout or b"").decode("utf-8", "replace") + \
-                         (r.stderr or b"").decode("utf-8", "replace")
+    return r.returncode, (r.stdout or "") + (r.stderr or "")
 
 
 def hal_kur(motor, taban, ad, adimlar, gitli):
@@ -152,6 +156,30 @@ def kume_uret(motor, taban):
     return kume
 
 
+_ZORUNLU_ALAN = ("hal", "komut", "exit", "cikti")
+
+
+def _kume_sekli_dogrula(kume):
+    """DUZELTME-3: referansin SEKLINI kapida sinar. Bir alan eksikse ya da tur
+    yanlissa burada ARAC KUSURU (exit 3) olur; asagida ham traceback ile exit 1
+    (= 'davranis DEGISTI') OLMAZ. Bir olcum aracinin en zararli hali sessiz
+    kalmasi degil, KENDI kusurunu URUN regresyonu diye raporlamasidir."""
+    if not isinstance(kume, list):
+        raise TypeError("'kume' bir liste olmali, %s geldi" % type(kume).__name__)
+    if not kume:
+        raise ValueError("'kume' BOS — bos referans 'fark yok' demek DEGILDIR")
+    for n, k in enumerate(kume):
+        if not isinstance(k, dict):
+            raise TypeError("kayit #%d bir nesne olmali, %s geldi"
+                            % (n, type(k).__name__))
+        for alan in _ZORUNLU_ALAN:
+            if alan not in k:
+                raise KeyError("kayit #%d: '%s' alani YOK" % (n, alan))
+        if not isinstance(k["cikti"], str):
+            raise TypeError("kayit #%d: 'cikti' metin olmali, %s geldi"
+                            % (n, type(k["cikti"]).__name__))
+
+
 def farklari_bul(altin, yeni):
     """Iki kumeyi ANAHTARLI karsilastirir. Kayip ve fazla kayit da FARKTIR —
     yalnizca ortak anahtarlari karsilastirmak, silinen bir olcumu gizler."""
@@ -163,19 +191,69 @@ def farklari_bul(altin, yeni):
     farklar = []
     for k in sorted(set(a) | set(y)):
         if k not in y:
-            farklar.append((k, "OLCUM KAYBOLDU (altin kumede var, yenide YOK)"))
+            farklar.append((k, "OLCUM KAYBOLDU (altin kumede var, yenide YOK)", "KAYIP"))
             continue
         if k not in a:
-            farklar.append((k, "YENI OLCUM (altin kumede YOK)"))
+            farklar.append((k, "YENI OLCUM (altin kumede YOK)", "FAZLA"))
             continue
         if a[k]["exit"] != y[k]["exit"]:
-            farklar.append((k, "EXIT DEGISTI: %s -> %s" % (a[k]["exit"], y[k]["exit"])))
+            farklar.append((k, "EXIT DEGISTI: %s -> %s" % (a[k]["exit"], y[k]["exit"]), "EXIT"))
         if a[k]["cikti"] != y[k]["cikti"]:
-            farklar.append((k, "CIKTI DEGISTI:\n" + satir_farki(a[k]["cikti"], y[k]["cikti"])))
+            metin, adlandirildi = satir_farki(a[k]["cikti"], y[k]["cikti"])
+            farklar.append((k, "CIKTI DEGISTI:\n" + metin,
+                            "SATIR" if adlandirildi else "ADLANDIRILAMADI"))
     return farklar
 
 
+# `splitlines()` esit liste veriyorsa ilk ayrisma ZORUNLU OLARAK bir SATIR SINIRI
+# karakterindedir — bu yuzden tabloda YALNIZ onlar vardir. NBSP · BOM · SEKME ·
+# BOSLUK · ZWSP satir siniri DEGILDIR: onlar satir listesini degistirir, dolayisiyla
+# ADLANDIRILABILIR bir satir farki uretir ve buraya HIC ULASAMAZ. (Olculdu 11 Agu
+# 2026: satir_farki("a b", "a\xa0b") -> adlandirildi=True.) Liste CPython'un
+# str.splitlines() sinir kumesidir; bir uyesi eksik kalirsa hukum "?" olur.
+_SINIR_ADI = {
+    "\r": "SATIR SONU (CR)",
+    "\x0b": "DIKEY SEKME (VT)",
+    "\x0c": "SAYFA SONU (FF)",
+    "\x1c": "DOSYA AYIRICI (FS)",
+    "\x1d": "GRUP AYIRICI (GS)",
+    "\x1e": "KAYIT AYIRICI (RS)",
+    "\x85": "SONRAKI SATIR (NEL, U+0085)",
+    "\u2028": "SATIR AYIRICI (U+2028)",
+    "\u2029": "PARAGRAF AYIRICI (U+2029)",
+}
+
+
+def gorunmez_teshis(eski, yeni):
+    """DUZELTME-2 destegi: iki metin farkli ama satir bazinda ADLANDIRILAMIYORSA
+    kusur GORUNMEZ bir karakterdedir. Onu GIZLENEMEZ kilar: ilk ayrisma noktasinin
+    repr penceresini ve sinif adini basar. 'Hedef engellemek degil, gizlenemez kilmak.'"""
+    n = min(len(eski), len(yeni))
+    i = 0
+    while i < n and eski[i] == yeni[i]:
+        i += 1
+    bas = max(0, i - 24)
+    if i >= len(eski) or i >= len(yeni):
+        # Biri otekinin oneki. Satir listeleri esitken bu ancak SONDAKI bir satir
+        # siniri karakteriyle olur (ornek: "a\n" ile "a").
+        sinif = ("AYRISMA YOK (metinler esit — ARAC KUSURU adayi)"
+                 if len(eski) == len(yeni)
+                 else "SONDAKI SATIR SINIRI (uzunluk farki)")
+    else:
+        sinif = "?"
+        for m in (eski, yeni):
+            if m[i] in _SINIR_ADI:
+                sinif = _SINIR_ADI[m[i]]
+                break
+    return ("      GORUNMEZ FARK · sinif: %s · ilk ayrisma indeksi: %d\n"
+            "        ALTIN: %r\n        YENI : %r"
+            % (sinif, i, eski[bas:i + 12], yeni[bas:i + 12]))
+
+
 def satir_farki(eski, yeni):
+    """(metin, adlandirildi) dondurur. adlandirildi=False ise fark SATIR duzeyinde
+    gorunmuyor — bu bir URUN farki DEGIL, ARAC/ORTAM farki olabilir; cagiran onu
+    ADLANDIRILAMADI olarak siniflar ve OLCULEMEDI hukmu verir."""
     e, y = eski.splitlines(), yeni.splitlines()
     out = []
     for i in range(max(len(e), len(y))):
@@ -183,7 +261,9 @@ def satir_farki(eski, yeni):
         sy = y[i] if i < len(y) else "<YOK>"
         if se != sy:
             out.append("      satir %d:\n        ALTIN: %s\n        YENI : %s" % (i + 1, se, sy))
-    return "\n".join(out[:12]) or "      (satir farki bulunamadi — bosluk/satir sonu farki olabilir)"
+    if out:
+        return "\n".join(out[:12]), True
+    return gorunmez_teshis(eski, yeni), False
 
 
 # --------------------------------------------------------------- KENDINI SINA
@@ -279,8 +359,18 @@ def main():
 
     try:
         altin = json.load(open(a.karsilastir, encoding="utf-8"))["kume"]
-    except (OSError, ValueError, KeyError) as e:
-        print("ARAC KUSURU: altin kume okunamadi (%s): %s" % (a.karsilastir, e))
+        _kume_sekli_dogrula(altin)
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        # DUZELTME-3: SEKIL denetimi. Once yalniz json.load sarilmisti; bozuk ya da
+        # kesik bir referans dosyasi farklari_bul icinde KeyError/TypeError atip HAM
+        # TRACEBACK ile exit 1 veriyordu — yani ARAC KUSURU "davranis DEGISTI" (URUN
+        # hukmu) olarak okunuyordu. Bu, duzeltme-2'nin kapattigi kusurun BASKA BIR
+        # KAPIDAN geri gelmesidir; iki kapi ayni tezi tasir, ikisi de kapanir.
+        print("ARAC KUSURU: altin kume okunamadi ya da SEKLI BOZUK (%s): %s: %s"
+              % (a.karsilastir, type(e).__name__, e))
+        print("  Bu bir URUN hukmu DEGILDIR. Referans dosyasi --kaydet ile")
+        print("  yeniden uretilir; onceki dosya BIR KANITTIR, ustune yazilmadan once")
+        print("  neden bozuldugu ayrilir (kesik indirme? birlestirme catismasi?).")
         return 3
 
     farklar = farklari_bul(altin, kume)
@@ -293,9 +383,21 @@ def main():
         print("FARK YOK — kapi ciktisi ve cikis kodlari BIT-BIT ayni.")
         print("  (Normallestirilen: <KOK> · <TARIH> · <GUN> · <SHA>. Baska hicbir sey.)")
         return 0
-    for (hal, komut), aciklama in farklar:
+    for (hal, komut), aciklama, _sinif in farklar:
         print("  FARK  %-14s %-12s | %s" % (hal, komut, aciklama))
     print(CIZGI)
+    # DUZELTME-2: satir duzeyinde ADLANDIRILAMAYAN fark bir URUN hukmu DEGILDIR.
+    # Eski surum bunu "davranis DEGISTI" (exit 1) diye raporluyordu; oysa sebep
+    # aracin/ortamin kendisi olabilir (satir sonu ve akrabalari). Y-4 sinifi:
+    # "olcemedigini ARAC KUSURU diye mi raporluyor?" — evet demeli, 1 dememeli.
+    adsiz = [f for f in farklar if f[2] == "ADLANDIRILAMADI"]
+    if adsiz:
+        print("OLCULEMEDI: %d farkin %d'i satir duzeyinde ADLANDIRILAMADI." % (len(farklar), len(adsiz)))
+        print("  Bu bir URUN regresyonu DEGIL diye okunmaz; ama 'davranis DEGISTI'")
+        print("  diye de okunmaz. Gorunmez karakter sinifi yukarida repr ile basildi.")
+        print("  Ilk bakilacak yer: cocuk surecin satir sonu kipi ve altin kumenin")
+        print("  kaydedildigi platform. Once o AYRILIR, sonra urun hukmu verilir.")
+        return 2
     print("SONUC: %d FARK — davranis DEGISTI." % len(farklar))
     return 1
 

@@ -1,0 +1,509 @@
+# .github/workflows/capraz.yml
+#
+# FAZ 0 — ÖLÇ, DÜZELTME.
+# Bu iş akışı hiçbir şeyi düzeltmez; yalnız "hangi platformda ne kırılıyor"u ÖLÇER.
+# Bu yüzden ÖLÇÜM adımları `continue-on-error: true` ile koşar: amaç yeşil almak
+# değil, KIRMIZI LİSTEYİ ÜRETMEK. Liste çıktıktan sonra bu bayrak kaldırılır.
+#
+# FAZ A-0 (Y-2) SONRASI TEK İSTİSNA — "HUKUM KAPISI":
+#   Ölçüm adımı yumuşak kalır, ama HÜKMÜN VARLIĞI pazarlık konusu değildir.
+#   Ölçüldü (CI run #2): windows py3.11 ve py3.13'te t_y42 58 senaryonun
+#   TAMAMINI koştu (91 sn / 110 sn) ve rapor döngüsünün İLK satırında
+#   UnicodeEncodeError ile çöktü; 58 hükmün tamamı basılmadan kayboldu.
+#   `continue-on-error` bunu yuttu, iş YEŞİL göründü — hatta API'de adımın
+#   `conclusion` alanı bile "success" döndü (gerçek sonuç `outcome`ta saklanır).
+#   Yani çapraz ölçümün 1/3'ü KÖRDÜ ve bu körlük YEŞİL TİK olarak raporlanıyordu.
+#   Bu yüzden her `kanit` işi artık çıktısını hukum.log'a da yazar ve sonda
+#   `continue-on-error` OLMAYAN bir kapı, beklenen hüküm satırlarının BASILDIĞINI
+#   ölçer. Hüküm kaybolursa iş KIRMIZI olur. Kapı hükümlerin YEŞİL olduğunu
+#   söylemez — sadece KAYBOLMADIĞINI.
+#
+# Public repo'da GitHub-hosted runner'lar (ubuntu/windows/macos) ücretsiz ve
+# dakika limitsizdir. Private repo'da çarpanlar: Windows 2x, macOS 10x.
+
+name: capraz-olcum
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # 1) ÜÇ PLATFORM × İKİ PYTHON — kanıt koşucuları
+  # ---------------------------------------------------------------------------
+  kanit:
+    name: kanit ${{ matrix.os }} py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false          # bir platform düşse de ötekiler ölçülsün
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: ortam kimligi
+        shell: bash
+        run: |
+          python -c "import sys,platform,os,sqlite3;print('py',sys.version);print('platform',platform.platform());print('fs-encoding',sys.getfilesystemencoding());print('default-encoding',__import__('locale').getpreferredencoding(False));print('sqlite',sqlite3.sqlite_version)"
+
+      - name: SHA256 dogrulamasi
+        shell: bash
+        run: python -c "import hashlib;print(hashlib.sha256(open('skill/scripts/hafiza.py','rb').read()).hexdigest().upper())"
+
+      # Her olcum adimi ciktisini ../../hukum.log'a da yazar; sondaki HUKUM KAPISI
+      # o logda hukum satirlarini arar. `tee` kullanilmasi bilincli: adimin kendi
+      # ciktisi Actions arayuzunde gorunmeye devam etsin.
+
+      - name: t_y3 — temiz hata kanitlari (20 senaryo)
+        continue-on-error: true
+        shell: bash
+        working-directory: skill/scripts
+        run: python t_y3.py 2>&1 | tee -a ../../hukum.log
+
+      - name: isir — taze projede mutant kaniti
+        continue-on-error: true
+        shell: bash
+        working-directory: skill/scripts
+        run: |
+          {
+            mkdir -p deneme && git init -q deneme
+            python hafiza.py kur  --kok=deneme --ad "CI"
+            python hafiza.py kapi --kok=deneme || echo "kapi exit=$?"
+            python hafiza.py isir --kok=deneme || echo "isir exit=$?"
+          } 2>&1 | tee -a ../../hukum.log
+
+      - name: isir — derle sonrasi TAM kosum
+        continue-on-error: true
+        shell: bash
+        working-directory: skill/scripts
+        run: |
+          {
+            python hafiza.py not   --kok=deneme --konu=genel-durum --metin="ci ilk not"
+            python hafiza.py derle --kok=deneme
+            python hafiza.py isir  --kok=deneme || echo "isir exit=$?"
+          } 2>&1 | tee -a ../../hukum.log
+
+      # SURE: "~13 dk" beyani YANLISTI ve run #2'de olculdu — asagidaki gercek
+      # duvar saati degerleri o kosumdandir (yerel Linux'ta da 60 sn):
+      #   ubuntu 64/73 sn - macos 53/46 sn - windows 91/110 sn (windows'ta COKTU)
+      # Belgedeki her sayi gibi bu da BAGLAMLIDIR: GitHub-hosted runner, soguk
+      # calisma alani. Onur'un kendi Windows'unda daha uzun surmesi beklenir;
+      # o sure OLCULMEDI, buraya yazilmaz.
+      - name: t_y42 — davranis kanitlari (58 senaryo, ~1-2 dk runner'da)
+        continue-on-error: true
+        shell: bash
+        working-directory: skill/scripts
+        run: python t_y42.py 2>&1 | tee -a ../../hukum.log
+
+      # NOT: B-6 (300k satirda kapi < 8 sn) CI runner'inda buyuk olasilikla KALDI der.
+      # Bu bir KOD kusuru degil, TEST kusurudur (kalibrasyonsuz mutlak duvar saati).
+      # Fable 4. tur, §3.6. Faz F'de referans-ise gore kalibre edilecek.
+
+      # ---- HUKUM KAPISI — continue-on-error YOK. Hukum kaybolursa is KIRMIZI. ----
+      - name: HUKUM KAPISI — kosucular hukmunu BASTI mi?
+        if: always()
+        shell: bash
+        run: python faz0/hukum_kapisi.py hukum.log
+
+      - name: kirik liste artefakti
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kanit-${{ matrix.os }}-py${{ matrix.python }}
+          path: |
+            hukum.log
+            skill/scripts/hafiza_hata_izi.txt
+            skill/scripts/deneme/**
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # 2) WINDOWS PROBU — Y-1 hipotezi: os.kill(pid, 0) olcmez mi, ates mi eder?
+  #     bpo-14480 CLOSED-REJECTED: "0 has no special meaning on Windows"
+  #     Bu is bunu OLCER. Tek amaci bu.
+  # ---------------------------------------------------------------------------
+  win_kill_probu:
+    name: Y-1 probu (windows)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: os.kill(pid, 0) davranisi
+        continue-on-error: true
+        shell: bash
+        run: python faz0/win_kill_probu.py
+
+  # ---------------------------------------------------------------------------
+  # 2b) Y-2 MUTANTI — Faz A-0'da eklenen cikti-kodlamasi korumasi ISIRIYOR mu?
+  #     "Olculmeyen kapinin hukmu YOKTUR" (doktrin 1). Koruma eklemek yetmez;
+  #     sokuldugunde kosucunun COKTUGU gosterilmelidir.
+  #     Bu is `continue-on-error` KULLANMAZ: mutant kacarsa koruma kordur ve
+  #     bunun kirmizi gorunmesi gerekir.
+  # ---------------------------------------------------------------------------
+  y2_mutant:
+    name: Y-2 mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: koruma sokulunce kosucu cokuyor mu?
+        shell: bash
+        run: python faz0/y2_mutant.py
+
+  # ---------------------------------------------------------------------------
+  # 2b-2) Y-4 MUTANTI — OLCUM ARACI, OLCEMEDIGINI "KACTI" DIYE RAPORLUYOR MU?
+  #     Olculdu (Faz A, bulut Linux): salt-okunur kaynak agacinda y2_mutant ham
+  #     PermissionError basip exit 1 verdi. Sozlesmede 1 = "MUTANT KACTI".
+  #     Yani OLCULEMEYEN hal, GERCEK KIRMIZIDAN ayirt edilemez bicimde
+  #     raporlaniyordu. Sahte kirmizi, gercek kirmiziyi degersizlestirir.
+  #     `continue-on-error` YOK: olcum aracinin hukum sozlesmesi bir kapidir.
+  # ---------------------------------------------------------------------------
+  y4_mutant:
+    name: Y-4 mutanti / olcum araci sozlesmesi (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: y2_mutant olcemedigini ARAC KUSURU diye mi raporluyor?
+        shell: bash
+        run: python faz0/y4_mutant.py
+
+  # ---------------------------------------------------------------------------
+  # 2b-3) FAZ A SENARYOLARI — B4-5 / B4-6 / B4-10 / B4-11 duzeltmeleri ISIRIYOR MU?
+  #     Her duzeltmeye AYRI senaryo, her senaryoya AYRI sabotaj: duzeltme
+  #     sokulunce ESKI kusur yeniden URETILMELI. Uretemiyorsa senaryo komsu bir
+  #     sinifi olcuyordur ve hukmu yoktur.
+  #     Windows notu: B4-5 kolu salt-okunur dizinle cokme uretir; uretemezse
+  #     senaryo kendini OLCULEMEDI ilan eder (exit 2) — sessiz PASS vermez.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  fazA_senaryolari:
+    name: Faz A senaryolari (${{ matrix.os }} py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: duzeltmeler isiriyor mu (sabotajla sinanmis)
+        shell: bash
+        run: python faz0/fazA_senaryolari.py
+
+  # ---------------------------------------------------------------------------
+  # 2b-4) FAZ B SENARYOLARI — yaz() atomiklestirmesi ISIRIYOR MU?
+  #     Kapsam kararlari: yalniz yaz() · salt-okunur hedefte REDDET (izin ASILMAZ)
+  #     · fsync(dosya)+os.replace · hedefin izin bitleri kopyalanir · hardlink
+  #     BAG KOPAR ve UYARI METNI bunu soyler.
+  #     Cokme IZIN MODELIYLE DEGIL ENJEKSIYONLA uretilir (fazA'nin #7 dersi:
+  #     os.chmod Windows'ta dizinlerde etkisizdir, izinle cokme ureten senaryo
+  #     ARACI degil ORTAMI olcer).
+  #     B-B2 IKIYE BOLUNDU (CI #12 artefakti okununca gorulen OLCUT kusuru):
+  #     B-B2a "izin ASILMIYOR" (olcut: dosya degisti mi) Windows'ta UYGULANMAZ,
+  #     B-B2b "TESHIS SINIFI kapiya ait" (olcut: sabotaj kolunda SALT-OKUNUR
+  #     teshisi kayboluyor mu) HER platformda olculur. Her hukum artik iki kolun
+  #     SABOTAJ IZINI (exit + teshis sinifi) basar; izsiz hukum ARAC KUSURUDUR.
+  #     Platforma bagli kollar kendini OLCULEMEDI/UYGULANMAZ ilan eder, sessiz
+  #     PASS vermez: B-B2a/b root'ta (os.access 0444'te True doner) · B-B3
+  #     Windows'ta (POSIX mod bitleri yok).
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  fazB_senaryolari:
+    name: Faz B senaryolari (${{ matrix.os }} py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: atomik yazim isiriyor mu (sabotajla sinanmis)
+        shell: bash
+        run: python faz0/fazB_senaryolari.py 2>&1 | tee fazB-cikti.txt
+      # Actions API bulut konteynerinden 403 veriyor ve HTML is listesi GUVENILMEZ
+      # (run #7 ve #9'da iki kez yanlis okundu). Ciktinin INDIRILEBILIR olmasi,
+      # teshisi tahminden OLCUME ceviren tek yol.
+      - name: fazB ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fazB-${{ matrix.os }}-py${{ matrix.python }}
+          path: fazB-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-5) FAZ B OLCUT MUTANTI — §5'in kendisi ISIRIYOR MU?
+  #     Bir OLCUT duzeltmesi de bir kapidir: "olculmeyen kapinin hukmu YOKTUR".
+  #     Bu is B-B2 bolunmesinin katkisini olcer. Katki YALNIZ os.replace'in
+  #     salt-okunur hedefi reddettigi ortamda gorunur, bu yuzden mutant O ORTAMI
+  #     ENJEKSIYONLA URETIR ve ayni kosumda ESKI olcutu de kosar:
+  #         YENI olcut -> ISIRDI      ESKI olcut -> UYGULANMAZ
+  #     Ikisi ayni hukmu verirse duzeltme KORDUR ve mutant KACTI der.
+  #     Uretilen ortam GERCEK WINDOWS DEGILDIR; Windows'un kendi hukmunu yukaridaki
+  #     fazB_senaryolari isi olcer. Bu is onun YERINE GECMEZ.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  fazB_olcut_mutanti:
+    name: Faz B olcut mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: olcut duzeltmesi isiriyor mu (sabotajla sinanmis)
+        shell: bash
+        run: python faz0/fazB_olcut_mutanti.py 2>&1 | tee fazB-olcut-cikti.txt
+      - name: olcut mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fazB-olcut-${{ matrix.os }}
+          path: fazB-olcut-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-6) ALTIN CIKTI — kapi ciktisi SESSIZCE degisti mi?
+  #     Faz C `_kapi_govde`'yi kapi basina saf fonksiyonlara boluyor. Bir
+  #     refactoring'in tek vaadi DAVRANISIN AYNI KALMASIDIR; mevcut kosucular ise
+  #     hukum/exit seviyesinde olcer ve bir kapinin NOTUNUN sessizce kaybolmasini
+  #     GORMEZ. Bu is o boslugu kapatir: 5 proje hali x 2 komut = 10 olcum,
+  #     BIT-BIT karsilastirma.
+  #     Arac ONCE KENDINI KANITLAR (`--kendini-sina`): motora kasitli bir NOT
+  #     degisikligi enjekte edilir ve aracin FARK demesi beklenir. Demezse arac
+  #     kordur ve is KIRMIZI olur — normallestirme fazla agresiflesirse bunu
+  #     yakalayan tek kapi budur.
+  #     🔴 `--kendini-sina` YESILI, `--karsilastir` KIRMIZISI HAKKINDA HUKUM VERMEZ.
+  #     Ikisi AYRI eksen olcer: kendini-sina iki KOSUM-ANI kolunu karsilastirir
+  #     (ortama sistematik fark iki kolda da bulunup birbirini goturur), karsilastir
+  #     ise kosum-anini SAKLANMIS artefaktla kiyaslar. Olculdu (11 Agu 2026): temiz ·
+  #     CRLF · \x0b ortamlarinin ucunde de kendini-sina "10 fark · ISIRDI · exit 0".
+  #     CIKIS KODU SOZLESMESI: 0 fark yok · 1 FARK VAR (urun hukmu) · 2 OLCULEMEDI
+  #     (fark VAR ama SATIR duzeyinde adlandirilamiyor -> satir siniri karakteri sinifi
+  #     basilir; bu bir URUN regresyonu DEGIL, once ARAC/ORTAM ayrilir) · 3 ARAC KUSURU
+  #     (referansin SEKLI bozuk: eksik alan / yanlis tur — ham traceback ile exit 1
+  #     DEGIL). 2 ve 3 de isi KIRMIZI yakar; ayrim HUKMUN kendisindedir.
+  #     run #17/#18 tam bu ayrimin yoklugunda yanlis okundu: arac 10 adlandirilamayan
+  #     farki "davranis DEGISTI" (exit 1) diye raporladi. Asagidaki olcut mutanti
+  #     bu ayrimin ISIRDIGINI olcer.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  altin_cikti:
+    name: Altin cikti / kapi esdegerligi (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: arac once KENDINI kanitliyor mu
+        shell: bash
+        run: python faz0/altin_cikti.py --kendini-sina 2>&1 | tee altin-sina.txt
+      - name: kapi ciktisi altin kumeyle AYNI mi
+        shell: bash
+        run: python faz0/altin_cikti.py --karsilastir faz0/altin_kapi.json 2>&1 | tee altin-fark.txt
+      - name: altin cikti artefakti
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: altin-${{ matrix.os }}
+          path: |
+            altin-sina.txt
+            altin-fark.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-7) FAZ C BOLME MUTANTI — esdegerlik kapisi BOLMEYE OZGU kusurlari goruyor mu?
+  #     Faz C `_kapi_govde`'yi 16 kapi fonksiyonuna boldu. "FARK YOK" demek yeterli
+  #     degil: kapinin bu bolmeye ozgu kusurlari (kapi sirasi, bolumler arasi uc
+  #     kenar, kapi-ici kesilmede BULGU KAYBI, kapi dusurme) GORDUGU kanitlanmali.
+  #     Bu dosya kendi proje hallerini kurar, referansi kosum aninda temiz motordan
+  #     alir ve alti kusuru tek tek enjekte eder. Alti kusurun ALTISI da isirmalidir.
+  #     Teslim gunune kadar bu is CI'DA YOKTU: alti mutant tek makine, tek platformda
+  #     olculmustu. `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  fazC_bolme_mutanti:
+    name: Faz C bolme mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: bolmeye ozgu kusurlar OLCULUYOR mu
+        shell: bash
+        run: python faz0/fazC_bolme_mutanti.py 2>&1 | tee fazC-mutant-cikti.txt
+      - name: fazC mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fazC-mutant-${{ matrix.os }}
+          path: fazC-mutant-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-8) ALTIN OLCUT MUTANTI — altin_cikti.py'nin IKI duzeltmesi ISIRIYOR MU?
+  #     run #17/#18'de altin_cikti windows kolunda kirmizi yandi ve artefakt sunu
+  #     gosterdi: 10 olcumde CIKTI DEGISTI · hicbirinde EXIT DEGISTI YOK · hepsinde
+  #     "(satir farki bulunamadi)" · hukum "davranis DEGISTI" (exit 1). Yani arac bir
+  #     fark GORDU, ADLANDIRAMADI, ve buna ragmen URUN'u sucladi — Y-4 sinifi.
+  #     DUZELTME-1 kos(): `-X utf8` + text=True/encoding/errors (universal newline).
+  #                 Kodlama ACIK verilir: `LC_ALL=C PYTHONUTF8=0` altinda ciplak
+  #                 `text=True` UnicodeDecodeError + exit 1 verir (olculdu 11 Agu 2026).
+  #     DUZELTME-2 adlandirilamayan fark -> OLCULEMEDI (exit 2) + SATIR SINIRI
+  #                 karakterinin SINIFI ve repr penceresi. Tabloda yalniz satir siniri
+  #                 karakterleri vardir; NBSP/BOM/SEKME satir listesini degistirir,
+  #                 adlandirilabilir fark uretir ve teshise HIC ULASMAZ.
+  #     DUZELTME-3 referansin SEKLI kapida sinanir -> ARAC KUSURU (exit 3), ham
+  #                 traceback + exit 1 DEGIL. (Bagimsiz denetci teslimden once buldu.)
+  #     Bir OLCUT duzeltmesi de bir kapidir. Bu is ORTAMI ENJEKSIYONLA URETIR (cocugun
+  #     satir sonu kipi; iki karakter: \x0b ve \x85) ve ayni kosumda ESKI olcutu de
+  #     kosar. YEDI mutant, her biri AYRI bir korumayi olcer. Uretilen ortam GERCEK
+  #     WINDOWS DEGILDIR; Windows'un kendi hukmunu yukaridaki altin_cikti isi olcer.
+  #     Bu is onun YERINE GECMEZ. `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  altin_olcut_mutanti:
+    name: Altin olcut mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: olcut duzeltmeleri isiriyor mu (alti mutant)
+        shell: bash
+        run: python faz0/altin_olcut_mutanti.py 2>&1 | tee altin-olcut-cikti.txt
+      - name: altin olcut mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: altin-olcut-${{ matrix.os }}
+          path: altin-olcut-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2c) Y-3 PROBU — kirik boru HUKMU kaybediyor mu, VE HANGI MEKANIZMAYLA?
+  #     Iki python surumu BILEREK ayri: run #3/#4'te ayni komut windows py3.11'de
+  #     120, py3.13'te 3 dondu — iki AYRI mekanizma. Tek surumle kosmak birini
+  #     tumden kor birakir.
+  #     `continue-on-error: true` BILINCLI: bu is bir OLCUM, henuz bir kapi degil.
+  #     Y-3 tam kapandiginda bayrak kaldirilir ve exit 0 sart kosulur.
+  # ---------------------------------------------------------------------------
+  boru_probu:
+    name: Y-3 probu (${{ matrix.os }} py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: kirik boru hukmu kaybediyor mu?
+        continue-on-error: true
+        shell: bash
+        run: python faz0/boru_probu.py
+
+  # ---------------------------------------------------------------------------
+  # 3) ORTAM SINIFI — root olmayan kullanici · dolu disk · salt-okunur
+  #     Fable 4. tur §9: "Kor noktan bir dusunce hatasi degil, bir ORTAM eksigi."
+  #     Uc YUKSEK bulgunun ucu de (B4-1, B4-3, B4-4) yalniz burada gorunuyor.
+  # ---------------------------------------------------------------------------
+  ortam:
+    name: ortam sinifi (linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: B4-1 / B4-3 / B4-4 yeniden uretimi
+        continue-on-error: true
+        run: sudo bash faz0/ortam_olcum.sh
+
+  # ---------------------------------------------------------------------------
+  # 4) KOD KALITESI — calisma-zamani bagimliligi DEGIL, gelistirme bagimliligi.
+  #     hafiza.py bunlari import etmez; sifir-bagimlilik felsefesi bozulmaz.
+  # ---------------------------------------------------------------------------
+  kalite:
+    name: ruff / mypy / bandit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff mypy bandit
+      - name: ruff — gercek hata sinifi (bugun 30 bulgu)
+        continue-on-error: true
+        run: ruff check --isolated --select F,E9,B,S,PLE skill/scripts/hafiza.py
+      - name: ruff — stil (bugun 345 bulgu, bilgi amacli)
+        continue-on-error: true
+        run: ruff check --isolated --statistics skill/scripts/hafiza.py
+      - name: mypy (bugun 1 hata)
+        continue-on-error: true
+        run: mypy --ignore-missing-imports skill/scripts/hafiza.py
+      - name: bandit (bugun 20 bulgu, hepsi LOW)
+        continue-on-error: true
+        run: bandit -r skill/scripts/hafiza.py
