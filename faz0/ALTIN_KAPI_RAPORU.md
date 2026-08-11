@@ -276,7 +276,9 @@ Bu bölüm boş olamaz.
    zararsız ölçüldü); **`fazA` / `fazB` / `y4` / `boru_probu` tam denetlenmedi.** Sınıf
    **SINIRDA kapanmamıştır** — bilinçli, çünkü "her düzeltmeye ayrı mutant" kuralı 8
    mutant demekti ve bu tur o kadar büyümedi.
-5. **`altin_kapi.json` yalnız YEŞİL yolu ölçüyor** (10/10 ölçüm exit 0). FAIL, kesilme ve
+5. ~~**`altin_kapi.json` yalnız YEŞİL yolu ölçüyor**~~ → **§9'da KAPANDI.**
+   Teslim anındaki hâl:
+   **`altin_kapi.json` yalnız YEŞİL yolu ölçüyor** (10/10 ölçüm exit 0). FAIL, kesilme ve
    exit 1/2/3 dalları referansın dışındadır. 🔴 **TUZAK:** altın kümeyi Windows'ta yeniden
    kaydetmek kırmızıyı ubuntu+macOS'a **TAŞIR** (JSON `\r`'yi `\\r` diye kaçırır, taşınır
    olur). Yeniden kayıt tek başına çözüm değildir; **önce** düzeltme-1 inmelidir.
@@ -308,8 +310,9 @@ Bu bölüm boş olamaz.
    🔴 **İş Portföyü'ne bildirim yükümlülüğü.**
 2. İlk Windows koşumunu oku: YEŞİL mi, yoksa exit 2 + sınıf adı mı? Sınıf adı çıkarsa
    `gorunmez_teshis`'in verdiği karakterle düzeltme-1 genişletilir.
-3. `altin_kapi.json`'a FAIL + kesilme hâlleri ekle ve **düzeltme-1 indikten sonra**
-   yeniden kaydet (§6.5'teki tuzağa dikkat).
+3. ✅ **YAPILDI — §9.** `altin_kapi.json` 10 → 22 ölçüm; FAIL, kesilme ve karışık
+   hâller girdi. §6.5'teki tuzak yeniden kayıt YAPILMADAN aşıldı: referans **bölme
+   öncesi** motordan kaydedildi (aşağı bak).
 4. Alt-bölme sırası (Faz C raporundan devreden): `_kapi_h1` (CC 57) · `_kapi_h14` (35) ·
    sonra `cmd_devral` (88) · `cmd_derle` (63) · `zincir_dogrula` (41) ·
    `cmd_bloklastir` (39).
@@ -447,3 +450,196 @@ doğruluğuydu — *"belge de bir arayüzdür ve yalan söyleyebilir."*
 7. **Tekrarlanabilirlik:** §8.2'nin her kolu tek koşum. Kararsızlık (flakiness) ölçülmedi.
 8. **`ruff` / `mypy` / `bandit`** bu turda hiç koşulmadı (§8.3'ün değiştirdiği satırlar
    yorum ve dize; sözdizimi ve mutant koşumu ile doğrulandı).
+
+---
+
+## 9. ALTIN KÜME GENİŞLEMESİ — HATA VE KESİLME YOLLARI (11 Ağustos 2026)
+
+**Tetikleyici:** §6.5 ve Faz C'nin kanla ölçülen dersi. Özgün kümenin 10 ölçümünün
+**10'u exit 0**'dı; bir kapı yarıda kesilince o ana kadarki bulgu kaybolduğunda hüküm
+`FAIL(2)/exit 1` → `FAIL(1)/exit 3` oluyordu ve **üç eşdeğerlik ayağı da bunu görmedi.**
+Yalnız yeşil yolu kapsayan bir eşdeğerlik kümesi bu sınıfa **yapısal olarak kördür.**
+
+### 9.1 Hangi hâller ÖLÇÜLDÜ, hangileri ÜRETİLEMEDİ
+
+Üç çıkış sınıfının hepsi **proje hâlinden** üretilebiliyor — motora kod enjekte edilmeden.
+Bozmalar: `kural_yanlis_ev` (projenin kendi doktrinini ihlal eden satırlar; tarif
+`boru_probu.py`'den, orada kanıtlanmış) · `gecersiz_utf8` · `dizin_yap`.
+
+| yeni hâl | bozma | exit | hüküm |
+|---|---|---|---|
+| `h6_fail` | 3 kural yanlış evde | **1** | `FAIL (3 bulgu)` / `--siki`: `FAIL (4)` |
+| `h7_kesilme` | `PROJE_HAFIZA.md` geçersiz UTF-8 | **3** | `FAIL(1)` + `OLCUM YARIDA KESILDI` + `HUKUM YOK` |
+| `h8_kesilme_dizin` | dosya yerine dizin | **3** | aynı sınıf, **farklı mesaj** (`DUZENLI DOSYA...`) |
+| `h9_kesilme_erken` | `arsiv/hafiza/_CIPA.json` bozuk | **3** | H0'da **erken** kesilme |
+| `h10_karisik_az` | kırmızı + `_KOVA.json` bozuk | **1** | `FAIL (2)` — 1 gerçek + 1 kesilme |
+| `h11_karisik_cok` | kırmızı + `KONULAR.md` bozuk | **1** | `FAIL (5)` / `--siki`: `FAIL (6)` |
+
+Son iki satır **Faz C kusurunun tam şeklidir.** Kümenin çıkış kodu dağılımı artık
+`{0: 10, 1: 6, 3: 6}` — 22 ölçüm, 11 hâl × 2 komut. `--siki`'nin farklı bulgu sayısı
+vermesi iki komutun **gereksiz olmadığını** da ölçer.
+
+🔴 **`kapi` KOMUTUNUN DEĞER KÜMESİ `{0, 1, 3}`.** `exit 2` ve `exit 130` kümede **yok**,
+ama bu bir **kapsam boşluğu değil** — ölçülen komutun **üretmediği** kodlar:
+`exit 2` motorun kendi sözleşmesinde `oldur()`un verdiği TEMİZ KULLANIM/GİRDİ hükmüdür
+(`def oldur(msg, kod=2)`) ve `cmd_kapi` içinde hiç `oldur()`/`sys.exit` **yoktur** — her
+kapı istisnası `kapi_yalit` ile 3'e döner. `oldur()` yolu başka komutlarla ölçülür
+(`isir` taze projede exit 2 verir, §9.6). `exit 130` ise KeyboardInterrupt: harici
+**sinyal** gerektirir, proje **hâli** değildir.
+İlk yazımda ikisi de *"stderr yazılamıyor / zamanlamaya bağlı"* diye **yanlış**
+gerekçelendirilmişti; bağımsız denetçi motorun kendi sözleşmesini (`hafiza.py:364`,
+`:4830`) gösterip çürüttü. Bu bir kapsam iddiası değil, **tanım** düzeltmesidir.
+
+`KURAL_SAYISI = 3`: ölçüldü ki **1 kural bile** exit 1 üretiyor; 3 okunur bir `FAIL(3)`
+verir ve referansı şişmez tutar (8.143 → 18.747 bayt).
+
+### 9.2 GERİYE DÖNÜK FAZ C TESTİ — bu turun asıl kazancı
+
+§6.5 bir tuzak barındırıyordu: kümeyi bugünkü motordan yeniden kaydetmek yeni hâlleri
+yalnız **bundan sonrası** için kilitler, Faz C hakkında hiçbir şey söylemez.
+
+Bunun yerine referans **bölme öncesi motordan** kaydedildi:
+`git cat-file -p 41b23ac:skill/scripts/hafiza.py` → `a1fc24bb…`, **4764 satır**.
+Bugünkü motor `480cbd52…`, **4878 satır**.
+
+**Öz-denetim (yeniden kaydın kendisi güvenilir mi):** yeni dosyadaki özgün 10 kayıt,
+`1700f41`'de commit'li dosyayla **BİT-BİT AYNI** (fark = 0). Yani yeniden kayıt hiçbir şeyi
+değiştirmedi ve dosya meşru biçimde yerine geçti. Kayıt **deterministik**: iki ayrı
+`--kaydet` koşumu bit-bit aynı (`fafb3d7b…`).
+
+**Hüküm:** bugünkü motor, bölme öncesi motorla **22 ölçümün 22'sinde FARK YOK**.
+Faz C bölmesi artık **hata ve kesilme yollarında da geriye dönük sınandı** — özgün küme
+bunu yapamıyordu. Bu, "bölme temiz" iddiasının kapsamını yeşil yoldan üç sınıfa çıkarır.
+
+### 9.3 Mutant — `faz0/altin_kapi_mutanti.py` · **6 ısırdı / 0 kaçtı** (exit 0, ~45 sn)
+
+Genişleme bir kapıdır; ısırdığı **yarıştırarak** kanıtlanır. Eski kapsam ayrı bir dosyadan
+okunmaz: aynı koşumun referansından beş yeşil hâl **süzülür** ve araç da o kapsama
+döndürülür.
+
+| mutant | ölçtüğü koruma | sonuç |
+|---|---|---|
+| **M-B1** KAPSAM AYRIŞMASI | genişlemenin **gerekçesi** | **ISIRDI** · kusur enjekte edildi → ESKİ kapsam `FARK YOK` exit 0 **VE** YENİ kapsam exit 1. İki şart **birlikte** aranıyor (aşağı bak) |
+| **M-B2** YENİ KÜME ISIRIR | genişlemenin **katkısı** | **ISIRDI** · aynı enjeksiyon → exit 1, `EXIT DEGISTI: 1 -> 3` **4 kayıtta** (h10+h11 × 2 komut) |
+| **M-B3** YANLIŞ POZİTİF YOK | kararsızlık | **ISIRDI** · temiz motor + 22 ölçüm → `FARK YOK` exit 0 |
+| **M-B4** KESİLME METNİ | salt metinsel kusur | **ISIRDI** · `HUKUM YOK` satırı silindi → YENİ exit 1 (**EXIT farkı 0**), ESKİ `FARK YOK` |
+| **M-B5** ÖLÇÜM KAYBOLDU | ADDITIVE kilidi | **ISIRDI** · h11 sökülünce `OLCUM KAYBOLDU` **2 kayıtta**, sessizce yutulmuyor |
+| **M-B6** İLAN EDİLEN KESME | iz kilidi | **ISIRDI** · iki kol da exit 1, TAM'da `GIZLENDI` satırı var, SÖKÜK'te yok |
+
+M-B4 özellikle kıymetli: kusur **salt metinsel** (çıkış kodu 3 kalıyor), yani çıkış koduna
+bakan bir küme onu **göremez**. Altın küme çıktıyı da kilitlediği için görüyor.
+
+🔴 **M-B1 ilk hâlinde TAUTOLOJİKTİ ve bağımsız denetçi çürüttü.** Ölçütü yalnız *"eski
+kapsam FARK YOK der"* idi — bu, kusur **enjekte edilmese de** doğrudur, yani kol
+**koşulsuz yeşil** veriyordu ve mutasyon skorunu şişiriyordu. Denetçinin sabotajı:
+`del F[:]` → `pass` (enjeksiyon etkisizleştirilir, tek-eşleşme muhafızı hâlâ geçer) →
+M-B2 ve M-B6 KACTI dedi, **M-B1 hâlâ ISIRDI**. Düzeltmeden sonra aynı sabotaj yeniden
+koşuldu: **M-B1 artık KACTI diyor** (ölçüldü). Ders: *bir mutant kolunun hükmü, ölçtüğü
+kusurun VAR OLMASINA bağlı olmak zorundadır — yoksa kol bir ölçüm değil, bir cümledir.*
+
+Denetçinin dokuz sabotajının sonucu (kendi ölçümü): M-B2/B3/B4/B5/B6 hedefli sabotajla
+KACTI'ya dönüyor → beşi gerçek. Yeni hâlleri `HALLER`'den tümden çıkarmak mutantı
+`exit 3 · kume genislememis (10 <= 10)` ile durduruyor — o korumanın bekçisi M-B1 değil,
+o ayrı muhafız.
+
+### 9.4 Bu turda ÜÇ kusur ölçümle yakalandı
+
+1. **Mutantın kendi kolu kördü.** M-B1/M-B4'ün "eski küme" kolu referansı süzüyor ama
+   **aracı süzmüyordu**: araç 11 hâl üretip referansta 10 kayıt bulunca fazlalıklar
+   `YENI OLCUM` diye FARK sayılıyordu → kol `exit=1` verip "gördü" diyordu. Yani mutant
+   körlüğü göstermek yerine **kendi kurulum hatasını** ölçüyordu. Düzeltme: aracın
+   `HALLER`'i de eski kapsama döndürülüyor (`>>> GENISLEME BASI` / `<<< GENISLEME SONU`
+   işaretleriyle, işaret yoksa mutant `ARAC KUSURU` der).
+2. **Genişleme KARDEŞ mutantı kırdı.** `altin_olcut_mutanti.py`'nin üç kolu `adsiz == 10`
+   diye **sabit** yazılmıştı; küme 22 olunca `adsiz=22` geldi ve kollar **KACTI** dedi.
+   Kol doğru davranıyordu, **yanlış olan beklentiydi** — ve mutant *fail-closed* davranıp
+   sessizce geçmedi. Düzeltme: sayı artık **referanstan ölçülüyor** (`N`), sabit değil.
+   M-A3'ün `>= 10` alt sınırı bilinçli kaldı: H13 satırı her kayda uğramaz (kesilme
+   hâlleri H13'e hiç varmaz), 22 beklemek yanlış olurdu.
+3. **`satir_farki` sessizce kesiyordu** (`out[:12]`). 202-bulgulu hâller bunu kolayca aşar
+   ve sessiz kesme "hepsi bu" diye okunur. Artık gizlenen satır sayısı basılıyor; M-B6
+   bunun ısırdığını ölçer.
+4. 🔴 **`_RE_KOK_YOLU` deseni BOZUK YAZILMIŞTI ve ilk Windows koşumunu kırmızıya
+   çevirecekti** (bağımsız denetçi buldu). Kaçış karakteri fazlaydı: `[^\s...]` yerine
+   dosyaya `[^\\s...]` geçti, yani sınıf "boşluk" değil **"ters bölü + `s` harfi"**
+   oluyordu. Yakalama `arsiv`'in `s`'sinde duruyor → `group(1) = '\ar'` → yalnız **ilk**
+   ayırıcı kanonlaşıyor. Windows `<KOK>\arsiv\hafiza\_CIPA.json` basar, normalize
+   `<KOK>/arsiv\hafiza\_CIPA.json` üretir, Linux'ta kayıtlı referansta ise
+   `<KOK>/arsiv/hafiza/_CIPA.json` durur → **22 ölçümün 4'ü** (h9, h10 × 2 komut) uyuşmaz,
+   exit 1. **Linux'ta desen zaten etkisiz** olduğu için hiçbir yerel ölçüm bunu göstermedi.
+   Ders: *yerel yeşil, platforma özgü bir deseni KANITLAMAZ.* Düzeltildikten sonra ölçüldü:
+   Windows çıktısı `<KOK>/arsiv/hafiza/_CIPA.json` oluyor, Linux çıktısı ve referans
+   **değişmiyor** (`fafb3d7b…` aynı), kenar vakalarda traceback yok.
+5. **M-B1 tautolojisi** (§9.3'te ayrıntılı).
+
+### 9.5 `normalize`'a EKLENEN DESEN — bir körlük adayı
+
+Hata ve kesilme hâlleri kök **altındaki** yolu da basıyor
+(`DOSYA UTF-8 DEGIL: <KOK>/arsiv/hafiza/_CIPA.json`); Windows'ta aynı yol ters bölü ile
+gelir → çapraz-platform farkı. `_RE_KOK_YOLU` deseni **yalnız `<KOK>`'e yapışık** yol
+belirtecindeki ayırıcıyı kanonlaştırır; başka hiçbir ters bölü değişmez.
+
+Doktrin gereği (`normalize`'ın kendi yorumu: "her eklenen desen bir körlük adayıdır")
+`--kendini-sina` yeniden koşuldu: **ISIRDI**, 12 fark kaydı, H13 satırını yakalayan 12,
+exit 0. Desen aracı körleştirmedi.
+
+🔴 **AMA BU KOŞUM DESEN HAKKINDA HİÇBİR ŞEY KANITLAMIYOR.** Linux'ta `<KOK>`'ü yalnız `/`
+takip ettiği için `sub()` birim dönüşümdür — desen bu platformda **ölü koddur**. Bağımsız
+denetçi hem bunu hem desenin **bozuk** olduğunu ölçtü (§9.4.4). Deseni gerçekten sınayan
+tek şey Windows CI koşumudur; yerel ölçüm onun yerine geçmez.
+
+**Desenin iki bilinçli sınırı:** (1) bir ürün değişikliği bir mesajdaki yol **ayırıcısını**
+değiştirseydi gizlenirdi — hiçbir kapının ayırıcı üzerine hüküm vermediği **varsayılıyor**,
+bu ölçülmedi; (2) yakalama **boşlukta durur**, yani `<KOK>/a b\c.md` ikinci ayırıcıyı
+kanonlaştırmaz. Kök **altındaki** adları motor üretiyor ve içlerinde boşluk yok; kökün
+kendisindeki boşluk (`fable dosyalama`) zaten `<KOK>` ile siliniyor.
+
+### 9.6 REGRESYON (root olmayan `olcum`, teslim baytları üzerinde)
+
+`altin_olcut_mutanti` 7/0/0 · `altin_kapi_mutanti` 6/0/0 · `fazC_bolme_mutanti` 6/0/0 ·
+`fazB_olcut_mutanti` 2/0/0 · `y4_mutant` 2/0/0 · `fazA_senaryolari` 6/0/0 ·
+`fazB_senaryolari` 6/0/0/0 · `t_y3` **20/20** exit 0 · `t_y42` **57 geçti / 0 kaldı /
+1 yavaş** (B-6, bilinen) **/ 0 ölçülemedi** exit 0 · `isir` taze proje exit 2 (bilinen
+34/34 + 2 SINANMADI) · `altin_cikti --karsilastir` exit 0 · `--kendini-sina` exit 0 ·
+`boru_probu` exit 0. Hiçbir koşumda **ham traceback yok**.
+
+### 9.7 §9'da NE ÖLÇÜLEMEDİ
+
+1. **Windows ve macOS'ta hiçbir şey koşulmadı.** Yeni altı hâl ilk kez CI'da ölçülecek.
+   🔴 En yüksek risk burada: kesilme mesajları **yol** içeriyor ve `_RE_KOK_YOLU` deseninin
+   Windows'ta yettiği **ÖLÇÜLMEDİ** (TAHMİN: yeter). Ayrıca `dizin_yap` bozması Windows'ta
+   farklı bir hata sınıfı üretebilir. İlk Windows koşumu bu iki şeyi ölçecek.
+2. **`exit 2` ve `exit 130` kümede yok** (§9.1). Sınıf kapatılmamıştır.
+3. **Bölme öncesi motorun kendi doğruluğu** sınanmadı: `a1fc24bb…` referans alındı, ama o
+   sürümün hata yollarında doğru davrandığı bu turda **bağımsız olarak ölçülmedi** — yalnız
+   bugünküyle **AYNI** olduğu ölçüldü. İkisi de aynı biçimde yanlış olabilir (TAHMİN: değil;
+   `fazA`/`fazB` senaryoları o yolların bir kısmını ayrıca ölçüyor).
+4. **`KURAL_SAYISI = 3` seçimi** kapsamı etkiliyor: 200 kuralla `FAIL(202)` çıkıyordu ve
+   `satir_farki`'nın 12-satır sınırını daha sert zorluyordu. 3 ile sınır yine aşılıyor
+   (M-B6 ölçtü), ama **aynı yoğunlukta değil**.
+5. **`mypy` / `bandit` / `ruff`** yeni iki dosyada koşulmadı.
+6. **300k ölçekte maliyet** ölçülmedi. 22 ölçüm ~5 sn (10 ölçüm ~3 sn); küçük fikstür.
+7. **`_RE_SHA`** hâlâ daraltılmadı (§6.6). `fazC_bolucu.py`'nin CRLF yolu hâlâ koşulmadı.
+8. 🔴 **BU TESLİM CI'DA KOŞMUYOR.** `.github/workflows/*` uzaktan yazılamıyor
+   ("protected file"), o yüzden tam workflow yine `faz0/capraz_YENI.yml` olarak
+   veriliyor ve **Onur taşıyacak.** Bu dosya `5c7e70a`'da bilinçli olarak **silinmişti**
+   (içeriği `.github/workflows/capraz.yml`'ye taşınmıştı); şimdi yeniden doğuyor ve
+   workflow için **ikinci bir doğruluk kaynağı** oluşturuyor. Taşındıktan sonra
+   `faz0/capraz_YENI.yml` yine **silinmeli**. `altin_kapi_mutanti` işinin CI kazancı,
+   taşıma yapılana kadar **sıfırdır**. (Bağımsız denetçi §9'un bunu hiç söylemediğini
+   buldu — önceki turda §6.11 aynı şeyi açıkça ilan etmişti, §9 düşürmüştü.)
+9. **`_RE_KOK_YOLU`'nun Windows'ta yettiği hâlâ ÖLÇÜLMEDİ** — düzeltilmiş desen yeniden
+   kurulmuş Windows metni üzerinde ölçüldü, ama **gerçek Windows koşumu yapılmadı**.
+   "Windows o ters bölüleri gerçekten basar" kısmı `os.path.join` semantiğine dayanıyor:
+   **TAHMİN (yüksek güven)**.
+10. **`ruff`** ölçüldü (§9.7.5 kapanıyor): `kalite` işinin seçimiyle (`F,E9,B,S,PLE`) üç
+    araç dosyasında 13 bulgu (`B904×5 · S603×4 · S110×3 · S607×1`), yalnız yeni dosyada 3.
+    Hepsi mevcut `faz0/` dosyalarıyla **aynı sınıflar**. `kalite` işi yalnız
+    `skill/scripts/hafiza.py`'yi tarıyor → CI etkisi **yok**. `mypy`/`bandit` koşulmadı.
+11. **Yan bulgu, ÜRÜN tarafında ve kapsam dışı** (bağımsız denetçi buldu): projedeki
+    `kararlar/` dizinini düz bir dosyayla değiştirmek `kapi`'yi **exit 0** bırakıyor — kapı
+    bunu görmüyor. Altın kümenin hâl uzayında da yok. Bunun gerçek bir ürün boşluğu olduğu
+    **TAHMİN**; ölçülmedi ve bu turda dokunulmadı. Sonraki turların listesine girdi.
+12. **Denetçinin koşmadıkları** (zaman bütçesi): `t_y42`, `y2_mutant`, `fazA_senaryolari`,
+    `fazB_senaryolari`, `fazB_olcut_mutanti`, `y4_mutant`, `isir`, `boru_probu`. Bunları
+    yalnız üretici koştu → §9.6'nın o kısmı **tek kaynaklı**.

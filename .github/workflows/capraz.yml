@@ -326,6 +326,10 @@ jobs:
   #     run #17/#18 tam bu ayrimin yoklugunda yanlis okundu: arac 10 adlandirilamayan
   #     farki "davranis DEGISTI" (exit 1) diye raporladi. Asagidaki olcut mutanti
   #     bu ayrimin ISIRDIGINI olcer.
+  #     KUME KAPSAMI (11 Agu 2026'da genisletildi): 11 proje hali x 2 komut =
+  #     22 olcum. Cikis kodu dagilimi 0:10 · 1:6 · 3:6 — YESIL, HATA ve KESILME
+  #     yollarinin UCU DE kilitli. Onceki kume 10/10 exit 0'di ve Faz C'nin
+  #     kismi-cikti kusurunu GORMESI MUMKUN DEGILDI.
   #     `continue-on-error` YOK.
   # ---------------------------------------------------------------------------
   altin_cikti:
@@ -434,6 +438,48 @@ jobs:
         with:
           name: altin-olcut-${{ matrix.os }}
           path: altin-olcut-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-9) ALTIN KUME GENISLEMESI MUTANTI — HATA ve KESILME kayitlari ISIRIYOR MU?
+  #     Faz C'nin kanla olculen dersi: altin kumenin 10 olcumunun 10'u exit 0'di,
+  #     yani kanit YALNIZ YESIL YOLU kapsiyordu. Bir kapi yarida kesilince o ana
+  #     kadarki bulgu KAYBOLUYORDU (FAIL(2)/exit 1 -> FAIL(1)/exit 3) ve UC
+  #     ESDEGERLIK AYAGI DA BUNU GORMEDI.
+  #     Kume alti hal ile genisletildi (11 hal x 2 komut = 22 olcum; cikis kodu
+  #     dagilimi 0:10 · 1:6 · 3:6). Referans BOLME ONCESI motordan (a1fc24bb…)
+  #     kaydedildi, boylece Faz C bolmesi hata ve kesilme yollarinda GERIYE DONUK
+  #     sinaniyor — ozgun kume bunu yapamiyordu. Olculdu: FARK YOK.
+  #     Bu is genislemenin ISIRDIGINI yaristirarak olcer:
+  #         ESKI kapsam (5 yesil hal) -> kusur enjekte edilince de FARK YOK (KOR)
+  #         YENI kapsam (11 hal)      -> FARK VAR + EXIT DEGISTI 1 -> 3   (ISIRDI)
+  #     Ikisi ayni hukmu verirse genisleme KORDUR ve mutant KACTI der.
+  #     KAPSAM DISI (olculdu): exit 2 (stderr yazilamiyor) ve exit 130 (SIGINT)
+  #     proje halinden platformdan bagimsiz uretilemiyor; kumede YOKTUR.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  altin_kapi_mutanti:
+    name: Altin kume genislemesi mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: hata ve kesilme kayitlari isiriyor mu (alti mutant)
+        shell: bash
+        run: python faz0/altin_kapi_mutanti.py 2>&1 | tee altin-kume-cikti.txt
+      - name: altin kume mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: altin-kume-${{ matrix.os }}
+          path: altin-kume-cikti.txt
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------

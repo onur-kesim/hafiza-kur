@@ -59,6 +59,78 @@
       "komut": "kapi --siki",
       "exit": 0,
       "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H2: 1.9 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 3 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git deposu var ama HENUZ COMMIT YOK — izlenirlik OLCULEMEDI (ilk commit'ten sonra olculur)\n\nSONUC: YESIL (SINIRLI) — olculen her sey gecti, ama 1 SEY OLCULMEDI (yukarida '?' ile isaretli). Kapsam TAM DEGILDIR.\n"
+    },
+    {
+      "hal": "h6_fail",
+      "komut": "kapi",
+      "exit": 1,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H1: +3 yeni satir (mesru buyume; KAYIP yok)\n  · H2: 2.0 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 2 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: FAIL (3 bulgu)\n  [H7] KALICI KURAL yanlis evde (satir 20) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 0 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 21) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 1 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 22) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 2 yanlis evde duruyor.\n"
+    },
+    {
+      "hal": "h6_fail",
+      "komut": "kapi --siki",
+      "exit": 1,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n  · H2: 2.0 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 2 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: FAIL (4 bulgu)\n  [H1] 3 satir BEYANSIZ EKLENMIS (--siki):\n        - FAZLA: - PAZARLIKSIZ: kural 0 yanlis evde duruyor.\n        - FAZLA: - PAZARLIKSIZ: kural 1 yanlis evde duruyor.\n        - FAZLA: - PAZARLIKSIZ: kural 2 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 20) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 0 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 21) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 1 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 22) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 2 yanlis evde duruyor.\n"
+    },
+    {
+      "hal": "h7_kesilme",
+      "komut": "kapi",
+      "exit": 3,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n\nSONUC: FAIL (1 bulgu)\n  [KAPI] OLCUM YARIDA KESILDI: DOSYA UTF-8 DEGIL: <KOK>/PROJE_HAFIZA.md\n        -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.\n  -> HUKUM YOK: olcum tamamlanamadi (cikis kodu 3).\nHATA: DOSYA UTF-8 DEGIL: <KOK>/PROJE_HAFIZA.md\n  Bayt 0 cozulemedi (invalid start byte).\n  Bu sistem UTF-8 sarttir (Turkce karakterler icin). Dosyayi UTF-8'e cevir:\n  Not Defteri > Farkli Kaydet > Kodlama: UTF-8  ·  VS Code > sag alt > Reopen with Encoding.\n"
+    },
+    {
+      "hal": "h7_kesilme",
+      "komut": "kapi --siki",
+      "exit": 3,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir saglam\n\nSONUC: FAIL (1 bulgu)\n  [KAPI] OLCUM YARIDA KESILDI: DOSYA UTF-8 DEGIL: <KOK>/PROJE_HAFIZA.md\n        -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.\n  -> HUKUM YOK: olcum tamamlanamadi (cikis kodu 3).\nHATA: DOSYA UTF-8 DEGIL: <KOK>/PROJE_HAFIZA.md\n  Bayt 0 cozulemedi (invalid start byte).\n  Bu sistem UTF-8 sarttir (Turkce karakterler icin). Dosyayi UTF-8'e cevir:\n  Not Defteri > Farkli Kaydet > Kodlama: UTF-8  ·  VS Code > sag alt > Reopen with Encoding.\n"
+    },
+    {
+      "hal": "h8_kesilme_dizin",
+      "komut": "kapi",
+      "exit": 3,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n\nSONUC: FAIL (1 bulgu)\n  [KAPI] OLCUM YARIDA KESILDI: DUZENLI DOSYA OLMASI GEREKEN YOL BOYLE DEGIL: <KOK>/PROJE_HAFIZA.md\n        -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.\n  -> HUKUM YOK: olcum tamamlanamadi (cikis kodu 3).\nHATA: DUZENLI DOSYA OLMASI GEREKEN YOL BOYLE DEGIL: <KOK>/PROJE_HAFIZA.md\n  Dizin, FIFO, soket, kirik link ya da link dongusu olabilir. Bu yol YAZILAMAZ.\n"
+    },
+    {
+      "hal": "h8_kesilme_dizin",
+      "komut": "kapi --siki",
+      "exit": 3,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n\nSONUC: FAIL (1 bulgu)\n  [KAPI] OLCUM YARIDA KESILDI: DUZENLI DOSYA OLMASI GEREKEN YOL BOYLE DEGIL: <KOK>/PROJE_HAFIZA.md\n        -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.\n  -> HUKUM YOK: olcum tamamlanamadi (cikis kodu 3).\nHATA: DUZENLI DOSYA OLMASI GEREKEN YOL BOYLE DEGIL: <KOK>/PROJE_HAFIZA.md\n  Dizin, FIFO, soket, kirik link ya da link dongusu olabilir. Bu yol YAZILAMAZ.\n"
+    },
+    {
+      "hal": "h9_kesilme_erken",
+      "komut": "kapi",
+      "exit": 3,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n\nSONUC: FAIL (1 bulgu)\n  [KAPI] OLCUM YARIDA KESILDI: DOSYA UTF-8 DEGIL: <KOK>/arsiv/hafiza/_CIPA.json\n        -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.\n  -> HUKUM YOK: olcum tamamlanamadi (cikis kodu 3).\nHATA: DOSYA UTF-8 DEGIL: <KOK>/arsiv/hafiza/_CIPA.json\n  Bayt 0 cozulemedi (invalid start byte).\n  Bu sistem UTF-8 sarttir (Turkce karakterler icin). Dosyayi UTF-8'e cevir:\n  Not Defteri > Farkli Kaydet > Kodlama: UTF-8  ·  VS Code > sag alt > Reopen with Encoding.\n"
+    },
+    {
+      "hal": "h9_kesilme_erken",
+      "komut": "kapi --siki",
+      "exit": 3,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n\nSONUC: FAIL (1 bulgu)\n  [KAPI] OLCUM YARIDA KESILDI: DOSYA UTF-8 DEGIL: <KOK>/arsiv/hafiza/_CIPA.json\n        -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.\n  -> HUKUM YOK: olcum tamamlanamadi (cikis kodu 3).\nHATA: DOSYA UTF-8 DEGIL: <KOK>/arsiv/hafiza/_CIPA.json\n  Bayt 0 cozulemedi (invalid start byte).\n  Bu sistem UTF-8 sarttir (Turkce karakterler icin). Dosyayi UTF-8'e cevir:\n  Not Defteri > Farkli Kaydet > Kodlama: UTF-8  ·  VS Code > sag alt > Reopen with Encoding.\n"
+    },
+    {
+      "hal": "h10_karisik_az",
+      "komut": "kapi",
+      "exit": 1,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir KIRIK\n  · H1: +3 yeni satir (mesru buyume; KAYIP yok)\n\nSONUC: FAIL (2 bulgu)\n  [H0] defter MUHURSUZ degismis: _KOVA.json (muhurle: hafiza.py muhur \"gerekce\")\n  [KAPI] OLCUM YARIDA KESILDI: DOSYA UTF-8 DEGIL: <KOK>/arsiv/hafiza/_KOVA.json\n        -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.\nHATA: DOSYA UTF-8 DEGIL: <KOK>/arsiv/hafiza/_KOVA.json\n  Bayt 0 cozulemedi (invalid start byte).\n  Bu sistem UTF-8 sarttir (Turkce karakterler icin). Dosyayi UTF-8'e cevir:\n  Not Defteri > Farkli Kaydet > Kodlama: UTF-8  ·  VS Code > sag alt > Reopen with Encoding.\n"
+    },
+    {
+      "hal": "h10_karisik_az",
+      "komut": "kapi --siki",
+      "exit": 1,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir KIRIK\n\nSONUC: FAIL (2 bulgu)\n  [H0] defter MUHURSUZ degismis: _KOVA.json (muhurle: hafiza.py muhur \"gerekce\")\n  [KAPI] OLCUM YARIDA KESILDI: DOSYA UTF-8 DEGIL: <KOK>/arsiv/hafiza/_KOVA.json\n        -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.\nHATA: DOSYA UTF-8 DEGIL: <KOK>/arsiv/hafiza/_KOVA.json\n  Bayt 0 cozulemedi (invalid start byte).\n  Bu sistem UTF-8 sarttir (Turkce karakterler icin). Dosyayi UTF-8'e cevir:\n  Not Defteri > Farkli Kaydet > Kodlama: UTF-8  ·  VS Code > sag alt > Reopen with Encoding.\n"
+    },
+    {
+      "hal": "h11_karisik_cok",
+      "komut": "kapi",
+      "exit": 1,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir KIRIK\n  · H1: +3 yeni satir (mesru buyume; KAYIP yok)\n  · H2: 2.0 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: FAIL (5 bulgu)\n  [H0] defter MUHURSUZ degismis: politika:KONULAR.md (muhurle: hafiza.py muhur \"gerekce\")\n  [H7] KALICI KURAL yanlis evde (satir 20) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 0 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 21) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 1 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 22) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 2 yanlis evde duruyor.\n  [KAPI] OLCUM YARIDA KESILDI: DOSYA UTF-8 DEGIL: <KOK>/KONULAR.md\n        -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.\nHATA: DOSYA UTF-8 DEGIL: <KOK>/KONULAR.md\n  Bayt 0 cozulemedi (invalid start byte).\n  Bu sistem UTF-8 sarttir (Turkce karakterler icin). Dosyayi UTF-8'e cevir:\n  Not Defteri > Farkli Kaydet > Kodlama: UTF-8  ·  VS Code > sag alt > Reopen with Encoding.\n"
+    },
+    {
+      "hal": "h11_karisik_cok",
+      "komut": "kapi --siki",
+      "exit": 1,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir KIRIK\n  · H2: 2.0 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: FAIL (6 bulgu)\n  [H0] defter MUHURSUZ degismis: politika:KONULAR.md (muhurle: hafiza.py muhur \"gerekce\")\n  [H1] 3 satir BEYANSIZ EKLENMIS (--siki):\n        - FAZLA: - PAZARLIKSIZ: kural 0 yanlis evde duruyor.\n        - FAZLA: - PAZARLIKSIZ: kural 1 yanlis evde duruyor.\n        - FAZLA: - PAZARLIKSIZ: kural 2 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 20) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 0 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 21) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 1 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 22) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 2 yanlis evde duruyor.\n  [KAPI] OLCUM YARIDA KESILDI: DOSYA UTF-8 DEGIL: <KOK>/KONULAR.md\n        -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.\nHATA: DOSYA UTF-8 DEGIL: <KOK>/KONULAR.md\n  Bayt 0 cozulemedi (invalid start byte).\n  Bu sistem UTF-8 sarttir (Turkce karakterler icin). Dosyayi UTF-8'e cevir:\n  Not Defteri > Farkli Kaydet > Kodlama: UTF-8  ·  VS Code > sag alt > Reopen with Encoding.\n"
     }
   ]
 }

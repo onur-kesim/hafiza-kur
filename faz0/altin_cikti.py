@@ -74,6 +74,7 @@ class Kurulamadi(Exception):
 _RE_SHA = re.compile(r"\b[0-9A-Fa-f]{16,}\b")
 _RE_TARIH = re.compile(r"\b20\d\d-\d\d-\d\d\b")
 _RE_GUN = re.compile(r"\b\d+ gun once\b")
+_RE_KOK_YOLU = re.compile(r"<KOK>([\\/][^\s:;,'\"]*)")
 
 
 def normalize(metin, kok):
@@ -82,6 +83,23 @@ def normalize(metin, kok):
     m = metin.replace(kok, "<KOK>")
     # Windows'ta ayni yol ters bolu ile de basilabilir.
     m = m.replace(kok.replace("/", "\\"), "<KOK>")
+    # HATA ve KESILME halleri kok ALTINDAKI yolu da basiyor
+    # ("DOSYA UTF-8 DEGIL: <KOK>/arsiv/hafiza/_CIPA.json"). Windows'ta ayni yol
+    # ters bolu ile gelir. Desen YALNIZ <KOK>'e YAPISIK yol belirtecine dokunur;
+    # baska hicbir ters bolu degismez. IKI SINIRI VAR, ikisi de bilincli:
+    #   (1) KORLUK ADAYI: bir urun degisikligi bir mesajdaki yol AYIRICISINI
+    #       degistirseydi gizlenirdi. Hicbir kapinin ayirici uzerine hukum
+    #       vermedigi VARSAYILIYOR — bu OLCULMEDI, raporda ilan edildi.
+    #   (2) Yakalama BOSLUKTA durur: "<KOK>/a b\\c.md" ikinci ayiriciyi
+    #       kanonlastirmaz. Kok ALTINDAKI adlari MOTOR uretiyor ve iclerinde
+    #       bosluk yok; kokun kendisindeki bosluk zaten <KOK> ile siliniyor.
+    # 🔴 DESEN BIR KEZ BOZUK YAZILDI: `[^\\s...]` yerine `[^\\\\s...]` gecmisti
+    # (kacis karakteri fazlaydi) ve sinif "bosluk" degil "ters bolu + s harfi"
+    # oluyordu; yakalama "arsiv"in s'sinde duruyor, yalniz ILK ayirici
+    # kanonlasiyordu. Linux'ta desen zaten etkisiz oldugu icin hicbir yerel
+    # olcum bunu gostermedi — bagimsiz denetci Windows ciktisini yeniden kurup
+    # buldu (11 Agu 2026). YEREL YESIL, PLATFORMA OZGU BIR DESENI KANITLAMAZ.
+    m = _RE_KOK_YOLU.sub(lambda x: "<KOK>" + x.group(1).replace("\\", "/"), m)
     m = _RE_SHA.sub("<SHA>", m)
     m = _RE_TARIH.sub("<TARIH>", m)
     m = _RE_GUN.sub("<GUN> gun once", m)
@@ -92,17 +110,105 @@ def normalize(metin, kok):
 # Her hal DETERMINISTIK kurulur: ayni komutlar, ayni sirayla, ayni metinlerle.
 # Metinlerde tarih/rastgelelik YOKTUR — olcum kendi gurultusunu uretmemelidir.
 
+# --------------------------------------------------------------- BOZMALAR
+# Bir proje halini KIRMIZI ya da KESILMIS yapan DETERMINISTIK bozmalar. Hepsi
+# PROJE HALINDEN uretilir; motora KOD ENJEKTE EDILMEZ (altin kume urunun kendi
+# davranisini kilitler, yamanin davranisini degil).
+#
+# 🔴 NEDEN GEREKLI (Faz C dersi, olculdu 11 Agu 2026): ozgun altin kumenin 10
+# olcumunun 10'u exit 0'di. Bir kapi YARIDA kesilirse o ana kadarki bulgu
+# KAYBOLABILIR ve hukum FAIL(2)/exit 1 -> FAIL(1)/exit 3'e doner. YALNIZ YESIL
+# YOLU kapsayan bir esdegerlik kumesi bunu GORMESI MUMKUN DEGILDIR. Faz C'de
+# tam bu oldu ve uc esdegerlik ayagi da kacirdi.
+#
+# `kapi` KOMUTUNUN DEGER KUMESI {0, 1, 3}. exit 2 ve 130 kumede YOKTUR, ama bu
+# bir KAPSAM BOSLUGU DEGIL, olculen komutun URETMEDIGI kodlardir:
+#   exit 2   motorun sozlesmesinde `oldur()`un verdigi TEMIZ KULLANIM/GIRDI hukmu
+#            (`def oldur(msg, kod=2)`); cmd_kapi icinde hic `oldur()`/`sys.exit`
+#            YOKTUR, her kapi istisnasi kapi_yalit ile 3 e doner. `oldur()` yolu
+#            BASKA komutlarla olculur (`isir` taze projede exit 2 verir).
+#   exit 130 KeyboardInterrupt — harici SINYAL gerektirir, proje HALI degildir.
+# Ilk yazimda ikisi de "stderr yazilamiyor / zamanlamaya bagli" diye YANLIS
+# gerekcelendirilmisti; bagimsiz denetci motorun kendi sozlesmesini gosterip
+# curuttu (11 Agu 2026).
+
+KURAL_SAYISI = 3          # olculdu: 1 kural bile exit 1 uretiyor; 3 okunur bir
+                          # FAIL(3) verir ve referans dosyasini sismez tutar.
+
+
+def _yol(kok, rel):
+    return os.path.join(kok, *rel.split("/"))
+
+
+def _boz_kural_yanlis_ev(kok, n):
+    """Projenin kendi doktrinini ihlal eden satirlar: GERCEK kapi bulgusu (exit 1).
+    Tarif boru_probu.py'den alindi (orada kanitlanmis KIRMIZI yapici)."""
+    p = _yol(kok, "PROJE_HAFIZA.md")
+    L = open(p, encoding="utf-8").read().split("\n")
+    i = next((i for i, x in enumerate(L)
+              if x.startswith("## GUNCEL") or "GUNCEL" in x or "G\u00dcNCEL" in x), 2)
+    L = L[:i + 2] + ["- PAZARLIKSIZ: kural %d yanlis evde duruyor." % k
+                     for k in range(n)] + L[i + 2:]
+    with open(p, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(L))
+
+
+def _boz_gecersiz_utf8(kok, rel):
+    """Dosya UTF-8 DEGIL -> kapi YARIDA KESILIR. Mesaj metni platformdan
+    BAGIMSIZDIR (motorun kendi cumlesi); yol <KOK> ile normallestirilir."""
+    with open(_yol(kok, rel), "wb") as f:
+        f.write(b"\xff\xfe gecersiz utf8 \xc3\x28")
+
+
+def _boz_dizin_yap(kok, rel):
+    """Duzenli dosya olmasi gereken yer DIZIN -> ayni kesilme SINIFI, FARKLI
+    mesaj. Iki mesaji ayri ayri kilitlemek, sinifin tek cumleye daralmasini
+    onler (ortusen tespit korlugu)."""
+    p = _yol(kok, rel)
+    os.remove(p)
+    os.makedirs(p)
+
+
+BOZMALAR = {
+    "kural_yanlis_ev": _boz_kural_yanlis_ev,
+    "gecersiz_utf8": _boz_gecersiz_utf8,
+    "dizin_yap": _boz_dizin_yap,
+}
+
+# --------------------------------------------------------------- PROJE HALLERI
+# (ad, kurulum adimlari, gitli, bozmalar)
+# Her hal DETERMINISTIK kurulur: ayni komutlar, ayni sirayla, ayni metinlerle.
+# Metinlerde tarih/rastgelelik YOKTUR — olcum kendi gurultusunu uretmemelidir.
+
+_NOT = ["not", "--konu=genel-durum", "--metin=altin cikti olcum notu"]
+
 HALLER = [
-    ("h1_taze", [], False),
-    ("h2_fragman", [["not", "--konu=genel-durum", "--metin=altin cikti olcum notu"]], False),
-    ("h3_derlenmis", [["not", "--konu=genel-durum", "--metin=altin cikti olcum notu"],
-                      ["derle"]], False),
-    ("h4_kararli", [["not", "--konu=genel-durum", "--metin=altin cikti olcum notu"],
-                    ["derle"],
-                    ["karar", "--baslik=Altin cikti kapisi"]], False),
-    ("h5_gitli", [["not", "--konu=genel-durum", "--metin=altin cikti olcum notu"],
-                  ["derle"]], True),
+    # --- YESIL YOLU (ozgun kume; exit 0) ---
+    ("h1_taze", [], False, []),
+    ("h2_fragman", [_NOT], False, []),
+    ("h3_derlenmis", [_NOT, ["derle"]], False, []),
+    ("h4_kararli", [_NOT, ["derle"], ["karar", "--baslik=Altin cikti kapisi"]], False, []),
+    ("h5_gitli", [_NOT, ["derle"]], True, []),
+    # >>> GENISLEME BASI — bu isaret faz0/altin_kapi_mutanti.py tarafindan
+    # ANAHTAR olarak kullanilir (genislemeden ONCEKI kapsami yeniden uretmek
+    # icin). ISARETI SILME ya da DEGISTIRME; mutant "isaret bulunamadi" der.
+    # --- HATA YOLU: gercek kapi bulgusu, kesilme YOK (exit 1) ---
+    ("h6_fail", [], False, [("kural_yanlis_ev", KURAL_SAYISI)]),
+    # --- KESILME YOLU: bulgunun TAMAMI kesilme, HUKUM YOK (exit 3) ---
+    ("h7_kesilme", [], False, [("gecersiz_utf8", "PROJE_HAFIZA.md")]),
+    ("h8_kesilme_dizin", [], False, [("dizin_yap", "PROJE_HAFIZA.md")]),
+    ("h9_kesilme_erken", [], False, [("gecersiz_utf8", "arsiv/hafiza/_CIPA.json")]),
+    # --- KARISIK: gercek bulgu VE kesilme birlikte (exit 1) ---
+    #     Faz C kusurunun TAM SEKLI. Kismi cikti dusuruldugunde bu iki kayit
+    #     FAIL(2)/1 -> FAIL(1)/3 ve FAIL(5)/1 -> FAIL(1)/3 olur; yukaridaki
+    #     bes yesil kayit ise HIC DEGISMEZ. Ayrimi tasiyan tek sey bunlardir.
+    ("h10_karisik_az", [], False, [("kural_yanlis_ev", KURAL_SAYISI),
+                                   ("gecersiz_utf8", "arsiv/hafiza/_KOVA.json")]),
+    ("h11_karisik_cok", [], False, [("kural_yanlis_ev", KURAL_SAYISI),
+                                    ("gecersiz_utf8", "KONULAR.md")]),
+    # <<< GENISLEME SONU
 ]
+
 
 OLCUM_KOMUTLARI = [["kapi"], ["kapi", "--siki"]]
 
@@ -123,7 +229,7 @@ def kos(motor, arglar, kok, saniye=300):
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
 
-def hal_kur(motor, taban, ad, adimlar, gitli):
+def hal_kur(motor, taban, ad, adimlar, gitli, bozmalar=()):
     kok = os.path.join(taban, ad)
     os.makedirs(kok, exist_ok=True)
     if gitli:
@@ -139,14 +245,23 @@ def hal_kur(motor, taban, ad, adimlar, gitli):
         rc, c = kos(motor, adim, kok)
         if rc not in (0, 1):     # 1 = kapi kirmizisi; kurulum icin kabul
             raise Kurulamadi("%s: %s exit=%s · %s" % (ad, adim[0], rc, c[-200:]))
+    # Bozmalar KURULUM BITTIKTEN SONRA, sirayla uygulanir. Sira onemlidir:
+    # kural_yanlis_ev PROJE_HAFIZA.md'yi UTF-8 okur, gecersiz_utf8'ten SONRA
+    # gelirse patlar. HALLER'de dogru sira YAZILIDIR; burada dogrulaniyor.
+    for islem, arg in bozmalar:
+        try:
+            BOZMALAR[islem](kok, arg)
+        except (KeyError, OSError, ValueError, UnicodeDecodeError) as e:
+            raise Kurulamadi("%s: bozma '%s(%r)' uygulanamadi: %s: %s"
+                             % (ad, islem, arg, type(e).__name__, e))
     return kok
 
 
 def kume_uret(motor, taban):
     """Tum halleri kurar, olcum komutlarini kosar, NORMALLESTIRILMIS kume dondurur."""
     kume = []
-    for ad, adimlar, gitli in HALLER:
-        kok = hal_kur(motor, taban, ad, adimlar, gitli)
+    for ad, adimlar, gitli, bozmalar in HALLER:
+        kok = hal_kur(motor, taban, ad, adimlar, gitli, bozmalar)
         for komut in OLCUM_KOMUTLARI:
             rc, c = kos(motor, komut, kok)
             if rc is None:
@@ -262,7 +377,16 @@ def satir_farki(eski, yeni):
         if se != sy:
             out.append("      satir %d:\n        ALTIN: %s\n        YENI : %s" % (i + 1, se, sy))
     if out:
-        return "\n".join(out[:12]), True
+        # SESSIZ KAP YOK: kesme oldugunda KAC satirin gizlendigi BASILIR. 202
+        # bulgulu bir hal kolayca 12'yi asar; sessiz kesme "hepsi bu" diye
+        # okunur. Projenin kendi kurali: bir sinir konuluyorsa NE DUSTUGU yazilir.
+        kesik = len(out) - 12
+        if kesik > 0:
+            return ("\n".join(out[:12])
+                    + "\n      ... %d SATIR FARKI DAHA GIZLENDI (toplam %d); "
+                      "tam liste icin altin kumeyi elle karsilastir."
+                      % (kesik, len(out))), True
+        return "\n".join(out), True
     return gorunmez_teshis(eski, yeni), False
 
 

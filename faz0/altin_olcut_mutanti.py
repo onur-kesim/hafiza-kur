@@ -65,7 +65,8 @@ ORTAM URETIMI — motora DOKUNULMAZ
 
 YEDI MUTANT — her biri AYRI bir korumayi olcer
   M-A1 SATIR SONU (CRLF)   : eski olcut yanlis hukum verir, yeni olcut FARK YOK der.
-  M-A2 SATIR SINIRI (\\x0b) : DUZELTME-1'in kapatMADIGI sinif — yeni olcut
+  M-A2 SATIR SINIRI        : DUZELTME-1'in kapatMADIGI sinif (\\x0b VE \\x85 ile
+                             olculur) — yeni olcut
                              OLCULEMEDI der ve SINIFI ADLANDIRIR.
   M-A3 GERCEK FARK         : yeni siniflandirma gorunur bir regresyonu
                              OLCULEMEDI'ye CEVIRMIYOR (yutma kontrolu).
@@ -111,6 +112,24 @@ KOK = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ARAC = os.path.join(KOK, "faz0", "altin_cikti.py")
 REFERANS = os.path.join(KOK, "faz0", "altin_kapi.json")
 MOTOR = os.path.join(KOK, "skill", "scripts", "hafiza.py")
+
+# Kume kac OLCUM iceriyor? SABIT YAZILMAZ, REFERANSTAN OLCULUR. Sabit 10 yaziliydi
+# ve altin kume 22'ye genisletildiginde bu mutantin uc kolu KACTI dedi (olculdu
+# 11 Agu 2026). Kol dogru davraniyordu; YANLIS OLAN BEKLENTIYDI. Sabit sayi, kardes
+# bir araci degistiren her genislemede SAHTE KIRMIZI uretir.
+def _olcum_sayisi():
+    try:
+        with open(REFERANS, encoding="utf-8") as f:
+            n = len(json.load(f)["kume"])
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        raise SystemExit("ARAC KUSURU: referans okunamadi (%s): %s" % (REFERANS, e))
+    if n < 2:
+        raise SystemExit("ARAC KUSURU: referansta %d olcum var; bu mutant "
+                         "karsilastirma yapamaz." % n)
+    return n
+
+
+N = _olcum_sayisi()
 
 ISIRDI = "ISIRDI"
 KACTI = "KACTI"
@@ -342,13 +361,13 @@ def ma1_satir_sonu(taban):
     ei, yi = imza(e_c), imza(y_c)
     # ESKI: exit 1 + adlandirilamayan fark + "davranis DEGISTI" (YANLIS HUKUM)
     # YENI: exit 0 + FARK YOK (duzeltme-1 sinifi kapatti)
-    tamam = (e_rc == 1 and ei["adsiz"] == 10 and ei["davranis_degisti"]
+    tamam = (e_rc == 1 and ei["adsiz"] == N and ei["davranis_degisti"]
              and y_rc == 0 and yi["fark_yok"] and not yi["traceback"])
     kayit(ad, ISIRDI if tamam else KACTI,
           "CRLF ortami | ESKI: exit=%s adsiz-fark=%s 'davranis DEGISTI'=%s "
-          "| YENI: exit=%s 'FARK YOK'=%s (beklenen: 1/10/VAR -> 0/VAR)"
+          "| YENI: exit=%s 'FARK YOK'=%s (beklenen: 1/%d/VAR -> 0/VAR)"
           % (e_rc, ei["adsiz"], "VAR" if ei["davranis_degisti"] else "yok",
-             y_rc, "VAR" if yi["fark_yok"] else "yok"))
+             y_rc, "VAR" if yi["fark_yok"] else "yok", N))
 
 
 def ma2_satir_siniri(taban):
@@ -372,15 +391,15 @@ def ma2_satir_siniri(taban):
         # YENI: exit 2 (OLCULEMEDI) + sinif ADLANDIRILMIS. exit 0 OLMAMALI —
         # universal newline bu karakteri cevirmez; cevirseydi mutant KENDI
         # hedefini olcemez ve o durumda da KACTI demeli.
-        ok = (e_rc == 1 and ei["adsiz"] == 10 and ei["davranis_degisti"]
-              and y_rc == 2 and yi["olculemedi"] and yi["gorunmez"] == 10
+        ok = (e_rc == 1 and ei["adsiz"] == N and ei["davranis_degisti"]
+              and y_rc == 2 and yi["olculemedi"] and yi["gorunmez"] == N
               and yi["sinif"] == beklenen_sinif and not yi["traceback"])
         tamam = tamam and ok
         izler.append("%s: ESKI exit=%s adsiz=%s -> YENI exit=%s teshis=%s sinif=%r %s"
                      % (kacis_ad, e_rc, ei["adsiz"], y_rc, yi["gorunmez"],
                         yi["sinif"], "OK" if ok else "BEKLENEN=%r" % beklenen_sinif))
     kayit(ad, ISIRDI if tamam else KACTI,
-          "beklenen her kolda: 1/10 -> 2/10/<sinif adi> | " + " | ".join(izler))
+          "beklenen her kolda: 1/%d -> 2/%d/<sinif adi> | " % (N, N) + " | ".join(izler))
 
 
 def ma3_gercek_fark(taban):
@@ -392,6 +411,8 @@ def ma3_gercek_fark(taban):
         return
     i = imza(c)
     # Gorunur bir not degisikligi: exit 1 + satir ADLANDIRILMIS + OLCULEMEDI YOK.
+    # ALT SINIR bilincli: H13 satiri her kayda UGRAMAZ (kesilme halleri H13'e
+    # hic varmaz). Bu yuzden N degil, "en az yesil yol kadar" beklenir.
     tamam = (rc == 1 and i["davranis_degisti"] and i["adlandirildi"] >= 10
              and not i["olculemedi"] and i["gorunmez"] == 0)
     kayit(ad, ISIRDI if tamam else KACTI,
@@ -434,12 +455,12 @@ def ma6_iz_kilidi(taban):
     beklenen = SINIR_HALLERI[0][2]        # tek kaynak: tablo degisirse mutant da degisir
     tamam = (t_rc == 2 and s_rc == 2
              and ti["sinif"] == beklenen and si["sinif"] is None
-             and si["adsiz"] == 10 and not si["traceback"])
+             and si["adsiz"] == N and not si["traceback"])
     kayit(ad, ISIRDI if tamam else KACTI,
           "DIKEY SEKME ortami | TAM: exit=%s sinif=%r | SOKUK: exit=%s sinif=%r "
-          "eski-yedek-cumle=%s (beklenen: 2/%r -> 2/None/10; hukum AYNI "
+          "eski-yedek-cumle=%s (beklenen: 2/%r -> 2/None/%d; hukum AYNI "
           "kalmali, yoksa mutant hukmu degil izi olcemez)"
-          % (t_rc, ti["sinif"], s_rc, si["sinif"], si["adsiz"], beklenen))
+          % (t_rc, ti["sinif"], s_rc, si["sinif"], si["adsiz"], beklenen, N))
 
 
 def ma5_kapi_dusurme(taban):
