@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""ALTIN OLCUT MUTANTI — altin_cikti.py'nin IKI duzeltmesi ISIRIYOR MU?
+"""ALTIN OLCUT MUTANTI — altin_cikti.py'nin UC duzeltmesi ISIRIYOR MU?
 
 NEDEN BU DOSYA VAR
   CI #17 ve #18'de `Altin cikti / kapi esdegerligi (windows-latest)` isi kirmizi
@@ -17,7 +17,7 @@ NEDEN BU DOSYA VAR
   ubuntu/macos bit-bit ayni cikiyordu. Arac KENDI kusurunu URUN regresyonu diye
   raporluyordu — tam Y-4 sinifi ("olcemedigini ARAC KUSURU diye mi raporluyor?").
 
-  IKI DUZELTME YAPILDI, ve DOKTRIN 1 aciktir: "olculmeyen kapinin hukmu YOKTUR".
+  UC DUZELTME YAPILDI, ve DOKTRIN 1 aciktir: "olculmeyen kapinin hukmu YOKTUR".
   Bir OLCUT duzeltmesi de bir kapidir; isirdigi KANITLANMALIDIR.
 
     DUZELTME-1  kos(): `-X utf8` + `text=True, encoding="utf-8", errors="replace"`
@@ -487,7 +487,7 @@ def ma7_bozuk_referans(taban):
 
 def main():
     print("=" * 82)
-    print("ALTIN OLCUT MUTANTI — altin_cikti.py'nin iki duzeltmesi ISIRIYOR mu?")
+    print("ALTIN OLCUT MUTANTI — altin_cikti.py'nin uc duzeltmesi ISIRIYOR mu?")
     print("  python   : %s" % sys.version.split()[0])
     print("  platform : %s (os.name=%s)" % (sys.platform, os.name))
     print("  arac     : %s" % ARAC)

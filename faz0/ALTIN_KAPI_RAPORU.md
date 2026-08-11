@@ -251,19 +251,26 @@ kullan ya da dizini sil.
 
 Bu bölüm boş olamaz.
 
-1. **Windows ve macOS'ta hiçbir şey koşulmadı.** Üretilen ortam gerçek Windows değil.
+1. ~~**Windows ve macOS'ta hiçbir şey koşulmadı.**~~ → **Windows §8.1'de ÖLÇÜLDÜ**
+   (CI run #19). **macOS işleri YEŞİL ama hüküm satırları OKUNMADI** — bkz. §8.4.1.
+   Aşağıdaki metin teslim anındaki hâldir, kayıt için bırakıldı:
+   **Windows ve macOS'ta hiçbir şey koşulmadı.** Üretilen ortam gerçek Windows değil.
    "Windows stdout `\n`→`\r\n` çevirir" **TAHMİN** (yüksek güven; Y-2 korumasının
    newline'ı sıfırlamadığı ölçüldü, Windows'un kendisi ölçülmedi). `capraz_YENI.yml`'nin
    iki yeni işinin `windows-latest` / `macos-latest` kolları hiç koşmadı. Özellikle
    M-A2'nin `write()` sarmalayıcısının Windows'un kendi `\n`→`\r\n` katmanıyla nasıl
    etkileştiği **TAHMİN**: sarmalayıcı `\n`'leri tükettiği için CRLF çevirisi devreye
    girmez ve sınıf `DIKEY SEKME (VT)` çıkar — ölçülmedi.
-2. **Kırmızının HANGİ karakterden geldiği.** Artefakt sınıfı adlandırmıyor;
+2. ~~**Kırmızının HANGİ karakterden geldiği.**~~ → **§8'de ÖLÇÜLDÜ: `\r` (CRLF).**
+   Teslim anındaki hâl:
+   **Kırmızının HANGİ karakterden geldiği.** Artefakt sınıfı adlandırmıyor;
    adlandıramamak kusurun kendisiydi. Düzeltmeler indikten sonraki ilk Windows koşumu
    ya YEŞİL olur ya da exit 2 + **sınıf adı** verir. İkinci hâlde tur bitmez, teşhis başlar.
 3. **Düzeltme-1'in Windows'ta yeterli olduğu.** `text=True` yalnız `\r\n`'i çevirir;
    sınıfın öteki sekiz üyesi düzeltme-2 tarafından **raporlanır**, düzeltilmez.
-4. **`text=True` olmadan motoru çağıran 8 yer daha var:** `fazA:156,374 · fazB:310 ·
+4. ~~**`text=True` olmadan motoru çağıran 8 yer daha var**~~ → **§8.2'de ÖLÇÜLDÜ:
+   altısının altısı da CRLF'e duyarsız.** Teslim anındaki hâl:
+   **`text=True` olmadan motoru çağıran 8 yer daha var:** `fazA:156,374 · fazB:310 ·
    fazB_olcut:184 · y2:155 · y4:133 · boru_probu:212,229`. Bunlar `splitlines()`/çapasız
    regex kullandığı için öldürücü değil (`y2:166` ve `fazB_olcut:195` nokta denetimiyle
    zararsız ölçüldü); **`fazA` / `fazB` / `y4` / `boru_probu` tam denetlenmedi.** Sınıf
@@ -283,7 +290,11 @@ Bu bölüm boş olamaz.
 8. **`mypy` ve `bandit` yeni iki dosyada koşulmadı** (yalnız `ruff` ölçüldü).
 9. **`fazC_bolucu.py`'nin CRLF yolu** hiç koşulmadı (Faz C raporundan devreden madde).
 10. **300k ölçekte maliyet** ölçülmedi; bu araç küçük fikstür kullanıyor.
-11. **`capraz_YENI.yml` bu teslimle CI'da KOŞMUYOR** — `faz0/` altında duruyor,
+11. ~~**`capraz_YENI.yml` bu teslimle CI'da KOŞMUYOR**~~ → **ARTIK YANLIŞ.** Dosya
+    `5c7e70a`'da `.github/workflows/capraz.yml` olarak taşındı (`git show --stat`:
+    `capraz.yml | 92 +++` · `faz0/capraz_YENI.yml | 509 ---`) ve iki yeni iş run #19'da
+    üç platformda koştu (§8.1). Teslim anındaki hâl, kayıt için:
+    **`capraz_YENI.yml` bu teslimle CI'da KOŞMUYOR** — `faz0/` altında duruyor,
     `.github/workflows/` değişmedi. İki yeni iş ancak Onur dosyayı taşıdıktan sonra
     ölçmeye başlar. Bu teslimin kendisinde **CI kazanımı yoktur.**
 
@@ -291,7 +302,8 @@ Bu bölüm boş olamaz.
 
 ## 7. SIRADAKİ İŞ (öneri, karar Onur'da)
 
-1. `faz0/capraz_YENI.yml` → `.github/workflows/capraz.yml` (iki yeni iş:
+1. ✅ **YAPILDI (`5c7e70a`, run #19 SUCCESS).** `faz0/capraz_YENI.yml` →
+   `.github/workflows/capraz.yml` (iki yeni iş:
    `fazC_bolme_mutanti` ve `altin_olcut_mutanti`, üç platform).
    🔴 **İş Portföyü'ne bildirim yükümlülüğü.**
 2. İlk Windows koşumunu oku: YEŞİL mi, yoksa exit 2 + sınıf adı mı? Sınıf adı çıkarsa
@@ -302,4 +314,136 @@ Bu bölüm boş olamaz.
    sonra `cmd_devral` (88) · `cmd_derle` (63) · `zincir_dogrula` (41) ·
    `cmd_bloklastir` (39).
 5. `_RE_SHA` desenini daralt, sonra `--kendini-sina`'yı yeniden koş.
-6. §6.4'teki 8 çağrı yerini hizala — sınıfı SINIRDA kapatmak için, her birine mutant.
+6. ~~§6.4'teki 8 çağrı yerini hizala~~ — **GEREKMİYOR, ölçüldü (§8.2):** altı aracın
+   altısı da CRLF'e duyarsız, hizalama bir kapı kazandırmıyor. "ADDITIVE kal, kanıtsız
+   dokunma" gereği yapılmadı. Kalan boşluk: CRLF DIŞI satır sınırı karakterleri bu altı
+   araç için denenmedi (§8.4.3).
+
+---
+
+## 8. TESLİMDEN SONRA ÖLÇÜLENLER (11 Ağustos 2026, aynı gün)
+
+Teslim `e4c4fa5` + `5c7e70a` olarak commit'lendi ve push edildi. Uzaktaki baytlar teslim
+edilen baytların birebir aynısıdır (dört dosyanın SHA256'sı doğrulandı).
+
+### 8.1 CI RUN #19 — `5c7e70a` · **SUCCESS** · 6m 24s · 24 artefakt
+
+`Matrix: altin_cikti` 3/3 · `Matrix: altin_olcut_mutanti` 3/3 · `Matrix: fazC_bolme_mutanti` 3/3.
+
+**§6.1 ve §6.2 KAPANDI.** `Altin cikti / kapi esdegerligi (windows-latest)` — #17'den beri
+kırmızı olan iş — **27 saniyede yeşil**. Kırmızı olan adımın (`kapi ciktisi altin kumeyle
+AYNI mi`) çıktısı, Windows runner'ın kendi logundan birebir:
+
+```
+ALTIN CIKTI KARSILASTIRMASI
+  altin kume : faz0/altin_kapi.json (10 olcum)
+  bu kosum   : 10 olcum
+--------------------------------------------------------------------------------
+FARK YOK — kapi ciktisi ve cikis kodlari BIT-BIT ayni.
+  (Normallestirilen: <KOK> · <TARIH> · <GUN> · <SHA>. Baska hicbir sey.)
+```
+
+Yani **sınıf `\r` (CRLF) idi** ve DÜZELTME-1 kapattı. §6.1'in TAHMİN'i artık ÖLÇÜLDÜ.
+
+`Altin olcut mutanti (windows-latest)` — `win32 · py3.11.9`, 1m 5s:
+**`SONUC: 7 isirdi - 0 kacti - 0 olculemedi (toplam 7)`**. M-A2 gerçek Windows'ta iki sınıfı
+da adlandırdı: `\x0b → 'DIKEY SEKME (VT)'` · `\x85 → 'SONRAKI SATIR (NEL, U+0085)'` →
+enjeksiyon Windows'un **kendi** satır-sonu katmanından sağ çıkıyor. §6.1'in ikinci TAHMİN'i
+de ölçüldü. `Faz C bolme mutanti (windows-latest)` yeşil (59 s) — altı bölme mutantı ilk kez
+Windows'ta koştu.
+
+⚠️ **YEŞİL TİKİN OKUNUŞU:** run #19'da **6 "error" annotation** var ve iş buna rağmen
+SUCCESS: `ruff / mypy / bandit` ×4 · `Y-1 probu (windows)` · `ortam sinifi (linux)`. Altısı da
+`continue-on-error: true` olan **ÖLÇÜM** adımıdır, kapı değil. Bu depoda run #2'de
+`continue-on-error` bir çökmeyi yutup işi yeşil göstermişti; o yüzden gizlenmiyor.
+Ayrıca 45 uyarı: `actions/checkout@v4`, `setup-python@v5`, `upload-artifact@v4` Node.js 20
+hedefliyor, GitHub zorla Node 24'e alıyor — ileride sürüm yükseltmesi gerekecek.
+
+### 8.2 §6.4 KAPANDI — `text=True` eksikliği ALTI ARAÇTA (sekiz çağrı yeri) ÖLÇÜLDÜ
+
+Soru "geçiyor mu" değil, **"hâlâ ISIRIYOR mu"**dur: bir araç kör olduğu için de yeşil
+olabilir (Y-2 dersi — 58 hüküm kaybolmuş, iş yeşil görünmüştü).
+
+Ortam: `sitecustomize.py` + `PYTHONPATH`, **istisnasız her Python sürecinde**
+`sys.stdout.reconfigure(newline="\r\n")`. Kapsam ölçüldü: her araçta **satır sayısı = CR
+sayısı** — `boru_probu` 33=33 · `fazB_senaryolari` 35=35 · `y4_mutant` 12=12 ·
+`fazA_senaryolari` 15=15 · `y2_mutant` 15=15 · `fazB_olcut_mutanti` 20=20 → enjeksiyon
+aracın **kendi** satırlarını da kapsadı, yalnız gömülü çocuk çıktısını değil.
+(İlk yazımda bu sayılar tabloya YANLIŞ SIRADA yazılmıştı — `fazA` 33, `boru_probu` 15
+görünüyordu; bağımsız denetçi buldu, düzeltildi. Çokluk kümesi doğruydu, eşleme değildi.) Ayrıca doğrulandı:
+`reconfigure(encoding="utf-8", errors="replace")` newline ayarını **sıfırlamıyor**
+(`b'1\r\n'`) — yani Y-2 koruması enjeksiyonu geri almıyor.
+
+| araç | çağrı yeri | süre | exit (temiz/CRLF) | hüküm | CR hariç çıktı farkı |
+|---|---|---|---|---|---|
+| `fazA_senaryolari` | `:156`, `:374` | 64 s | 0 / 0 | `6 isirdi - 0 kacti - 0 olculemedi` | **0 satır** |
+| `fazB_senaryolari` | `:310` | 6 s | 0 / 0 | `6 isirdi - 0 kacti - 0 UYGULANMAZ - 0 olculemedi` | **0 satır** |
+| `y4_mutant` | `:133` | 20 s | 0 / 0 | `2 isirdi - 0 kacti - 0 olculemedi` | **0 satır** |
+| `boru_probu` | `:212`, `:229` | 3 s | 0 / 0 | `hukum boruya bagli degil — bu ortamda tuzak YOK` | **0 satır** |
+| `y2_mutant` | `:155` | 539 s | 0 / 0 | `2 isirdi - 0 kacti - 0 olculemedi` | **0 satır** |
+| `fazB_olcut_mutanti` | `:184` | 15 s | 0 / 0 | `2 isirdi - 0 kacti - 0 olculemedi` | **0 satır** |
+
+**Altısının altısı da CRLF'e duyarsız.** Hüküm, çıkış kodu ve çıktı — `\r` dışında birebir aynı.
+
+**SEBEP, ve asıl ders:** bu araçların hiçbiri **SAKLANMIŞ bir artefaktla** karşılaştırma
+yapmıyor; hepsi hükmünü koşum anında üretilen metinden çıkarıyor.
+
+İlk yazımda gerekçeyi *"hepsi `splitlines()` · alt-dize · çapasız regex kullanıyor"* diye
+yazmıştım; **bağımsız denetçi bunun yanlış olduğunu ölçtü.** Bağışıklığın gerçek nedenleri
+daha çeşitli, ve her biri ayrı:
+
+| desen | yer | neden `\r` bozmuyor |
+|---|---|---|
+| **çapalı** regex | `y2_mutant.py:166` `re.compile(r"^SONUC: \d+ gecti", re.M)` | `\r` satır SONUNDA duruyor, `^` çapası satır BAŞINDA; tam y2 koşumunda CRLF metne karşı fiilen sınandı (`hukum=VAR`) |
+| `.split("\n")` | `fazA_senaryolari.py:199` · `boru_probu.py:219` | ikisi de `open()` ile **DOSYA** okuyor; universal newline `\r`'yi zaten yiyor. Enjeksiyon yalnız `sys.stdout/stderr`'e dokunuyor |
+| **tam eşitlik** | `fazB_senaryolari.py:468-469` `t["sinif"] == "SALT-OKUNUR-TESHIS"` | karşılaştırılan şey ham çıktı değil, `mesaj_sinifi()` (`:138`, saf alt-dize) üretimi SINIF ADI |
+| **tam eşitlik** | `boru_probu.py:175,184,192,196` `ad.strip() == "ciplak"` | `ad` aracın kendi sabit etiketi, çocuk çıktısı değil |
+
+Yani bağışıklık bir **tesadüf değil ama tek bir sebebe de indirgenemez** — dört ayrı
+mekanizma. Bit-bit karşılaştıran  **tek** araç `altin_cikti.py`'ydi — ve eksiklik
+**yalnız orada öldürücüydü.** Kapsam da ölçüldü: motoru çağıran öteki BÜTÜN yerlerde
+`text=True` VAR (`fazC_bolme_mutanti:129` · `sabotaj:125` · `t_y42:59,838,980,993,1227,1248` ·
+`t_y3:43` · `hafiza.py:2238,3815,3864,4402`) → altı araçlık liste eksik değil.
+
+Yani `text=True`'yu altı yere de eklemek **bir kapı kazandırmaz**; ölçülmüş bir gerekçesi
+yoktur ve "ADDITIVE kal, kanıtsız dokunma" gereği **yapılmadı.** Sınıf artık SINIRDA değil
+ama **ÖLÇÜLMÜŞ** olarak kapalı: eksikliğin hükme etkisi altı yerin altısında sıfırdır.
+
+### 8.3 Defter düzeltmesi
+
+`faz0/altin_olcut_mutanti.py` satır **3**, **20** ve **490** "IKI duzeltme" diyordu; üç
+düzeltme (D-1/D-2/D-3) ve yedi mutant var. Satır 490 bunu **her CI koşumunun ilk satırında
+basıyordu (ölçüldü: çıktının **2.** satırı; 1. satır ayraç).** Üçü de "UC" olarak
+düzeltildi. Ayrıca `.github/workflows/capraz.yml`'de aynı yalanın iki kopyası daha
+bulundu — biri **CI adım adı** (`:428` "alti mutant", oysa yedi; Actions arayüzünde her
+koşumda yazıyor), biri yorum (`:395` "IKI duzeltmesi"). İkisi de düzeltildi.
+🔴 `capraz.yml` değişti → **İş Portföyü'ne bildirim yükümlülüğü.**
+`:367`'deki "alti mutant" DOĞRUDUR ve dokunulmadı: o satır `fazC_bolme_mutanti` işine ait
+ve o araçta gerçekten altı mutant var (M-C1…M-C6). Denetçi onu da bulgu saymıştı;
+denetçi de yanılabilir, o yüzden her bulgu tek tek doğrulandı. Kod etkilenmedi; etkilenen şey defterin
+doğruluğuydu — *"belge de bir arayüzdür ve yalan söyleyebilir."*
+
+### 8.4 §8'de NE ÖLÇÜLEMEDİ
+
+1. **macOS logları okunmadı.** `altin_olcut_mutanti (macos-latest)` ve
+   `fazC_bolme_mutanti (macos-latest)` işleri YEŞİL ama hüküm satırları birebir okunmadı;
+   yalnız iş düzeyinde yeşil görüldü. Sözleşmeye göre exit 0 = "hepsi ısırdı", ama bu bir
+   ÇIKARIMDIR, okuma değildir.
+2. **§8.2 ölçümü yalnız Linux'ta yapıldı.** Altı aracın Windows CI kolları run #19'da
+   yeşildi, ama hüküm SAYILARI (ör. fazA'nın "6 isirdi") Windows loglarından okunmadı →
+   "Windows'ta da kör değil" iddiası ÖLÇÜLMEDİ, yalnız "kırmızı yanmadı" biliniyor.
+3. **CRLF dışı satır sınırı karakterleri** (`\x0b` · `\x85` · U+2028 …) bu altı araç için
+   denenmedi; yalnız `\r` ölçüldü. `altin_cikti` için ikisi de ölçüldü (M-A2).
+4. `mypy` / `bandit` yeni dosyalarda hâlâ koşulmadı. `fazC_bolucu.py`'nin CRLF yolu hâlâ
+   hiç koşulmadı. `_RE_SHA` hâlâ daraltılmadı. `altin_kapi.json` hâlâ yalnız yeşil yolu
+   ölçüyor.
+5. **CI run #19 tek kaynaklı.** §8.1'deki her sayı (SUCCESS · 6m 24s · 24 artefakt ·
+   6 error annotation · 45 uyarı), birebir alıntılanan Windows log bloğu ve Windows'ta
+   M-A2'nin bastığı sınıf adları **Onur'un tarayıcı oturumundan** okundu. Bağımsız denetçi
+   ajanın GitHub'a erişimi yok; hiçbirini doğrulayamadı.
+6. **`.split("\n")` sitelerinin DİSKTE CRLF'li dosyayla davranışı** ölçülmedi. §8.2'nin
+   bağışıklık savı `open()`'ın universal-newline okumasına dayanıyor; CRLF'li bir fikstür
+   kurulmadı.
+7. **Tekrarlanabilirlik:** §8.2'nin her kolu tek koşum. Kararsızlık (flakiness) ölçülmedi.
+8. **`ruff` / `mypy` / `bandit`** bu turda hiç koşulmadı (§8.3'ün değiştirdiği satırlar
+   yorum ve dize; sözdizimi ve mutant koşumu ile doğrulandı).
