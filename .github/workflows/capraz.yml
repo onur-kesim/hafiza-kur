@@ -483,6 +483,67 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
+  # 2b-10) H1 KENAR MUTANTI — `_kapi_h1`in bes parcasi arasindaki kenarlar OLCULUYOR mu?
+  #     12 Agu 2026: `_kapi_h1` bes parcaya bolundu (CC 54 -> 2) ve kabul olcutu
+  #     olarak altin kume BIT-BIT tuttu. Ama o olcut "bugunku kod ayni davraniyor"
+  #     der; "bir kenar yarin sessizce koparsa BIR OLCUM KIRMIZI OLUR" DEMEZ.
+  #
+  #     🔴 OLCULDU VE BOSLUK GERCEK CIKTI: yedi mutantin UCUNE altin kume KOR.
+  #         M-H1c KENAR snapL   (BEYAN -> KOVA)          altin kume: FARK YOK
+  #         M-H1e SAFLIK KENARI (`_h1_kova_bek` donusu)  altin kume: FARK YOK
+  #         M-H1f KORUMA SOKME  (snapshot korumasi)      altin kume: FARK YOK
+  #     En agiri sonuncusudur: bolmenin GOVDESI uretecle birebir tasindi, elle
+  #     yazilan TEK mantik o koruma satiriydi — ve o satir tamamen silindiginde
+  #     `--karsilastir` hala "FARK YOK, 22 olcum bit-bit" diyor (elle dogrulandi).
+  #     Sebep: altin kumenin 11 halinin hicbirinde `_KAYNAK.md` eksik degil, yani
+  #     koruma o kumede hic ateslenmiyor. Bu, FAZ C'de `bl`/`ks` icin olculen
+  #     sinifin AYNISIDIR: kod dogru ama KANITSIZ.
+  #
+  #     BU IS IKI SUTUN BASAR ve ikincisi bilerek CI'dadir:
+  #         KENDI KUMESI : 5 proje hali x 2 komut = 10 olcum, 7 mutant isirmali
+  #         ALTIN KUME   : ayni sabotaji altin karsilastirma goruyor mu
+  #     Ikinci sutun bir SURUKLENME OLCERIDIR: altin kumeye hal eklenirse KOR sayisi
+  #     dusmeli, kapsam daralirsa yukselmeli. Sabit bir sayi degil, izlenen bir sayi.
+  #     Maliyeti olculdu (bulut Linux, 2 CPU): tam kosum 45 sn — CI'da zaten olan
+  #     fazC_bolme_mutanti 31 sn. Kisaltmaya (--altin-atla) gerek YOK.
+  #
+  #     KARAR (12 Agu 2026, Onur): altin kumeye hal EKLENMEDI. Kumenin tek degeri
+  #     BOLME ONCESI motora (a1fc24bb…) bagli olmasidir; bugunku motordan yeniden
+  #     kaydedilse o bag kopar ve bir daha kurulamaz. Kenar kapsami bu isten gelir.
+  #     Gerekce defteri: faz0/H1_KENAR_RAPORU.md §5.
+  #
+  #     WINDOWS/macOS NOTU: bu mutant BU IS EKLENENE KADAR yalniz bulut Linux'ta
+  #     kostu. Duzenek hal agacini `shutil.copytree` ile kollara kopyalar (git ile
+  #     baslatilmis dizinler dahil); Windows'ta dosya kilidi davranisi OLCULMEDI.
+  #     Kurulum coker ise arac `Kurulamadi` -> OLCULEMEDI -> exit 2 verir, sessiz
+  #     PASS DEGIL (Y-4 dersi). exit 2 de isi kirmizi yakar; bu DOGRUDUR.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  h1_kenar_mutanti:
+    name: H1 kenar mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: bes parca arasi kenarlar OLCULUYOR mu (yedi mutant + altin sutunu)
+        shell: bash
+        run: python faz0/h1_bolme_mutanti.py 2>&1 | tee h1-kenar-cikti.txt
+      - name: h1 kenar mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h1-kenar-${{ matrix.os }}
+          path: h1-kenar-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
   # 2c) Y-3 PROBU — kirik boru HUKMU kaybediyor mu, VE HANGI MEKANIZMAYLA?
   #     Iki python surumu BILEREK ayri: run #3/#4'te ayni komut windows py3.11'de
   #     120, py3.13'te 3 dondu — iki AYRI mekanizma. Tek surumle kosmak birini
