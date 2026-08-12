@@ -97,7 +97,25 @@ değişkenliği tamamen kalkar. Düzeltmeden sonra 7/7.
 
 ---
 
-## 5. AÇIK KARAR — altın kümeye hâl eklensin mi?
+## 5. KARAR: **B** (12 Ağustos 2026, Onur) — küme dokunulmadı, kapsam ayrı araçtan
+
+Aşağıdaki iki şık sunuldu; **B kabul edildi ve uygulandı.**
+
+Uygulama: `.github/workflows/capraz.yml`'ye `h1_kenar_mutanti` işi eklendi —
+üç platform (ubuntu · windows · macos), Python 3.11, **`continue-on-error` YOK**,
+çıktı artefakt olarak yükleniyor. `faz0/altin_kapi.json`'a **dokunulmadı**.
+
+İkinci sütun (altın küme karşılaştırması) **bilerek CI'da koşuyor**: sabit bir
+sayı değil, **sürüklenme ölçeri**. Altın kümeye ileride hâl eklenirse KÖR sayısı
+düşmeli; kapsam daralırsa yükselmeli. Maliyeti ölçüldü — tam koşum 45 sn
+(CI'da zaten olan `fazC_bolme_mutanti` 31 sn), kısaltmaya gerek yok.
+
+🔴 **Bu iş Windows ve macOS'ta HİÇ KOŞMADI.** Düzenek hâl ağacını `copytree` ile
+kollara kopyalıyor (git ile başlatılmış dizinler dâhil) ve o davranış orada
+ölçülmedi. Kurulum çökerse araç `Kurulamadi → ÖLÇÜLEMEDİ → exit 2` verir,
+sessiz PASS değil. **İlk CI koşumu bir ölçümdür**; kırmızı gelirse bilgidir.
+
+### Sunulan şıklar (kayıt)
 
 Mutant körlüğü **ölçtü**, ama kapatmadı. İki yol var, ikisi de Onur'un kararı:
 
