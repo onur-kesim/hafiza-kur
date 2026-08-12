@@ -3060,132 +3060,184 @@ def _kapi_h0(F, N, O, y):
                  "saglam" if not _zh else "KIRIK"))
 
 
-def _kapi_h1(F, N, O, kok, rc, y, siki):
+# ------------------------------------------------ H1 ALT-BOLMESI (FAZ C)
+# `_kapi_h1` (126 satir, CC 54) bes parcaya bolundu. Parcalar KAPININ KENDI
+# YERINDE ve KOSUM SIRASINDA durur; ince `_kapi_h1` en sona konur.
+#
+# 🔴 SIRA NEDEN BOYLE: faz0/sabotaj.py her hukum cagrisini (lineno, col)
+# sirasina gore numaralandirir ve 61 maddelik kapsam envanteri o numaralara
+# baglidir. Parcalar baska bir sirayla yazilirsa numaralandirma kayar ve
+# envanter karsilastirilamaz hale gelir — yani olcum kaybolur.
+#
+# 🔴 F/N/O NEDEN HALA PARAMETRE: 11 Agu 2026'da olculdu ve geri alindi —
+# saf donus biciminde bir parca yarida SystemExit atarsa o ana kadar
+# toplanan hukum yerel listede kalir ve KAYBOLUR. Koruma kanitsiz sokulmez.
+#
+# TEK ISTISNA `_h1_kova_bek`: o blokta HIC hukum cagrisi yoktur (olculdu:
+# 0 adet), dolayisiyla kaybedilecek bulgu da yoktur. Saflik orada bir tercih
+# degil, olcumle guvenli kilinmis bir sadelestirmedir.
+#
+# `fail` ADI DEGISTIRILEMEZ: sabotaj.py cagrilari AST'te Name.id == "fail"
+# diye arar. Ad degisirse hicbir hedef bulunmaz ve kapsam envanteri sessizce
+# 0'a duser.
+#
+# Parcalar arasi veri TAM DORT KENARDIR ve hepsi imzada gorunur:
+#     bekle  BEYAN -> FARK        snapL, duz  BEYAN -> KOVA
+#     var    GERCEK -> FARK       canliA      GERCEK -> KOVA
+
+
+def _h1_beyan(F, y):
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
-    # ---- H1 BUTUNLUK + KOVA --------------------------------------------
-    if os.path.isfile(y.snap):
-        snapL = satirlar(y.snap)
-        if snapL and snapL[-1] == "":
-            snapL.pop()
-        bekle = cok_kume([norm(s) for s in _uretilen_haric(snapL) if anlamli(s)])
-        snap0 = dict(bekle)
-        duz = defter_liste(y.duzelt, "duzeltmeler", {"satir": (int, str), "eski": str, "yeni": str})["duzeltmeler"]
-        for d in duz:
-            e, n = norm(d["eski"]), norm(d["yeni"])
-            if not ck_sil(bekle, e):
-                fail("H1", "beyan edilen DUZELTME kaynagi snapshot'ta YOK (satir %s) — sahte duzeltme" % d["satir"])
-            ck_ekle(bekle, n)
-            if len(str(d.get("gerekce", ""))) < 10:
-                fail("H1", "duzeltme %s GEREKCESIZ" % d["satir"])
-        yeniler = []
-        if os.path.isfile(y.yeni):
-            yeniler = [norm(s) for s in satirlar(y.yeni) if s.strip() and not s.startswith(";;")]
-        for s in yeniler:
-            if s in snap0:
-                fail("H1", "'YENI' diye beyan edilen satir snapshot'ta ZATEN VAR (kayip maskeleme suphesi): " + s[:70])
-            ck_ekle(bekle, s)
+    snapL = satirlar(y.snap)
+    if snapL and snapL[-1] == "":
+        snapL.pop()
+    bekle = cok_kume([norm(s) for s in _uretilen_haric(snapL) if anlamli(s)])
+    snap0 = dict(bekle)
+    duz = defter_liste(y.duzelt, "duzeltmeler", {"satir": (int, str), "eski": str, "yeni": str})["duzeltmeler"]
+    for d in duz:
+        e, n = norm(d["eski"]), norm(d["yeni"])
+        if not ck_sil(bekle, e):
+            fail("H1", "beyan edilen DUZELTME kaynagi snapshot'ta YOK (satir %s) — sahte duzeltme" % d["satir"])
+        ck_ekle(bekle, n)
+        if len(str(d.get("gerekce", ""))) < 10:
+            fail("H1", "duzeltme %s GEREKCESIZ" % d["satir"])
+    yeniler = []
+    if os.path.isfile(y.yeni):
+        yeniler = [norm(s) for s in satirlar(y.yeni) if s.strip() and not s.startswith(";;")]
+    for s in yeniler:
+        if s in snap0:
+            fail("H1", "'YENI' diye beyan edilen satir snapshot'ta ZATEN VAR (kayip maskeleme suphesi): " + s[:70])
+        ck_ekle(bekle, s)
+    return snapL, bekle, duz
 
-        canliA = icerik_satirlari(y.canli)
-        arsivP = arsiv_dosyalari(kok, y, rc)
-        # Tek bozuk arsiv dosyasi H1'i dusurur ama DIGER kapilari dusurmemeli;
-        # ustelik "hangi dosya" bilgisi kullaniciya lazim.
-        arsivA, arsiv_okunamayan = [], []
-        for p0 in arsivP:
-            tamam, sat = kapi_yalit(O, "H1 (%s)" % os.path.relpath(p0, kok).replace("\\", "/"),
-                                    anlamli_satirlar, p0)
-            if tamam:
-                arsivA.extend(sat)
-            else:
-                arsiv_okunamayan.append(os.path.relpath(p0, kok).replace("\\", "/"))
-        if arsiv_okunamayan:
-            fail("H1", "%d arsiv dosyasi OKUNAMADI — bu dosyalardaki satirlar 'KAYIP' "
-                       "gorunebilir; once dosyalari duzelt: %s"
-                 % (len(arsiv_okunamayan), ", ".join(arsiv_okunamayan[:3])))
-        var = cok_kume(canliA + arsivA)
-        eksik = ck_fark(bekle, var)
-        fazla = ck_fark(var, bekle)
-        if eksik:
-            fail("H1", "%d satir KAYIP (snapshot'ta var, hicbir ciktida yok):" % len(eksik))
-            for s in eksik[:5]:
-                F.append("      - KAYIP: " + s[:100])
-            if len(eksik) > 5:
-                F.append("      … +%d satir daha" % (len(eksik) - 5))
-        if fazla and siki:
-            # IC DENETIM (B-4): `_canli_ekle_beyan` snapshot'ta ZATEN gecen satirlari
-            # (kayip-maskeleme korumasi geregi) _YENI_SATIRLAR.txt'ye yazmaz; ama
-            # `<!-- /blok -->` gibi YAPISAL satirlar her sablonda gectigi icin aracin
-            # KENDI yazdigi her kapanis ebediyen "beyansiz" gorunuyordu. Sonuc: --siki
-            # daha ILK `kur`dan itibaren kirmizi ve gercek bir enjeksiyon 58 sahte
-            # pozitifin altinda KAYBOLUYORDU. Kova'ya BEYAN EDILMIS satirlar (ek_canli)
-            # burada da dusulur — beyan beyandir, hangi deftere yazildigi onemli degil.
-            _beyanli = cok_kume([norm(x) for x in
-                                 (defter_yukle(y.kova, {"satirlar": {}}).get("ek_canli") or [])])
-            fazla = ck_fark(cok_kume(fazla), _beyanli)
-        if fazla and siki:
-            fail("H1", "%d satir BEYANSIZ EKLENMIS (--siki):" % len(fazla))
-            for s in fazla[:5]:
-                F.append("      - FAZLA: " + s[:100])
-            if len(fazla) > 5:
-                # "SESSIZ KIRPMA YOK" ilkesi: eksik listesinde vardi, fazla'da YOKTU.
-                F.append("      … +%d satir daha" % (len(fazla) - 5))
-        elif fazla:
-            N.append("H1: +%d yeni satir (mesru buyume; KAYIP yok)" % len(fazla))
 
-        # KOVA — yerlesim korlugu
-        if not os.path.isfile(y.kova):
-            fail("H1-KOVA", "_KOVA.json YOK — yerlesim olculemiyor")
+def _h1_gercek(F, O, kok, rc, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
+    canliA = icerik_satirlari(y.canli)
+    arsivP = arsiv_dosyalari(kok, y, rc)
+    # Tek bozuk arsiv dosyasi H1'i dusurur ama DIGER kapilari dusurmemeli;
+    # ustelik "hangi dosya" bilgisi kullaniciya lazim.
+    arsivA, arsiv_okunamayan = [], []
+    for p0 in arsivP:
+        tamam, sat = kapi_yalit(O, "H1 (%s)" % os.path.relpath(p0, kok).replace("\\", "/"),
+                                anlamli_satirlar, p0)
+        if tamam:
+            arsivA.extend(sat)
         else:
-            kv = defter_yukle(y.kova, {"satirlar": {}})
-            if not isinstance(kv.get("satirlar"), dict):
-                if "satirlar" in kv:
-                    defter_hata("_KOVA.json", "'satirlar' bir nesne olmali, %s bulundu."
-                                % type(kv.get("satirlar")).__name__)
-                kv["satirlar"] = {}
-            metin_listesi(kv.get("ek_canli", []), "_KOVA.json", "ek_canli")
-            L = list(snapL)
-            for d in duz:
-                i = tamsayi(d["satir"], "_DUZELTMELER.json > satir") - 1
-                if 0 <= i < len(L) and norm(L[i]) == norm(d["eski"]):
-                    L[i] = norm(d["yeni"])
-            uretilen = set(_ur.strip() for _ur in [V2BAS, V2SON])
-            ic_uretilen, uretilen_idx = False, set()
-            for _i, _s in enumerate(L):
-                _d = _s.strip()
-                if _d == V2BAS:
-                    ic_uretilen = True; uretilen_idx.add(_i); continue
-                if _d == V2SON:
-                    ic_uretilen = False; uretilen_idx.add(_i); continue
-                if ic_uretilen:
-                    uretilen_idx.add(_i)
-            bek = list(kv.get("ek_canli", []))     # baseline-SONRASI beyan edilmis canli satirlar
-            for i, k in kv["satirlar"].items():
-                idx = tamsayi(i, "_KOVA.json > satirlar anahtari") - 1
-                if idx in uretilen_idx:
-                    continue
-                if 0 <= idx < len(L) and str(k).startswith("CANLI") and anlamli(L[idx]):
-                    bek.append(norm(L[idx]))
-            bekC = cok_kume(bek)
-            tasKayit = jsonl_yukle(y.tasinma, ["satirlar"])
-            for r in tasKayit:
-                metin_listesi(r.get("satirlar"), "_TASINMA.jsonl", "satirlar")
-                if "hedef" in r and not isinstance(r["hedef"], str):
-                    defter_hata("_TASINMA.jsonl", "'hedef' metin olmali, %s bulundu."
-                                % type(r["hedef"]).__name__)
-                for s in r.get("satirlar", []):
-                    ck_sil(bekC, norm(s))
-            kacan = ck_fark(bekC, cok_kume(canliA))
-            if kacan:
-                fail("H1-KOVA", "%d satir CANLIDA OLMALIYDI, YOK — BEYANSIZ TASINMA:" % len(kacan))
-                for s in kacan[:5]:
-                    F.append("      - CANLIDAN KACMIS: " + s[:100])
-                F.append("      -> Tasimayi ARACLA yap: hafiza.py emekli <bas>-<son> --not \"...\"")
-            for r in tasKayit:
-                hp = os.path.join(y.h, r.get("hedef", ""))
-                hMS = cok_kume(anlamli_satirlar(hp)) if os.path.isfile(hp) else {}
-                yok = [s for s in r.get("satirlar", []) if norm(s) not in hMS]
-                if yok:
-                    fail("H1-KOVA", "beyan edilen tasima HEDEFTE YOK (%s): %d satir — sahte beyan"
-                         % (r.get("hedef"), len(yok)))
+            arsiv_okunamayan.append(os.path.relpath(p0, kok).replace("\\", "/"))
+    if arsiv_okunamayan:
+        fail("H1", "%d arsiv dosyasi OKUNAMADI — bu dosyalardaki satirlar 'KAYIP' "
+                   "gorunebilir; once dosyalari duzelt: %s"
+             % (len(arsiv_okunamayan), ", ".join(arsiv_okunamayan[:3])))
+    var = cok_kume(canliA + arsivA)
+    return canliA, var
+
+
+def _h1_fark(F, N, y, siki, bekle, var):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
+    eksik = ck_fark(bekle, var)
+    fazla = ck_fark(var, bekle)
+    if eksik:
+        fail("H1", "%d satir KAYIP (snapshot'ta var, hicbir ciktida yok):" % len(eksik))
+        for s in eksik[:5]:
+            F.append("      - KAYIP: " + s[:100])
+        if len(eksik) > 5:
+            F.append("      … +%d satir daha" % (len(eksik) - 5))
+    if fazla and siki:
+        # IC DENETIM (B-4): `_canli_ekle_beyan` snapshot'ta ZATEN gecen satirlari
+        # (kayip-maskeleme korumasi geregi) _YENI_SATIRLAR.txt'ye yazmaz; ama
+        # `<!-- /blok -->` gibi YAPISAL satirlar her sablonda gectigi icin aracin
+        # KENDI yazdigi her kapanis ebediyen "beyansiz" gorunuyordu. Sonuc: --siki
+        # daha ILK `kur`dan itibaren kirmizi ve gercek bir enjeksiyon 58 sahte
+        # pozitifin altinda KAYBOLUYORDU. Kova'ya BEYAN EDILMIS satirlar (ek_canli)
+        # burada da dusulur — beyan beyandir, hangi deftere yazildigi onemli degil.
+        _beyanli = cok_kume([norm(x) for x in
+                             (defter_yukle(y.kova, {"satirlar": {}}).get("ek_canli") or [])])
+        fazla = ck_fark(cok_kume(fazla), _beyanli)
+    if fazla and siki:
+        fail("H1", "%d satir BEYANSIZ EKLENMIS (--siki):" % len(fazla))
+        for s in fazla[:5]:
+            F.append("      - FAZLA: " + s[:100])
+        if len(fazla) > 5:
+            # "SESSIZ KIRPMA YOK" ilkesi: eksik listesinde vardi, fazla'da YOKTU.
+            F.append("      … +%d satir daha" % (len(fazla) - 5))
+    elif fazla:
+        N.append("H1: +%d yeni satir (mesru buyume; KAYIP yok)" % len(fazla))
+
+
+
+def _h1_kova_bek(kv, snapL, duz):
+    L = list(snapL)
+    for d in duz:
+        i = tamsayi(d["satir"], "_DUZELTMELER.json > satir") - 1
+        if 0 <= i < len(L) and norm(L[i]) == norm(d["eski"]):
+            L[i] = norm(d["yeni"])
+    uretilen = set(_ur.strip() for _ur in [V2BAS, V2SON])
+    ic_uretilen, uretilen_idx = False, set()
+    for _i, _s in enumerate(L):
+        _d = _s.strip()
+        if _d == V2BAS:
+            ic_uretilen = True; uretilen_idx.add(_i); continue
+        if _d == V2SON:
+            ic_uretilen = False; uretilen_idx.add(_i); continue
+        if ic_uretilen:
+            uretilen_idx.add(_i)
+    bek = list(kv.get("ek_canli", []))     # baseline-SONRASI beyan edilmis canli satirlar
+    for i, k in kv["satirlar"].items():
+        idx = tamsayi(i, "_KOVA.json > satirlar anahtari") - 1
+        if idx in uretilen_idx:
+            continue
+        if 0 <= idx < len(L) and str(k).startswith("CANLI") and anlamli(L[idx]):
+            bek.append(norm(L[idx]))
+    return bek
+
+
+def _h1_kova(F, y, snapL, duz, canliA):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
+    # KOVA — yerlesim korlugu
+    if not os.path.isfile(y.kova):
+        fail("H1-KOVA", "_KOVA.json YOK — yerlesim olculemiyor")
+    else:
+        kv = defter_yukle(y.kova, {"satirlar": {}})
+        if not isinstance(kv.get("satirlar"), dict):
+            if "satirlar" in kv:
+                defter_hata("_KOVA.json", "'satirlar' bir nesne olmali, %s bulundu."
+                            % type(kv.get("satirlar")).__name__)
+            kv["satirlar"] = {}
+        metin_listesi(kv.get("ek_canli", []), "_KOVA.json", "ek_canli")
+        bek = _h1_kova_bek(kv, snapL, duz)
+        bekC = cok_kume(bek)
+        tasKayit = jsonl_yukle(y.tasinma, ["satirlar"])
+        for r in tasKayit:
+            metin_listesi(r.get("satirlar"), "_TASINMA.jsonl", "satirlar")
+            if "hedef" in r and not isinstance(r["hedef"], str):
+                defter_hata("_TASINMA.jsonl", "'hedef' metin olmali, %s bulundu."
+                            % type(r["hedef"]).__name__)
+            for s in r.get("satirlar", []):
+                ck_sil(bekC, norm(s))
+        kacan = ck_fark(bekC, cok_kume(canliA))
+        if kacan:
+            fail("H1-KOVA", "%d satir CANLIDA OLMALIYDI, YOK — BEYANSIZ TASINMA:" % len(kacan))
+            for s in kacan[:5]:
+                F.append("      - CANLIDAN KACMIS: " + s[:100])
+            F.append("      -> Tasimayi ARACLA yap: hafiza.py emekli <bas>-<son> --not \"...\"")
+        for r in tasKayit:
+            hp = os.path.join(y.h, r.get("hedef", ""))
+            hMS = cok_kume(anlamli_satirlar(hp)) if os.path.isfile(hp) else {}
+            yok = [s for s in r.get("satirlar", []) if norm(s) not in hMS]
+            if yok:
+                fail("H1-KOVA", "beyan edilen tasima HEDEFTE YOK (%s): %d satir — sahte beyan"
+                     % (r.get("hedef"), len(yok)))
+
+
+def _kapi_h1(F, N, O, kok, rc, y, siki):
+    # ---- H1 BUTUNLUK + KOVA --------------------------------------------
+    if not os.path.isfile(y.snap):
+        return
+    snapL, bekle, duz = _h1_beyan(F, y)
+    canliA, var = _h1_gercek(F, O, kok, rc, y)
+    _h1_fark(F, N, y, siki, bekle, var)
+    _h1_kova(F, y, snapL, duz, canliA)
 
 
 def _kapi_h2(F, N, O, rc, y):
