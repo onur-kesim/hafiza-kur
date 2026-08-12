@@ -171,11 +171,14 @@ Bu bölüm boş olamaz.
 2. **`_h1_kova_bek`'in saflığı sınanmadı.** "Hüküm içermiyor, o yüzden saf
    olabilir" ölçüldü; ama o fonksiyonun **ileride** bir hüküm kazanması hâlinde
    koruma kaybı doğar — bunu yakalayan bir mutant **YOK**. Sınıf açık.
-3. **Bu bölmeye özgü mutant YAZILMADI.** FAZ C'de `fazC_bolme_mutanti.py` vardı;
-   bu tur için `_h1_*` kenarlarını (dört kenar) tek tek koparan bir mutant
-   üretilmedi. Mevcut mutantlar bölmeyi **dolaylı** olarak ölçüyor: (a) bit-bit
-   eşdeğerlik + (c/d/e) kapı/ölçüt mutantları. **Doğrudan kenar mutantı eksiktir**
-   ve bu, FAZ C'nin kendi standardının altındadır.
+3. ~~**Bu bölmeye özgü mutant YAZILMADI.**~~ → **KAPANDI** (12 Ağu 2026):
+   `faz0/h1_bolme_mutanti.py` yazıldı, 7 mutant, 7 ısırdı / 0 kaçtı.
+   🔴 **Ve bu maddenin kapanışı §1.4'ü çürüttü:** ölçüldü ki altın küme
+   (kabul ölçütü **a**) yedi mutantın **üçüne KÖR** — bunlardan biri §1.4'te
+   *"mekanik ve güvenli"* diye nitelediğim **koruma satırıdır**. Koruma tamamen
+   silindiğinde `--karsilastir` hâlâ *"FARK YOK — 22 ölçüm bit-bit"* diyor.
+   Bölmenin elle yazılmış tek mantığı, en çok güvendiğim ölçütün kapsamı
+   dışındaydı. Ayrıntı: `faz0/H1_KENAR_RAPORU.md` §3.
 4. **40 KAPSAMSIZ `fail()`.** Envanter değişmedi (21/40), ama "eşdeğerlik
    kanıtlandı" cümlesi o 40 hükmü **kapsamaz** — metinleri veya sıraları değişse
    hiçbir kapı görmez. Bölmeden önce de böyleydi.
