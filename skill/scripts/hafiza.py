@@ -3752,8 +3752,146 @@ def _kapi_h15(F, N, O, rc, y):
                 (" · %d beyanli gevseklik" % len(pg)) if pg else ""))
 
 
-def _kapi_h14(F, N, O, kok, rc, y, t_son):
+# ----------------------------------------------- H14 ALT-BOLMESI (FAZ C)
+# `_kapi_h14` (104 satir, CC 35) DORT parcaya bolundu. Parcalar KAPININ KENDI
+# YERINDE ve KOSUM SIRASINDA durur; ince `_kapi_h14` en sona konur.
+#
+# 🔴 SIRA NEDEN BOYLE: faz0/sabotaj.py her hukum cagrisini (lineno, col)
+# sirasina gore numaralandirir ve kapsam envanteri o numaralara baglidir.
+# Parcalar baska bir sirayla yazilirsa numaralandirma kayar ve olcum
+# karsilastirilamaz hale gelir.
+#
+# 🔴 UC PARCA NEDEN F/N/O ALMIYOR: 11 Agu 2026'da olculdu ve geri alindi —
+# hukum listelerini DONDUREN bir parca yarida SystemExit atarsa o ana kadar
+# toplanan bulgu KAYBOLUR. Koruma kanitsiz sokulmez; burada da sokulmuyor.
+# Tasinan uc bolgede (git durumu · aday tarama · en yeni tarih) hukum cagrisi
+# sayisi OLCULDU ve SIFIR — uretec bunu her kosumda yeniden olcer ve sifir
+# degilse YAZMAZ. Kaybedilecek bulgu olmadigi icin saflik bir tercih degil,
+# olcumle guvenli kilinmis bir sadelestirmedir (`_h1_kova_bek` ile ayni gerekce).
+# `_h14_hukum` ise F ve N ALIR: butun fail()/N.append cagrilari orada yasar.
+#
+# `fail` ADI DEGISTIRILEMEZ: sabotaj.py cagrilari AST'te Name.id == "fail"
+# diye arar. Ad degisirse hicbir hedef bulunmaz ve kapsam envanteri sessizce
+# 0'a duser.
+#
+# Parcalar arasi veri TAM BES KENARDIR ve hepsi imzada gorunur:
+#     git_var, kirli, izlenen   GIT DURUMU  -> EN YENI
+#     adaylar                   ADAY TARAMA -> EN YENI
+#     en_yeni_t, en_yeni_f      EN YENI     -> HUKUM
+
+
+def _h14_git_durumu(kok):
+    # Fable Bulgu 9: clone/checkout tum mtime'lari "simdi"ye ceker -> yanlis kirmizi.
+    # Fable §3.1: ama HER dosyaya min(mtime, son-commit) uygulamak, COMMITLENMEMIS
+    # calismayi da eski commit tarihine indiriyordu -> H14'un VAR OLUS NEDENI
+    # ("calisildi, kayit birakilmadi") en yaygin halde sessizce kapaniyordu.
+    # Dogru ayrim, dosyanin git'e gore DURUMU:
+    #   KIRLI (degismis/izlenmeyen) -> mtime GERCEK calisma zamanidir, aynen kullan.
+    #   TEMIZ  (izlenen, degismemis) -> mtime clone artefakti olabilir; ICERIK tarihi kullan.
+    # Ayrica bu, dosya-basina `git log` cagrisini de bitirir (2000 dosyada ~5 sn -> 2 cagri).
+    # BAGIMSIZ DENETIM — YUKSEK (bu kullanicida yuksek isabet): `git status --porcelain`
+    # ASCII-DISI yollari C-kacisli olarak TIRNAKLAR ("\303\247al\304\261..."); onceki
+    # ayristirma tirnagi atip kacisi cozmuyordu, dolayisiyla TURKCE ADLI her dosya
+    # "temiz" sayilip mtime'i yok sayiliyordu -> Turkce adli dosyada calismak H14'e
+    # GORUNMUYORDU. Cozum: -z (NUL ayrac) — git bu kipte HIC tirnaklamaz/kacislamaz.
+    #
+    # IKINCI KUSUR: .gitignore'lu dosyalar `git status`ta gorunmedigi icin "temiz"
+    # sinifina dusuyor, `git log` de onlar icin bir sey dondurmuyordu -> mtime'lari
+    # TAMAMEN devre disi kaliyordu (v2.1.0'a gore REGRESYON). Cozum: IZLENEN dosya
+    # listesini ayrica al; izlenmeyen her dosya (ignore'lu dahil) mtime ile olculur.
+    git_var = bool(shutil.which("git")) and os.path.isdir(os.path.join(kok, ".git"))
+    kirli, izlenen = set(), set()
+    if git_var:
+        def _git_z(*args):
+            r = subprocess.run(["git", "-C", kok] + list(args), capture_output=True)
+            if r.returncode != 0:
+                return None
+            return [x.decode("utf-8", "replace")
+                    for x in (r.stdout or b"").split(b"\0") if x]
+        durum = _git_z("status", "--porcelain", "-z", "-uall")
+        izler = _git_z("ls-files", "-z")
+        if durum is None or izler is None:
+            git_var = False                          # git konusmuyorsa mtime'a don
+        else:
+            izlenen = set(izler)
+            atla = False
+            for oge in durum:
+                if atla:                             # 'R'/'C' kayitlarinin ESKI adi
+                    atla = False; continue
+                if len(oge) > 3:
+                    kirli.add(oge[3:])
+                    if oge[0] in ("R", "C"):         # -z kipinde eski ad AYRI ogedir
+                        atla = True
+    return git_var, kirli, izlenen
+
+
+def _h14_adaylar(kok, y):
+    haric = {".git", "node_modules", "__pycache__", ".venv", "arsiv", "gunluk", "dist", "build"}
+    adaylar = []                                     # (rel, mtime)
+    for r0, d0, f0 in os.walk(kok):
+        d0[:] = [d for d in d0 if d not in haric]
+        for f in f0:
+            if f in (os.path.basename(y.canli), RC_AD, "KONULAR.md", "SAKLAMA_PLANI.md",
+                     os.path.basename(y.kural)):
+                continue
+            if f.startswith(".") or f.endswith((".pyc", ".log", ".tmp")):
+                continue
+            p0 = os.path.join(r0, f)
+            try:
+                m0 = os.path.getmtime(p0)
+            except OSError:
+                continue
+            adaylar.append((os.path.relpath(p0, kok).replace("\\", "/"), m0))
+    return adaylar
+
+
+def _h14_en_yeni(kok, adaylar, git_var, kirli, izlenen):
+    en_yeni_t, en_yeni_f = None, None
+    temiz = []
+    for rel0, m0 in adaylar:
+        # TEMIZ sinifi = git'in IZLEDIGI ve degismemis dosya. Izlenmeyen (yeni ya da
+        # .gitignore'lu) her dosya mtime ile olculur — orasi tam da "kayit birakilmayan
+        # calismanin" yasadigi yer.
+        if git_var and rel0 in izlenen and rel0 not in kirli:
+            temiz.append(rel0)                       # icerik tarihi toplu sorulacak
+            continue
+        if en_yeni_t is None or m0 > en_yeni_t:      # kirli/izlenmeyen ya da git yok
+            en_yeni_t, en_yeni_f = m0, rel0
+    if temiz:
+        # TEK cagri: bu dosyalardan HERHANGI birine dokunan EN YENI commit.
+        # (Aradigimiz zaten maksimum oldugu icin dosya-basina sormaya gerek yok.)
+        oba = 400                                    # komut satiri sinirina karsi obekleme
+        for i0 in range(0, len(temiz), oba):
+            obek = temiz[i0:i0 + oba]
+            rg = subprocess.run(["git", "-C", kok, "log", "-1", "--format=%ct", "--"] + obek,
+                                capture_output=True, text=True, encoding="utf-8", errors="replace")
+            if rg.returncode == 0 and (rg.stdout or "").strip().isdigit():
+                ct = int(rg.stdout.strip())
+                if en_yeni_t is None or ct > en_yeni_t:
+                    en_yeni_t, en_yeni_f = ct, "(commit'li dosyalar)"
+    return en_yeni_t, en_yeni_f
+
+
+def _h14_hukum(F, N, gecikme, t_son, en_yeni_t, en_yeni_f):
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
+    if en_yeni_t is None:
+        N.append("H14: karsilastirilacak proje dosyasi yok")
+    else:
+        d_proje = _dt.date.fromtimestamp(en_yeni_t)
+        fark = (d_proje - t_son).days
+        if fark < -gecikme:
+            fail("H14", "hafiza tarihi proje dosyalarindan %d gun ILERIDE — tutarsiz." % (-fark))
+        if fark > gecikme:
+            fail("H14", "PROJE ILERLEDI, HAFIZA ILERLEMEDI: en yeni degisiklik %s (%s), "
+                        "hafiza %s -> %d gun geride (tavan %d)."
+                 % (d_proje.isoformat(), en_yeni_f, t_son.isoformat(), fark, gecikme))
+            F.append("      -> Calisildi ama kayit birakilmadi. hafiza.py not ... sonra hafiza.py derle")
+        else:
+            N.append("H14: hafiza projeyle es (en yeni degisiklik %s, hafiza %s)"
+                     % (d_proje.isoformat(), t_son.isoformat()))
+
+
+def _kapi_h14(F, N, O, kok, rc, y, t_son):
     # ---- H14 DISIPLIN (proje ilerledi mi, hafiza ilerledi mi) -----------
     gecikme = rc["hafiza_gecikme_gun"]
     if gecikme <= 0:
@@ -3761,101 +3899,10 @@ def _kapi_h14(F, N, O, kok, rc, y, t_son):
     elif not t_son:
         O.append("H14: hafiza tarihi cozulemedi — disiplin OLCULEMIYOR")
     else:
-        haric = {".git", "node_modules", "__pycache__", ".venv", "arsiv", "gunluk", "dist", "build"}
-        # Fable Bulgu 9: clone/checkout tum mtime'lari "simdi"ye ceker -> yanlis kirmizi.
-        # Fable §3.1: ama HER dosyaya min(mtime, son-commit) uygulamak, COMMITLENMEMIS
-        # calismayi da eski commit tarihine indiriyordu -> H14'un VAR OLUS NEDENI
-        # ("calisildi, kayit birakilmadi") en yaygin halde sessizce kapaniyordu.
-        # Dogru ayrim, dosyanin git'e gore DURUMU:
-        #   KIRLI (degismis/izlenmeyen) -> mtime GERCEK calisma zamanidir, aynen kullan.
-        #   TEMIZ  (izlenen, degismemis) -> mtime clone artefakti olabilir; ICERIK tarihi kullan.
-        # Ayrica bu, dosya-basina `git log` cagrisini de bitirir (2000 dosyada ~5 sn -> 2 cagri).
-        # BAGIMSIZ DENETIM — YUKSEK (bu kullanicida yuksek isabet): `git status --porcelain`
-        # ASCII-DISI yollari C-kacisli olarak TIRNAKLAR ("\303\247al\304\261..."); onceki
-        # ayristirma tirnagi atip kacisi cozmuyordu, dolayisiyla TURKCE ADLI her dosya
-        # "temiz" sayilip mtime'i yok sayiliyordu -> Turkce adli dosyada calismak H14'e
-        # GORUNMUYORDU. Cozum: -z (NUL ayrac) — git bu kipte HIC tirnaklamaz/kacislamaz.
-        #
-        # IKINCI KUSUR: .gitignore'lu dosyalar `git status`ta gorunmedigi icin "temiz"
-        # sinifina dusuyor, `git log` de onlar icin bir sey dondurmuyordu -> mtime'lari
-        # TAMAMEN devre disi kaliyordu (v2.1.0'a gore REGRESYON). Cozum: IZLENEN dosya
-        # listesini ayrica al; izlenmeyen her dosya (ignore'lu dahil) mtime ile olculur.
-        git_var = bool(shutil.which("git")) and os.path.isdir(os.path.join(kok, ".git"))
-        kirli, izlenen = set(), set()
-        if git_var:
-            def _git_z(*args):
-                r = subprocess.run(["git", "-C", kok] + list(args), capture_output=True)
-                if r.returncode != 0:
-                    return None
-                return [x.decode("utf-8", "replace")
-                        for x in (r.stdout or b"").split(b"\0") if x]
-            durum = _git_z("status", "--porcelain", "-z", "-uall")
-            izler = _git_z("ls-files", "-z")
-            if durum is None or izler is None:
-                git_var = False                          # git konusmuyorsa mtime'a don
-            else:
-                izlenen = set(izler)
-                atla = False
-                for oge in durum:
-                    if atla:                             # 'R'/'C' kayitlarinin ESKI adi
-                        atla = False; continue
-                    if len(oge) > 3:
-                        kirli.add(oge[3:])
-                        if oge[0] in ("R", "C"):         # -z kipinde eski ad AYRI ogedir
-                            atla = True
-        adaylar = []                                     # (rel, mtime)
-        for r0, d0, f0 in os.walk(kok):
-            d0[:] = [d for d in d0 if d not in haric]
-            for f in f0:
-                if f in (os.path.basename(y.canli), RC_AD, "KONULAR.md", "SAKLAMA_PLANI.md",
-                         os.path.basename(y.kural)):
-                    continue
-                if f.startswith(".") or f.endswith((".pyc", ".log", ".tmp")):
-                    continue
-                p0 = os.path.join(r0, f)
-                try:
-                    m0 = os.path.getmtime(p0)
-                except OSError:
-                    continue
-                adaylar.append((os.path.relpath(p0, kok).replace("\\", "/"), m0))
-        en_yeni_t, en_yeni_f = None, None
-        temiz = []
-        for rel0, m0 in adaylar:
-            # TEMIZ sinifi = git'in IZLEDIGI ve degismemis dosya. Izlenmeyen (yeni ya da
-            # .gitignore'lu) her dosya mtime ile olculur — orasi tam da "kayit birakilmayan
-            # calismanin" yasadigi yer.
-            if git_var and rel0 in izlenen and rel0 not in kirli:
-                temiz.append(rel0)                       # icerik tarihi toplu sorulacak
-                continue
-            if en_yeni_t is None or m0 > en_yeni_t:      # kirli/izlenmeyen ya da git yok
-                en_yeni_t, en_yeni_f = m0, rel0
-        if temiz:
-            # TEK cagri: bu dosyalardan HERHANGI birine dokunan EN YENI commit.
-            # (Aradigimiz zaten maksimum oldugu icin dosya-basina sormaya gerek yok.)
-            oba = 400                                    # komut satiri sinirina karsi obekleme
-            for i0 in range(0, len(temiz), oba):
-                obek = temiz[i0:i0 + oba]
-                rg = subprocess.run(["git", "-C", kok, "log", "-1", "--format=%ct", "--"] + obek,
-                                    capture_output=True, text=True, encoding="utf-8", errors="replace")
-                if rg.returncode == 0 and (rg.stdout or "").strip().isdigit():
-                    ct = int(rg.stdout.strip())
-                    if en_yeni_t is None or ct > en_yeni_t:
-                        en_yeni_t, en_yeni_f = ct, "(commit'li dosyalar)"
-        if en_yeni_t is None:
-            N.append("H14: karsilastirilacak proje dosyasi yok")
-        else:
-            d_proje = _dt.date.fromtimestamp(en_yeni_t)
-            fark = (d_proje - t_son).days
-            if fark < -gecikme:
-                fail("H14", "hafiza tarihi proje dosyalarindan %d gun ILERIDE — tutarsiz." % (-fark))
-            if fark > gecikme:
-                fail("H14", "PROJE ILERLEDI, HAFIZA ILERLEMEDI: en yeni degisiklik %s (%s), "
-                            "hafiza %s -> %d gun geride (tavan %d)."
-                     % (d_proje.isoformat(), en_yeni_f, t_son.isoformat(), fark, gecikme))
-                F.append("      -> Calisildi ama kayit birakilmadi. hafiza.py not ... sonra hafiza.py derle")
-            else:
-                N.append("H14: hafiza projeyle es (en yeni degisiklik %s, hafiza %s)"
-                         % (d_proje.isoformat(), t_son.isoformat()))
+        git_var, kirli, izlenen = _h14_git_durumu(kok)
+        adaylar = _h14_adaylar(kok, y)
+        en_yeni_t, en_yeni_f = _h14_en_yeni(kok, adaylar, git_var, kirli, izlenen)
+        _h14_hukum(F, N, gecikme, t_son, en_yeni_t, en_yeni_f)
 
 
 # ---------------------------------------------------------------- ISIRMA KANITI
