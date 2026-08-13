@@ -135,9 +135,16 @@ Eşik ihlali tablosu (ölçüt: **kendi gövde CC'si** — `ADR_CC_OLCUTU.md`, k
 | satır > 80 | 12 fonksiyon | **11** |
 | toplam fonksiyon | 176 | 181 |
 
-Kalan CC ihlalleri: `cmd_devral` 81 · `cmd_derle` 61 · `zincir_dogrula` 38 ·
-`cmd_bloklastir` 37 · `_kapi_h14` 34 · `_kapi_h4` 28 · `_kapi_h10` 26 ·
-`cmd_kur` 25 · `cmd_emekli` 24 · `_kapi_h12` 24 · `_kapi_h11` 22.
+🔴 **BU SATIRDAKİ SAYILAR 13 Ağu 2026'da DÜZELTİLDİ.** Yukarıdaki tablo ve
+aşağıdaki liste, ölçüt aracı (`faz0/karmasiklik.py`) yazılmadan önce ayrı bir
+AST sayacıyla ölçülmüştü ve o sayaç iki noktada yanlıştı (comprehension
+`if`leri sayılmıyor, `with` sayılıyordu — bkz. `ADR_CC_OLCUTU.md` §7.1).
+İhlal **sayısı** (11) ve sıralama değişmedi; **değerler** değişti.
+
+Kalan CC ihlalleri (araçla ölçüldü, radon ile çaprazlandı):
+`cmd_devral` 88 · `cmd_derle` 63 · `zincir_dogrula` 40 · `cmd_bloklastir` 39 ·
+`_kapi_h14` 35 · `_kapi_h4` 32 · `_kapi_h10` 27 · `cmd_kur` 27 ·
+`_kapi_h12` 25 · `cmd_emekli` 24 · `_kapi_h11` 23.
 
 **Toplam karmaşıklık düşmedi, taşındı** — FAZ C'de olduğu gibi. Kazanç dağılımda.
 

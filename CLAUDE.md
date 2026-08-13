@@ -129,7 +129,7 @@ Yeniden tartışma; değiştirmek istiyorsan **gerekçeyle** aç ve bir ADR yaz.
 | Proje-ötesi hafıza | **DAR.** Yeni altyapı yazma; Claude Code'un mevcut `~/.claude/CLAUDE.md` + `rules/` + `autoMemoryDirectory` mekanizmalarını **kur ve denetle**. 3. projede tekrar etmeyen bilgi global'e çıkmaz. Global katmanda müşteri/kişi adı ve hukuk dosyası detayı **yasak** (KVKK, amaçla sınırlılık). |
 | Depo | **PUBLIC** (CI ücretsiz ve limitsiz olsun diye) ama **YAYIN YOK** — PyPI yok, marketplace yok, duyuru yok. *"Public repo" ≠ "yayın".* |
 | Dil | **İngilizce kanonik komut + Türkçe alias.** Mesajlar çevrilebilir; komut ve bayrak adları **API'dir** (Git'in porselen/boru tesisatı ayrımı). |
-| Mimari | **Tek dosya KALIR.** Bölünecek olan **fonksiyonlardır** (hedef: hiçbir fonksiyon >80 satır, hiçbiri CC >20). |
+| Mimari | **Tek dosya KALIR.** Bölünecek olan **fonksiyonlardır** (hedef: hiçbir fonksiyon >80 satır, hiçbiri CC >20). **ÖLÇÜM:** `python3 faz0/karmasiklik.py skill/scripts/hafiza.py` — başka bir CC sayısı beyan edilmez. Ölçüt: CC fonksiyonun **kendi gövdesinden** sayılır, iç içe `def`/`lambda` gövdesine **inilmez** (her biri ayrı fonksiyondur); `with`·`try` gövdesi·`else`·`assert` sayılmaz. Gerekçe ve `radon` çapraz kontrolü: `faz0/ADR_CC_OLCUTU.md`. Ölçütün kendisi `faz0/karmasiklik_mutanti.py` ile sınanır — 9 mutant, hepsi ısırmalı. |
 | Sürüm | Çıkış kodu sözleşmesi kırıcı değiştiyse **minor artar** — yama sürümü olamaz. |
 
 ## 6. DEPO DÜZENİ

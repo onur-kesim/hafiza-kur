@@ -2,7 +2,7 @@
 
 **Durum:** 🟢 **KABUL EDİLDİ — Şık A (kendi gövde CC'si)** · Onur, 12 Ağustos 2026
 **Tarih:** 12 Ağustos 2026
-**Uygulama:** 🔴 **BLOKE** — §7'ye bakınız (ölçüm aracı henüz yok)
+**Uygulama:** 🟢 **UYGULANDI** — 13 Ağustos 2026 · `faz0/karmasiklik.py` + `faz0/karmasiklik_mutanti.py` (9/9 ısırdı) + CLAUDE.md §5 güncellendi
 **İlgili karar:** CLAUDE.md §5, *Mimari* satırı — *"Tek dosya KALIR. Bölünecek
 olan fonksiyonlardır (hedef: hiçbir fonksiyon >80 satır, hiçbiri CC >20)."*
 
@@ -139,23 +139,23 @@ Doğrudan sonuçları:
 - `cmd_isir` CC kuralına **uyuyor** (17 ≤ 20). Bölme listesine CC'den girmez;
   **satır kuralından girer** (700 > 80) ve orada kalır.
 - İhlal listesi: **CC>20 → 12 fonksiyon** · **satır>80 → 12 fonksiyon**.
-- Alt-bölme sırası bu ölçütle okunur: `cmd_devral` 81 → `cmd_derle` 61 →
-  `_kapi_h1` 54 → `zincir_dogrula` 38 → `cmd_bloklastir` 37 → `_kapi_h14` 34 →
-  `_kapi_h4` 28 → `_kapi_h10` 26 → `cmd_kur` 25 → `cmd_emekli` 24 →
-  `_kapi_h12` 24 → `_kapi_h11` 22.
+- 🔴 **BU BÖLÜMDEKİ SAYILAR 13 Ağu 2026'da DÜZELTİLDİ** — bkz. §7.1. Karar
+  doğruydu, sayılar yanlıştı. Aracın verdiği güncel sıra (13 Ağu 2026,
+  `_kapi_h1` bölündüğü için listede yok):
+  `cmd_devral` 88 → `cmd_derle` 63 → `zincir_dogrula` 40 → `cmd_bloklastir` 39 →
+  `_kapi_h14` 35 → `_kapi_h4` 32 → `_kapi_h10` 27 → `cmd_kur` 27 →
+  `_kapi_h12` 25 → `cmd_emekli` 24 → `_kapi_h11` 23.  (CC>20: **11**)
 - Bundan sonra herhangi bir belgeye yazılan CC sayısı **bu ölçütle** ölçülmüş
   sayılır; başka bir ölçütle ölçülmüşse **metrik adı yanına yazılır**.
 
-## 7. 🔴 UYGULAMA BLOKE — CLAUDE.md §5 HENÜZ DEĞİŞTİRİLMEDİ
+## 7. UYGULANDI (13 Ağustos 2026) — blokaj kalktı
 
 Kararın CLAUDE.md'ye işlenmesi **bilerek ertelendi.** Gerekçe kuralın kendisidir:
 
 > *Ölçüm aracı kurulu olan kural, talimatı prozayla tekrar etmez — aracın adını
 > yazar.*
 
-Bugün böyle bir araç **yok.** Aracın adını şimdi CLAUDE.md'ye yazmak, kalıcı
-protokole **var olmayan bir dosyaya atıf** koymak olur — projenin kendi H12
-(BAYATLIK) sınıfının ta kendisi. Sıra:
+Blokajın gerekçesi buydu ve **sırasıyla açıldı** (13 Ağu 2026):
 
 1. `faz0/karmasiklik.py` yazılır — stdlib `ast`, sıfır bağımlılık, tek komut,
    çıktısı deterministik: `ad · CC · satır · başlangıç`, CC azalan sıralı.
@@ -184,3 +184,30 @@ Bu ADR o değişikliğin **gerekçe kaydıdır**; değişiklik yapıldığında 
    eşiği değil.
 4. Ölçütün değişmesinin geçmiş belgeleri (FAZC_RAPOR, eski DEVİR'ler) nasıl
    etkileyeceği — hangi cümlelerin geriye dönük düzeltme gerektirdiği — listelenmedi.
+
+
+## 7.1 🔴 UYGULARKEN ÇIKAN KUSUR — ADR BİR EKSENİ AÇIK BIRAKMIŞTI
+
+Bu ADR iç içe geçme eksenini kilitledi ama **karar noktası kümesini yazmadı** —
+ve sayılar ona da bağlıydı. Araç yazılırken `radon cc` ile 179 fonksiyon üzerinde
+çapraz kontrol yapıldı; ölçüt iki noktada yanlıştı:
+
+| kural | radon | ADR yazılırken kullanılan sayaç |
+|---|---|---|
+| comprehension içindeki `if`ler | **sayılır** | **sayılmıyordu** ❌ |
+| `with` | sayılmaz | **sayılıyordu** ❌ |
+| `try` gövdesi · `else` · `assert` | sayılmaz | sayılmıyor ✓ |
+
+Düzeltilince **178/179 fonksiyon radon ile birebir** tutuyor. Kalan tek uyuşmazlık
+`zincir_dogrula` (araç 40 · radon 41) ve **sebebi ÖLÇÜLMEDİ**.
+
+**Kararın kendisi doğrulandı:** radon da `cmd_isir` için **17** der — yani
+"kendi gövdeden say, iç `def`e inme" ekseni de-facto standartla örtüşüyor.
+
+`radon` **bağımlılık değildir**; yalnız ölçüt seçilirken bir kez çapraz kontrol
+olarak kullanıldı. `faz0/karmasiklik.py` stdlib `ast` ile çalışır.
+
+**Ders:** bir metrik kararında ekseni değil **kural kümesini** yaz. "Kendi
+gövdeden sayılır" yetmedi; hangi düğümün karar sayıldığı da yazılmalıydı. Ve bir
+ölçüt kararı mümkünse **dış bir araçla çaprazlanır** — radon iki kusuru
+20 dakikada buldu.
