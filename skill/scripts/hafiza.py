@@ -3262,10 +3262,28 @@ def _kapi_h3(F, N, O, rc, y):
             fail("H3", "zorunlu bolum YOK: " + b)
 
 
-def _kapi_h4(F, N, O, kok, y):
-    fail = lambda k, m: F.append("[%s] %s" % (k, m))
-    # ---- H4 OLU BAGLANTI -----------------------------------------------
-    metin = oku(y.canli)
+# ------------------------------------------------ H4 ALT-BOLMESI (FAZ C)
+# `_kapi_h4` (61 satir, CC 32) DORT parcaya bolundu; ince `_kapi_h4` en sona konur.
+# Kalip `_kapi_h14` turunun aynisidir ve gerekceleri de aynidir:
+#
+# 🔴 SIRA: faz0/sabotaj.py hukum cagrilarini (lineno, col) sirasina gore
+# numaralandirir; parcalar kapinin kendi yerinde ve kosum sirasinda durur.
+#
+# 🔴 UC PARCA F/N/O ALMIYOR: hukum listelerini DONDUREN bir parca yarida
+# SystemExit atarsa toplanan bulgu KAYBOLUR (11 Agu 2026 olcumu). Burada koruma
+# sokulmuyor: tasinan uc bolgede hukum cagrisi sayisi OLCULDU ve SIFIR — uretec
+# her kosumda yeniden olcer ve sifir degilse YAZMAZ. `_h4_hukum` F ve N ALIR.
+#
+# `fail` ADI DEGISTIRILEMEZ: sabotaj.py AST'te Name.id == "fail" arar.
+#
+# Parcalar arasi veri DORT KENARDIR ve hepsi imzada gorunur:
+#     metin           EBEVEYN       -> ADAYLAR
+#     aday            ADAYLAR       -> ebeveyn (eksik listesi ebeveynde uretilir)
+#     eksik, havuz    EBEVEYN/HAVUZ -> SINIFLANDIRMA
+#     olu, tasinmis   SINIFLANDIRMA -> HUKUM
+
+
+def _h4_adaylar(metin):
     # Yalniz TAM backtick icerigi bir yol ise aday sayilir: `hafiza.py kapi` bir KOMUTTUR, yol degil.
     aday = set()
     for ic in re.findall(r"`([^`\n]+)`", metin):
@@ -3285,44 +3303,66 @@ def _kapi_h4(F, N, O, kok, y):
     for ic in re.findall(r"\]\(([^)\s]+\.[A-Za-z0-9]{1,10})\)", metin):
         if not ic.startswith(("http://", "https://", "mailto:", "#")):
             aday.add(ic)
+    return aday
+
+
+def _h4_havuz(kok):
+    havuz = {}
+    for r0, d0, f0 in os.walk(kok):
+        d0[:] = [d for d in d0 if d not in (".git", "node_modules", "__pycache__", ".venv")]
+        for f in f0:
+            havuz.setdefault(f, []).append(os.path.relpath(os.path.join(r0, f), kok).replace("\\", "/"))
+    return havuz
+
+
+def _h4_siniflandir(eksik, havuz):
+    # SESSIZ KIRPMA YOK: hepsi siniflandirilir; ekranda kirpilan sayi ACIKCA yazilir.
+    # (Eski surum eksik[:20] ile ilk 20'ye bakiyordu ve alfabetik siralama yuzunden
+    #  gercek bir olu baglantiyi KACIRDI — bizzat mutant turunda olculdu.)
+    # Fable Bulgu 7: yalniz basename eslesmesi "tasinmis" saymak, README.md/config.json
+    # gibi yaygin adlarda kapiyi silahsizlandiriyordu. Artik BAGLAM araniyor:
+    # ya arsiv altinda, ya da beyan edilen yolun bir dizin bileseni tutuyor.
+    olu, tasinmis = [], []
+    for p0 in eksik:
+        adaylar = havuz.get(os.path.basename(p0)) or []
+        beyan_dizin = set(x for x in os.path.dirname(p0).split("/") if x)
+        iyi = None
+        for c0 in adaylar:
+            c_dizin = set(x for x in os.path.dirname(c0).split("/") if x)
+            if c_dizin & {"arsiv", "archive"} or (beyan_dizin and beyan_dizin & c_dizin):
+                iyi = c0; break
+        if iyi:
+            tasinmis.append((p0, iyi))
+        elif adaylar:
+            olu.append((p0, "ayni adli baska dosya var ama yol tutmuyor: " + adaylar[0]))
+        else:
+            olu.append((p0, None))
+    return olu, tasinmis
+
+
+def _h4_hukum(F, N, olu, tasinmis):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
+    for p0, yer in tasinmis[:5]:
+        N.append("H4: TASINMIS (olu degil): '%s' -> %s" % (p0, yer))
+    if len(tasinmis) > 5:
+        N.append("H4: … +%d tasinmis dosya daha (bulgu degil)" % (len(tasinmis) - 5))
+    for p0, aciklama in olu[:10]:
+        fail("H4", "OLU BAGLANTI: %s%s" % (p0, (" — " + aciklama) if aciklama else
+                                           " (hicbir yerde yok)"))
+    if len(olu) > 10:
+        fail("H4", "… +%d OLU BAGLANTI daha (ekranda kirpildi, HEPSI sayildi)" % (len(olu) - 10))
+
+
+def _kapi_h4(F, N, O, kok, y):
+    # ---- H4 OLU BAGLANTI -----------------------------------------------
+    metin = oku(y.canli)
+    aday = _h4_adaylar(metin)
     eksik = [p for p in sorted(aday) if not os.path.exists(os.path.join(kok, p))]
     if eksik:
         # Tasinmis mi, yok mu? Ayni ADLA baska bir yerde duruyorsa bu OLU DEGIL, TASINMISTIR.
-        havuz = {}
-        for r0, d0, f0 in os.walk(kok):
-            d0[:] = [d for d in d0 if d not in (".git", "node_modules", "__pycache__", ".venv")]
-            for f in f0:
-                havuz.setdefault(f, []).append(os.path.relpath(os.path.join(r0, f), kok).replace("\\", "/"))
-        # SESSIZ KIRPMA YOK: hepsi siniflandirilir; ekranda kirpilan sayi ACIKCA yazilir.
-        # (Eski surum eksik[:20] ile ilk 20'ye bakiyordu ve alfabetik siralama yuzunden
-        #  gercek bir olu baglantiyi KACIRDI — bizzat mutant turunda olculdu.)
-        # Fable Bulgu 7: yalniz basename eslesmesi "tasinmis" saymak, README.md/config.json
-        # gibi yaygin adlarda kapiyi silahsizlandiriyordu. Artik BAGLAM araniyor:
-        # ya arsiv altinda, ya da beyan edilen yolun bir dizin bileseni tutuyor.
-        olu, tasinmis = [], []
-        for p0 in eksik:
-            adaylar = havuz.get(os.path.basename(p0)) or []
-            beyan_dizin = set(x for x in os.path.dirname(p0).split("/") if x)
-            iyi = None
-            for c0 in adaylar:
-                c_dizin = set(x for x in os.path.dirname(c0).split("/") if x)
-                if c_dizin & {"arsiv", "archive"} or (beyan_dizin and beyan_dizin & c_dizin):
-                    iyi = c0; break
-            if iyi:
-                tasinmis.append((p0, iyi))
-            elif adaylar:
-                olu.append((p0, "ayni adli baska dosya var ama yol tutmuyor: " + adaylar[0]))
-            else:
-                olu.append((p0, None))
-        for p0, yer in tasinmis[:5]:
-            N.append("H4: TASINMIS (olu degil): '%s' -> %s" % (p0, yer))
-        if len(tasinmis) > 5:
-            N.append("H4: … +%d tasinmis dosya daha (bulgu degil)" % (len(tasinmis) - 5))
-        for p0, aciklama in olu[:10]:
-            fail("H4", "OLU BAGLANTI: %s%s" % (p0, (" — " + aciklama) if aciklama else
-                                               " (hicbir yerde yok)"))
-        if len(olu) > 10:
-            fail("H4", "… +%d OLU BAGLANTI daha (ekranda kirpildi, HEPSI sayildi)" % (len(olu) - 10))
+        havuz = _h4_havuz(kok)
+        olu, tasinmis = _h4_siniflandir(eksik, havuz)
+        _h4_hukum(F, N, olu, tasinmis)
 
 
 def _kapi_h5(F, N, O, rc, y):

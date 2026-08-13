@@ -646,6 +646,77 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
+  # 2b-13) H4 KENAR MUTANTI — `_kapi_h4`un dort parcasi arasindaki kenarlar
+  #     OLCULUYOR mu?  (kalip: h1 -> h14 -> h4; artik sabit)
+  #     13 Agu 2026: `_kapi_h4` dorde bolundu (CC 32 -> 4, 61 satir -> 10).
+  #     H4'un altin kumedeki gorunurlugu H14'ten de dusuktur: altin kumenin
+  #     hallerinde canli hafizada backtick'li YOL BEYANI yoktur, dolayisiyla H4
+  #     orada cogunlukla HIC KONUSMAZ. Konusmayan kapinin kenari "FARK YOK" ile
+  #     kanitlanamaz — bu is o boslugu kapatir.
+  #     Yedi hal: olu · tasinmis · ayni-ad-baska-yol · 12'li kirpma · 7'li tasinmis
+  #     kirpma · markdown bicimi · TURKCE adli olu baglanti (Fable Bulgu 4 dali).
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  h4_kenar_mutanti:
+    name: H4 kenar mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: dort parca arasi kenarlar OLCULUYOR mu (alti mutant + altin sutunu)
+        shell: bash
+        run: python faz0/h4_bolme_mutanti.py 2>&1 | tee h4-kenar-cikti.txt
+      - name: h4 kenar mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h4-kenar-${{ matrix.os }}
+          path: h4-kenar-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-14) OTURUM SAGLIGI OLCERI — `araclar/oturum_sagligi.py` ISIRIYOR mu?
+  #     Bu arac urunun parcasi DEGILDIR; oturum yonetimi icindir. Ama o da bir
+  #     kapidir ve ayni doktrine tabidir: esik asildiginda hukum DEGISMELI,
+  #     olculemeyen hal YESIL SAYILMAMALIDIR. Mutant sentetik transcript uretir
+  #     (gercek oturuma bagimli DEGILDIR) ve alti kusuru enjekte eder.
+  #     🔴 Aracin KENDISI CI'da kosulmaz: CI runner'inda Claude transcript'i
+  #     yoktur, arac dogru davranip OLCULEMEDI/exit 2 dondururdu ve is sahte
+  #     kirmizi yanardi. Olculen sey ARACIN SOZLESMESIDIR, ortam degil.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  oturum_sagligi:
+    name: oturum sagligi olceri (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: olcerin kendisi isiriyor mu (alti mutant)
+        shell: bash
+        run: python araclar/oturum_sagligi_mutanti.py 2>&1 | tee saglik-mutant.txt
+      - name: saglik mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: saglik-${{ matrix.os }}
+          path: saglik-mutant.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
   # 2c) Y-3 PROBU — kirik boru HUKMU kaybediyor mu, VE HANGI MEKANIZMAYLA?
   #     Iki python surumu BILEREK ayri: run #3/#4'te ayni komut windows py3.11'de
   #     120, py3.13'te 3 dondu — iki AYRI mekanizma. Tek surumle kosmak birini
