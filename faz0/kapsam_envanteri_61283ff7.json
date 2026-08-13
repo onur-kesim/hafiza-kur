@@ -1,0 +1,850 @@
+{
+  "motor": "/tmp/hk/skill/scripts/hafiza.py",
+  "motor_sha256": "61283FF7D755FFC719EA7FE74045740F6DC305E18A8F39A7CD9DF48482152629",
+  "fail_sayisi": 61,
+  "sonuclar": [
+    {
+      "lineno": 2957,
+      "col": 8,
+      "end_lineno": 2958,
+      "end_col": 103,
+      "kapi": "H-LINK",
+      "no": 1,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 2963,
+      "col": 8,
+      "end_lineno": 2963,
+      "end_col": 73,
+      "kapi": "H6",
+      "no": 2,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 2967,
+      "col": 8,
+      "end_lineno": 2967,
+      "end_col": 79,
+      "kapi": "H-",
+      "no": 3,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3040,
+      "col": 8,
+      "end_lineno": 3040,
+      "end_col": 72,
+      "kapi": "H0",
+      "no": 4,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3045,
+      "col": 12,
+      "end_lineno": 3046,
+      "end_col": 52,
+      "kapi": "H0",
+      "no": 5,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3057,
+      "col": 16,
+      "end_lineno": 3057,
+      "end_col": 29,
+      "kapi": "H0",
+      "no": 6,
+      "hukum": "KAPSAMLI",
+      "sebep": "5 mutant KACTI",
+      "kacan": 5,
+      "exit": 1,
+      "kacanlar": [
+        "M-AKLAMA",
+        "M-H0b",
+        "M-H0c",
+        "M-H0d",
+        "M-H0t"
+      ]
+    },
+    {
+      "lineno": 3100,
+      "col": 12,
+      "end_lineno": 3100,
+      "end_col": 114,
+      "kapi": "H1",
+      "no": 7,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3103,
+      "col": 12,
+      "end_lineno": 3103,
+      "end_col": 61,
+      "kapi": "H1",
+      "no": 8,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3109,
+      "col": 12,
+      "end_lineno": 3109,
+      "end_col": 115,
+      "kapi": "H1",
+      "no": 9,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3129,
+      "col": 8,
+      "end_lineno": 3131,
+      "end_col": 72,
+      "kapi": "H1",
+      "no": 10,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3141,
+      "col": 8,
+      "end_lineno": 3141,
+      "end_col": 88,
+      "kapi": "H1",
+      "no": 11,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3158,
+      "col": 8,
+      "end_lineno": 3158,
+      "end_col": 71,
+      "kapi": "H1",
+      "no": 12,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3199,
+      "col": 8,
+      "end_lineno": 3199,
+      "end_col": 66,
+      "kapi": "H1-KOVA",
+      "no": 13,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3220,
+      "col": 12,
+      "end_lineno": 3220,
+      "end_col": 97,
+      "kapi": "H1-KOVA",
+      "no": 14,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H1K"
+      ]
+    },
+    {
+      "lineno": 3229,
+      "col": 16,
+      "end_lineno": 3230,
+      "end_col": 50,
+      "kapi": "H1-KOVA",
+      "no": 15,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3249,
+      "col": 8,
+      "end_lineno": 3250,
+      "end_col": 47,
+      "kapi": "H2",
+      "no": 16,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H2"
+      ]
+    },
+    {
+      "lineno": 3262,
+      "col": 12,
+      "end_lineno": 3262,
+      "end_col": 49,
+      "kapi": "H3",
+      "no": 17,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H3"
+      ]
+    },
+    {
+      "lineno": 3350,
+      "col": 8,
+      "end_lineno": 3351,
+      "end_col": 66,
+      "kapi": "H4",
+      "no": 18,
+      "hukum": "KAPSAMLI",
+      "sebep": "2 mutant KACTI",
+      "kacan": 2,
+      "exit": 1,
+      "kacanlar": [
+        "M-H4",
+        "M-H4b"
+      ]
+    },
+    {
+      "lineno": 3353,
+      "col": 8,
+      "end_lineno": 3353,
+      "end_col": 99,
+      "kapi": "H4",
+      "no": 19,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3376,
+      "col": 12,
+      "end_lineno": 3376,
+      "end_col": 76,
+      "kapi": "H5",
+      "no": 20,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3385,
+      "col": 12,
+      "end_lineno": 3386,
+      "end_col": 58,
+      "kapi": "H5",
+      "no": 21,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H5"
+      ]
+    },
+    {
+      "lineno": 3409,
+      "col": 8,
+      "end_lineno": 3409,
+      "end_col": 45,
+      "kapi": "H6",
+      "no": 22,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3419,
+      "col": 16,
+      "end_lineno": 3419,
+      "end_col": 61,
+      "kapi": "H6",
+      "no": 23,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H6"
+      ]
+    },
+    {
+      "lineno": 3422,
+      "col": 16,
+      "end_lineno": 3422,
+      "end_col": 62,
+      "kapi": "H6",
+      "no": 24,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3443,
+      "col": 16,
+      "end_lineno": 3444,
+      "end_col": 65,
+      "kapi": "H7",
+      "no": 25,
+      "hukum": "KAPSAMLI",
+      "sebep": "2 mutant KACTI",
+      "kacan": 2,
+      "exit": 1,
+      "kacanlar": [
+        "M-H7",
+        "M-H7b"
+      ]
+    },
+    {
+      "lineno": 3455,
+      "col": 16,
+      "end_lineno": 3455,
+      "end_col": 62,
+      "kapi": "H8",
+      "no": 26,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3458,
+      "col": 16,
+      "end_lineno": 3458,
+      "end_col": 68,
+      "kapi": "H8",
+      "no": 27,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3466,
+      "col": 16,
+      "end_lineno": 3468,
+      "end_col": 50,
+      "kapi": "H8",
+      "no": 28,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H8b"
+      ]
+    },
+    {
+      "lineno": 3472,
+      "col": 16,
+      "end_lineno": 3472,
+      "end_col": 111,
+      "kapi": "H8",
+      "no": 29,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3483,
+      "col": 20,
+      "end_lineno": 3489,
+      "end_col": 82,
+      "kapi": "H8",
+      "no": 30,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3491,
+      "col": 20,
+      "end_lineno": 3491,
+      "end_col": 116,
+      "kapi": "H8",
+      "no": 31,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H8"
+      ]
+    },
+    {
+      "lineno": 3513,
+      "col": 20,
+      "end_lineno": 3514,
+      "end_col": 66,
+      "kapi": "H9",
+      "no": 32,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3568,
+      "col": 12,
+      "end_lineno": 3569,
+      "end_col": 91,
+      "kapi": "H10",
+      "no": 33,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H10"
+      ]
+    },
+    {
+      "lineno": 3578,
+      "col": 8,
+      "end_lineno": 3579,
+      "end_col": 77,
+      "kapi": "H10",
+      "no": 34,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H10c"
+      ]
+    },
+    {
+      "lineno": 3584,
+      "col": 8,
+      "end_lineno": 3586,
+      "end_col": 31,
+      "kapi": "H10",
+      "no": 35,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3597,
+      "col": 8,
+      "end_lineno": 3598,
+      "end_col": 72,
+      "kapi": "H10",
+      "no": 36,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H10d"
+      ]
+    },
+    {
+      "lineno": 3639,
+      "col": 8,
+      "end_lineno": 3639,
+      "end_col": 52,
+      "kapi": "H10",
+      "no": 37,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H10b"
+      ]
+    },
+    {
+      "lineno": 3650,
+      "col": 16,
+      "end_lineno": 3650,
+      "end_col": 88,
+      "kapi": "H10",
+      "no": 38,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3670,
+      "col": 12,
+      "end_lineno": 3670,
+      "end_col": 89,
+      "kapi": "H11",
+      "no": 39,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3673,
+      "col": 16,
+      "end_lineno": 3673,
+      "end_col": 104,
+      "kapi": "H11",
+      "no": 40,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H11"
+      ]
+    },
+    {
+      "lineno": 3684,
+      "col": 20,
+      "end_lineno": 3685,
+      "end_col": 44,
+      "kapi": "H11",
+      "no": 41,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3689,
+      "col": 24,
+      "end_lineno": 3689,
+      "end_col": 81,
+      "kapi": "H11",
+      "no": 42,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3691,
+      "col": 24,
+      "end_lineno": 3691,
+      "end_col": 110,
+      "kapi": "H11",
+      "no": 43,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3693,
+      "col": 24,
+      "end_lineno": 3693,
+      "end_col": 106,
+      "kapi": "H11",
+      "no": 44,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3696,
+      "col": 20,
+      "end_lineno": 3696,
+      "end_col": 89,
+      "kapi": "H11",
+      "no": 45,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3698,
+      "col": 20,
+      "end_lineno": 3698,
+      "end_col": 78,
+      "kapi": "H11",
+      "no": 46,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3700,
+      "col": 16,
+      "end_lineno": 3700,
+      "end_col": 121,
+      "kapi": "H11",
+      "no": 47,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3704,
+      "col": 16,
+      "end_lineno": 3704,
+      "end_col": 83,
+      "kapi": "H11",
+      "no": 48,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3706,
+      "col": 16,
+      "end_lineno": 3706,
+      "end_col": 103,
+      "kapi": "H11",
+      "no": 49,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3735,
+      "col": 8,
+      "end_lineno": 3736,
+      "end_col": 87,
+      "kapi": "H12",
+      "no": 50,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H12b"
+      ]
+    },
+    {
+      "lineno": 3741,
+      "col": 12,
+      "end_lineno": 3741,
+      "end_col": 90,
+      "kapi": "H12",
+      "no": 51,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H12"
+      ]
+    },
+    {
+      "lineno": 3748,
+      "col": 8,
+      "end_lineno": 3748,
+      "end_col": 80,
+      "kapi": "H12",
+      "no": 52,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3776,
+      "col": 12,
+      "end_lineno": 3777,
+      "end_col": 92,
+      "kapi": "H12",
+      "no": 53,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3796,
+      "col": 8,
+      "end_lineno": 3796,
+      "end_col": 82,
+      "kapi": "H13",
+      "no": 54,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H13"
+      ]
+    },
+    {
+      "lineno": 3802,
+      "col": 12,
+      "end_lineno": 3802,
+      "end_col": 84,
+      "kapi": "H13",
+      "no": 55,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3810,
+      "col": 20,
+      "end_lineno": 3810,
+      "end_col": 99,
+      "kapi": "H13",
+      "no": 56,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3834,
+      "col": 12,
+      "end_lineno": 3837,
+      "end_col": 96,
+      "kapi": "H15",
+      "no": 57,
+      "hukum": "KAPSAMLI",
+      "sebep": "2 mutant KACTI",
+      "kacan": 2,
+      "exit": 1,
+      "kacanlar": [
+        "M-H15a",
+        "M-H15b"
+      ]
+    },
+    {
+      "lineno": 3854,
+      "col": 8,
+      "end_lineno": 3854,
+      "end_col": 97,
+      "kapi": "H15",
+      "no": 58,
+      "hukum": "KAPSAMLI",
+      "sebep": "1 mutant KACTI",
+      "kacan": 1,
+      "exit": 1,
+      "kacanlar": [
+        "M-H15c"
+      ]
+    },
+    {
+      "lineno": 3859,
+      "col": 8,
+      "end_lineno": 3860,
+      "end_col": 85,
+      "kapi": "H2",
+      "no": 59,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3997,
+      "col": 12,
+      "end_lineno": 3997,
+      "end_col": 99,
+      "kapi": "H14",
+      "no": 60,
+      "hukum": "KAPSAMSIZ",
+      "sebep": "hicbir mutant fark etmedi (isir exit=0)",
+      "kacan": 0,
+      "exit": 0,
+      "kacanlar": []
+    },
+    {
+      "lineno": 3999,
+      "col": 12,
+      "end_lineno": 4001,
+      "end_col": 86,
+      "kapi": "H14",
+      "no": 61,
+      "hukum": "KAPSAMLI",
+      "sebep": "2 mutant KACTI",
+      "kacan": 2,
+      "exit": 1,
+      "kacanlar": [
+        "M-H14",
+        "M-H14b"
+      ]
+    }
+  ]
+}

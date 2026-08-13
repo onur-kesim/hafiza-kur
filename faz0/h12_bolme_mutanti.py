@@ -7,6 +7,11 @@ ucu bir arada — `_h12_tazelik` UC kanali birden kullanir (F·N·O), `_h12_sapm
 HIC hukum basmaz (saf). Bu yuzden mutantlar hem VERI kenarlarini hem UC KANALI
 tek tek koparir.
 
+H12'nin GIREN kenarlari iki tanedir: `bl` (H10'dan) ve `ks` (H11'den). Ilk surumde
+yalnizca `bl` olculuyordu; `ks` kenarini koparan mutant mevcut yedi halin
+tamaminda KACIYORDU (olculdu 14 Agu 2026) cunku hicbir hal karar yazmiyordu.
+`h_karar_sapmasi` hali bu bosluk icin eklendi — kenar VARDI, olcusu YOKTU.
+
 HAL KAPISI: temiz kolda her halin ciktisinda bir H12 satiri BULUNMALIDIR.
 CIKIS KODU  0 hepsi ISIRDI · 1 en az biri KACTI · 2 OLCULEMEDI
 """
@@ -59,10 +64,23 @@ def normalize(metin, kok):
 #   h_satirsiz    'Son guncelleme' satiri YOK     -> FAIL (F)
 #   h_canli_bayat blok eski, fragman yeni         -> CANLI BAYAT (sapma hukmu)
 #   h_bekleyen    derlenmemis fragman             -> "N fragman DERLENMEYI bekliyor" (N)
+#   h_karar_sapmasi blok eski, KARAR yeni         -> CANLI BAYAT ama YALNIZ `ks` yolundan
+#
+# 🔴 `h_karar_sapmasi` NEDEN AYRI BIR HAL (olculdu 14 Agu 2026):
+#   `_h12_sapma_haritasi(y, ks)` iki kaynaktan besleniyor — fragmanlar (y) ve
+#   KARARLAR (ks, H11'den gelen kenar). Ilk yedi halin HICBIRI karar yazmiyor,
+#   yani `ks` her zaman BOS geliyordu. Olculdu: `ks` kenarini koparan mutant
+#   yedi halin tamaminda KACIYOR (fark yok). Kenar VARDI, olcusu YOKTU.
+#   Izolasyon `acilis-protokolu` konusuyla saglaniyor: o blok SAB_CANLI
+#   sablonundan gelir ve ARKASINDA FRAGMAN YOKTUR (kaynak="-"). Boylece
+#   CANLI BAYAT hukmunu ateslemenin TEK yolu karar dosyasidir; fragman yolu
+#   ayni hukmu ayrica basamaz. Ortusen tespit korlugu maskeler — bu hal
+#   ortusmeyi bilerek keser.
 HALLER = [
     ("h_temiz", "temiz"), ("h_bayat", "bayat"), ("h_gelecek", "gelecek"),
     ("h_cozulemez", "cozulemez"), ("h_satirsiz", "satirsiz"),
     ("h_canli_bayat", "canli_bayat"), ("h_bekleyen", "bekleyen"),
+    ("h_karar_sapmasi", "karar_sapmasi"),
 ]
 
 OLCUM_KOMUTLARI = [["kapi"]]
@@ -140,6 +158,20 @@ def hal_kur(motor, ad, tip, taban):
         if s2 == s:
             raise Kurulamadi("genel-durum blok basligi bulunamadi")
         open(p, "w", encoding="utf-8", newline="").write(s2)
+    elif tip == "karar_sapmasi":
+        # `ks` (H11 -> H12) kenarini IZOLE eden hal. `acilis-protokolu` blogunun
+        # ARKASINDA FRAGMAN YOKTUR (SAB_CANLI sablonundan gelir, kaynak="-"),
+        # bu yuzden o konuda en yeni kaydi YALNIZCA karar dosyasi saglayabilir.
+        rc2, c2 = kos(motor, ["karar", "--baslik=h12 ks kenari", "--konu=acilis-protokolu"], kok)
+        if rc2 != 0:
+            raise Kurulamadi("karar basarisiz (%s): %s" % (ad, c2.strip().split("\n")[-1][:120]))
+        p = _canli(kok)
+        s = open(p, encoding="utf-8").read()
+        s2 = re.sub(r'(<!--\s*blok konu="acilis-protokolu"[^>]*?guncel=")(\d{4}-\d{2}-\d{2})',
+                    r"\g<1>2026-01-01", s, count=1)
+        if s2 == s:
+            raise Kurulamadi("acilis-protokolu blok basligi bulunamadi")
+        open(p, "w", encoding="utf-8", newline="").write(s2)
     else:
         raise Kurulamadi("bilinmeyen hal: %s" % tip)
     return kok
@@ -203,6 +235,8 @@ MUTANTLAR = [
      [(CAGRI_HUK, "    _h12_sapma_hukmu(F, N, y, [], en_yeni)")]),
     ("M-H12f DONUS t_son", "kapinin DONUS degeri kopar — H14 tarihi kaybeder (kapilar arasi kenar)",
      [(DONUS, "    _h12_sapma_hukmu(F, N, y, bl, en_yeni)\n    return None")]),
+    ("M-H12g KENAR ks", "H11 -> H12 kenari kopar — KARAR kaynakli sapma gorunmez olur",
+     [(CAGRI_HAR, "    en_yeni = _h12_sapma_haritasi(y, [])")]),
 ]
 
 

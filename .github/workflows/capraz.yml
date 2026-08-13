@@ -724,6 +724,52 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
+  # 2b-16) H12 KENAR MUTANTI — kenarlar VE UC HUKUM KANALI olculuyor mu?
+  #     14 Agu 2026: `_kapi_h12` uce bolundu (CC 25 -> 1, 46 satir -> 6).
+  #     Bu bolmede kalibin IKI UCU birden gorunur:
+  #       `_h12_tazelik`        UC kanali birden kullanir (F·N·O) -> ucunu de ALIR
+  #       `_h12_sapma_haritasi` HIC hukum basmaz (olculdu: SAF)   -> kanal ALMAZ
+  #       `_h12_sapma_hukmu`    F ve N kullanir                   -> ikisini ALIR
+  #     Kanal kapisinin olcutu tek: KULLANDIGINI TASI. Kullanilmayani tasitmak da
+  #     bir maliyettir — "koruma" adi altinda olculmemis parametre birikir.
+  #     SEKIZ hal, YEDI mutant; uc mutant dogrudan kanallari koparir (F/N/O yerine
+  #     bos liste), ucu veri kenarlarini (`bl` H10'dan, `ks` H11'den, `en_yeni`
+  #     ic kenar), biri kapinin DONUS degerini (H14 o tarihi kullanir — kapilar
+  #     arasi kenar).
+  #     🔴 `ks` KENARI SONRADAN EKLENDI (olculdu 14 Agu 2026): ilk yedi halin
+  #     hicbiri KARAR yazmiyordu, yani `ks` her kosumda BOS geliyordu ve o kenari
+  #     koparan mutant yedi halin TAMAMINDA kaciyordu. `h_karar_sapmasi` hali bu
+  #     bosluk icin eklendi; izolasyonu `acilis-protokolu` konusu saglar (o blogun
+  #     ARKASINDA FRAGMAN YOKTUR, dolayisiyla sapmayi yalnizca karar atesleyebilir).
+  #     Kenar VARDI, olcusu YOKTU — ve bunu ancak mutanti yazip kacisini OLCUNCE
+  #     gorduk. Beyan degil, olcum.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  h12_kenar_mutanti:
+    name: H12 kenar mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: kenarlar ve uc hukum kanali OLCULUYOR mu
+        shell: bash
+        run: python faz0/h12_bolme_mutanti.py 2>&1 | tee h12-kenar-cikti.txt
+      - name: h12 kenar mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h12-kenar-${{ matrix.os }}
+          path: h12-kenar-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
   # 2b-14) OTURUM SAGLIGI OLCERI — `araclar/oturum_sagligi.py` ISIRIYOR mu?
   #     Bu arac urunun parcasi DEGILDIR; oturum yonetimi icindir. Ama o da bir
   #     kapidir ve ayni doktrine tabidir: esik asildiginda hukum DEGISMELI,
