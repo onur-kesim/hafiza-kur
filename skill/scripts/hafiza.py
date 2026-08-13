@@ -3710,9 +3710,24 @@ def _kapi_h11(F, N, O, y):
     return ks
 
 
-def _kapi_h12(F, N, O, rc, y, bl, ks):
+# ----------------------------------------------- H12 ALT-BOLMESI (FAZ C)
+# `_kapi_h12` (46 satir, CC 25) UC parcaya bolundu; ince `_kapi_h12` en sona konur.
+#
+# 🔴 BU BOLMEDE KALIBIN IKI UCU DA VAR:
+#   `_h12_tazelik`        UC kanali birden kullanir (F · N · O) -> ucunu de ALIR
+#   `_h12_sapma_haritasi` HIC hukum basmaz (olculdu: 0)         -> SAF, kanal ALMAZ
+#   `_h12_sapma_hukmu`    F ve N kullanir                       -> ikisini ALIR
+# Uretec bunu her kosumda AST ile olcer (KANAL KAPISI); imza eksikse YAZMAZ.
+# Kullanilmayan kanali tasitmak da bir maliyet olurdu: "koruma" adi altinda
+# olculmemis parametre birikir. Olcut tek: KULLANDIGINI TASI.
+#
+# Parcalar arasi veri IKI KENARDIR ve ikisi de imzada gorunur:
+#     t_son    TAZELIK -> ebeveyn (donus degeri; H14 bunu kullanir)
+#     en_yeni  SAPMA HARITASI -> SAPMA HUKMU
+
+
+def _h12_tazelik(F, N, O, rc, y):
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
-    # ---- H12 BAYATLIK --------------------------------------------------
     gun = rc["bayatlik_gun"]
     m = re.search(r"Son g[uü]ncelleme:\s*(.{0,40})", oku(y.canli))
     t_son = tarih_coz(m.group(1)) if m else None
@@ -3731,6 +3746,10 @@ def _kapi_h12(F, N, O, rc, y, bl, ks):
                  % m.group(1).strip()[:30])
     else:
         fail("H12", "'Son guncelleme: ...' satiri yok — bayatlik olculemiyor")
+    return t_son
+
+
+def _h12_sapma_haritasi(y, ks):
     # sapma: bir konuda canli bloktan DAHA YENI fragman/karar var mi?
     en_yeni = {}
     for d0 in (y.gunluk, y.gunluk_ars):
@@ -3746,6 +3765,11 @@ def _kapi_h12(F, N, O, rc, y, bl, ks):
         kk = slug(k["meta"].get("konu", "")); t = k["meta"].get("tarih", "")
         if kk and t > en_yeni.get(kk, ""):
             en_yeni[kk] = t
+    return en_yeni
+
+
+def _h12_sapma_hukmu(F, N, y, bl, en_yeni):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     for _, _, oz in bl:
         k, g = oz.get("konu", "?"), oz.get("guncel", "")
         if k in en_yeni and en_yeni[k] > g:
@@ -3755,6 +3779,13 @@ def _kapi_h12(F, N, O, rc, y, bl, ks):
         bekleyen = [f for f in os.listdir(y.gunluk) if f.endswith(".md")]
         if bekleyen:
             N.append("H12: %d fragman DERLENMEYI bekliyor" % len(bekleyen))
+
+
+def _kapi_h12(F, N, O, rc, y, bl, ks):
+    # ---- H12 BAYATLIK --------------------------------------------------
+    t_son = _h12_tazelik(F, N, O, rc, y)
+    en_yeni = _h12_sapma_haritasi(y, ks)
+    _h12_sapma_hukmu(F, N, y, bl, en_yeni)
     return t_son
 
 
