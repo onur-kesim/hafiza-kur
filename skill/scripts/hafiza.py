@@ -3534,9 +3534,30 @@ def _kapi_h9(F, N, O, kok, y):
         O.append("H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)")
 
 
-def _kapi_h10(F, N, O, y):
+# ----------------------------------------------- H10 ALT-BOLMESI (FAZ C)
+# `_kapi_h10` (81 satir, CC 27) DORT parcaya bolundu; ince `_kapi_h10` en sona konur.
+#
+# 🔴 BURADA PARCALAR SAF DEGIL — VE OLMAMALI. h14/h4'te tasinan bolgelerde hukum
+# cagrisi sifirdi; H10'da dordu de hukum basar. Bu yuzden hepsi F alir, `_h10_cit`
+# ayrica O alir (kod bolgesinde gizlenen bloklar icin OLCULEMEDI hukmu basar).
+# Gerekce 11 Agu 2026'da olculdu: hukum listesini DONDUREN bir parca yarida
+# SystemExit atarsa o ana kadar toplanan bulgu KAYBOLUR. Uretec bunu artik
+# mekanik olarak dogrular (KANAL KAPISI): bolgenin kullandigi her hukum kanali
+# parcanin imzasinda BULUNMAK ZORUNDA.
+#
+# 🔴 `N.append` EBEVEYNDE KALDI: "%d blok / %d ayrik konu" notu YAPI taramasindan
+# SONRA, SOZLUK denetiminden ONCE basilir. Sira sozlesmedir (faz0/sabotaj.py
+# hukum cagrilarini lineno sirasina gore numaralandirir), bu yuzden not satiri
+# tasinmadi — oldugu yerde, iki cagri arasinda duruyor.
+#
+# Parcalar arasi veri UC KENARDIR ve hepsi imzada gorunur:
+#     bl    TEKILLIK -> ebeveyn (donus degeri)
+#     say   TEKILLIK -> SOZLUK
+#     _ham  CIT      -> YAPI
+
+
+def _h10_tekillik(F, y):
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
-    # ---- H10 KONU TEKILLIGI (anahtar bazli sikistirma) -----------------
     bl = canli_bloklar(y)
     say = {}
     for _, _, oz in bl:
@@ -3546,6 +3567,11 @@ def _kapi_h10(F, N, O, y):
         if n > 1:
             fail("H10", "KONU TEKILLIGI KIRIK: '%s' icin canlida %d blok var — "
                         "eskisini emekli et (her anahtar icin SON deger tutulur)" % (k, n))
+    return bl, say
+
+
+def _h10_cit(F, O, y):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # Fable Bulgu 6: kapanmamis/ic-ice blok sayilmiyordu -> ayni konuda birikme SESSIZ kaliyordu.
     _ham = satirlar(y.canli)
     if kod_citi_dengesiz(_ham):
@@ -3582,6 +3608,11 @@ def _kapi_h10(F, N, O, y):
         O.append("H10: %d blok satiri KOD BOLGESINDE — o bloklar OLCULMEDI "
                  "(belge ornegi ise sorun yok; degilse citi duzelt): satir %s"
                  % (len(_gizli), ", ".join(str(g[0]) for g in _gizli[:5])))
+    return _ham
+
+
+def _h10_yapi(F, _ham):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     acik, hatali, asilan = None, [], None
     for _n, _s in enumerate(kod_disi(_ham), 1):
         if _s.startswith("## ") and acik is not None and asilan is None:
@@ -3606,7 +3637,10 @@ def _kapi_h10(F, N, O, y):
         hatali.append("satir %d: blok ACIK KALDI (kapanis isareti yok)" % acik)
     for h0 in hatali[:5]:
         fail("H10", "BOZUK BLOK YAPISI — %s" % h0)
-    N.append("H10: %d blok / %d ayrik konu" % (len(bl), len(say)))
+
+
+def _h10_sozluk(F, y, say):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
     if os.path.isfile(y.konular):
         bilinen = set(re.findall(r"^\|\s*([a-z0-9-]+)\s*\|", oku(y.konular), re.M))
         bilinen -= {"konu"}
@@ -3614,6 +3648,15 @@ def _kapi_h10(F, N, O, y):
         for k in say:
             if k not in bilinen:
                 fail("H10", "KONULAR.md'de tanimsiz konu: '%s' (once sozluge ekle)" % k)
+
+
+def _kapi_h10(F, N, O, y):
+    # ---- H10 KONU TEKILLIGI (anahtar bazli sikistirma) -----------------
+    bl, say = _h10_tekillik(F, y)
+    _ham = _h10_cit(F, O, y)
+    _h10_yapi(F, _ham)
+    N.append("H10: %d blok / %d ayrik konu" % (len(bl), len(say)))
+    _h10_sozluk(F, y, say)
     return bl
 
 
