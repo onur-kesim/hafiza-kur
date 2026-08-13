@@ -544,6 +544,108 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
+  # 2b-11) H14 KENAR MUTANTI — `_kapi_h14`un dort parcasi arasindaki kenarlar
+  #     OLCULUYOR mu?
+  #     13 Agu 2026: `_kapi_h14` dort parcaya bolundu (CC 35 -> 3, 104 satir -> 12)
+  #     ve altin kume 22 olcumde BIT-BIT tuttu. H1 turunun dersi burada da gecerli:
+  #     "FARK YOK" bugunku davranisi kanitlar, kenarin OLCULDUGUNU degil.
+  #
+  #     🔴 OLCULDU — BOSLUK H1'DEKINDEN BUYUK CIKTI: yedi mutantin BESINE altin
+  #     kume KOR (H1'de yedide uctu).
+  #         M-H14a KENAR git_var    altin kume: FARK YOK
+  #         M-H14b KENAR kirli      altin kume: FARK YOK
+  #         M-H14c KENAR izlenen    altin kume: FARK YOK
+  #         M-H14f TOLERANS         altin kume: FARK YOK
+  #         M-H14g KORUMA SOKME     altin kume: FARK YOK
+  #     Sebep yapisaldir: H14 PROJE ZAMANI ile HAFIZA ZAMANI arasindaki farki
+  #     olcer; altin kumenin halleri taze kurulmus, hafizasi bugun yazilmis
+  #     projelerdir, yani orada H14 hep ayni tek cumleyi uretir. Git'in dort
+  #     sinifi (izlenen-temiz · izlenen-kirli · izlenmeyen · .gitignore'lu) o
+  #     kumede HIC ayrismaz — oysa H14'un git mantiginin var olus nedeni odur.
+  #
+  #     BU IS IKI SUTUN BASAR (h1_kenar_mutanti ile ayni sozlesme):
+  #         KENDI KUMESI : 7 proje hali x 1 komut = 7 olcum, 7 mutant isirmali
+  #         ALTIN KUME   : ayni sabotaji altin karsilastirma goruyor mu (surukleme olceri)
+  #
+  #     HAL KAPISI (bu betige ozgu): temiz kolda her halin ciktisinda bir H14
+  #     satiri BULUNMALIDIR. Bulunmazsa hal H14'u hic atesliyor demektir ve butun
+  #     mutantlar sahte "temiz" gorunurdu; betik o durumda OLCULEMEDI der (exit 2).
+  #
+  #     WINDOWS/macOS NOTU: haller `git commit` ve `os.utime` ile kurulur (izlenen-
+  #     temiz sinifi ancak gercek bir commit tarihiyle var olur). Windows'ta dosya
+  #     kilidi / mtime cozunurlugu OLCULMEDI; bu is tam da onu olcmek icin var.
+  #     Kurulum coker ise `Kurulamadi` -> OLCULEMEDI -> exit 2, sessiz PASS DEGIL.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  h14_kenar_mutanti:
+    name: H14 kenar mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: dort parca arasi kenarlar OLCULUYOR mu (yedi mutant + altin sutunu)
+        shell: bash
+        run: python faz0/h14_bolme_mutanti.py 2>&1 | tee h14-kenar-cikti.txt
+      - name: h14 kenar mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h14-kenar-${{ matrix.os }}
+          path: h14-kenar-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-12) KARMASIKLIK OLCUTU — CC sayisini uretenin KENDISI isiriyor mu?
+  #     13 Agu 2026'da olculdu: eski CC sayilari YANLISTI (comprehension `if`leri
+  #     sayilmiyor, `with` sayiliyordu). Bir OLCUT de bir kapidir; olculmezse
+  #     hukmu yoktur. `karmasiklik_mutanti.py` olcutun 9 kusurunu enjekte eder,
+  #     dokuzu da isirmalidir. `continue-on-error` YOK.
+  #
+  #     🔴 ARAC `--kapi` ILE KOSULMAZ: motorda bugun 14 ihlal var (11 CC>20,
+  #     11 satir>80, birlesik 14) ve bunlar Faz C'nin ACIK IS listesidir, bir
+  #     regresyon degil. `--kapi` bu isi her kosumda kirmizi yakardi ve KIRMIZI
+  #     DEGERSIZLESIRDI. Arac burada RAPOR kipinde kosar (exit 0) ve ciktisi
+  #     artefakt olarak saklanir; ihlal listesi boylece kosumdan kosuma
+  #     KARSILASTIRILABILIR olur. Kapi kipine gecis, liste bosaldiginda ayri bir
+  #     kararla yapilir.
+  # ---------------------------------------------------------------------------
+  karmasiklik:
+    name: karmasiklik olcutu (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: olcutun kendisi isiriyor mu (dokuz mutant)
+        shell: bash
+        run: python faz0/karmasiklik_mutanti.py 2>&1 | tee karmasiklik-mutant.txt
+      - name: motorun ihlal listesi (RAPOR kipi — kapi DEGIL)
+        shell: bash
+        run: python faz0/karmasiklik.py skill/scripts/hafiza.py --ihlal 2>&1 | tee karmasiklik-ihlal.txt
+      - name: karmasiklik ciktilari (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: karmasiklik-${{ matrix.os }}
+          path: |
+            karmasiklik-mutant.txt
+            karmasiklik-ihlal.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
   # 2c) Y-3 PROBU — kirik boru HUKMU kaybediyor mu, VE HANGI MEKANIZMAYLA?
   #     Iki python surumu BILEREK ayri: run #3/#4'te ayni komut windows py3.11'de
   #     120, py3.13'te 3 dondu — iki AYRI mekanizma. Tek surumle kosmak birini
