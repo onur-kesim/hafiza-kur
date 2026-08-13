@@ -682,6 +682,48 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
+  # 2b-15) H10 KENAR MUTANTI — kenarlar VE HUKUM KANALLARI olculuyor mu?
+  #     13 Agu 2026: `_kapi_h10` dorde bolundu (CC 27 -> 1, 81 satir -> 8).
+  #     🔴 H10 ONCEKILERDEN FARKLI: h14/h4'te tasinan bolgeler hukum BASMIYORDU
+  #     (bos bolge kapisi "sifir mi" diye soruyordu). H10'da dort bolgenin DORDU de
+  #     basar. Bu yuzden uretecteki kapi genellestirildi — KANAL KAPISI: bir bolge
+  #     hangi hukum kanalini kullaniyorsa (fail/F · N · O), parcanin IMZASI onu
+  #     TASIMAK ZORUNDA; tasimazsa uretec dosyayi YAZMAZ. Mutant da bunu olcer:
+  #     F ya da O yerine bos liste verildiginde bulgu sessizce kayboluyor mu.
+  #
+  #     🔴 ESDEGER MUTANT KAYDI: ilk SIRA mutanti (`_h10_yapi` ile `N.append` yer
+  #     degistirir) KACTI. Sebep korluk DEGIL, esdegerlikti: bulgular ve notlar
+  #     AYRI BOLUMLERDE basilir, sira yalniz AYNI KANAL icinde gozlenebilir.
+  #     Esdeger mutanti "kacti" diye raporlamak SAHTE KIRMIZI olurdu (Y-4 dersi);
+  #     mutant ayni kanala yazan iki parcaya tasindi ve kumeye `h_cift_cit` hali
+  #     eklendi. Dokuz hal x alti mutant.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  h10_kenar_mutanti:
+    name: H10 kenar mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: kenarlar ve hukum kanallari OLCULUYOR mu (alti mutant + altin sutunu)
+        shell: bash
+        run: python faz0/h10_bolme_mutanti.py 2>&1 | tee h10-kenar-cikti.txt
+      - name: h10 kenar mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h10-kenar-${{ matrix.os }}
+          path: h10-kenar-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
   # 2b-14) OTURUM SAGLIGI OLCERI — `araclar/oturum_sagligi.py` ISIRIYOR mu?
   #     Bu arac urunun parcasi DEGILDIR; oturum yonetimi icindir. Ama o da bir
   #     kapidir ve ayni doktrine tabidir: esik asildiginda hukum DEGISMELI,
