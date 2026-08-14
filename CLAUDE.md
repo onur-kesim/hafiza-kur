@@ -26,8 +26,10 @@ sözleşmesi kırılırsa minor artar.
 - [x] Kullanıcı `kur/kapi/isir/not/derle/devral` komutlarını Linux'ta koşabilir (CI yeşil)
 - [ ] **Windows'ta** tam hüküm. ÖLÇÜT = (i) `hafiza.py`'nin iki `win32` dalı bir mutantla koparılıp
       CI'da ISIRIYOR **ve** (ii) `.skill` taze bir projede GERÇEK Windows'ta kurulup `kur→kapi→isir`
-      koşuyor. *(Ölçüldü 14 Ağu: ortak batarya zaten üç platformda `continue-on-error`sız kapı;
-      tek boşluk platforma özgü dal — `_surec_yasiyor_win` `faz0/` ve `capraz.yml`'de hiç geçmiyor.)*
+      koşuyor. *(i) KAPANDI 14 Ağu, CI #43 `cde1998`: `faz0/win_dal_mutanti.py` — üç kapı, dört
+      ayrı eksende mutant, üç platform `continue-on-error`sız, windows'ta `KAPI-3 CANLI : YESIL`.
+      (ii) AÇIK: lafzı paketten AÇILMIŞ `.skill` istiyor, ölçülen depo motoruydu → 2(ii) ⊂ madde 4.
+      **İkisi BİRLİKTE ✅ olur** — Onur kilidi, 14 Ağu; yeniden tartışılmaz.)*
 - [x] **macOS'ta** tam hüküm. ÖLÇÜT = ortak batarya macos-latest'te `continue-on-error`sız yeşil.
       *(Ölçüldü 14 Ağu, CI #39: `hafiza.py`'de darwin dalı SIFIR — mutasyonu yapılacak platforma
       özgü yüzey yok. NFC/NFD mayını kapıyla değil KAÇINMAYLA yönetiliyor (§4); README'de açık yazar.)*
