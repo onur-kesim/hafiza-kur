@@ -929,3 +929,51 @@ jobs:
             ci-kapsam-cikti.txt
             ci-kapsam-mutant-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-17) H11 KENAR MUTANTI — SON kapi fonksiyonunun bolmesi olculuyor mu?
+  #     14 Agu 2026: `_kapi_h11` DORDE bolundu (CC 23 -> en buyuk parca 10,
+  #     48 satir -> 12). Bu, Faz C'nin SON kapi bolmesidir.
+  #
+  #     🔴 BU BOLMENIN OZELLIGI — SIRA KISITI:
+  #     GOVDE kontrolu ("durum: kabul ama govde bos") BAGLANTI dongusunun
+  #     ICINDEN cagrilir. Ayri bir donguye alinsaydi `F` listesindeki hukum
+  #     sirasi (her ADR icin baglanti+govde) yerine (tum baglantilar, sonra tum
+  #     govdeler) olur ve altin kumenin bit-bit esdegerlik kapisi kirilirdi.
+  #     Bolme davranisi degistirmez — SIRAYI da degistirmez.
+  #
+  #     `harita` kenarinin IKI tuketicisi var; ikisi AYRI mutantla koparilir.
+  #     Tek mutant kullanilsaydi biri hic olculmemis olabilirdi
+  #     (ORTUSEN TESPIT KORLUGU MASKELER — projenin kendi dersi).
+  #
+  #     ONDORT hal, DOKUZ mutant. Her hal TEK hukmu atesler (14/14 ayrik imza):
+  #     H11'in on bir fail() cagrisinin her biri kendi haline sahip.
+  #
+  #     🔴 OLCULDU: ALTIN KUME DOKUZ MUTANTIN DOKUZUNA DA KOR (9/9).
+  #     Bagimsiz ikinci olcum ayni seyi soyluyor: kapsam envanterinde H11
+  #     1 KAPSAMLI / 10 KAPSAMSIZ. Yani bu is H11 icin TEK olcumdur; ortusen
+  #     yedegi YOKTUR ve `continue-on-error` kesinlikle YOK.
+  # ---------------------------------------------------------------------------
+  h11_kenar_mutanti:
+    name: H11 kenar mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: kenarlar ve hukum kanallari OLCULUYOR mu
+        shell: bash
+        run: python faz0/h11_bolme_mutanti.py 2>&1 | tee h11-kenar-cikti.txt
+      - name: h11 kenar mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h11-kenar-${{ matrix.os }}
+          path: h11-kenar-cikti.txt
+          if-no-files-found: warn

@@ -3660,50 +3660,91 @@ def _kapi_h10(F, N, O, y):
     return bl
 
 
-def _kapi_h11(F, N, O, y):
+# ----------------------------------------------- H11 ALT-BOLMESI (FAZ C)
+# `_kapi_h11` (48 satir, CC 23) DORT parcaya bolundu; ince `_kapi_h11` en sona konur.
+#
+#   `_h11_numara`      no tekrari + numara boslugu          -> F
+#   `_h11_govde`       durum 'kabul' ama govde bos          -> F   (DONGU ICINDEN)
+#   `_h11_baglanti`    yerine-gecme cifti tutarli mi        -> F
+#   `_h11_canli_link`  canli hafizanin karar linkleri       -> F
+#
+# 🔴 SIRA KORUNDU: GOVDE ayri bir donguye alinmadi, BAGLANTI dongusunun icinden
+# cagriliyor. Ayri dongu olsaydi hukum sirasi (her ADR icin baglanti+govde)
+# yerine (tum baglantilar sonra tum govdeler) olur ve altin kumenin bit-bit
+# esdegerlik kapisi kirilirdi. Bolme davranisi degistirmez — sirayi da.
+#
+# H11 `O` kanalini HIC kullanmaz; `N` yalniz ince ebeveynde. Kanal kapisi bunu
+# her kosumda AST ile olcer: KULLANDIGINI TASI, kullanmadigini tasima.
+#
+# UC KENAR, ucu de imzada:
+#     harita   ebeveyn -> BAGLANTI ve CANLI LINK (iki tuketici)
+#     k, m     BAGLANTI -> GOVDE (dongu ici)
+#     ks       ebeveyn -> NUMARA, BAGLANTI  (ve ebeveynden H12'ye donus)
+
+
+def _h11_numara(F, ks):
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
+    nolar = [k["no"] for k in ks]
+    if len(set(nolar)) != len(nolar):
+        fail("H11", "ADR numarasi TEKRAR ediyor — numara asla yeniden kullanilmaz")
+    for beklenen, k in zip(range(1, len(ks) + 1), sorted(ks, key=lambda x: x["no"])):
+        if k["no"] != beklenen:
+            fail("H11", "ADR numara BOSLUGU: %04d bekleniyordu, %04d bulundu" % (beklenen, k["no"]))
+            break
+
+
+def _h11_govde(F, k, m):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
+    if m.get("durum") == "kabul" and len(k["govde"]) < 200:
+        fail("H11", "%s: durum 'kabul' ama govde neredeyse bos (bedeller/alternatifler yazilmamis)" % k["dosya"])
+
+
+def _h11_baglanti(F, ks, harita):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
+    for k in ks:
+        m = k["meta"]
+        yg = m.get("yerine-gecen", "-")
+        ya = m.get("yerini-aldigi", "-")
+        # Y-3: ADR on-bilgisi ELLE yazilir; 'yerine-gecen: abc' ham ValueError veriyordu.
+        # Burasi bir KAPI; cokmek yerine BULGU vermeli.
+        if yg not in ("-", "", None):
+            if not str(yg).strip().isdigit():
+                fail("H11", "%s: yerine-gecen SAYI DEGIL ('%s') — karar numarasi bekleniyor"
+                     % (k["dosya"], yg))
+            else:
+                t = harita.get(int(str(yg).strip()))
+                if not t:
+                    fail("H11", "%s: yerine-gecen %s yok" % (k["dosya"], yg))
+                elif t["meta"].get("yerini-aldigi") != "%04d" % k["no"]:
+                    fail("H11", "%s <-> %s: yerine-gecme baglantisi TEK YONLU" % (k["dosya"], t["dosya"]))
+                if m.get("durum") != "yerine-gecildi":
+                    fail("H11", "%s: yerine-gecen dolu ama durum '%s'" % (k["dosya"], m.get("durum")))
+        if ya not in ("-", "", None):
+            if not str(ya).strip().isdigit():
+                fail("H11", "%s: yerini-aldigi SAYI DEGIL ('%s')" % (k["dosya"], ya))
+            elif int(str(ya).strip()) not in harita:
+                fail("H11", "%s: yerini-aldigi %s yok" % (k["dosya"], ya))
+        _h11_govde(F, k, m)
+
+
+def _h11_canli_link(F, y, harita):
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
+    for m in re.findall(r"kararlar/(\d{4})-[a-z0-9-]+\.md", oku(y.canli)):
+        t = harita.get(int(m))
+        if not t:
+            fail("H11", "canli hafiza olmayan bir karara link veriyor: %s" % m)
+        elif t["meta"].get("durum") == "yerine-gecildi":
+            fail("H11", "canli hafiza YERINE GECILMIS karara link veriyor: %s (guncelini yaz)" % m)
+
+
+def _kapi_h11(F, N, O, y):
     # ---- H11 KARAR BUTUNLUGU (ADR) -------------------------------------
     ks = adr_listesi(y)
     if ks:
-        nolar = [k["no"] for k in ks]
-        if len(set(nolar)) != len(nolar):
-            fail("H11", "ADR numarasi TEKRAR ediyor — numara asla yeniden kullanilmaz")
-        for beklenen, k in zip(range(1, len(ks) + 1), sorted(ks, key=lambda x: x["no"])):
-            if k["no"] != beklenen:
-                fail("H11", "ADR numara BOSLUGU: %04d bekleniyordu, %04d bulundu" % (beklenen, k["no"]))
-                break
         harita = {k["no"]: k for k in ks}
-        for k in ks:
-            m = k["meta"]
-            yg = m.get("yerine-gecen", "-")
-            ya = m.get("yerini-aldigi", "-")
-            # Y-3: ADR on-bilgisi ELLE yazilir; 'yerine-gecen: abc' ham ValueError veriyordu.
-            # Burasi bir KAPI; cokmek yerine BULGU vermeli.
-            if yg not in ("-", "", None):
-                if not str(yg).strip().isdigit():
-                    fail("H11", "%s: yerine-gecen SAYI DEGIL ('%s') — karar numarasi bekleniyor"
-                         % (k["dosya"], yg))
-                else:
-                    t = harita.get(int(str(yg).strip()))
-                    if not t:
-                        fail("H11", "%s: yerine-gecen %s yok" % (k["dosya"], yg))
-                    elif t["meta"].get("yerini-aldigi") != "%04d" % k["no"]:
-                        fail("H11", "%s <-> %s: yerine-gecme baglantisi TEK YONLU" % (k["dosya"], t["dosya"]))
-                    if m.get("durum") != "yerine-gecildi":
-                        fail("H11", "%s: yerine-gecen dolu ama durum '%s'" % (k["dosya"], m.get("durum")))
-            if ya not in ("-", "", None):
-                if not str(ya).strip().isdigit():
-                    fail("H11", "%s: yerini-aldigi SAYI DEGIL ('%s')" % (k["dosya"], ya))
-                elif int(str(ya).strip()) not in harita:
-                    fail("H11", "%s: yerini-aldigi %s yok" % (k["dosya"], ya))
-            if m.get("durum") == "kabul" and len(k["govde"]) < 200:
-                fail("H11", "%s: durum 'kabul' ama govde neredeyse bos (bedeller/alternatifler yazilmamis)" % k["dosya"])
-        for m in re.findall(r"kararlar/(\d{4})-[a-z0-9-]+\.md", oku(y.canli)):
-            t = harita.get(int(m))
-            if not t:
-                fail("H11", "canli hafiza olmayan bir karara link veriyor: %s" % m)
-            elif t["meta"].get("durum") == "yerine-gecildi":
-                fail("H11", "canli hafiza YERINE GECILMIS karara link veriyor: %s (guncelini yaz)" % m)
+        _h11_numara(F, ks)
+        _h11_baglanti(F, ks, harita)
+        _h11_canli_link(F, y, harita)
         N.append("H11: %d karar · %d kabul" % (len(ks), sum(1 for k in ks if k["meta"].get("durum") == "kabul")))
     else:
         N.append("H11: henuz karar dosyasi yok")

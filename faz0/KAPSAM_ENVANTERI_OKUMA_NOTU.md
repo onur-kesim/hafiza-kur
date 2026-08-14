@@ -3,11 +3,17 @@
 Bu dizinde artık **iki** kapsam envanteri var. İkisi de kanıttır, ikisi de
 üzerine yazılmaz — ama yalnızca biri bugünkü motoru ölçer.
 
-| Dosya | Madde | Motor kimliği | Bugünkü motorda `lineno`+kapı tutan |
-|---|---|---|---|
-| `kapsam_envanteri.json` | 60 | **yalnız yol** (`/home/claude/dogrulama/hafiza.py`) — SHA yok | **0 / 60** |
-| `sabotaj_rapor.json` | 61 | **yalnız yol** (`C:\dev\hafiza-kur\…`) — SHA yok | **0 / 61** |
-| `kapsam_envanteri_61283ff7.json` | 61 | `motor_sha256: 61283FF7…` · `fail_sayisi: 61` | **61 / 61** |
+| Dosya | Madde | Motor kimliği | O motorun `lineno`+kapı tutarlılığı | Durum |
+|---|---|---|---|---|
+| `kapsam_envanteri.json` | 60 | **yalnız yol** (`/home/claude/dogrulama/hafiza.py`) — SHA yok | kimliksiz | 🗄️ tarihsel |
+| `sabotaj_rapor.json` | 61 | **yalnız yol** (`C:\dev\hafiza-kur\…`) — SHA yok | kimliksiz | 🗄️ tarihsel |
+| `kapsam_envanteri_61283ff7.json` | 61 | `motor_sha256: 61283FF7…` | 61 / 61 (o motorda) | 🗄️ H11 bölmesiyle aşıldı |
+| **`kapsam_envanteri_9b72160a.json`** | 61 | `motor_sha256: 9B72160A…` | **61 / 61** | ✅ **GÜNCEL** |
+
+> `9b72160a`, `_kapi_h11` dörde bölündükten sonraki motordur (14 Ağu 2026).
+> Bölme sonrası **sabotaj diferansiyeli ölçüldü: 61/61 `(kapı, hüküm)` dizisi
+> AYNI** — yani bölme kapsamı değiştirmedi, yalnızca satır numaralarını kaydırdı.
+> Eski dosyalar silinmedi: kanıt dosyası üzerine yazılmaz.
 
 ## Nasıl ölçüldü (14 Ağu 2026)
 
@@ -34,7 +40,7 @@ ek şu — **bağlam kazandırmak, güncelliği kazandırmaz.**
 `kapsam_envanteri.json` notsuz kaldı.** Düzeltme sınıfa değil, tek artefakta
 uygulandı. Bu not o boşluğu kapatıyor.
 
-## Bugünün ölçümü (motor `61283ff7…`, 5091 satır)
+## Ölçüm (motor `61283ff7…`, 5091 satır — H11 bölmesinden önce)
 
 ```
 61 madde · 21 KAPSAMLI · 40 KAPSAMSIZ · 0 OLCULEMEDI
