@@ -1561,7 +1561,30 @@ SAB_RC = """{{
 
 # ---------------------------------------------------------------- kur
 
-def cmd_kur(a):
+
+# ------------------------------------------- cmd_kur BOLMESI (FAZ C)
+# `cmd_kur` (91 satir, CC 27) YEDI parcaya bolundu; ince `cmd_kur` en sona konur.
+# Etki eksenleri ASAGIDA ELLE YAZILMADI — uretec her kosumda AST ile OLCUP
+# buraya yazar. Beyan uretilir, dolayisiyla bayatlayamaz.
+#
+#   _kur_on_kontrol    OLUM
+#   _kur_rc            DISK,OLUM~
+#   _kur_kilit         DISK,OLUM~
+#   _kur_dizinler      DISK
+#   _kur_dosyalar      DISK,OLUM~
+#   _kur_halka         DISK
+#   _kur_rapor         CIKTI
+#
+#   DISK  diske yaziyor   CIKTI  stdout'a basiyor   OLUM  `oldur` (~ = bir
+#   seviye derin: govdesinde `oldur` gecen bir fonksiyonu cagiriyor)
+#
+# TEK RAPORCU: CIKTI ekseni yalniz `_kur_rapor`da. INCE EBEVEYN: bolmeden
+# sonra `cmd_kur` govdesinde dogrudan DISK/CIKTI/OLUM cagrisi YOKTUR.
+# Esdegerlik ETKI IMZASI ile olculur (faz0/cmd_kur_bolme_mutanti.py):
+# dokuz hal icin (exit, stdout, disk agaci) uclusu bolme oncesi=sonrasi.
+
+
+def _kur_on_kontrol(a):
     kok = os.path.abspath(a.kok or os.getcwd())
     if not os.path.isdir(kok):
         oldur("kok yok: " + kok)
@@ -1577,6 +1600,10 @@ def cmd_kur(a):
               "  `kur` onu BOZAR (zincire yabanci halka ekler, ikinci cipa dogurur).\n"
               "  Dogru komut: python hafiza.py devral --kok=\"%s\""
               % (os.path.relpath(eski_h, kok).replace("\\", "/"), ", ".join(sorted(izler)[:4]), kok))
+    return kok
+
+
+def _kur_rc(a, kok):
     ad = a.ad or os.path.basename(kok.rstrip(os.sep)) or "PROJE"
     rc_p = os.path.join(kok, RC_AD)
     yeni_kurulum = not os.path.isfile(rc_p)
@@ -1584,6 +1611,10 @@ def cmd_kur(a):
         yaz(rc_p, SAB_RC.format(s=SURUM, ad=ad))
     rc = rc_oku(kok)
     y = Y(kok, rc)
+    return ad, yeni_kurulum, rc, y
+
+
+def _kur_kilit(y, rc, yeni_kurulum):
     # `kur` da yol tiplerini dogrular: dizin yerinde dosya/kirik link varsa os.makedirs
     # ham FileExistsError veriyordu (bagimsiz denetim).
     yol_on_kontrol(y, dizinler=(y.h, y.gunluk, y.gunluk_ars, y.kararlar),
@@ -1601,10 +1632,16 @@ def cmd_kur(a):
     if not yeni_kurulum:
         zincir_butunlugu_sart(y)
 
+
+def _kur_dizinler(kok, rc, y):
+
     for d in [y.h, y.gunluk, y.gunluk_ars, y.kararlar]:
         os.makedirs(d, exist_ok=True)
     for t in rc["arsiv_turleri"]:
         os.makedirs(os.path.join(kok, "arsiv", t), exist_ok=True)
+
+
+def _kur_dosyalar(ad, rc, y):
 
     if not os.path.isfile(y.canli):
         yaz(y.canli, SAB_CANLI.format(ad=ad, t=bugun(), tavan=rc["tavan_kb"]))
@@ -1640,6 +1677,9 @@ def cmd_kur(a):
         yaz(os.path.join(y.h, "HAFIZA_01.md"), "\n".join(_ars) + "\n")
         _beyan_yeni_satirlar(y, _ars, "kurulum: arsiv iskeleti (arac uretti)")
 
+
+def _kur_halka(y):
+
     # arsiv dizini bolumunu tazele
     _arsiv_dizini_tazele(y)
 
@@ -1648,10 +1688,23 @@ def cmd_kur(a):
     else:
         zincir_halka(y, "KURULUM", "hafiza.py kur (idempotent tazeleme)")
 
+
+def _kur_rapor(kok, rc, y):
+
     print("KURULDU: " + kok)
     print("  canli hafiza  : " + rc["canli"])
     print("  cipa SHA      : " + sha_dosya(y.snap)[:16] + "...")
     print("\nSonraki: python %s kapi --kok=\"%s\"" % (os.path.basename(__file__), kok))
+
+
+def cmd_kur(a):
+    kok = _kur_on_kontrol(a)
+    ad, yeni_kurulum, rc, y = _kur_rc(a, kok)
+    _kur_kilit(y, rc, yeni_kurulum)
+    _kur_dizinler(kok, rc, y)
+    _kur_dosyalar(ad, rc, y)
+    _kur_halka(y)
+    _kur_rapor(kok, rc, y)
 
 def _arsiv_dizini_tazele(y):
     if not os.path.isfile(y.canli):

@@ -1025,3 +1025,52 @@ jobs:
           name: etki-harness-${{ matrix.os }}
           path: etki-harness-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 7) cmd_kur BOLME MUTANTI — cmd_* sinifinin ILK bolmesi
+  #     Kapi bolmelerinden tek farki GOZLEM YUZEYI ve fark her seyi belirliyor:
+  #       kapi bolmeleri : (exit, stdout)
+  #       cmd_* bolmeleri: (exit, stdout, DISK AGACI MANIFESTOSU)
+  #     Olculdu (14 Agu 2026): `M-3 KENAR rc->dizinler` ve `M-4 KENAR ad->dosyalar`
+  #     mutantlari `(exit, stdout)` yuzeyine GORUNMEZ. Kapi kalibi oldugu gibi
+  #     kopyalansaydi bu iki kenar KOR kalirdi — ve kimse bilmezdi.
+  #
+  #     ON HAL, SEKIZ MUTANT. Haller `cmd_kur`un ayri dallarini calistirir; alti
+  #     tanesi bir `oldur` yolu, cunku SURECI HANGI PARCANIN oldurdugu ETKI
+  #     KAPISI'nin ana eksenidir.
+  #
+  #     🔴 `h_goreli_kok` SONRADAN eklendi: `M-8 DONUS kok` dokuz halin tamaminda
+  #     KACIYORDU. Korluk ilan etmeden once "esdeger mutant mi?" diye soruldu —
+  #     EVET idi: dokuz halin dokuzu da `--kok`u MUTLAK veriyordu, `abspath` bir
+  #     islem yapmiyordu. Kacis kapinin degil GIRDI KUMESININ eksigiydi.
+  #
+  #     ⚠️ ESDEGERLIK BU ISTE OLCULMEZ ve bu bilincli. Esdegerlik `--once` ile
+  #     BOLME ONCESI motoru ister; onu depoda tutmak "motorun ikinci kopyasi
+  #     olmaz" kuralini kirardi. Esdegerlik bir GECIS kapisidir, surekli degil:
+  #     bir kez olculdu (on halin ucusu de FARK YOK) ve kaniti
+  #     `faz0/FAZC_CMD_KUR_RAPOR.md` icinde durur. Bu is KENARLARI olcer.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  cmd_kur_bolme_mutanti:
+    name: cmd_kur bolme mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: yedi parca arasi kenarlar OLCULUYOR mu
+        shell: bash
+        run: python faz0/cmd_kur_bolme_mutanti.py 2>&1 | tee cmd-kur-kenar-cikti.txt
+      - name: cmd_kur kenar mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmd-kur-kenar-${{ matrix.os }}
+          path: cmd-kur-kenar-cikti.txt
+          if-no-files-found: warn
