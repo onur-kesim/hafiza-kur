@@ -3,14 +3,10 @@
 Son güncelleme: 14 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra yazılır**
 
 ## Sıradaki iş (tek madde) — MADDE 5
-**Bir sonraki CI koşumunu oku** (`readme_kapisi` işi, üç platform). YEŞİL TİK YETMEZ; her kolda
-`KAPI-1 BEYAN : YESIL` · `KAPI-2 GERCEK : YESIL (README'nin her sayisi GERCEKLE tuttu)` ·
-`KAPI-3 SOZLESME : YESIL` ve `4/4 mutant AYRI eksende ISIRDI` aranır. Yeşilse **madde 5 ✅** → 5/6.
-Kalan tek madde 6; saati 21 Ağu'da doluyor.
-🟡 **KARAR BEKLİYOR:** `t_y3`/`t_y42` `kanit` işinde `continue-on-error: true` ile koşuyor —
-kırmızıları YUTULUYOR. README onları "20 senaryo" / "58 senaryo" diye ilan ediyor ama bu iki beyan
-ŞU AN HİÇBİR KAPIYLA ölçülmüyor. Ya `readme_kapisi`ne alınırlar, ya `kanit`teki bilinçli
-`continue-on-error` kaldırılır. Onur seçecek.
+**Bir sonraki CI koşumunu oku** (`readme_kapisi`, üç platform). YEŞİL TİK YETMEZ; her kolda
+`KAPI-1 BEYAN : YESIL` · `KAPI-2 GERCEK : YESIL` · `KAPI-3 SOZLESME : YESIL` ·
+`KOSUCU : t_y3 ... 20 senaryo` · `KOSUCU : t_y42 ... 58 senaryo` · `6/6 mutant AYRI eksende
+ISIRDI` aranır. Yeşilse **madde 5 ✅** → BİTTİ 5/6; geriye yalnız madde 6 kalır (saati 21 Ağu).
 
 ## ✅ MADDE 2 + MADDE 4 KAPANDI (CI #43 `cde1998` + CI #46 `5d81838`) — tek satıra indi
 Üç kapı ailesi, hepsi üç platformda ve `continue-on-error`SIZ:
@@ -35,9 +31,15 @@ README'nin "Kanıtı kendin koş" bloğu okurun yapacağı şeydir ve **sayısal
 - M-1→KAPI-1 (beyan silinir) · M-2→KAPI-2 (yanlış oran) · M-3→KAPI-2 (yanlış çıkış kodu) ·
   M-4→KAPI-3 (sözleşmeden kod düşer). Blokta TANIMADIĞI satır görürse ÖLÇÜLEMEDİ der (exit 2):
   README'ye yeni adım eklenip kapının sessizce yok sayması engellenir.
-- Ölçüldü (Linux): üç kapı yeşil, 4/4 mutant ayrı eksende ISIRDI, ~50 sn. Y-2 dört kod
-  sayfasında exit 0. **Araç kendi kusurunu da yazdı:** ilk sürümü `shlex` kullanmıyordu ve
-  `--metin="ilk not"` bozulup her komut exit 2 dönüyordu — araç README'yi suçlayacaktı.
+- **`t_y3`/`t_y42` DE BU KAPIDA** (Onur kararı 14 Ağu): `kanit` işindeki kopyaları
+  `continue-on-error: true` taşıyor (yani KAPI değil ÖLÇÜM); burada taşımıyor. Senaryo sayıları
+  çıktıdan okunup README'nin `# 20 senaryo` / `# 58 senaryo` beyanlarıyla karşılaştırılır.
+  Ağır koşucular YALNIZ temiz turda koşar; mutant turları yakalanan çıktıyı yeniden kullanır —
+  SINIR: mutant koşucunun davranışını değil KARŞILAŞTIRMAYI ölçer (araç başlığında yazılı).
+- Ölçüldü (Linux): üç kapı yeşil, **6/6 mutant** ayrı eksende ISIRDI, 2 dk 57 sn
+  (`t_y42` tek sefer, ~60 sn). Y-2: ascii dâhil exit 0. **Araç kendi kusurunu da yazdı:** ilk
+  sürümü `shlex` kullanmıyordu, `--metin="ilk not"` bozulup her komut exit 2 dönüyordu — araç
+  README'yi suçlayacaktı.
 - ✏️ README'deki `~13 dk` SİLİNDİ (`CLAUDE.md` §4: süre tahmini belgeye yazılmaz). `capraz.yml`
   sat. 95 bu beyanın run #2'de ÖLÇÜLÜP YANLIŞ çıktığını zaten yazıyordu — kimse README'yi
   düzeltmemişti. Adım adındaki `~1-2 dk` de kaldırıldı.
@@ -77,9 +79,9 @@ README'nin "Kanıtı kendin koş" bloğu okurun yapacağı şeydir ve **sayısal
   adımları (hüküm kapısı HARİÇ) · `win_kill_probu` · `boru_probu` · `ortam` · `kalite`.
 - `ruff/mypy/bandit` YALNIZ `hafiza.py`'yi tarar (`faz0/` lint edilmez) · `ci_kapsam_kapisi.py`
   deseni `faz0/*_mutanti.py` — `yol_ayraci_kapisi.py`/`paketten_kos.py` girmez, işleri elle konur.
-- 🟡 **`t_y3`/`t_y42` KAPI DEĞİL:** `kanit` işinde ikisi de `continue-on-error: true` taşıyor.
-  README'nin "20 senaryo"/"58 senaryo" beyanları bu yüzden ÖLÇÜLMÜYOR. `readme_mutanti.py`
-  onları atlar ve ATLADIĞINI yazar (sessiz değil). Karar bekliyor.
+- 🟡 **`kanit` işindeki `t_y3`/`t_y42` hâlâ KAPI DEĞİL** (`continue-on-error: true`) — ama
+  `readme_kapisi` onları kapılı koşuyor. Ölçüldü (son 4 koşum, 3 platform × 2 python):
+  48/48 adım success. `kanit`teki bilinçli karar DEĞİŞTİRİLMEDİ.
 - `readme_mutanti.py` README'nin ANLATIMINI (sıra, dil) ölçmez, yalnız ölçülebilir beyanlarını.
 - `paketten_kos.py` belgenin ANLAMINI değil GEÇTİĞİNİ ölçer (yanlış SIRA görünmez) · `devral` yolu
   hiç ölçülmüyor · `derle` sonrası ikinci `isir` (yani `isir`=0 hâli) ölçülmüyor.

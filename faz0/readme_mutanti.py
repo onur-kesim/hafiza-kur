@@ -29,14 +29,15 @@ NE OLCER — UC AYRI EKSEN
                      motorun kendi bastigi `CIKIS KODLARI:` satiriyla ayni mi.
 
 NE OLCMEZ (hukum degil, SINIR — gizlenmez)
-  1. `t_y3.py` / `t_y42.py` blokta gecer ama BURADA kosulmaz. 🔴 DIKKAT — ilk
-     surum burada "`kanit` isi onlari zaten continue-on-error'SIZ kosuyor" YAZDI;
-     OLCULDU ve YANLISTI: `kanit` isinin HER IKI adimi da `continue-on-error: true`
-     tasiyor, yani kirmizilari YUTULUYOR. Dolayisiyla README'nin "20 senaryo" ve
-     "58 senaryo" beyanlari SU AN HICBIR KAPIYLA olculmuyor. Bu bir SINIRDIR,
-     hukum degil; atlandiklari CIKTIDA yazilir — sessiz atlama YOK.
-     (Karar bekliyor: bu araca alinsinlar mi, yoksa `kanit`teki bilincli
-     `continue-on-error` mi kaldirilsin.)
+  1. `t_y3.py` / `t_y42.py` ARTIK BURADA KOSAR (Onur karari, 14 Agu). Gerekcesi
+     olculdu: `kanit` isinin HER IKI adimi da `continue-on-error: true` tasiyor,
+     yani kirmizilari YUTULUYOR — o adimlar KAPI degil OLCUM. Bu arac onlari
+     `continue-on-error`SIZ kosar ve README'nin "20 senaryo"/"58 senaryo"
+     beyanlarini cikti sayilariyla karsilastirir.
+     Maliyet dusurulmustur: heavy kosucular YALNIZ TEMIZ turda kosar; mutant
+     turlari yakalanan ciktiyi YENIDEN KULLANIR — cunku o mutantlar kosucuyu
+     degil KARSILASTIRMAYI sinar. Bu bir SINIRDIR ve burada yazilidir:
+     mutant, kosucunun kendi davranisini olcmez.
   2. Blokta TANIMADIGI bir satir gorurse ARAC DURUR (OLCULEMEDI). README'ye yeni
      bir adim eklenip kapinin onu sessizce yok saymasi, tam da bu araciin
      onlemek icin var oldugu sey.
@@ -85,6 +86,16 @@ _MOTOR_KOD = re.compile(r"CIKIS KODLARI:\s*(.+)")
 _KOD = re.compile(r"(\d+)")
 # README'nin "Cikis kodlari" paragrafi
 _README_ISIR = re.compile(r"`isir`\s*:(.+?)\.", re.S)
+# kosucularin ozet satirlari: t_y3 "SONUC: 20/20 senaryo ..." · t_y42 "... (toplam 58)"
+_KANIT_TOPLAM = re.compile(r"toplam\s+(\d+)")
+_KANIT_ORAN = re.compile(r"SONUC:\s*\d+\s*/\s*(\d+)\s+senaryo")
+_SENARYO = re.compile(r"(\d+)\s+senaryo")
+
+
+def kanit_sayisi(cikti):
+    """Kosucunun ciktisindan TOPLAM senaryo sayisi; ayiklanamazsa None."""
+    m = _KANIT_ORAN.search(cikti) or _KANIT_TOPLAM.search(cikti)
+    return int(m.group(1)) if m else None
 
 
 def blok_bul(metin):
@@ -122,7 +133,11 @@ def satirlari_coz(blok):
             beyan = {"ham": yorum.strip(),
                      "exit": int(e.group(1)) if e else None,
                      "oran": (int(o.group(1)), int(o.group(2))) if o else None,
-                     "sinanmadi": int(sn.group(1)) if sn else None}
+                     "sinanmadi": int(sn.group(1)) if sn else None,
+                     "senaryo": None}
+            sy = _SENARYO.search(yorum)
+            if sy:
+                beyan["senaryo"] = int(sy.group(1))
         if komut.startswith("cd "):
             out.append(("CD", komut, beyan))
         elif komut.startswith("mkdir "):
@@ -174,9 +189,16 @@ def kapi3_sozlesme(metin, isir_ciktisi):
 
 
 # --------------------------------------------------------------- KAPI-2 (canli)
-def kapi2_gercek(adimlar, kaynak_scripts):
-    """Blogu KOSAR ve her beyani gercekle karsilastirir. (bulgu, atlanan, son_isir)"""
-    bulgu, atlanan, son = [], [], ""
+def kapi2_gercek(adimlar, kaynak_scripts, kanit_onbellek=None):
+    """Blogu KOSAR ve her beyani gercekle karsilastirir.
+
+    kanit_onbellek None ise agir kosucular (t_y3/t_y42) KOSAR ve yakalanir;
+    dolu ise YENIDEN KULLANILIR (mutant turlari kosucuyu degil KARSILASTIRMAYI
+    sinar — bu SINIR araciin basliginda yazilidir).
+    Doner: (bulgu, kanit_onbellek, son_isir_ciktisi)"""
+    bulgu, son = [], ""
+    onbellek = dict(kanit_onbellek) if kanit_onbellek is not None else {}
+    yeniden_kos = kanit_onbellek is None
     gecici = tempfile.mkdtemp(prefix="readme-kapisi-")
     try:
         calisma = os.path.join(gecici, "scripts")
@@ -199,7 +221,25 @@ def kapi2_gercek(adimlar, kaynak_scripts):
                                  % p.stdout.decode("utf-8", "replace")[:120])
                 continue
             if tur == "KANIT":
-                atlanan.append(komut)          # `kanit` isi zaten kosuyor
+                if yeniden_kos:
+                    p = subprocess.run([sys.executable] + shlex.split(komut)[1:], cwd=cwd,
+                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    onbellek[komut] = {"kod": p.returncode,
+                                       "cikti": p.stdout.decode("utf-8", "replace")}
+                v = onbellek.get(komut)
+                if not v:
+                    bulgu.append("`%s` icin kosum kaydi YOK — olculemedi" % komut)
+                    continue
+                if v["kod"] != 0:
+                    bulgu.append("`%s`: exit %d (kosucu KIRMIZI)" % (komut, v["kod"]))
+                if beyan and beyan.get("senaryo") is not None:
+                    gercek = kanit_sayisi(v["cikti"])
+                    if gercek is None:
+                        bulgu.append("`%s`: ciktidan senaryo sayisi AYIKLANAMADI "
+                                     "(README %d diyor)" % (komut, beyan["senaryo"]))
+                    elif gercek != beyan["senaryo"]:
+                        bulgu.append("`%s`: README %d senaryo diyor, GERCEK %d"
+                                     % (komut, beyan["senaryo"], gercek))
                 continue
             # shlex SART: `--metin="ilk not"` ve `--ad "Deneme"` duz split ile bozulur
             # (olculdu: bozuk arguman -> her komut exit 2, arac README'yi suclardi).
@@ -228,7 +268,7 @@ def kapi2_gercek(adimlar, kaynak_scripts):
             if beyan["sinanmadi"] is not None and m and int(m.group(3)) != beyan["sinanmadi"]:
                 bulgu.append("`%s`: README %d SINANMADI diyor, GERCEK %s"
                              % (komut, beyan["sinanmadi"], m.group(3)))
-        return bulgu, atlanan, son
+        return bulgu, onbellek, son
     finally:
         shutil.rmtree(gecici, ignore_errors=True)
 
@@ -260,16 +300,30 @@ def m4_sozlesme_eksilir(s):
     return yeni if yeni != s else None
 
 
+def m5_ty3_sayisi(s):
+    """README t_y3 icin yanlis senaryo sayisi yazar -> KAPI-2 isirmali."""
+    yeni = s.replace("# 20 senaryo, temiz hata", "# 21 senaryo, temiz hata", 1)
+    return yeni if yeni != s else None
+
+
+def m6_ty42_sayisi(s):
+    """README t_y42 icin yanlis senaryo sayisi yazar -> KAPI-2 isirmali."""
+    yeni = s.replace("# 58 senaryo", "# 59 senaryo", 1)
+    return yeni if yeni != s else None
+
+
 MUTANTLAR = [
     ("M-1 beyan yorumdan silindi", m1_beyan_silinir, "KAPI-1"),
     ("M-2 README yanlis oran yaziyor", m2_oran_bozulur, "KAPI-2"),
     ("M-3 README yanlis cikis kodu", m3_cikis_kodu_bozulur, "KAPI-2"),
     ("M-4 sozlesmeden kod dustu", m4_sozlesme_eksilir, "KAPI-3"),
+    ("M-5 t_y3 senaryo sayisi yanlis", m5_ty3_sayisi, "KAPI-2"),
+    ("M-6 t_y42 senaryo sayisi yanlis", m6_ty42_sayisi, "KAPI-2"),
 ]
 
 
-def hukum(metin, kaynak_scripts):
-    """(k1, k2, k3, atlanan) — blok cozulemezse None doner (OLCULEMEDI)."""
+def hukum(metin, kaynak_scripts, kanit_onbellek=None):
+    """(k1, k2, k3, onbellek) — blok cozulemezse None doner (OLCULEMEDI)."""
     blok = blok_bul(metin)
     if blok is None:
         return None
@@ -278,9 +332,9 @@ def hukum(metin, kaynak_scripts):
     if bilinmeyen:
         return ("BILINMEYEN", bilinmeyen)
     k1 = kapi1_beyan(adimlar)
-    k2, atlanan, son = kapi2_gercek(adimlar, kaynak_scripts)
+    k2, onbellek, son = kapi2_gercek(adimlar, kaynak_scripts, kanit_onbellek)
     k3 = kapi3_sozlesme(metin, son)
-    return (k1, k2, k3, atlanan)
+    return (k1, k2, k3, onbellek)
 
 
 def main():
@@ -307,7 +361,7 @@ def main():
             print("      ? %s" % k)
         print("\nSONUC: ÖLÇÜLEMEDİ — blok cozulemedi; araca yeni satir turu ogretilmeli.")
         return 2
-    k1, k2, k3, atlanan = h
+    k1, k2, k3, onbellek = h
     print("  KAPI-1 BEYAN    : %s" % ("YESIL (beyanlar ayiklanabiliyor)" if not k1
                                       else "KIRMIZI — %d bulgu" % len(k1)))
     for x in k1:
@@ -320,9 +374,11 @@ def main():
                                       else "KIRMIZI — %d bulgu" % len(k3)))
     for x in k3:
         print("      ! %s" % x)
-    for k in atlanan:
-        print("  ATLANDI (sessiz DEGIL): `%s` — `kanit` isi kosuyor AMA "
-              "`continue-on-error: true` ile (kirmizisi yutulur) → bu beyan OLCULMUYOR" % k)
+    for k, v in sorted(onbellek.items()):
+        n = kanit_sayisi(v["cikti"])
+        print("  KOSUCU          : `%s` exit %d · ciktidan %s senaryo "
+              "(`kanit` isindeki kopyasi continue-on-error TASIR; buradaki TASIMAZ)"
+              % (k, v["kod"], n if n is not None else "?"))
     if k1 or k2 or k3:
         print("\nSONUC: KIRMIZI — README'nin beyani gercekle TUTMUYOR.")
         return 1
@@ -335,7 +391,7 @@ def main():
             print("  %-34s KURULAMADI (desen README'de yok)" % ad)
             kacan += 1
             continue
-        b = hukum(bozuk, kaynak)
+        b = hukum(bozuk, kaynak, onbellek)   # agir kosucular YENIDEN kosmaz
         if b is None or b[0] == "BILINMEYEN":
             print("  %-34s -> BLOK COZULEMEDI (mutant kapiyi degil ayirici yi bozdu)" % ad)
             kacan += 1

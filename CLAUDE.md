@@ -42,7 +42,9 @@ sözleşmesi kırılırsa minor artar.
       `continue-on-error`sız koşar ve bloktaki HER sayısal beyan gerçekle TUTAR; beklenen
       değerler BLOKTAN okunur, araca YAZILMAZ (sayı yazılmaz, üretilir). Araç:
       `faz0/readme_mutanti.py` — üç kapı (BEYAN · GERÇEK · SÖZLEŞME), dört mutant.
-      *(Kod yazıldı 14 Ağu, Linux'ta 3 kapı yeşil + 4/4 mutant; CI hükmü bekleniyor.)*
+      *(Kod yazıldı 14 Ağu; Linux'ta 3 kapı yeşil + 6/6 mutant. `t_y3`/`t_y42` de BU kapıda
+      `continue-on-error`SIZ koşar ve senaryo sayıları README'yle karşılaştırılır — Onur kararı
+      14 Ağu, çünkü `kanit` işindeki kopyaları `continue-on-error: true` taşıyor. CI bekleniyor.)*
 - [ ] Onur, gerçek bir projesinde (Momentum-dışı) sistemi 1 hafta fiilen kullanmış olur
 
 ## 3. SIRADAKİ İŞ (tek madde)
