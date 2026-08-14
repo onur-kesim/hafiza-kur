@@ -37,7 +37,12 @@ sözleşmesi kırılırsa minor artar.
       BELGENİN akışını izler (`SKILL.md` §2 adım 1: motoru `araclar/hafiza/`ya kopyala) ve komutları
       belgeye karşı ölçer — KAPI-1 BELGE (komut + yol ekseni) · KAPI-2 CANLI. windows'ta 8,6 sn.
       ŞERH: insanın elleriyle koştuğu bir kurulum yok; ölçen CI'dır — bu projede hüküm CI'nındır.)*
-- [ ] 25 Ağu yazısının okuru, depoya gelip README ile sistemi kendi başına deneyebilir
+- [ ] 25 Ağu yazısının okuru, depoya gelip README ile sistemi kendi başına deneyebilir.
+      ÖLÇÜT (Onur onayı, 14 Ağu) = README'nin "Kanıtı kendin koş" bloğu CI'da ÜÇ PLATFORMDA
+      `continue-on-error`sız koşar ve bloktaki HER sayısal beyan gerçekle TUTAR; beklenen
+      değerler BLOKTAN okunur, araca YAZILMAZ (sayı yazılmaz, üretilir). Araç:
+      `faz0/readme_mutanti.py` — üç kapı (BEYAN · GERÇEK · SÖZLEŞME), dört mutant.
+      *(Kod yazıldı 14 Ağu, Linux'ta 3 kapı yeşil + 4/4 mutant; CI hükmü bekleniyor.)*
 - [ ] Onur, gerçek bir projesinde (Momentum-dışı) sistemi 1 hafta fiilen kullanmış olur
 
 ## 3. SIRADAKİ İŞ (tek madde)

@@ -98,7 +98,7 @@ jobs:
       # Belgedeki her sayi gibi bu da BAGLAMLIDIR: GitHub-hosted runner, soguk
       # calisma alani. Onur'un kendi Windows'unda daha uzun surmesi beklenir;
       # o sure OLCULMEDI, buraya yazilmaz.
-      - name: t_y42 — davranis kanitlari (58 senaryo, ~1-2 dk runner'da)
+      - name: t_y42 — davranis kanitlari (58 senaryo)
         continue-on-error: true
         shell: bash
         working-directory: skill/scripts
@@ -1257,4 +1257,47 @@ jobs:
         with:
           name: paketten-kos-${{ matrix.os }}
           path: paketten-kos-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # README KANIT BLOGU KAPISI — BITTI maddesi 5.
+  #     Okurun yapacagi sey README'nin "Kanitini kendin kos" blogudur ve o blok
+  #     SAYISAL BEYAN tasir (34/34 + 2 SINANMADI exit 2 · 36/36 exit 0). Bu
+  #     beyanlari hicbir kapi olcmuyordu; ikincisi (`derle` sonrasi isir=0)
+  #     DURUM.md'nin "olculmuyor" dedigi boslugun ta kendisiydi.
+  #
+  #     UC KAPI: KAPI-1 BEYAN (blok ayiklanabilir beyan tasiyor mu) · KAPI-2
+  #     GERCEK (blok KOSULUR, beklenen degerler BLOKTAN okunur — araca YAZILMAZ,
+  #     "sayi yazilmaz URETILIR") · KAPI-3 SOZLESME (README'nin ilan ettigi `isir`
+  #     kod kumesi motorun bastigiyla ayni mi).
+  #     DORT MUTANT: M-1->KAPI-1 · M-2->KAPI-2 (oran) · M-3->KAPI-2 (cikis kodu) ·
+  #     M-4->KAPI-3. Ortusme olursa arac ORTUSTU deyip kirmizi yanar.
+  #
+  #     Blok, `skill/scripts`in GECICI kopyasinda kosar (depo kirletilmez) ve
+  #     `git` ister. Blokta TANIMADIGI bir satir gorurse OLCULEMEDI der (exit 2) —
+  #     README'ye yeni adim eklenip kapinin sessizce yok saymasi ENGELLENIR.
+  #     UC PLATFORM ve `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  readme_kapisi:
+    name: README kanit blogu (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: uc kapi + dort mutant
+        shell: bash
+        run: python faz0/readme_mutanti.py 2>&1 | tee readme-kapisi-cikti.txt
+      - name: README kapisi ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: readme-kapisi-${{ matrix.os }}
+          path: readme-kapisi-cikti.txt
           if-no-files-found: warn

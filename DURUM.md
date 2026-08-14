@@ -3,34 +3,44 @@
 Son güncelleme: 14 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra yazılır**
 
 ## Sıradaki iş (tek madde) — MADDE 5
-**"25 Ağu yazısının okuru, depoya gelip README ile sistemi kendi başına deneyebilir."**
-Bu maddenin ÖLÇÜTÜ HENÜZ YAZILMADI; ilk iş onu yazmak (kod değil). Ham malzeme hazır: paket her CI
-koşumunda üretiliyor (artefakt `hafiza-kur-skill`) ve `faz0/paketten_kos.py` kurulum yolunu üç
-platformda ölçüyor. Açık soru: ölçüt "README'deki adımlar `SKILL.md` §2 ile TUTUYOR mu" mu olsun
-(mekanik — `paketten_kos` kalıbı README'ye uygulanır), yoksa "okur" bir insan mı olsun (ölçülemez)?
-**Karar Onur'da; kod yazmadan önce şıklarla sunulacak.** Son tarih 25 Ağu.
+**Bir sonraki CI koşumunu oku** (`readme_kapisi` işi, üç platform). YEŞİL TİK YETMEZ; her kolda
+`KAPI-1 BEYAN : YESIL` · `KAPI-2 GERCEK : YESIL (README'nin her sayisi GERCEKLE tuttu)` ·
+`KAPI-3 SOZLESME : YESIL` ve `4/4 mutant AYRI eksende ISIRDI` aranır. Yeşilse **madde 5 ✅** → 5/6.
+Kalan tek madde 6; saati 21 Ağu'da doluyor.
+🟡 **KARAR BEKLİYOR:** `t_y3`/`t_y42` `kanit` işinde `continue-on-error: true` ile koşuyor —
+kırmızıları YUTULUYOR. README onları "20 senaryo" / "58 senaryo" diye ilan ediyor ama bu iki beyan
+ŞU AN HİÇBİR KAPIYLA ölçülmüyor. Ya `readme_kapisi`ne alınırlar, ya `kanit`teki bilinçli
+`continue-on-error` kaldırılır. Onur seçecek.
 
-## ✅ MADDE 2 + MADDE 4 KAPANDI (CI #43 `cde1998` + CI #46 `5d81838`)
-Üç kapı ailesi kuruldu; hepsi üç platformda ve `continue-on-error`SIZ.
-- **`faz0/win_dal_mutanti.py`** (madde 2(i)) — motorun iki `win32` dalı (sat. 899 Y-1 · sat. 4877
-  Y-3) hiçbir mutantla ölçülmüyordu. ÜÇ kapı, DÖRT mutant, örtüşme yok: KAPI-1 ENVANTER (yalnız
-  FAZLA dalı kovalar; EKSİK dal KAPI-2'nin işi → örtüşme YAPISAL kesildi) · KAPI-2 DAVRANIŞ
-  (simülasyon) · KAPI-3 CANLI (gerçek ctypes+pid, yalnız win32'de hüküm). CI #43 windows:
-  `KAPI-3 CANLI : YESIL` · `M-3 ... -> KAPI-3 de KIRMIZI ✓` · `SONUC: YESIL — ... 4/4 mutant`.
-- **`paketle.sh` + `faz0/paket_mutanti.py`** — SHA kapısı ÖLÜYDÜ (`[ -n "$BEYAN" ]` koruyor,
-  `SKILL.md`'de 64'lük hex sıfır); ölü olan mantık değil **başlık yalandı**, üstelik `SKILL.md`
-  sat. 245-249 SHA yazmamayı ölçülmüş dersle savunuyor. Çözüm: beyanı bırak, **ÜRETİLEN PAKETİ
-  ölç** → KAPI-1 MOTOR BİT-BİT + KAPI-2 ENVANTER. Mutantlar: M-1 `zip -l`→K1 (motor 259.228 →
-  264.431 B) · M-2 `-x references/*`→K2 (6 dosya düştü). Ayrıca `capraz.yml`'de `paketle`/`.skill`
-  için SIFIR eşleme vardı — madde 4'ün dayandığı yüzeyin kapısı yoktu (sınıf ikinci ısırık: LİSANS).
-- **`faz0/paketten_kos.py`** (madde 4 + 2(ii)) — KAPI-1 BELGE (koştuğu adımlar PAKETTEKİ `SKILL.md`
-  §2 blokunda geçiyor mu **ve** bloktaki her `hafiza.py` referansı `araclar/hafiza/` altında mı) ·
-  KAPI-2 CANLI (belgenin akışıyla: önce motoru projeye kopyala, sonra `kur→kapi→isir`).
-  Çıkış kodu sözleşmesi `hafiza.py` sat. 4845'ten OKUNDU: `isir` taze projede **2** döner ve
-  SAĞLIKLIDIR; **1 ve 4 KIRMIZI**; `|| true` sahte yeşil üretirdi. CI #46 windows birebir:
-  `KAPI-1 BELGE : YESIL (4 adimin 4'u belgede)` · `BELGE ADIM 1 : motor projeye kopyalandi ->
-  araclar/hafiza/hafiza.py` · `C) belge mutantlari: C1 komut ISIRDI ✓ · C2 yol ISIRDI ✓` ·
-  `SONUC: YESIL — BELGENIN akisiyla ... (8.6 sn, win32).`
+## ✅ MADDE 2 + MADDE 4 KAPANDI (CI #43 `cde1998` + CI #46 `5d81838`) — tek satıra indi
+Üç kapı ailesi, hepsi üç platformda ve `continue-on-error`SIZ:
+- **`faz0/win_dal_mutanti.py`** (2(i)) — 3 kapı / 4 mutant. KAPI-1 yalnız FAZLA dalı, KAPI-2 EKSİK
+  dalı kovalar → **örtüşme YAPISAL kesildi**. KAPI-3 CANLI yalnız win32'de hüküm verir.
+  CI #43 windows: `KAPI-3 CANLI : YESIL` · `M-3 → KAPI-3 de KIRMIZI ✓` · `4/4 mutant`.
+- **`paketle.sh` + `faz0/paket_mutanti.py`** — SHA kapısı ÖLÜYDÜ, **başlık yalandı**; beyan bırakıldı,
+  **ÜRETİLEN PAKET ölçülüyor** (MOTOR BİT-BİT + ENVANTER, M-1 `zip -l` / M-2 `-x references/*`).
+- **`faz0/paketten_kos.py`** (4 + 2(ii)) — KAPI-1 BELGE (komut **ve** yol ekseni, PAKETTEKİ
+  `SKILL.md`'ye karşı) · KAPI-2 CANLI (belgenin akışıyla). Çıkış kodu sözleşmesi `hafiza.py`
+  sat. 4845'ten OKUNDU: `isir` taze projede **2** = SAĞLIKLI, **1 ve 4 KIRMIZI**.
+  CI #46 windows: `KAPI-1 BELGE : YESIL` · `C1 komut ISIRDI ✓ · C2 yol ISIRDI ✓` · `8.6 sn, win32`.
+
+## ✅ README KANIT BLOĞU KAPISI (14 Ağu — madde 5'in ölçütü; CI hükmü bekleniyor)
+README'nin "Kanıtı kendin koş" bloğu okurun yapacağı şeydir ve **sayısal beyan taşıyor**
+(`34/34 + 2 SINANMADI, exit 2` · `36/36, exit 0`). Hiçbir kapı ölçmüyordu; ikincisi
+(`derle` sonrası `isir`=0) bu dosyanın "ölçülmüyor" dediği boşluğun ta kendisiydi.
+`faz0/readme_mutanti.py`: **ÜÇ kapı, DÖRT mutant, örtüşme yok.**
+- KAPI-1 BEYAN (blok ayıklanabilir beyan taşıyor mu) · KAPI-2 GERÇEK (blok KOŞULUR; beklenen
+  değerler **BLOKTAN okunur, araca YAZILMAZ** — "sayı yazılmaz, ÜRETİLİR") · KAPI-3 SÖZLEŞME
+  (README'nin ilan ettiği `isir` kod kümesi motorun bastığıyla aynı mı).
+- M-1→KAPI-1 (beyan silinir) · M-2→KAPI-2 (yanlış oran) · M-3→KAPI-2 (yanlış çıkış kodu) ·
+  M-4→KAPI-3 (sözleşmeden kod düşer). Blokta TANIMADIĞI satır görürse ÖLÇÜLEMEDİ der (exit 2):
+  README'ye yeni adım eklenip kapının sessizce yok sayması engellenir.
+- Ölçüldü (Linux): üç kapı yeşil, 4/4 mutant ayrı eksende ISIRDI, ~50 sn. Y-2 dört kod
+  sayfasında exit 0. **Araç kendi kusurunu da yazdı:** ilk sürümü `shlex` kullanmıyordu ve
+  `--metin="ilk not"` bozulup her komut exit 2 dönüyordu — araç README'yi suçlayacaktı.
+- ✏️ README'deki `~13 dk` SİLİNDİ (`CLAUDE.md` §4: süre tahmini belgeye yazılmaz). `capraz.yml`
+  sat. 95 bu beyanın run #2'de ÖLÇÜLÜP YANLIŞ çıktığını zaten yazıyordu — kimse README'yi
+  düzeltmemişti. Adım adındaki `~1-2 dk` de kaldırıldı.
 
 ## 🔴 BU TURUN İKİ ÖZ-KUSURU (ikisini de ÖLÇÜM buldu, CI DEĞİL)
 1. **YEŞİL CI, ÖLÇÜLMEMİŞ ŞART.** CI #45 tamamen yeşilken `paketten_kos.py` motoru PAKET
@@ -67,6 +77,10 @@ platformda ölçüyor. Açık soru: ölçüt "README'deki adımlar `SKILL.md` §
   adımları (hüküm kapısı HARİÇ) · `win_kill_probu` · `boru_probu` · `ortam` · `kalite`.
 - `ruff/mypy/bandit` YALNIZ `hafiza.py`'yi tarar (`faz0/` lint edilmez) · `ci_kapsam_kapisi.py`
   deseni `faz0/*_mutanti.py` — `yol_ayraci_kapisi.py`/`paketten_kos.py` girmez, işleri elle konur.
+- 🟡 **`t_y3`/`t_y42` KAPI DEĞİL:** `kanit` işinde ikisi de `continue-on-error: true` taşıyor.
+  README'nin "20 senaryo"/"58 senaryo" beyanları bu yüzden ÖLÇÜLMÜYOR. `readme_mutanti.py`
+  onları atlar ve ATLADIĞINI yazar (sessiz değil). Karar bekliyor.
+- `readme_mutanti.py` README'nin ANLATIMINI (sıra, dil) ölçmez, yalnız ölçülebilir beyanlarını.
 - `paketten_kos.py` belgenin ANLAMINI değil GEÇTİĞİNİ ölçer (yanlış SIRA görünmez) · `devral` yolu
   hiç ölçülmüyor · `derle` sonrası ikinci `isir` (yani `isir`=0 hâli) ölçülmüyor.
 - `t_y42.py` 1 senaryo root altında ÖLÇÜLEMEDİ · dört ölçümün koşucusu pakette yok (beyandır) ·
