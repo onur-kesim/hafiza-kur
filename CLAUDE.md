@@ -1,193 +1,68 @@
-# hafiza-kur — KALICI PROTOKOL
+# hafiza-kur — PROJE ESASLARI (CLAUDE.md)
+`MOD: NORMAL`
 
-Bu dosya bu deponun **SABİT ÇERÇEVE**'sidir: nadiren değişir, rotasyona girmez.
-Cowork projesindeki "proje talimatı" bunun bir **kopyasıdır**; ikisi ayrışırsa
-**BU DOSYA geçerlidir** (projeler yerelde saklanır, bulut senkronu yoktur ve
-Claude Code'da çalışmaz).
+> **FESİH BEYANI (14 Ağu 2026, Onur onayı — hız-kaybı denetimi):** Bu dosya eski `CLAUDE.md`'nin
+> yerine geçer (eskisi `CLAUDE-eski-2026-08-14.md`'de durur). Feshedilenler: 4 betikli oturum-açılış
+> ritüeli (ölçüm CI'dadır) · iç denetim turu düzeni (denetim artık yalnız SÜRÜM SINIRINDA tek
+> bağımsız turdur) · her kapanışta zorunlu DEVİR (DEVİR yalnız global tetikleyicilerle yazılır;
+> sürüm/faz durumu `DURUM.md`'nin işidir). Ürün kararları ve ölçülmüş mayınlar KORUNDU (aşağıda).
+> Bu dosya ≤ 8 KB kalır; yanında tek `DURUM.md` yaşar; başka canlı defter açılmaz.
 
-> **Buraya ne GİRMEZ:** sürüm numarası, faz, bulgu sayısı, "şu an neredeyiz".
-> Onların evi DEVİR notudur. Değişen bilgi buraya yazılırsa bayatlar — ve bu,
-> aracın kendi H12 kapısının yakaladığı hatanın ta kendisi olur.
+## 1. NE (3 satır)
+Taşınabilir proje-hafızası kapı sistemi: tek dosyalık saf-Python motor (`skill/scripts/hafiza.py`,
+stdlib, sıfır bağımlılık) + Claude skill paketi. Ürünün tek vaadi ÖLÇÜLEBİLİRLİK; onu zayıflatan
+değişiklik, getirdiği kolaylık ne olursa olsun yanlıştır. Doktrin: ölçülmeyen kapının hükmü yok ·
+ölçülemeyene "temiz" denmez · engellenemeyeni GİZLENEMEZ KIL.
+
+**Ürün kararları (özet; yeniden tartışılmaz, değiştirmek gerekçeli ADR ister):** tek dosya kalır
+(bölünen fonksiyonlardır; CC ölçümü `faz0/karmasiklik.py` ile) · embedding/ANN yok, determinist
+geri getirme · İngilizce kanonik komut + Türkçe alias · depo PUBLIC ama YAYIN YOK · çıkış-kodu
+sözleşmesi kırılırsa minor artar.
+
+## 2. BİTTİ LİSTESİ (≤10, ürün dili — İLK OTURUMDA ONUR'LA KİLİTLENİR; aşağısı ölçülmüş durumdan türetilmiş TASLAK)
+- [x] Kullanıcı `kur/kapi/isir/not/derle/devral` komutlarını Linux'ta koşabilir (CI yeşil)
+- [ ] **Windows'ta** tam hüküm: CI matrisi bugün de koşuyor ama motorun Windows iddiası v2.4.1'de
+      geri çekilmişti — "ölçüldü" sayılmanın ölçütü ilk oturumda Onur'la netleşecek
+- [ ] **macOS'ta** tam hüküm (aynı ölçüt netleşmesiyle)
+- [ ] Kullanıcı `.skill` paketini kurup taze bir projede 5 dakikada çalıştırabilir (kurulum belgesiyle)
+- [ ] 25 Ağu yazısının okuru, depoya gelip README ile sistemi kendi başına deneyebilir
+- [ ] Onur, gerçek bir projesinde (Momentum-dışı) sistemi 1 hafta fiilen kullanmış olur
+
+## 3. SIRADAKİ İŞ (tek madde)
+<`DURUM.md`'den takip edilir; tek dikey dilim. Örn: "Windows koşumu CI matrisinde yeşil".>
+
+## 4. ORTAM MAYINLARI (ölçülmüş)
+- Bağlı klasör mount'unda **hiçbir `git` komutu koşma** (`status` dâhil): mount `unlink` vermez,
+  `.git/index.lock` kalıcı kalır. Depo durumunu `find`/`ls`/dosya okumayla anla; git işini komut
+  olarak yaz, Onur koşsun. Push ve commit DAİMA Onur'da.
+- Tek kanonik klon: `C:\Users\gulci\Desktop\fable dosyalama\depo\hafiza-kur`. İkinci klon açma.
+- Disk adlarında Türkçe diyakritik ASLA (macOS NFD/NFC ayrışması zinciri kırar); ASCII bilinçli.
+- `.hafizarc` anahtarları · `_CIPA.json`/`_ZINCIR.jsonl` alan adları · dosya adları ÇEVRİLMEZ.
+- `.gitattributes`'taki `* -text` gevşetilmez (gerekçe dosyanın içinde).
+- Çalışma zamanı import'u stdlib dışına çıkamaz (geliştirme araçları serbest); determinizm kırılmaz
+  (indeks otorite değil: silinip yeniden üretilince bit-bit aynı).
+- 🔴 25 Ağu 2026 sonrası depo adresi (`onur-kesim/hafiza-kur`) DEĞİŞMEZ — yazıda dışa verilecek.
+- Süre tahmini belgeye yazılmaz (bir kez yazıldı, yanlıştı, sonraki oturumun teşhisini saptırdı).
+- Çıktı kodlaması mayını: Türkçe Windows (cp1254) kusuru MASKELER, İngilizce runner (cp1252) çökertir —
+  "bende çalışıyor" hüküm değildir; koruma ölçüm araçlarına da konur (Y-2 dersi).
+- Sürüm denetim turu SÜRERKEN koda dokunulmaz; kapı/koruma sökümü serbesttir ama daima gerekçeli ve
+  beyanlıdır (sessiz söküm yok).
+
+## 5. KAPSAM DIŞI (gizlenmez)
+Tuzak Avcısı işleri · TSK/gelir hukuku · Reels-bülten operasyonu (ayrı projeler). PyPI/marketplace/
+duyuru YOK ("public repo ≠ yayın"). Semantik arama/embedding bilinçli reddedildi.
 
 ---
 
-## 0. NE BU PROJE
+## İŞLEYİŞ (v2 — değişmez blok)
 
-Taşınabilir bir **proje hafızası KAPI SİSTEMİ**: tek dosyalık saf Python motoru
-(`skill/scripts/hafiza.py`, stdlib, sıfır bağımlılık) + bir Claude skill paketi.
-Motor bir projenin hafıza dosyalarını yönetir ve kapılarla **ÖLÇER**.
-
-**Ürünün tek gerçek vaadi ÖLÇÜLEBİLİRLİKTİR** — hız, zekâ ya da özellik değil.
-Bir değişiklik bu vaadi zayıflatıyorsa, getirdiği kolaylık ne olursa olsun,
-yanlış değişikliktir.
-
-## 1. ÜÇ CÜMLELİK DOKTRİN (pazarlığa kapalı)
-
-1. **Ölçülmeyen kapının hükmü YOKTUR.** Bir kapının var olması ısırdığı anlamına
-   gelmez; ısırdığı **mutantla** kanıtlanır.
-2. **Ölçülemeyene "temiz" DENMEZ.** `ÖLÇÜLEMEDİ` ayrı bir hükümdür, PASS değildir,
-   ve çıkış kodu bile bunu ayırır.
-3. **Bazı hamleler önlenemez.** Hedef **engellemek** değil, **GİZLENEMEZ KILMAK**.
-
-## 2. OTURUM AÇILIŞI (sırası pazarlıksız)
-
-1. **En son DEVİR notunu oku.** Güncel sürüm, faz ve açık işler ORADADIR.
-   Sohbet geçmişini ve Cowork proje hafızasını **kanıt sayma**.
-2. `denetim/` dizinini tara — en yeni tarihli rapor açık iş listesidir.
-3. `git status` temiz mi + son CI koşumu ne diyor.
-4. **Beyana GÜVENME, kendin koş:**
-   ```
-   cd skill/scripts
-   python3 hafiza.py isir --kok=<taze proje>     # mutant kanıtı
-   python3 t_y3.py                               # temiz hata kanıtları
-   python3 t_y42.py                              # davranış kanıtları
-   sha256sum hafiza.py
-   cd .. && python3 faz0/y2_mutant.py            # koşucular hükmünü basabiliyor mu
-   ```
-   Belgedeki her sayıyı kendi koşumunla doğrula, **sonra** konuş.
-   **Süre buraya yazılmaz** — bir kez "~13 dk" yazıldı, yanlıştı, ve o yanlış
-   sayı bir sonraki oturumun teşhisini saptırdı. Ölçülen: GitHub runner'da
-   t_y42 46–110 sn, cloud Linux'ta 60 sn. Kendi makinende ne çıkarsa o.
-5. Kod/içerik yazmadan **ÖNCE** tasarımı işaretlenebilir şıklarla sun, onay bekle.
-
-## 3. BEDELİ ÖDENMİŞ DERSLER (13 denetim turu)
-
-- Bir düzeltmenin **ne kapattığı değil, NE AÇTIĞI** ölçülür.
-  `os._exit(0)` tek satırdı: 1 YÜKSEK kapattı, **3 YÜKSEK doğurdu**.
-- **Her düzeltmeye AYRI mutant/senaryo.** Mutantsız düzeltme denetimde kör kalır.
-- **Her yeni testi SABOTAJLA sına:** koruduğunu iddia ettiği şeyi kapat; test
-  `KAÇTI` demeli. Demiyorsa komşu bir sınıfı ölçüyordur.
-- Bir korumanın **DERİNLİĞİ ile KAPSAMI ayrı iki sorudur.**
-- Bir kanalı `DEVNULL`'a atan test, o kanaldaki sınıfı **ölçemez**.
-- **Belge de bir arayüzdür ve yalan söyleyebilir.** Yazdığın her sözleşme maddesi
-  için bir senaryo yaz; yoksa madde bir dilek olur.
-- Bir sınıf **SINIRDA** kapanır, tek tek yüzeyler sarılarak değil.
-- **Sayı bağlamsız beyan edilmez** ("36/36" yalnız `derle` koşulmuş projede doğru).
-- **Örtüşen tespit körlüğü maskeler.** İki kapı aynı mutantı yakalıyorsa, mutant
-  ikisini de ölçüyor sanılır; oysa birini hiç ölçmüyor olabilir.
-- **Korumayı ürüne koydun; ÖLÇÜM ARACINA koydun mu?** (Y-2, Faz A-0) Çıktı
-  kodlaması koruması `hafiza.py`'de vardı, `t_y42.py`/`t_y3.py`'de yoktu. Sonuç:
-  Windows'ta 58 senaryonun tamamı koştu ve **58 hükmün tamamı basılmadan kayboldu**
-  — ürün değil, ÖLÇÜM kayboldu. Bir korumanın kapsamı "ürün" ile bitmez.
-- **Bir kusurun görünmemesi, yerel ayarın onu maskelemesi olabilir.** Y-2 Türkçe
-  Windows'ta (cp1254) çökmez, İngilizce runner'da (cp1252) çöker. "Bende çalışıyor"
-  bir hüküm değil, bir kod sayfası tesadüfüdür.
-- **Bir prob ORTAMI mı ölçüyor, ARACI mı?** Kabul ölçütü seçmeden önce bunu ayır.
-  `win_kill_probu.py` `hafiza.py`'yi hiç çağırmaz — Python/Windows davranışını
-  ölçer. Bir DEVİR notuna "Y-1'in ölçüsü: prob exit 0" yazıldı; **ulaşılamaz** bir
-  hedefti, çünkü ortam düzeltmeden bağımsız. Düzeltmenin ölçütü, aracı çağıran
-  senaryodur (burada t_y42'nin `B-5/B-9`'u). Ortam probu değerlidir ama hüküm vermez.
-- Kör nokta çoğu zaman bir düşünce hatası değil, bir **ORTAM eksiğidir.**
-  Ölçemiyorsan ölçebilecek ortamı **KUR**: root olmayan kullanıcı, dolu disk,
-  salt-okunur bağlama, Windows, macOS.
-- **"Bitti" bu projede iki kez erken söylendi.** Paketledikten SONRA bir tur daha koş.
-  Yöntem: (a) beyan-gerçek karşılaştırması, (b) düşman belge okuması.
-
-## 4. KIRMIZI ÇİZGİLER
-
-- **Bir denetim turu SÜRERKEN koda dokunma** — denetçi tam o baytları ölçüyor.
-- **ADDITIVE kal:** mevcut kapıyı, mutantı ya da korumayı **kanıtsız sökme**.
-- **Sıfır bağımlılık kırılmaz.** Geliştirme araçları (ruff/mypy/bandit/CI) serbest;
-  `hafiza.py`'nin **çalışma zamanı** import'u stdlib dışına çıkamaz.
-- **Determinizm kırılmaz:** ANN yasak · uzak gömme API'si yasak · indeks asla
-  otorite değil (silinip yeniden üretilince bit-bit aynı çıkmalı).
-- **Diskteki dosya/dizin adlarına ASLA Türkçe diyakritik koyma.** macOS'ta
-  HFS+ NFD'ye zorluyor, APFS normalize etmiyor → aynı ad iki farklı bayt dizisi →
-  çıpa zinciri Linux↔macOS arasında kırılır. Mevcut ASCII tercihi **bilinçlidir**.
-- **Çevrilmez:** `.hafizarc` anahtarları · `_CIPA.json` ve `_ZINCIR.jsonl` alan
-  adları · diskteki dosya adları. Çevirmek zinciri kırar.
-- **`.gitattributes`'taki `* -text` gevşetilemez** — gerekçesi dosyanın içinde.
-
-## 4.1 GIT — İŞ BÖLÜMÜ VE ORTAM TUZAĞI
-
-**PUSH VE COMMIT ONUR'DADIR.** Ajan depoyu hazırlar, dosyaları yazar, CI
-sonuçlarını okur — ama `git commit` / `git push` **koşmaz**. Onur koşar.
-
-**Cowork'ün yerel VM mount'unda dosya SİLİNEMİYOR.** Bu yüzden bağlı klasördeki
-depoda **hiçbir `git` komutu koşma** — `git status` dahil. Her koşum
-`.git/index.lock` bırakır ve bir sonraki komutu bloke eder; kilit de silinemez.
-
-Bu, projenin **kendi B4-1 bulgusunun birebir aynısıdır**: sızan bir kilit,
-kalıcı olarak yazmaya kapanan bir ağaç, ve araç içi çıkış yok. Aracı yazarken
-düştüğümüz tuzağa aracı kullanırken de düşüyoruz — bu tesadüf değil, sınıfın
-kendisi.
-
-**Yapılacaklar:**
-- Depo durumunu **git'siz** oku: `find`, `ls`, dosya okuma.
-- Yapılandırma gerekiyorsa `.git/config` gibi dosyaları **düz metin** yaz,
-  `git config` çağırma.
-- Silinmesi gereken dosyayı `_to_delete/` altına **taşı** ve Onur'a söyle.
-- Git işi gerekiyorsa **komutu yaz, Onur koşsun.**
-
-## 5. ALINMIŞ KARARLAR
-
-Yeniden tartışma; değiştirmek istiyorsan **gerekçeyle** aç ve bir ADR yaz.
-
-| Konu | Karar |
-|---|---|
-| Semantik arama / embedding | **HAYIR.** Yol: determinist geri getirme (Türkçe normalizasyon `ı/İ/ğ/ş/ç` katlama + prefix genişletme · FTS5/BM25, saf-Python yedekli · RRF k=60) ve asıl özgün parça olan **geri getirmeyi ÖLÇEN KAPI** (altın küme, recall@k, PR bloklar). |
-| Proje-ötesi hafıza | **DAR.** Yeni altyapı yazma; Claude Code'un mevcut `~/.claude/CLAUDE.md` + `rules/` + `autoMemoryDirectory` mekanizmalarını **kur ve denetle**. 3. projede tekrar etmeyen bilgi global'e çıkmaz. Global katmanda müşteri/kişi adı ve hukuk dosyası detayı **yasak** (KVKK, amaçla sınırlılık). |
-| Depo | **PUBLIC** (CI ücretsiz ve limitsiz olsun diye) ama **YAYIN YOK** — PyPI yok, marketplace yok, duyuru yok. *"Public repo" ≠ "yayın".* |
-| Dil | **İngilizce kanonik komut + Türkçe alias.** Mesajlar çevrilebilir; komut ve bayrak adları **API'dir** (Git'in porselen/boru tesisatı ayrımı). |
-| Mimari | **Tek dosya KALIR.** Bölünecek olan **fonksiyonlardır** (hedef: hiçbir fonksiyon >80 satır, hiçbiri CC >20). **ÖLÇÜM:** `python3 faz0/karmasiklik.py skill/scripts/hafiza.py` — başka bir CC sayısı beyan edilmez. Ölçüt: CC fonksiyonun **kendi gövdesinden** sayılır, iç içe `def`/`lambda` gövdesine **inilmez** (her biri ayrı fonksiyondur); `with`·`try` gövdesi·`else`·`assert` sayılmaz. Gerekçe ve `radon` çapraz kontrolü: `faz0/ADR_CC_OLCUTU.md`. Ölçütün kendisi `faz0/karmasiklik_mutanti.py` ile sınanır — 9 mutant, hepsi ısırmalı. |
-| Sürüm | Çıkış kodu sözleşmesi kırıcı değiştiyse **minor artar** — yama sürümü olamaz. |
-
-## 6. DEPO DÜZENİ
-
-**TEK KANONİK YEREL KLON** (ölçüldü 10 Ağu 2026):
-
-```
-C:\Users\gulci\Desktop\fable dosyalama\depo\hafiza-kur
-```
-
-Başka bir yerel klonda çalışma. Bir zamanlar `C:\dev\hafiza-kur` da vardı:
-mailmap yeniden yazımından sonra geçmişi ayrıştı (yereldeki 7 commit'in **hiçbiri**
-uzakta yoktu), Faz A'da dondu ve iki oturum boyunca hangi kopyanın gerçek olduğu
-belirsiz kaldı. Emekliye ayrıldı; geçmişi
-`fable dosyalama\hafiza-kur-eski-gecmis-f149407.bundle` içinde durur.
-
-Bu, aracın kendi **H5** doktrininin ta kendisidir: *"aktif sürüm hangisi"
-sorusunun iki cevabı olamaz.* İkinci bir klon açman gerekirse **önce bu satırı
-güncelle** — yoksa bir sonraki oturum yanlış kopyada çalışır ve bunu ancak
-`git fetch` "forced update" derken fark eder.
-
-```
-skill/                  <- .skill paketinin TEK GERÇEK KAYNAĞI
-  SKILL.md
-  references/*.md       <- kapilar · denetim-yaniti · devir · duzen · protokol · sablonlar
-  scripts/              <- MOTOR BURADA YAŞAR, başka kopyası YOKTUR
-    hafiza.py · t_y3.py · t_y42.py
-faz0/                   <- ölçüm altyapısı (koda dokunmaz)
-  ortam_olcum.sh        <- root olmayan kullanıcı · dolu disk · salt-okunur
-  win_kill_probu.py     <- os.kill(pid,0) Windows davranışı
-  sabotaj.py            <- her fail() tek tek kapatılır -> kapsam envanteri
-denetim/                <- denetim turlarının defteri (tarih önekli)
-.github/workflows/      <- capraz.yml: 3 platform × 2 Python + ortam + kalite
-paketle.sh              <- skill/ -> hafiza-kur.skill
-```
-
-**Motorun ikinci bir kopyası ASLA olmaz** (H5'in kendi doktrini: "aktif sürüm
-hangisi" sorusunun iki cevabı olamaz). Paket `paketle.sh` ile `skill/`'ten üretilir.
-
-## 7. KAPSAM DIŞI
-
-Tuzak Avcısı uygulama/içerik geliştirmesi · TSK ve gelir hukuku · Reels-bülten
-operasyonu. Bunlar **ayrı projelerdir**, buraya karıştırılmaz.
-
-Depo `onur-kesim/hafiza-kur` altındadır (taşındı: 10 Ağu 2026 — önceki ev
-`tuzakavcisi1-cloud`). Gerekçe **kimliktir**, marka değil: bu depo dışarıya
-verilen tek denetlenebilir kanıt linkidir ve ürün markası hesabına bağlıyken
-kimlik karışıklığı yaratıyordu. Tuzak Avcısı bu proje için **kapsam dışıdır**.
-
-🔴 **URL ARTIK SABİTTİR.** 25 Ağu 2026'da yayımlanacak bir yazı gövdesinde bu
-adresi dışarı verecek; o tarihten sonra depo adresi **değişmez**. Taşıma
-gerekirse önce o kısıt konuşulur.
-
-## 8. OTURUM KAPANIŞI
-
-İstenmese de, kopyalanabilir **DEVİR notunu kod bloğu içinde** yaz:
-sürüm/durum · son yapılan · yarım kalan · sıradaki ilk iş (adım adım) · açık
-kararlar/blokerler · ilgili dosyalar · uyarılar.
-
-**Cowork proje hafızası bunun yerine geçmez.** O bir rahatlık katmanıdır;
-kanıt katmanı DEVİR notudur.
+1. **Takvim kutusu:** madde güne bağlanır; kutu dolarsa madde kesilir, süre uzamaz; kesilen §5 + README'ye.
+2. **Dikey dilim:** kullanıcıya görünen davranışla bitmeden "bitti" yok (bu projede kullanıcı = skill'i kuran kişi; "görünen davranış" = komutun gerçek projede koşması).
+3. **Kapı bütçesi %10:** `faz0/` bu projede ürünün parçası SAYILMAZ, denetim altyapısıdır ve bütçeye girer. Ölçüm (tek satır, CI'da): `faz0/` toplam satır ÷ `skill/` toplam satır. 14 Ağu ölçümü: aşımda — yeni faz0 aracı açılmaz, mevcutlar CI'da koşanlar dışında büyütülmez.
+4. **Kâğıt denetim turu = 0; denetim SÜRÜM SINIRINDA tek bağımsız tur** (canlı koşum: `kur→kapi→isir` + iki koşucu, temiz makinede). İç düşman-ajan turları açılmaz. Ajan beyanına güven + sürüm başına 1 rastgele beyan doğrulaması.
+5. **Açılış ≤3 komut:** (git'siz) dosya durumu · `DURUM.md` · son CI koşumu. Betik bataryası oturumda koşulmaz; CI (`capraz.yml`) koşar.
+6. **Borç defteri yok:** ŞİMDİ YAP · KES (§5+README) · SİL.
+7. **Tek vitrin:** "kör kapı protokolü + sabotaj sınaması" vitrindir; başka vitrin açılmaz.
+8. **Kural yaşam döngüsü:** iki kez ısırmayan olay kural olamaz (yeri `DURUM.md` bilinen sınırlar); doğan kural ya CI'da koşar ya tek cümledir; §4'e girerken bir satır siler.
+9. **Haftalık tek soru:** bitti listesinde kaç madde ✅'ye döndü?
+10. **Taban:** bu dosya için kapı, mutant, altın küme, denetim turu yazılmaz; gözle denetlenir. Öncelik: MUTLAK SINIRLAR > global anayasa > bu dosya > diğer her şey.
