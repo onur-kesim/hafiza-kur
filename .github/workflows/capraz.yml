@@ -1127,3 +1127,47 @@ jobs:
           name: yol-ayraci-${{ matrix.os }}
           path: yol-ayraci-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # WINDOWS DALI MUTANTI — BITTI maddesi 2(i).
+  #     Motorda `sys.platform == "win32"` YALNIZ IKI yerde gecer ve 14 Agu 2026'ya
+  #     kadar ikisi de HICBIR mutantla olculmuyordu. Ortak bataryanin uc platformda
+  #     kosuyor olmasi bunu KAPATMAZ: batarya platformdan BAGIMSIZ davranisi gorur.
+  #     DAL A `_surec_yasiyor` -> `_surec_yasiyor_win` (Y-1) · DAL B `_boru_koptu_mu` (Y-3).
+  #
+  #     UC KAPI: KAPI-1 ENVANTER (listelenmemis platform dali) · KAPI-2 DAVRANIS
+  #     (H-a yonlendirme · H-b ayrim · H-c boru; simulasyon) · KAPI-3 CANLI (GERCEK
+  #     ctypes + gercek pid, YALNIZ windows-latest'te hukum verir; ubuntu/macos'ta
+  #     "OLCULEMEDI" der ve YESIL DEMEZ — bu isin windows kolu KAPI-3'un TEK evidir).
+  #
+  #     DORT MUTANT, DORT AYRI EKSEN: M-1->KAPI-1 · M-2->H-a · M-3->H-b · M-4->H-c.
+  #     Bir mutant IKI hukmu birden ateslerse arac "ORTUSTU" deyip KIRMIZI yanar.
+  #     Ayrica windows'ta M-3 KAPI-3'u de kirmizi yakmali; bu ortusme DEGIL, canli
+  #     kapinin KOR OLMADIGININ olcumudur ve ayri raporlanir.
+  #
+  #     UC PLATFORM ve `continue-on-error` YOK. `| tee` exit kodunu YUTMAZ
+  #     (`shell: bash` -eo pipefail ile kosar); bu satiri sadelestirmek kapiyi kor birakir.
+  # ---------------------------------------------------------------------------
+  win_dal_mutanti:
+    name: win dal mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: uc kapi + dort mutant
+        shell: bash
+        run: python faz0/win_dal_mutanti.py 2>&1 | tee win-dal-cikti.txt
+      - name: win dal ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-dal-${{ matrix.os }}
+          path: win-dal-cikti.txt
+          if-no-files-found: warn
