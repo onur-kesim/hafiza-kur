@@ -977,3 +977,51 @@ jobs:
           name: h11-kenar-${{ matrix.os }}
           path: h11-kenar-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 6) ETKI IMZASI HARNESS'I — ETKILI komutlar icin gozlem yuzeyi
+  #     Kapi mutantlarinin yuzeyi `(exit, stdout)`tir ve salt-okunur `kapi` icin
+  #     dogrudur. `cmd_kur`/`cmd_derle`/`cmd_devral` ETKILIDIR: dosya yazar,
+  #     kilit alir, zincire halka atar. Kopan bir kenar AYNI stdout'u basip
+  #     DISKTE FARKLI AGAC birakabilir. Kapi kalibini oldugu gibi kopyalamak
+  #     KOR bir kapi uretmek olurdu.
+  #
+  #     Bu is, harness'in MASRAFINI HAK ETTIGINI olcer. Her sessiz-yazim mutanti
+  #     icin IKI yuzey birden hesaplanir: (exit, stdout) ve (exit, stdout, disk
+  #     agaci imzasi). "ESKI KOR · YENI ISIRDI" cikan mutant sayisi SIFIRSA is
+  #     KIRMIZI yanar — yani harness'in degeri beyan edilmez, her kosumda
+  #     yeniden OLCULUR.
+  #
+  #     🔴 BILINEN KOR NOKTA, GIZLENMIYOR: `halka`/`onceki` alanlari ZAMANDAN
+  #     tureyen hash'lerdir ve normalize edilir; yalnizca onlari bozan bir kusur
+  #     bu yuzeye gorunmez. `S-5` mutanti tam olarak bunu yapar ve raporda
+  #     "IKISI DE KOR" satiri olarak DURUR. Hedef engellemek degil, gizlenemez
+  #     kilmak.
+  #
+  #     UC PLATFORM: imza dosya sistemine dokunur (yol ayirici, buyuk/kucuk harf,
+  #     sembolik baglanti). Bu, ORTAM farki olan bir olcumdur — tek platform yetmez.
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  cmd_etki_mutanti:
+    name: Etki imzasi harness mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: yeni yuzey masrafini HAK EDIYOR mu
+        shell: bash
+        run: python faz0/cmd_etki_mutanti.py 2>&1 | tee etki-harness-cikti.txt
+      - name: etki harness ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: etki-harness-${{ matrix.os }}
+          path: etki-harness-cikti.txt
+          if-no-files-found: warn
