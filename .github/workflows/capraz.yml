@@ -1171,3 +1171,90 @@ jobs:
           name: win-dal-${{ matrix.os }}
           path: win-dal-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # PAKET KAPISI — BITTI maddesi 4 (ve maddesi 2(ii)).
+  #     14 Agu 2026'ya kadar `paketle` ve `.skill` capraz.yml'de HIC gecmiyordu:
+  #     madde 4'un dayandigi TEK yuzeyin kapisi yoktu. Ustelik `paketle.sh`in
+  #     SHA256 kapisi OLUYDU (`[ -n "$BEYAN" ]` koruyor, SKILL.md'de 64'luk hex
+  #     SIFIR) — yani olu olan mantik degil, BASLIK yalandi. Sinif IKINCI kez
+  #     isirdi (1: LISANS, 10 Agu), bu yuzden artik CI'da MEKANIK kosuyor (§8).
+  #
+  #     Kapilar `paketle.sh`in ICINDE yasar (insanin kosturdugu yer orasi):
+  #     KAPI-1 MOTOR BIT-BIT · KAPI-2 ENVANTER. `faz0/paket_mutanti.py` onlarin
+  #     ISIRDIGINI kanitlar: M-1 `zip -l` -> KAPI-1 · M-2 `-x references/*` -> KAPI-2.
+  #     Ikisi de GERCEK ariza: satir-sonu cevrimi (`.gitattributes * -text` dersi)
+  #     ve dosya dusmesi (LISANS sinifi). Ortusurlerse arac ORTUSTU deyip kirmizi yanar.
+  #
+  #     `zip` YALNIZ ubuntu kolunda gerekir; paket ARTEFAKT olarak windows/macos'a
+  #     gecer. Gercek kullanicinin yaptigi da budur: paket bir kez uretilir, BASKA
+  #     bir makinede kurulur. Acma stdlib `zipfile` iledir — hedefte `unzip` gerekmez.
+  # ---------------------------------------------------------------------------
+  paket_kapisi:
+    name: paket kapisi (uretim + mutant)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: paketle.sh (KAPI-1 MOTOR BIT-BIT + KAPI-2 ENVANTER)
+        shell: bash
+        run: bash paketle.sh 2>&1 | tee paket-kapisi-cikti.txt
+      - name: iki kapi + iki mutant
+        shell: bash
+        run: python faz0/paket_mutanti.py 2>&1 | tee -a paket-kapisi-cikti.txt
+      - name: paket (artefakt — asagidaki is bunu kurar)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hafiza-kur-skill
+          path: hafiza-kur.skill
+          if-no-files-found: error
+      - name: paket kapisi ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paket-kapisi-ubuntu
+          path: paket-kapisi-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # PAKETTEN KOSUM — madde 4'un ve madde 2(ii)'nin CANLI olcumu.
+  #     Depodaki motor DEGIL, PAKETTEN ACILMIS motor kosar; proje TAZEDIR.
+  #     Cikis kodu sozlesmesi `hafiza.py` sat. 4845'ten OKUNDU: `isir` taze bir
+  #     projede 2 doner (M-H1b kurulamaz, cunku henuz `derle` kosmadi) ve bu
+  #     SAGLIKLIDIR; 1 (KAPI KOR) ve 4 KIRMIZIDIR. `|| true` ile hepsini yutmak
+  #     SAHTE YESIL uretirdi — arac tam olarak o tuzagi kapatir ve kendi kor
+  #     olmadigini iki yoldan olcer (sentetik kod siniflandirmasi + bozuk motor).
+  #     Sure 300 sn olcutune vurulur (madde 4: "5 dakikada").
+  #     UC PLATFORM ve `continue-on-error` YOK; windows kolu 2(ii)'yi lafzen karsilar.
+  # ---------------------------------------------------------------------------
+  paketten_kos:
+    name: paketten kosum (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: paket_kapisi
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: hafiza-kur-skill
+      - name: paketten kur -> kapi -> isir
+        shell: bash
+        run: python faz0/paketten_kos.py hafiza-kur.skill 2>&1 | tee paketten-kos-cikti.txt
+      - name: paketten kosum ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paketten-kos-${{ matrix.os }}
+          path: paketten-kos-cikti.txt
+          if-no-files-found: warn
