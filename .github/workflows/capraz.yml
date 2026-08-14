@@ -1074,3 +1074,56 @@ jobs:
           name: cmd-kur-kenar-${{ matrix.os }}
           path: cmd-kur-kenar-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 5b) YOL AYRACI KAPISI — cikti ayraci PLATFORMA BAGLI mi?
+  #     14 Agu 2026, GERCEK Windows kosumunda olculdu: `devral`
+  #         YEDEK: arsiv\hafiza\v2\_DEVIR_ONCESI_2026-08-14.md
+  #     basti; AYNI ciktinin H4 satirlari duz bolu basiyordu. Tek ciktida
+  #     KARISIK ayrac. Kok neden: `os.path.relpath` 22 kez cagriliyordu ve
+  #     cevirim her cagri yerinde ELLE tekrarlanmisti — 18'i kosulsuz (D-1
+  #     karari'ni ihlal ederek), 4'u hic. Kusur degil, KACAK URETICISI.
+  #
+  #     BUNU OLCEN SIFIR KAPI VARDI: `faz0/altin_cikti.py`nin OLCUM_KOMUTLARI'si
+  #     yalniz ["kapi"] ve ["kapi","--siki"]. `not` · `devral` · `bloklastir`
+  #     ciktisi altin kumenin TAMAMEN DISINDA. Ortusen korluk degil, TAM KORLUK.
+  #
+  #     ARAC IKI KAPI TASIR ve biri otekinin yerine GECMEZ:
+  #       KAPI-1 YAPI     : depo metninde ciplak `os.path.relpath` yalniz
+  #                         `kok_goreli` ve `_rel` govdelerinde. MUAFIYET LISTESI
+  #                         YOK — kural fonksiyon ADIYLA tanimli, bayatlayamaz.
+  #       KAPI-2 DAVRANIS : `_rel` birim olarak olculur (ntpath/posixpath ile).
+  #                         H-a cevirir · H-b POSIX'te '\' KORUR (D-1) · H-c cokmez.
+  #     UC MUTANT, UC AYRI EKSEN: M-1->KAPI-1 · M-2->H-a · M-3->H-b. Bir mutant
+  #     IKI kapiyi birden ateslerse arac "ORTUSTU" deyip KIRMIZI yanar; boylece
+  #     ortusen tespit korlugu mutantin kendisinde de olculur.
+  #     Kapinin gercekten olctugu ESKI motorla kanitlandi: dffe3ce6... -> 21 kacak.
+  #
+  #     UC PLATFORM ve `continue-on-error` YOK. KAPI-2 simulasyon kullanir ama
+  #     arac gercek runner'da kosar; simulasyon CI'nin YERINE GECMEZ.
+  #     NOT: `| tee` exit kodunu YUTMAZ — GitHub `shell: bash`i `-eo pipefail`
+  #     ile kosar. Bu satiri "sadeleştirip" pipefail'i dusuren kapiyi kor birakir.
+  # ---------------------------------------------------------------------------
+  yol_ayraci_kapisi:
+    name: yol ayraci kapisi (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: iki kapi + uc mutant
+        shell: bash
+        run: python faz0/yol_ayraci_kapisi.py 2>&1 | tee yol-ayraci-cikti.txt
+      - name: yol ayraci ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yol-ayraci-${{ matrix.os }}
+          path: yol-ayraci-cikti.txt
+          if-no-files-found: warn

@@ -620,6 +620,25 @@ def kok_goreli(kok, tam):
     # D-1: ayrac cevirisi yalniz Windows'ta; POSIX'te '\\' dosya adinin PARCASIDIR.
     return rel.replace("\\", "/") if os.sep == "\\" else rel
 
+
+def _rel(p, kok):
+    """Ekrana BASILACAK kanonik bicim: koke goreli, '/' ayracli — TEK YER.
+
+    D-1 karari burada YASAR: POSIX'te '\\' bir dosya adinin MESRU parcasidir,
+    ayrac DEGILDIR; ceviri yalniz os.sep == '\\' iken yapilir. Bu fonksiyondan
+    ONCE karar 22 cagri yerinde ELLE tekrarlaniyordu: 18'i kosulsuz (D-1'i ihlal),
+    4'u hic yok (cikti platforma bagli). Olculdu 14 Agu 2026, gercek Windows
+    kosumunda `devral`in "YEDEK:" satiri ters bolu bastı.
+
+    `kok_goreli` ile KARISTIRMA: o DEFTERE yazilan bicimi uretir ve realpath
+    cozer (symlink'i duzler). Bu, EKRANA basilan bicimi uretir ve realpath
+    COZMEZ — kullaniciya verdigi yolu gostermek icin.
+    """
+    try:
+        r = os.path.relpath(p, kok)
+    except (OSError, ValueError):
+        return str(p)
+    return r.replace("\\", "/") if os.sep == "\\" else r
 def yol_on_kontrol(y, dizinler=(), dosyalar=(), sessiz=False):
     """Beklenen DIZIN gercekten dizin mi, beklenen DOSYA gercekten duzenli dosya mi?
 
@@ -707,7 +726,7 @@ def yol_on_kontrol(y, dizinler=(), dosyalar=(), sessiz=False):
             "  yazar (gecici dosya + os.replace), yani BAG KOPAR: proje DISINDAKI ad\n"
             "  ESKI icerikte KALIR ('cp -al' ile alinmis yedek artik GUNCELLENMEZ).\n"
             "  Islem SURUYOR; olcum icin: python hafiza.py kapi\n  - %s\n"
-            % (len(cok_adli), "\n  - ".join(os.path.relpath(x, y.kok).replace("\\", "/")
+            % (len(cok_adli), "\n  - ".join(_rel(x, y.kok)
                                              for x in cok_adli[:4])))
     return cok_adli
 
@@ -742,7 +761,7 @@ def kilit_al(y):
     oldugu icin bu olagan bir senaryo."""
     os.makedirs(y.h, exist_ok=True)
     p = os.path.join(y.h, ".kilit")
-    rel = os.path.relpath(p, y.kok).replace("\\", "/")
+    rel = _rel(p, y.kok)
     # FABLE 3. TUR · B-9: `.kilit` bir DIZIN ise once alakasiz "DUZENLI DOSYA
     # BEKLENIYORDU" sonra "BASKA YAZMA ISLEMI SURUYOR" basiliyordu; os.remove bir
     # dizini silemedigi icin kilit KALICI oluyor ve tani YANLIS yonlendiriyordu.
@@ -811,8 +830,7 @@ def agactaki_kilitler(kok):
             d0[:] = [d for d in d0 if d not in haric]
             for f in f0:
                 if f == ".kilit":
-                    bulunan.append(os.path.relpath(os.path.join(r0, f), kok)
-                                   .replace("\\", "/"))
+                    bulunan.append(_rel(os.path.join(r0, f), kok))
     except OSError:
         pass                      # tarayamiyorsak "yok" DEMEYIZ; cagiran yeri okur
     return sorted(bulunan)
@@ -1599,7 +1617,7 @@ def _kur_on_kontrol(a):
         oldur("Bu projede ZATEN bir hafiza sistemi var (%s: %s).\n"
               "  `kur` onu BOZAR (zincire yabanci halka ekler, ikinci cipa dogurur).\n"
               "  Dogru komut: python hafiza.py devral --kok=\"%s\""
-              % (os.path.relpath(eski_h, kok).replace("\\", "/"), ", ".join(sorted(izler)[:4]), kok))
+              % (_rel(eski_h, kok), ", ".join(sorted(izler)[:4]), kok))
     return kok
 
 
@@ -1718,7 +1736,7 @@ def _arsiv_dizini_tazele(y):
     j = i + 1
     while j < len(L) and not L[j].startswith("## "):
         j += 1
-    hd = os.path.relpath(y.h, os.path.dirname(y.canli)).replace("\\", "/")
+    hd = _rel(y.h, os.path.dirname(y.canli))
     yeni = [V2BAS, "> Bu alt blok `hafiza.py derle` tarafından üretilir; elle düzenleme H6'yı kırar."]
     for f in dosyalar:
         p = os.path.join(y.h, f)
@@ -1942,7 +1960,7 @@ def cmd_not(a):
     p = os.path.join(y.gunluk, ad)
     yaz(p, "---\nkonu: %s\ntur: %s\ntarih: %s\noturum: %s\n---\n\n%s\n"
         % (konu, tur, bugun(), a.oturum or "-", govde.strip()))
-    print("FRAGMAN: " + os.path.relpath(p, kok))
+    print("FRAGMAN: " + _rel(p, kok))
 
 BOLUM_HEDEF = {"durum": "## GUNCEL DURUM", "sonraki": "## SONRAKI ADIM",
                "karar": "## KARAR GUNLUGU", "bulgu": "## ACIK KARARLAR",
@@ -2191,7 +2209,7 @@ def cmd_emekli(a):
             oldur("Emeklilik hedefi YOK: %s icinde HAFIZA_*.md bulunamadi.\n"
                   "  Ya --hedef=<dosya> ver, ya once bir arsiv dosyasi ac "
                   "(ornek: %s/HAFIZA_2026-Q3.md)."
-                  % (y.h, os.path.relpath(y.h, kok).replace("\\", "/")))
+                  % (y.h, _rel(y.h, kok)))
         hedef_ad = adaylar[-1]
     # FABLE 3. TUR · B-2 [YUKSEK]: --hedef hicbir konum denetiminden gecmiyordu;
     # `--hedef=../../../KURBAN.md` proje agacinin DISINDAKI bir dosyaya KALICI
@@ -2215,7 +2233,7 @@ def cmd_emekli(a):
               "  Ornek: --hedef=HAFIZA_01.md" % hedef_ad)
     if not _hg.startswith(os.path.realpath(y.h) + os.sep):
         oldur("--hedef HAFIZA DIZININDE olmali (%s): %s"
-              % (os.path.relpath(y.h, kok).replace("\\", "/"), hedef_ad))
+              % (_rel(y.h, kok), hedef_ad))
     if not os.path.isfile(hedef):
         oldur("hedef arsiv dosyasi yok: " + hedef_ad)
 
@@ -2567,8 +2585,8 @@ def cmd_bloklastir(a):
         _zincir_geri_al(y, _halka, "bloklastirma kapi FAIL nedeniyle geri alindi")
         sys.stderr.write(cikti + "\n")
         oldur("KAPI FAIL — bloklastirma GERI ALINDI (dosyalar eski haline dondu). Yedek: %s"
-              % os.path.relpath(yedek, kok), 1)
-    print("\nUYGULANDI: %d bolum bloklandi · yedek: %s" % (len(plan), os.path.relpath(yedek, kok)))
+              % _rel(yedek, kok), 1)
+    print("\nUYGULANDI: %d bolum bloklandi · yedek: %s" % (len(plan), _rel(yedek, kok)))
     print(cikti.strip())
     return 0
 
@@ -2597,7 +2615,7 @@ def onceki_kurulum_izleri(kok, canli_p=None):
         d0[:] = [d for d in d0 if d not in haric]
         for f in f0:
             if f in ONCEKI_IZ_ADLARI or re.match(r"^_KAYNAK.*\.md$|^HAFIZA_.*\.md$", f):
-                izler.append(os.path.relpath(os.path.join(r0, f), kok).replace("\\", "/"))
+                izler.append(_rel(os.path.join(r0, f), kok))
     # Canli hafizanin KENDISI de iz tasir: `derle`nin yazdigi blok isaretleri
     # kaynak= alaniyla eski hafiza dizinini gosterir. Dosyalar silinse de bu kalir.
     if canli_p and os.path.isfile(canli_p):
@@ -2690,7 +2708,7 @@ def cmd_devral(a):
         d0[:] = [d for d in d0 if d not in (".git", "node_modules", "__pycache__")]
         for f in f0:
             if re.match(r"^HAFIZA_.*\.md$", f):
-                rel = os.path.relpath(os.path.join(r0, f), kok).replace("\\", "/")
+                rel = _rel(os.path.join(r0, f), kok)
                 # Fable (kozmetik): duz startswith 'arsiv/hafiza-eski/...' yolunu da
                 # v2 ad alani sanardi. Dizin SINIRI arayarak karsilastir.
                 if not (rel == hdir_rel or rel.startswith(hdir_rel + "/")):
@@ -2788,7 +2806,7 @@ def cmd_devral(a):
     else:
         yed = os.path.join(y.h, "_DEVIR_ONCESI_%s.md" % bugun())
         shutil.copyfile(canli_p, yed)
-        print("  YEDEK: %s" % os.path.relpath(yed, kok))
+        print("  YEDEK: %s" % _rel(yed, kok))
 
     # ZORUNLU BOLUMLER: devral, diskte OLMAYAN bir bolumu ISTEMEZ — eksikse KENDI EKLER.
     # BAGIMSIZ DENETIM 6. TUR: hic '## ' basligi olmayan eski bir hafizada devral
@@ -3010,7 +3028,7 @@ def _kapi_govde(a, F, N, O):
         fail("H-LINK", "%d dosyanin proje DISINDA da bir adi var (hardlink) — bu dosyalara "
                        "yazmak oradaki adi da degistirir; denetim izi disari sizabilir:" % len(_cokad))
         for _p0 in _cokad[:5]:
-            F.append("      - " + os.path.relpath(_p0, kok).replace("\\", "/"))
+            F.append("      - " + _rel(_p0, kok))
         F.append("      -> Yedek amacliysa: 'cp -al' yerine 'cp -a' kullan (bagimsiz kopya).")
     if not os.path.isdir(y.h):
         fail("H6", "HAFIZA DIZINI YOK: %s — arsiv tabani kayip." % y.h)
@@ -3172,12 +3190,12 @@ def _h1_gercek(F, O, kok, rc, y):
     # ustelik "hangi dosya" bilgisi kullaniciya lazim.
     arsivA, arsiv_okunamayan = [], []
     for p0 in arsivP:
-        tamam, sat = kapi_yalit(O, "H1 (%s)" % os.path.relpath(p0, kok).replace("\\", "/"),
+        tamam, sat = kapi_yalit(O, "H1 (%s)" % _rel(p0, kok),
                                 anlamli_satirlar, p0)
         if tamam:
             arsivA.extend(sat)
         else:
-            arsiv_okunamayan.append(os.path.relpath(p0, kok).replace("\\", "/"))
+            arsiv_okunamayan.append(_rel(p0, kok))
     if arsiv_okunamayan:
         fail("H1", "%d arsiv dosyasi OKUNAMADI — bu dosyalardaki satirlar 'KAYIP' "
                    "gorunebilir; once dosyalari duzelt: %s"
@@ -3364,7 +3382,7 @@ def _h4_havuz(kok):
     for r0, d0, f0 in os.walk(kok):
         d0[:] = [d for d in d0 if d not in (".git", "node_modules", "__pycache__", ".venv")]
         for f in f0:
-            havuz.setdefault(f, []).append(os.path.relpath(os.path.join(r0, f), kok).replace("\\", "/"))
+            havuz.setdefault(f, []).append(_rel(os.path.join(r0, f), kok))
     return havuz
 
 
@@ -3556,9 +3574,9 @@ def _kapi_h9(F, N, O, kok, y):
                                 capture_output=True, text=True, encoding="utf-8", errors="replace")
             kirli = len([x for x in (r2.stdout or "").split("\n") if x.strip()])
             # Izlenmeyen bir zincir/cipa GERCEK tarih degildir — git'in disinda kalmis demektir.
-            izlenmeli = [os.path.relpath(y.zincir, kok).replace("\\", "/"),
-                         os.path.relpath(y.snap, kok).replace("\\", "/"),
-                         os.path.relpath(y.canli, kok).replace("\\", "/")]
+            izlenmeli = [_rel(y.zincir, kok),
+                         _rel(y.snap, kok),
+                         _rel(y.canli, kok)]
             for rel in izlenmeli:
                 r3 = subprocess.run(["git", "-C", kok, "ls-files", "--error-unmatch", rel],
                                     capture_output=True, text=True)
@@ -4049,7 +4067,7 @@ def _h14_adaylar(kok, y):
                 m0 = os.path.getmtime(p0)
             except OSError:
                 continue
-            adaylar.append((os.path.relpath(p0, kok).replace("\\", "/"), m0))
+            adaylar.append((_rel(p0, kok), m0))
     return adaylar
 
 

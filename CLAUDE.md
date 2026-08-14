@@ -7,6 +7,9 @@
 > bağımsız turdur) · her kapanışta zorunlu DEVİR (DEVİR yalnız global tetikleyicilerle yazılır;
 > sürüm/faz durumu `DURUM.md`'nin işidir). Ürün kararları ve ölçülmüş mayınlar KORUNDU (aşağıda).
 > Bu dosya ≤ 8 KB kalır; yanında tek `DURUM.md` yaşar; başka canlı defter açılmaz.
+>
+> **EK (14 Ağu 2026, öğleden sonra — Onur onayı):** BİTTİ listesi KİLİTLENDİ (§2) · İŞLEYİŞ §3'ün
+> %10 oran kuralı SİLİNDİ, yerine amaç kapısı geldi · `cmd_*` bölmeleri KESİLDİ (§5).
 
 ## 1. NE (3 satır)
 Taşınabilir proje-hafızası kapı sistemi: tek dosyalık saf-Python motor (`skill/scripts/hafiza.py`,
@@ -19,17 +22,21 @@ değişiklik, getirdiği kolaylık ne olursa olsun yanlıştır. Doktrin: ölç�
 geri getirme · İngilizce kanonik komut + Türkçe alias · depo PUBLIC ama YAYIN YOK · çıkış-kodu
 sözleşmesi kırılırsa minor artar.
 
-## 2. BİTTİ LİSTESİ (≤10, ürün dili — İLK OTURUMDA ONUR'LA KİLİTLENİR; aşağısı ölçülmüş durumdan türetilmiş TASLAK)
+## 2. BİTTİ LİSTESİ (KİLİTLENDİ 14 Ağu 2026, Onur onayı — ölçütler yazılı, artık tartışılmaz)
 - [x] Kullanıcı `kur/kapi/isir/not/derle/devral` komutlarını Linux'ta koşabilir (CI yeşil)
-- [ ] **Windows'ta** tam hüküm: CI matrisi bugün de koşuyor ama motorun Windows iddiası v2.4.1'de
-      geri çekilmişti — "ölçüldü" sayılmanın ölçütü ilk oturumda Onur'la netleşecek
-- [ ] **macOS'ta** tam hüküm (aynı ölçüt netleşmesiyle)
+- [ ] **Windows'ta** tam hüküm. ÖLÇÜT = (i) `hafiza.py`'nin iki `win32` dalı bir mutantla koparılıp
+      CI'da ISIRIYOR **ve** (ii) `.skill` taze bir projede GERÇEK Windows'ta kurulup `kur→kapi→isir`
+      koşuyor. *(Ölçüldü 14 Ağu: ortak batarya zaten üç platformda `continue-on-error`sız kapı;
+      tek boşluk platforma özgü dal — `_surec_yasiyor_win` `faz0/` ve `capraz.yml`'de hiç geçmiyor.)*
+- [x] **macOS'ta** tam hüküm. ÖLÇÜT = ortak batarya macos-latest'te `continue-on-error`sız yeşil.
+      *(Ölçüldü 14 Ağu, CI #39: `hafiza.py`'de darwin dalı SIFIR — mutasyonu yapılacak platforma
+      özgü yüzey yok. NFC/NFD mayını kapıyla değil KAÇINMAYLA yönetiliyor (§4); README'de açık yazar.)*
 - [ ] Kullanıcı `.skill` paketini kurup taze bir projede 5 dakikada çalıştırabilir (kurulum belgesiyle)
 - [ ] 25 Ağu yazısının okuru, depoya gelip README ile sistemi kendi başına deneyebilir
 - [ ] Onur, gerçek bir projesinde (Momentum-dışı) sistemi 1 hafta fiilen kullanmış olur
 
 ## 3. SIRADAKİ İŞ (tek madde)
-<`DURUM.md`'den takip edilir; tek dikey dilim. Örn: "Windows koşumu CI matrisinde yeşil".>
+<`DURUM.md`'den takip edilir; tek dikey dilim.>
 
 ## 4. ORTAM MAYINLARI (ölçülmüş)
 - Bağlı klasör mount'unda **hiçbir `git` komutu koşma** (`status` dâhil): mount `unlink` vermez,
@@ -51,6 +58,8 @@ sözleşmesi kırılırsa minor artar.
 ## 5. KAPSAM DIŞI (gizlenmez)
 Tuzak Avcısı işleri · TSK/gelir hukuku · Reels-bülten operasyonu (ayrı projeler). PyPI/marketplace/
 duyuru YOK ("public repo ≠ yayın"). Semantik arama/embedding bilinçli reddedildi.
+**KESİLDİ 14 Ağu 2026:** `cmd_*` bölmeleri ve kalan CC borcu. `ihlal 8` ve `CC>20: 5` olduğu yerde
+kalır. Gerekçe: hiçbir BİTTİ maddesi CC'ye bağlı değil, 25 Ağu'ya 11 gün var. Yeniden açmak ADR ister.
 
 ---
 
@@ -58,7 +67,7 @@ duyuru YOK ("public repo ≠ yayın"). Semantik arama/embedding bilinçli redded
 
 1. **Takvim kutusu:** madde güne bağlanır; kutu dolarsa madde kesilir, süre uzamaz; kesilen §5 + README'ye.
 2. **Dikey dilim:** kullanıcıya görünen davranışla bitmeden "bitti" yok (bu projede kullanıcı = skill'i kuran kişi; "görünen davranış" = komutun gerçek projede koşması).
-3. **Kapı bütçesi %10:** `faz0/` bu projede ürünün parçası SAYILMAZ, denetim altyapısıdır ve bütçeye girer. Ölçüm (tek satır, CI'da): `faz0/` toplam satır ÷ `skill/` toplam satır. 14 Ağu ölçümü: aşımda — yeni faz0 aracı açılmaz, mevcutlar CI'da koşanlar dışında büyütülmez.
+3. **faz0 AMAÇ KAPISI** *(oran kuralı 14 Ağu 2026'da SİLİNDİ)*: `faz0/`'a yeni araç ancak bir BİTTİ maddesini DOĞRUDAN açan bir ölçüm içinse eklenir; gözle denetlenir (§10). Gerekçe (ölçüldü 14 Ağu — satır: faz0 11.188 / skill 7.064 = %158): %10 oranı bu projede ölçülemez bir hedefti — `faz0/` §7'nin TEK VİTRİNİ'dir, onu bütçeye sokmak ürünü kendi vaadinden kısar; üstelik "her düzeltmeye ayrı mutant" kırmızı çizgisiyle çarpışıp her kapı düzeltmesini yasaklıyordu.
 4. **Kâğıt denetim turu = 0; denetim SÜRÜM SINIRINDA tek bağımsız tur** (canlı koşum: `kur→kapi→isir` + iki koşucu, temiz makinede). İç düşman-ajan turları açılmaz. Ajan beyanına güven + sürüm başına 1 rastgele beyan doğrulaması.
 5. **Açılış ≤3 komut:** (git'siz) dosya durumu · `DURUM.md` · son CI koşumu. Betik bataryası oturumda koşulmaz; CI (`capraz.yml`) koşar.
 6. **Borç defteri yok:** ŞİMDİ YAP · KES (§5+README) · SİL.

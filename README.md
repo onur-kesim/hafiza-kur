@@ -105,6 +105,18 @@ Bunlar gizlenmiyor; `skill/SKILL.md` §9'da tam listesi var. En önemlileri:
 - **Uzun hafıza her zaman iyi değildir.** Girdi uzadıkça model başarımı düşer;
   bu yüzden tavan vardır ve canlı dosya **yol taşır, metin taşımaz**.
 
+- **Platform hükmü eşit değildir.** CI, ölçüm bataryasının tamamını Linux ·
+  Windows · macOS üzerinde `continue-on-error`suz koşar. Ama motorda platforma özgü
+  tek dal `sys.platform == "win32"` altındadır ve **o dal henüz bir mutantla
+  ölçülmemiştir** — doktrin gereği hükmü yoktur. macOS'a özgü kod yolu ise hiç
+  yoktur; macOS'un bilinen mayını (dosya adlarında NFC/NFD ayrışması) bir kapıyla
+  değil bir **kaçınma kuralıyla** yönetiliyor: disk adlarına Türkçe diyakritik
+  konmuyor. Kural, kapı değil — ve kuralı zorlayan bir şey yok.
+- **Karmaşıklık borcu bilinçli olarak açık bırakıldı.** Motorun sekiz fonksiyonu
+  projenin kendi eşiğini aşıyor, beşi CC 20'nin üstünde. 14 Ağu 2026'da bu bölme
+  işi KESİLDİ: ölçülebilirliği zayıflatmıyor, yalnız okunabilirliği. Kesim
+  gizlenmiyor, burada duruyor.
+
 ## Denetim
 
 Bu araç üç bağımsız denetçiye verildi ve on üç tur kırılmaya çalışıldı. İlk iki
