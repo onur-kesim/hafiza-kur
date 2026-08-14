@@ -60,9 +60,9 @@ def iskelet_kur(taban):
     os.makedirs(os.path.join(kok, "faz0"))
     os.makedirs(os.path.join(kok, ".github", "workflows"))
     kaynak_faz0 = os.path.join(KOK, "faz0")
-    adlar = sorted(f for f in os.listdir(kaynak_faz0) if f.endswith("_bolme_mutanti.py"))
+    adlar = sorted(f for f in os.listdir(kaynak_faz0) if f.endswith("_mutanti.py"))
     if not adlar:
-        raise Kurulamadi("kaynak depoda hic *_bolme_mutanti.py yok")
+        raise Kurulamadi("kaynak depoda hic *_mutanti.py yok")
     for ad in adlar:
         open(os.path.join(kok, "faz0", ad), "w", encoding="utf-8").write("# yer tutucu\n")
     kaynak_wf = os.path.join(KOK, WF)
@@ -95,7 +95,14 @@ def _s1_is_silindi(kok, adlar):
 
 def _s2_yeni_mutant_is_yok(kok, adlar):
     # YASANAN HAL: betik commit'e girdi, workflow girmedi.
-    yeni = "h11_bolme_mutanti.py"
+    # 🔴 AD GERCEK DEPODA BULUNMAMALI. Ilk surumde burada `h11_bolme_mutanti.py`
+    # yaziyordu; o dosya sonradan depoya girdi ve isi de eklendi — yani senaryo
+    # SESSIZCE ATESLEYEMEZ hale gelirdi (kapi "isi var" der, senaryo kirmizi
+    # bekler). Senaryonun kendi girdisi bayatlayabilir: gercek depodan
+    # gelemeyecek bir ad kullan.
+    yeni = "zzz_yeni_mutanti.py"
+    if yeni in adlar:
+        raise Kurulamadi("senaryo adi gercek depoda VAR: %s — ad degistirilmeli" % yeni)
     open(os.path.join(kok, "faz0", yeni), "w", encoding="utf-8").write("# yer tutucu\n")
     return yeni
 
@@ -123,7 +130,7 @@ def _s6_workflow_yok(kok, adlar):
 
 
 SENARYOLAR = [
-    ("S-1 IS SILINDI", "bir bolme mutantinin `run:` satiri kaldirildi", _s1_is_silindi, 1),
+    ("S-1 IS SILINDI", "bir mutant betiginin `run:` satiri kaldirildi", _s1_is_silindi, 1),
     ("S-2 YENI MUTANT, IS YOK", "YASANAN HAL: betik var, CI isi yok", _s2_yeni_mutant_is_yok, 1),
     ("S-3 YALNIZ YORUMDA", "is yok ama ad bir YORUM satirinda geciyor", _s3_yalniz_yorumda, 1),
     ("S-4 TEMIZ", "dokunulmamis depo — yalanci kirmizi yakmamali", _s4_temiz, 0),
@@ -141,7 +148,7 @@ KAPI_MUTANTLARI = [
        '    return metin.split("\\n")')],
      "S-3 YALNIZ YORUMDA"),
     ("M-2 BOS KUME KONTROLU", "bos kumede OLCULEMEDI yerine YESIL",
-     [('    if not betikler:\n        return 2, "hicbir faz0/*_bolme_mutanti.py bulunamadi'
+     [('    if not betikler:\n        return 2, "hicbir faz0/*_mutanti.py bulunamadi'
        ' — bu kapi HICBIR SEY olcmuyor", []',
        '    if not betikler:\n        return 0, "", []')],
      "S-5 HIC MUTANT YOK"),

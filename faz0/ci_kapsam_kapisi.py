@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""CI KAPSAM KAPISI — her bolme mutantinin CI'da bir ISI VAR MI?
+"""CI KAPSAM KAPISI — her MUTANT BETIGININ CI'da bir ISI VAR MI?
 
 NEDEN VAR (olculdu 14 Agu 2026): uc ayri commit bir CI isini MESAJINDA beyan
 etti, dosya commit'e girmedi ve kimse fark etmedi.
@@ -17,12 +17,23 @@ workflow girmediginde, ESKI workflow kosar, bu kapi yeni betigi gorur, karsilik
 gelen `run:` satirini bulamaz ve KIRMIZI yanar. Yani hatanin kendisi kapiyi
 tetikler.
 
-KAPSAM (DAR, bilincli): yalnizca `faz0/*_bolme_mutanti.py`. Bu ad kalibi bolme
-turunun kendisi tarafindan uretilir, dolayisiyla MUAFIYET LISTESI GEREKMEZ.
-Muafiyet listesi bir BEYANDIR ve bayatlar; dar kural onu hic dogurmuyor.
-Genisletmek istersen once o beyanin nerede duracagina karar ver.
+KAPSAM: `faz0/*_mutanti.py` — TUM mutant betikleri.
 
-BOS KUME = OLCULEMEDI, YESIL DEGIL. Hicbir `*_bolme_mutanti.py` bulunmazsa kapi
+Olcut MUAFIYETSIZLIKTIR: muafiyet listesi bir BEYANDIR, bayatlar ve kimse
+bakmaz. Kapsam ancak muafiyet DOGURMADIGI surece genisletilir.
+
+  · 14 Agu 2026, ilk surum: kapsam `*_bolme_mutanti.py` (7 dosya, 0 muafiyet).
+    Daha genis bir kural ("faz0'daki tum olcum betikleri") IKI muafiyet
+    dogurdugu icin (sabotaj.py, win_yol_probu.py) BILEREK secilmedi.
+  · Ayni gun genisletildi: `*_mutanti.py`. OLCULDU — 13 dosyanin 13'u zaten CI
+    isi tasiyor, yani muafiyet YINE DOGMUYOR. Genisleme bedava.
+    Tetikleyen olay: `cmd_etki_mutanti.py` dar kapsamin DISINDA kaldi ve isi
+    elle eklendi; kapi bunu goremezdi.
+
+Kapsami bir daha genisletmek istersen olcut aynidir: once say, muafiyet
+doguyorsa GENISLETME.
+
+BOS KUME = OLCULEMEDI, YESIL DEGIL. Hicbir `*_mutanti.py` bulunmazsa kapi
 exit 2 verir. Bir sey olcmeyen kapi "temiz" diyemez (doktrin 2).
 
 CIKIS KODU  0 hepsinin isi VAR · 1 en az birinin isi YOK (KIRMIZI) · 2 OLCULEMEDI
@@ -45,7 +56,7 @@ _cikti_kodlamasini_guvenceye_al()
 
 VARSAYILAN_KOK = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKFLOW = os.path.join(".github", "workflows", "capraz.yml")
-DESEN = re.compile(r".*_bolme_mutanti\.py$")
+DESEN = re.compile(r".*_mutanti\.py$")
 CIZGI = "-" * 78
 
 
@@ -75,7 +86,7 @@ def olc(kok):
     except OSError as e:
         return 2, "workflow okunamadi: %s" % e, []
     if not betikler:
-        return 2, "hicbir faz0/*_bolme_mutanti.py bulunamadi — bu kapi HICBIR SEY olcmuyor", []
+        return 2, "hicbir faz0/*_mutanti.py bulunamadi — bu kapi HICBIR SEY olcmuyor", []
 
     govde = "\n".join(calisan_satirlar(metin))
     sonuc = [(b, ("faz0/" + b) in govde) for b in betikler]
@@ -90,7 +101,7 @@ def main():
     kok = os.path.abspath(a.kok)
 
     print(CIZGI)
-    print("CI KAPSAM KAPISI — faz0/*_bolme_mutanti.py -> capraz.yml isi")
+    print("CI KAPSAM KAPISI — faz0/*_mutanti.py -> capraz.yml isi")
     print("kok: %s" % kok)
     print(CIZGI)
 
@@ -108,12 +119,12 @@ def main():
     print(CIZGI)
     if kod == 1:
         kacan = [b for b, var in sonuc if not var]
-        print("HUKUM: KIRMIZI — %d bolme mutantinin CI isi YOK: %s"
+        print("HUKUM: KIRMIZI — %d mutant betiginin CI isi YOK: %s"
               % (len(kacan), ", ".join(kacan)))
         print("  Betik depoda ama hic kosmuyor. `.github/workflows/capraz.yml`'e")
         print("  `run: python faz0/<ad>` tasiyan bir is ekle.")
         return kod
-    print("HUKUM: %d bolme mutantinin hepsinin CI isi VAR." % len(sonuc))
+    print("HUKUM: %d mutant betiginin hepsinin CI isi VAR." % len(sonuc))
     return kod
 
 
