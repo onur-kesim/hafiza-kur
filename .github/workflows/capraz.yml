@@ -875,3 +875,57 @@ jobs:
       - name: bandit (bugun 20 bulgu, hepsi LOW)
         continue-on-error: true
         run: bandit -r skill/scripts/hafiza.py
+
+  # ---------------------------------------------------------------------------
+  # 5) CI KAPSAM KAPISI — her bolme mutantinin bir ISI VAR MI?
+  #     14 Agu 2026'da olculdu: UC ayri commit bir CI isini MESAJINDA beyan etti,
+  #     `.github/workflows/capraz.yml` commit'e girmedi ve kimse fark etmedi.
+  #         c0478f0  "CI: h1_kenar_mutanti uc platformda"   -> dosya commit'te YOK
+  #         2550eba  CI isi beyan edildi                    -> dosya commit'te YOK
+  #         5b1e80f  "CI: h12_kenar_mutanti"                -> dosya commit'te YOK
+  #     Uc kez ayni sinif YONTEM kusurudur; "daha dikkatli ol" bir kapi degildir.
+  #
+  #     MEKANIK: kapi capraz.yml'i CHECKOUT'tan okur. Mutant betigi commit'e girip
+  #     workflow girmediginde ESKI workflow kosar, kapi yeni betigi gorur, karsilik
+  #     gelen `run:` satirini bulamaz -> KIRMIZI. Yani hatanin kendisi kapiyi
+  #     tetikler. Hedef engellemek degil, GIZLENEMEZ KILMAK.
+  #
+  #     KAPSAM DAR ve bu BILINCLI: yalnizca `faz0/*_bolme_mutanti.py`. Bu ad kalibi
+  #     bolme turunun kendisi tarafindan uretilir, dolayisiyla MUAFIYET LISTESI
+  #     GEREKMEZ. Muafiyet listesi bir BEYANDIR ve bayatlar. (Olculdu: genis kural
+  #     iki muafiyet dogururdu — sabotaj.py, win_yol_probu.py.)
+  #
+  #     TEK PLATFORM ve bu da bilincli: kapi DEPO METNINI olcer, isletim sistemi
+  #     davranisini degil. Ortam farki olcecek bir sey yok. (Ortam farki olan
+  #     kapilar uc platformda kosar — bkz. kenar mutantlari.)
+  #
+  #     IKI ADIM, IKISI DE `continue-on-error` SUZ:
+  #       1) kapinin kendisi — bir mutant betigin isi yoksa KIRMIZI
+  #       2) kapinin MUTANTI — kapi kor kalirsa KIRMIZI. Kapinin var olmasi
+  #          isirdigi anlamina gelmez (doktrin 1). Bu mutant ilk kosumunda
+  #          kapinin icinde OLU MANTIK buldu (hukum iki kez hesaplaniyordu).
+  # ---------------------------------------------------------------------------
+  ci_kapsam:
+    name: CI kapsam kapisi
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: her bolme mutantinin CI isi VAR mi
+        shell: bash
+        run: python faz0/ci_kapsam_kapisi.py 2>&1 | tee ci-kapsam-cikti.txt
+      - name: kapinin KENDISI isiriyor mu (6 senaryo + 3 kapi mutanti)
+        shell: bash
+        run: python faz0/ci_kapsam_mutanti.py 2>&1 | tee ci-kapsam-mutant-cikti.txt
+      - name: ci kapsam ciktilari (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-kapsam-ubuntu-latest
+          path: |
+            ci-kapsam-cikti.txt
+            ci-kapsam-mutant-cikti.txt
+          if-no-files-found: warn
