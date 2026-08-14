@@ -53,6 +53,32 @@ import posixpath
 import re
 import sys
 
+def _cikti_kodlamasini_guvenceye_al():   # Y-2 KORUMASI (olcum aracina da konur)
+    for akis in (sys.stdout, sys.stderr):
+        try:
+            akis.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            try:
+                akis.reconfigure(errors="replace")
+            except Exception:
+                pass
+
+
+_cikti_kodlamasini_guvenceye_al()
+
+# 🔴 Y-2 DERSI, BU ARACIN KENDI ETINDE (14 Agu 2026):
+#     Bu arac ILK surumunde yukaridaki blok OLMADAN yazildi. Yazarin makinesinde
+#     (UTF-8 konsollu Windows) YESIL/exit 0 verdi; CI'nin windows-latest islemcisi
+#     ayni commit'te exit 1 dondu. Sebep, "ISIRDI ✓" satirindaki U+2713:
+#         UnicodeEncodeError: 'charmap' codec can't encode character '✓'
+#     Yani arac, kapilari olcerken KENDI CIKTISINDA cokuyordu.
+#
+#     MAYIN METNI DE DUZELTILDI: CLAUDE.md "Turkce Windows (cp1254) kusuru
+#     MASKELER, Ingilizce runner (cp1252) COKERTIR" diyor. Olculdu: U+2713'u
+#     cp1254 DE cp1252 DE kaldiramiyor — ikisi de cokuyor. Ayrim Turkce/Ingilizce
+#     DEGIL, UTF-8 / eski kod sayfasi. Yazarin makinesi maskelemedi, UTF-8'di.
+#     "Bende calisiyor" yine hukum olmadi; hukmu CI verdi.
+
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                           "..", "skill", "scripts", "hafiza.py")
 

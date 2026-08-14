@@ -1,5 +1,5 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 2 ✅ / 6** (liste 14 Ağu 2026'da KİLİTLENDİ — ölçütler `CLAUDE.md` §2'de)
+**BİTTİ sayacı: 2 ✅ / 6** (madde 2 yarım: (ii) ✔ · (i) açık) (liste 14 Ağu 2026'da KİLİTLENDİ — ölçütler `CLAUDE.md` §2'de)
 Son güncelleme: 14 Ağu 2026 · bu dosya ≤8 KB, yerinde güncellenir
 
 ## Son yapılan (14 Ağu, tek oturum)
@@ -7,11 +7,20 @@ Esaslar v2 kilitlendi (`8c0d040`) · `cmd_*` KESİLDİ · %10 oran kuralı silin
 `.skill` üretilip taze projede koştu (5 sn, Linux) · **`devral` GERÇEK Windows'ta gerçek projede
 koştu (exit 0)** · yol ayracı körlüğü bulundu ve kapatıldı.
 
+## ✅ TAZE WINDOWS KOŞUMU (14 Ağu 15:33, commit `b7d753a` sonrası — yamalı motor)
+`%TEMP%\hk-taze` (taze git deposu), GERÇEK Windows: `kur`=0 · `kapi`=0 ("YEŞİL SINIRLI", H9
+ÖLÇÜLEMEDİ çünkü henüz commit yok) · `isir`=2 → **34/34 koşulan mutant ISIRDI**, 2 SINANMADI
+(M-H1b, M-DEVIR — testin kendi eksiği, kapı körlüğü değil), H9 için mutant yok.
+Linux koşumuyla ÖZDEŞ. Bu, `_rel` yamasının (82c6e91b) gerçek Windows'ta da doğrulanmasıdır.
+**Madde 2'nin (ii) yarısı KARŞILANDI** — şerh: koşan şey depodaki `skill/scripts/hafiza.py`,
+paketten AÇILMIŞ `.skill` değil. Motor baytı aynı ama "paketi kurup koşturma" adımı hâlâ
+ÖLÇÜLMEDİ; madde 4 bu yüzden açık. Elimdeki `.skill` de artık BAYAT (dffe3ce6 ile üretildi).
+
 ## Sıradaki iş (tek madde)
-`_capraz_yeni.yml` → `capraz.yml`: `yol_ayraci_kapisi` CI işi ÜÇ platformda, `continue-on-error`SUZ.
-🔴 Bu işi `faz0/ci_kapsam_kapisi.py` YAKALAMAZ (kapsamı yalnız `faz0/*_bolme_mutanti.py`) —
-commit'e girmezse kimse görmez. İndiğini `git show --stat HEAD` ile ÖLÇ.
-Sonra: taze Windows koşumu (`kur→kapi→isir`) ile madde 2'nin (ii) yarısını kapat.
+Madde 2'nin (i) yarısı: `faz0/win_dal_mutanti.py` — `hafiza.py`'nin iki `win32` dalını
+(sat. 881/4859, hedef `_surec_yasiyor_win`) koparır, üç platformda `continue-on-error`SUZ koşar.
+Bu yazılınca madde 2 ✅ olur. (CI #41 okundu ve kırmızıydı — sebebi aşağıda, düzeltildi;
+#42 yeşil beklenir, YEŞİL TİK YETMEZ: iş listesine ve `yol-ayraci-*` artefaktlarına bak.)
 
 ## ✅ YOL AYRACI KAPISI (14 Ağu — bulgu KAPANDI)
 Gerçek Windows koşumunda `devral` `YEDEK: arsiv\hafiza\v2\...` bastı, aynı çıktının H4 satırları
@@ -33,6 +42,20 @@ tekrarlanıyordu — 18'i koşulsuz (D-1 ihlali), 4'ü hiç. Kaçak üreticisi.
 exit 0. `PROJE_HAFIZA.md`: 0 satır silindi, 10 eklendi, yedek bit-bit alındı.
 Linux kopyası ile Windows koşumu, gerçekten farklı olan yer DIŞINDA bit-bit aynı; fark yalnız
 H9'da (kopyada `.git` yoktu → ÖLÇÜLEMEDİ, Windows'ta gerçek hüküm).
+
+## 🔴 CI #41 KIRMIZI → kapı KENDİ ÇIKTISINDA çöktü (14 Ağu — bulundu, kapatıldı)
+`yol_ayraci_kapisi` üç platformda da koştu: ubuntu ✅ macos ✅ **windows-latest ❌ exit 1**
+(artefakt: ubuntu/macos 458 B, windows 658 B — 200 baytlık fazlalık traceback'ti).
+Sebep ÖLÇÜLDÜ: `"ISIRDI ✓"` satırındaki U+2713 →
+`UnicodeEncodeError: 'charmap' codec can't encode character '\u2713'`.
+Araç kapıları ölçerken KENDİ çıktısında çöküyordu. Kardeş araçların hepsinde
+(`karmasiklik.py` · `ci_kapsam_kapisi.py` · `etki_imzasi.py`) zaten duran
+`_cikti_kodlamasini_guvenceye_al()` bloğu bu araca konmamıştı — Y-2 dersinin birebir tekrarı.
+Eklendi: cp1252 · cp1254 · ascii · utf-8 dördünde de exit 0, hüküm satırları sağlam, eski motora
+karşı hâlâ KIRMIZI (exit 1). Ders aracın kendi başlığına da yazıldı.
+**MAYIN METNİ DÜZELTİLDİ (CLAUDE.md §4):** ayrım Türkçe/İngilizce DEĞİL, UTF-8 / eski kod sayfası —
+U+2713'ü cp1254 de cp1252 de kaldıramıyor. Onur'un makinesi maskelemedi, konsolu UTF-8'di.
+"Bende çalışıyor" yine hüküm olmadı; hükmü CI verdi.
 
 ## Bilinen sınırlar (ölçülmüş)
 - ✏️ **MAYIN GÜNCELLENDİ:** ".github/workflows/* köprüden yazılamaz" artık YANLIŞ.

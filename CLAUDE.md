@@ -50,8 +50,9 @@ sözleşmesi kırılırsa minor artar.
   (indeks otorite değil: silinip yeniden üretilince bit-bit aynı).
 - 🔴 25 Ağu 2026 sonrası depo adresi (`onur-kesim/hafiza-kur`) DEĞİŞMEZ — yazıda dışa verilecek.
 - Süre tahmini belgeye yazılmaz (bir kez yazıldı, yanlıştı, sonraki oturumun teşhisini saptırdı).
-- Çıktı kodlaması mayını: Türkçe Windows (cp1254) kusuru MASKELER, İngilizce runner (cp1252) çökertir —
-  "bende çalışıyor" hüküm değildir; koruma ölçüm araçlarına da konur (Y-2 dersi).
+- Çıktı kodlaması mayını (ÖLÇÜM DÜZELTİLDİ 14 Ağu): ayrım Türkçe/İngilizce DEĞİL, **UTF-8 / eski kod
+  sayfası**. `✓` (U+2713) cp1254'te de cp1252'de de çöker; maskeleyen şey konsolun UTF-8 olmasıdır.
+  "bende çalışıyor" hüküm değildir; `_cikti_kodlamasini_guvenceye_al()` ÖLÇÜM ARAÇLARINA DA konur (Y-2).
 - Sürüm denetim turu SÜRERKEN koda dokunulmaz; kapı/koruma sökümü serbesttir ama daima gerekçeli ve
   beyanlıdır (sessiz söküm yok).
 
