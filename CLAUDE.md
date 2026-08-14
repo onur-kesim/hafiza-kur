@@ -24,16 +24,19 @@ sözleşmesi kırılırsa minor artar.
 
 ## 2. BİTTİ LİSTESİ (KİLİTLENDİ 14 Ağu 2026, Onur onayı — ölçütler yazılı, artık tartışılmaz)
 - [x] Kullanıcı `kur/kapi/isir/not/derle/devral` komutlarını Linux'ta koşabilir (CI yeşil)
-- [ ] **Windows'ta** tam hüküm. ÖLÇÜT = (i) `hafiza.py`'nin iki `win32` dalı bir mutantla koparılıp
+- [x] **Windows'ta** tam hüküm. ÖLÇÜT = (i) `hafiza.py`'nin iki `win32` dalı bir mutantla koparılıp
       CI'da ISIRIYOR **ve** (ii) `.skill` taze bir projede GERÇEK Windows'ta kurulup `kur→kapi→isir`
-      koşuyor. *(i) KAPANDI 14 Ağu, CI #43 `cde1998`: `faz0/win_dal_mutanti.py` — üç kapı, dört
-      ayrı eksende mutant, üç platform `continue-on-error`sız, windows'ta `KAPI-3 CANLI : YESIL`.
-      (ii) AÇIK: lafzı paketten AÇILMIŞ `.skill` istiyor, ölçülen depo motoruydu → 2(ii) ⊂ madde 4.
-      **İkisi BİRLİKTE ✅ olur** — Onur kilidi, 14 Ağu; yeniden tartışılmaz.)*
+      koşuyor. *(i) CI #43 `cde1998`: `faz0/win_dal_mutanti.py`, üç kapı/dört eksen, windows'ta
+      `KAPI-3 CANLI : YESIL`. (ii) CI #46 `5d81838`: paketten açılmış motor, `win32`, taze proje,
+      `kur`=0 `kapi`=0 `isir`=2 (sözleşme), 8,6 sn. Onur kilidi gereği madde 4 ile birlikte ✅.)*
 - [x] **macOS'ta** tam hüküm. ÖLÇÜT = ortak batarya macos-latest'te `continue-on-error`sız yeşil.
       *(Ölçüldü 14 Ağu, CI #39: `hafiza.py`'de darwin dalı SIFIR — mutasyonu yapılacak platforma
       özgü yüzey yok. NFC/NFD mayını kapıyla değil KAÇINMAYLA yönetiliyor (§4); README'de açık yazar.)*
-- [ ] Kullanıcı `.skill` paketini kurup taze bir projede 5 dakikada çalıştırabilir (kurulum belgesiyle)
+- [x] Kullanıcı `.skill` paketini kurup taze bir projede 5 dakikada çalıştırabilir (kurulum belgesiyle)
+      *(CI #46 `5d81838`, üç platform `continue-on-error`sız: `faz0/paketten_kos.py` paketi açar,
+      BELGENİN akışını izler (`SKILL.md` §2 adım 1: motoru `araclar/hafiza/`ya kopyala) ve komutları
+      belgeye karşı ölçer — KAPI-1 BELGE (komut + yol ekseni) · KAPI-2 CANLI. windows'ta 8,6 sn.
+      ŞERH: insanın elleriyle koştuğu bir kurulum yok; ölçen CI'dır — bu projede hüküm CI'nındır.)*
 - [ ] 25 Ağu yazısının okuru, depoya gelip README ile sistemi kendi başına deneyebilir
 - [ ] Onur, gerçek bir projesinde (Momentum-dışı) sistemi 1 hafta fiilen kullanmış olur
 
