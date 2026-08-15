@@ -20,26 +20,25 @@ sözleşmesi kırılırsa minor artar.
 
 ## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · 15 Ağu: eski md.6 KESİLDİ §5, yeni md.6 AÇILDI — **5 ✅ / 6**)
 - [x] Kullanıcı `kur/kapi/isir/not/derle/devral` komutlarını Linux'ta koşabilir (CI yeşil)
-- [x] **Windows'ta** tam hüküm. ÖLÇÜT = (i) iki `win32` dalı mutantla koparılıp CI'da ISIRIYOR
-      **ve** (ii) `.skill` taze projede GERÇEK Windows'ta kurulup `kur→kapi→isir` koşuyor.
-      *(i) CI #43 `cde1998` `faz0/win_dal_mutanti.py` · (ii) CI #46 `5d81838` `win32`, 8,6 sn.)*
-- [x] **macOS'ta** tam hüküm. ÖLÇÜT = ortak batarya macos-latest'te `continue-on-error`sız yeşil.
-      *(CI #39, 14 Ağu: darwin dalı SIFIR — platforma özgü yüzey yok; NFC/NFD KAÇINMAYLA yönetiliyor (§4).)*
-- [x] Kullanıcı `.skill` paketini kurup taze projede 5 dakikada çalıştırabilir (kurulum belgesiyle)
-      *(CI #46 `5d81838`, üç platform: `faz0/paketten_kos.py` BELGENİN akışını izler ve komutları
-      belgeye karşı ölçer; windows'ta 8,6 sn. ŞERH: ölçen CI'dır, insan eli değil.)*
-- [x] 25 Ağu yazısının okuru, depoya gelip README ile sistemi kendi başına deneyebilir.
-      ÖLÇÜT = README'nin "Kanıtı kendin koş" bloğu CI'da ÜÇ PLATFORMDA `continue-on-error`sız koşar
-      ve bloktaki HER sayısal beyan gerçekle TUTAR; beklenen değerler BLOKTAN okunur.
-      *(CI #49 `fba20c8`: `faz0/readme_mutanti.py` 3 kapı + 6/6 mutant; yedi beyanın yedisi ölçüldü.
-      ŞERH: ölçen CI'dır, insan okuru değil.)*
+- [x] **Windows'ta** tam hüküm — (i) `faz0/win_dal_mutanti.py` CI #43 `cde1998` · (ii) gerçek
+      Windows'ta `.skill` kurulup `kur→kapi→isir` koştu, CI #46 `5d81838`. *(tek satıra indi)*
+- [x] **macOS'ta** tam hüküm — ortak batarya macos-latest'te `continue-on-error`sız yeşil, CI #39;
+      darwin dalı SIFIR, NFC/NFD KAÇINMAYLA yönetiliyor (§4). *(tek satıra indi)*
+- [x] `.skill` taze projede 5 dakikada çalışır — `faz0/paketten_kos.py` BELGEYE karşı ölçer, üç
+      platform, CI #46 `5d81838`. ŞERH: ölçen CI'dır, insan eli değil. *(tek satıra indi)*
+- [x] 25 Ağu okuru README ile sistemi kendi başına deneyebilir — `faz0/readme_mutanti.py` 3 kapı/
+      6 mutant, beklenen değerler BLOKTAN okunur, CI #49 `fba20c8`. ŞERH: ölçen CI'dır.
 - [ ] **Kullanıcı, hafızası KENDİ ADIYLA duran bir projeyi devralabilir.** *(AÇILDI 15 Ağu, Onur
       kilidi — md.3'ü meşru açar; eski md.6'yla İLGİSİZ, o §5'te kesildi.)* ÖLÇÜT — `devral
       --kesif`: (a) `CLAUDE.md`·`AGENTS.md`·`DURUM.md`·`memory-bank/`·`.cursor/rules/` ROLÜYLE
       tanınır · (b) tanınmayan her kök `.md`/`.jsonl` için **ÖLÇÜLEMEDİ** basılır, sessizce
-      atlanmaz · (c) tanınan `canli` YOKKEN tanınmayan aday VARSA **yeni defter açmadan DURUR**
-      (çıkış ≠ 0, `--esle` ister) · (d) üçü de AYRI mutantla ısırır.
-      Araç: `faz0/devral_kesif_mutanti.py` · Kutu **22 Ağu 2026**.
+      atlanmaz · (c) tanınan `canli` YOKSA **yeni defter açmadan DURUR** (çıkış ≠ 0, `--esle`
+      ister) · (d) üçü de AYRI mutantla ısırır.
+      Araç: `faz0/devral_kesif_mutanti.py` · Kutu **22 Ağu 2026** (Onur onayı 15 Ağu).
+      🔴 (c) DÜZELTİLDİ 15 Ağu (Onur kilidi): ilk yazım "canli YOK **ve** tanınmayan aday VAR"
+      idi, DELİKTİ — `CLAUDE.md`+`DURUM.md` taşıyan proje ikisini de TANIDIĞI için "tanınmayan
+      aday" üretmez, koşul ateşlenmez, motor gene boş defter açardı. Ölçüt uğruna yazıldığı iki
+      örneği ıskalıyordu. M-3 mutantı tam bu VE'li yazımı kurar.
 
 ## 3. SIRADAKİ İŞ (tek madde)
 <`DURUM.md`'den takip edilir; tek dikey dilim.>
@@ -65,8 +64,9 @@ sözleşmesi kırılırsa minor artar.
 ## 5. KAPSAM DIŞI (gizlenmez)
 Tuzak Avcısı işleri · TSK/gelir hukuku · Reels-bülten operasyonu (ayrı projeler). PyPI/marketplace/
 duyuru YOK ("public repo ≠ yayın"). Semantik arama/embedding bilinçli reddedildi.
-**KESİLDİ 14 Ağu 2026:** `cmd_*` bölmeleri ve kalan CC borcu. `ihlal 8` ve `CC>20: 5` olduğu yerde
-kalır. Gerekçe: hiçbir BİTTİ maddesi CC'ye bağlı değil, 25 Ağu'ya 11 gün var. Yeniden açmak ADR ister.
+**KESİLDİ 14 Ağu 2026:** `cmd_*` bölmeleri ve kalan CC borcu. `CC>20: 5` olduğu yerde kalır;
+`ihlal` 15 Ağu'da 8→**9** (md.6 iki bayrak ekledi, `main` 80→82 satır; ölçüm, kapı değil).
+Gerekçe: hiçbir BİTTİ maddesi CC'ye bağlı değil, 25 Ağu'ya 11 gün var. Yeniden açmak ADR ister.
 **KESİLDİ 15 Ağu 2026 (Onur kilidi, İŞLEYİŞ md.1):** eski madde 6 — "gerçek bir projede 1 hafta
 fiilen kullanım" — ve `faz0/kullanim_kapisi.py`. Gerekçe **zaman değil ÖLÇÜT KUSURU:** (d) token
 kazancı ancak hafiza-kur mevcut defterin YERİNE geçerse dürüst ölçülür; "mevcut defter kanonik

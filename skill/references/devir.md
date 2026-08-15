@@ -6,7 +6,7 @@
 |---|---|---|
 | Yeni / boş | `kur` | Kurulacak bir şey yok, sıfırdan doğar |
 | İlerlemiş, ama hafıza sistemi **yok** | `devral` | Yapılandırma diskteki gerçekten türetilsin; ilk gün kırmızı seli olmasın |
-| İlerlemiş, **başka bir hafıza sistemi var** | `devral` | Mevcut sisteme dokunulmaz; v2 ayrı ad alanında yaşar |
+| İlerlemiş, **başka bir hafıza sistemi var** | önce `devral --kesif` | Motorun o ağacı NASIL gördüğü önce KURU PROVA ile görülür; `canli` belirsizse `devral` durur |
 
 **Mevcut sistemi olan bir projede `kur` KOŞMA.** Ölçüldü, üç somut hasar veriyor:
 zincir kırılıyor (v2 halkası v1 zincirine ekleniyor), ikinci çıpa doğuyor, ve yeni bir
@@ -17,13 +17,29 @@ arşiv dosyası eski sistemin dizin kapısını kırmızıya düşürüyor.
 ## 2. `devral` ne yapar
 
 ```
+python araclar/hafiza/hafiza.py devral --kesif --kok="<proje kökü>"   # KURU PROVA, yazmaz
 python araclar/hafiza/hafiza.py devral --kok="<proje kökü>" --ad "<Proje Adı>"
+python araclar/hafiza/hafiza.py devral --esle canli=<dosya>[,kural=<dosya>] --kok="<proje kökü>"
 ```
 
 **Keşif (yazmadan önce ölçer):**
-- Canlı hafıza dosyasını bulur (yoksa oluşturur).
+- **Adaptör tablosu (15 Ağu 2026):** kök dosyaları + `memory-bank/` + `.cursor/rules/` +
+  `.github/copilot-instructions.md` taranır ve her dosya bir ROLLE listelenir:
+  `canli` (`PROJE_HAFIZA.md` · `MEMORY.md` · `*HAFIZA.md`) · `kural_evi` (`CLAUDE.md` ·
+  `AGENTS.md` · `GEMINI.md` · `.cursorrules` · `.cursor/rules/*` ·
+  `.github/copilot-instructions.md`) · `gunluk` (`DURUM.md` · `BORCLAR.md` ·
+  `_ZINCIR.jsonl` · `PROJE_RADAR.jsonl`) · `disarida` (`memory-bank/*`).
+  Tanınmayan her kök `.md`/`.jsonl` için **`OLCULEMEDI — tanimadim: <ad>`** basılır;
+  sessizce atlanmaz. (`indeks` rolünün tabloda deseni YOKTUR, yalnız `--esle` ile atanır.)
+- **DURMA KURALI:** `canli` rolünü üstlenen tanınan bir dosya YOKSA `devral` **yeni defter
+  açmadan DURUR** (çıkış ≠ 0) ve `--esle canli=<dosya>` ister. Gerekçe ölçüldü: eski keşif
+  yalnız `*HAFIZA.md`/`MEMORY.md` tanıyordu; `CLAUDE.md` + `DURUM.md` taşıyan gerçek bir
+  projeye "sistem yok" deyip BOŞ bir defter açıyordu — **çift defter böyle doğar.**
+  Tanınan `canli` VARSA akış eskisi gibidir; mevcut projeler etkilenmez.
 - Mevcut bir hafıza sistemi var mı bakar (`_KAYNAK*`, `_ZINCIR.jsonl`, `HAFIZA_*.md`).
   Varsa v2 için ayrı bir ad alanı seçer: `arsiv/hafiza/v2`.
+  **ŞERH:** bu tespit hafiza-kur'un **kendi v1'ini** arar — başka bir aracın sistemini
+  DEĞİL. Başka aracın sistemi yukarıdaki adaptör tablosuyla tanınır ve dokunulmaz.
 - Canlı dosyadaki **gerçek** bölüm başlıklarını süslemeleriyle birlikte okur
   (`## 📚 ARŞİV DİZİNİ` gibi) ve `zorunlu_bolumler`e onları yazar.
 - `arsiv/` altındaki **gerçek** klasörleri arşiv türü olarak alır.

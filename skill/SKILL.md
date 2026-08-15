@@ -56,16 +56,30 @@ Kararsızsan: **kod varsa KAPILI, yoksa HAFİF.** Hafif'ten Kapılı'ya sonradan
 |---|---|
 | Yeni / boş | `kur` |
 | İlerlemiş, hafıza sistemi **yok** | **`devral`** |
-| İlerlemiş, **başka bir hafıza sistemi var** | **`devral`** |
+| İlerlemiş, **başka bir hafıza sistemi var** | önce **`devral --kesif`**, sonra `devral --esle …` |
 
 > ⛔ **Mevcut hafıza sistemi olan bir projede `kur` KOŞMA.** Ölçüldü: zinciri kırar,
 > ikinci çıpa doğurur ve eski sistemin dizin kapısını kırmızıya düşürür.
-> `devral` mevcut sisteme dokunmaz, v2'yi ayrı ad alanında (`arsiv/hafiza/v2`) kurar,
-> yapılandırmayı diskteki gerçekten türetir ve canlı dosyayı önce yedekler.
-> Ayrıntı: `references/devir.md`.
+> `devral` yapılandırmayı diskteki gerçekten türetir ve canlı dosyayı önce yedekler.
+>
+> **ŞERH — bu cümle 15 Ağu 2026'da DARALTILDI (ölçüldü, fazla söz veriyordu):**
+> "ayrı ad alanı (`arsiv/hafiza/v2`)" YALNIZCA hafiza-kur'un **kendi v1 kurulumu**
+> diskte bulunduğunda açılır; **başka bir aracın** sistemi için değil. Başka aracın
+> defterleri (`CLAUDE.md` · `AGENTS.md` · `GEMINI.md` · `.cursorrules` ·
+> `.cursor/rules/` · `.github/copilot-instructions.md` · `memory-bank/` ·
+> `DURUM.md` · `BORCLAR.md`) artık **rolüyle tanınır ve raporlanır**, dokunulmaz;
+> tanımadığı her kök `.md`/`.jsonl` için **OLCULEMEDI** satırı basılır — sessizce
+> atlanmaz. `canli` rolünü üstlenen tanınan bir dosya **YOKSA** `devral` boş defter
+> açmadan **DURUR** (çıkış ≠ 0) ve `--esle` ile kilit ister: iki defter,
+> ölçülebilirliğin kendisini bitirir. Ayrıntı: `references/devir.md`.
 
 ```
+# 0) ÖNCE BAK — kuru prova: envanteri ve rol eşlemesini basar, TEK BAYT yazmaz
+python araclar/hafiza/hafiza.py devral --kesif --kok="<proje kökü>"
+
 python araclar/hafiza/hafiza.py devral      --kok="<proje kökü>" --ad "<Proje Adı>"
+#   `canli` rolü belirsizse (devral DURUR ve bunu ister):
+python araclar/hafiza/hafiza.py devral --esle canli=<dosya>[,kural=<dosya>] --kok="<proje kökü>"
 python araclar/hafiza/hafiza.py bloklastir  --kok="<proje kökü>"            # kuru prova
 python araclar/hafiza/hafiza.py bloklastir  --kok="<proje kökü>" --uygula   # geriye dönük blok
 ```
