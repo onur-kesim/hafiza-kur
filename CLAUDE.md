@@ -2,14 +2,10 @@
 `MOD: NORMAL`
 
 > **FESİH BEYANI (14 Ağu 2026, Onur onayı — hız-kaybı denetimi):** Bu dosya eski `CLAUDE.md`'nin
-> yerine geçer (eskisi `CLAUDE-eski-2026-08-14.md`'de durur). Feshedilenler: 4 betikli oturum-açılış
-> ritüeli (ölçüm CI'dadır) · iç denetim turu düzeni (denetim artık yalnız SÜRÜM SINIRINDA tek
-> bağımsız turdur) · her kapanışta zorunlu DEVİR (DEVİR yalnız global tetikleyicilerle yazılır;
-> sürüm/faz durumu `DURUM.md`'nin işidir). Ürün kararları ve ölçülmüş mayınlar KORUNDU (aşağıda).
-> Bu dosya ≤ 8 KB kalır; yanında tek `DURUM.md` yaşar; başka canlı defter açılmaz.
->
-> **EK (14 Ağu 2026, öğleden sonra — Onur onayı):** BİTTİ listesi KİLİTLENDİ (§2) · İŞLEYİŞ §3'ün
-> %10 oran kuralı SİLİNDİ, yerine amaç kapısı geldi · `cmd_*` bölmeleri KESİLDİ (§5).
+> yerine geçer (eskisi `CLAUDE-eski-2026-08-14.md`). Feshedilenler: 4 betikli oturum-açılış ritüeli ·
+> iç denetim turu düzeni · her kapanışta zorunlu DEVİR. Ürün kararları ve ölçülmüş mayınlar KORUNDU.
+> **EK (aynı gün):** BİTTİ listesi KİLİTLENDİ (§2) · %10 oran kuralı SİLİNDİ, yerine amaç kapısı ·
+> `cmd_*` bölmeleri KESİLDİ (§5). Bu dosya ≤8 KB kalır; yanında tek `DURUM.md` yaşar.
 
 ## 1. NE (3 satır)
 Taşınabilir proje-hafızası kapı sistemi: tek dosyalık saf-Python motor (`skill/scripts/hafiza.py`,
@@ -35,11 +31,18 @@ sözleşmesi kırılırsa minor artar.
       belgeye karşı ölçer; windows'ta 8,6 sn. ŞERH: ölçen CI'dır, insan eli değil.)*
 - [x] 25 Ağu yazısının okuru, depoya gelip README ile sistemi kendi başına deneyebilir.
       ÖLÇÜT = README'nin "Kanıtı kendin koş" bloğu CI'da ÜÇ PLATFORMDA `continue-on-error`sız koşar
-      ve bloktaki HER sayısal beyan gerçekle TUTAR; beklenen değerler BLOKTAN okunur, araca YAZILMAZ.
-      *(CI #49 `fba20c8`: `faz0/readme_mutanti.py` üç kapı (BEYAN·GERÇEK·SÖZLEŞME) + 6/6 mutant;
-      yedi beyanın yedisi ölçüldü — 34/34 · 2 SINANMADI · exit 2 · 36/36 · exit 0 · 20 · 58 senaryo.
-      `t_y3`/`t_y42` burada `continue-on-error`SIZ koşar. ŞERH: ölçen CI'dır, insan okuru değil.)*
-- [ ] Onur, gerçek bir projesinde (Momentum-dışı) sistemi 1 hafta fiilen kullanmış olur
+      ve bloktaki HER sayısal beyan gerçekle TUTAR; beklenen değerler BLOKTAN okunur.
+      *(CI #49 `fba20c8`: `faz0/readme_mutanti.py` 3 kapı + 6/6 mutant; yedi beyanın yedisi ölçüldü.
+      ŞERH: ölçen CI'dır, insan okuru değil.)*
+- [ ] Onur, gerçek bir projesinde sistemi 1 hafta fiilen kullanmış olur.
+      ÖLÇÜT (Onur onayı, 15 Ağu 2026) = 21 Ağu'da hedef projenin `arsiv/hafiza/` zincirinden
+      MEKANİK ölçülür: (a) en az 5 AYRI günde `not` · (b) en az 2 `derle` · (c) son `kapi` YEŞİL ·
+      (d) hafiza-kur'un token maliyeti/kazancı ÖLÇÜLMÜŞ ve sayı `DURUM.md`'ye yazılmış —
+      **İŞARETİ NE OLURSA OLSUN**; eksi çıkması da geçerli bir sonuçtur. Araç: `faz0/kullanim_kapisi.py`.
+      "Sistem işime yaradı" BEYANDIR, hüküm değil; ayrı satıra yazılır.
+      🟡 HEDEF PROJE KARARI AÇIK: Momentum artık donuk DEĞİL (`yeni-sistem/KURULUM-NOTU.md` sat. 23
+      "donuk (K192)" beyanı 15 Ağu'da bayatladı). Yeni oturumda incelenip karar verilecek; eski
+      "(Momentum-dışı)" kaydı o incelemeye bağlıdır — gerekçesinin yarısı (donukluk) ölçümle düştü.
 
 ## 3. SIRADAKİ İŞ (tek madde)
 <`DURUM.md`'den takip edilir; tek dikey dilim.>
