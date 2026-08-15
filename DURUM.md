@@ -1,22 +1,20 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 6 ✅ / 7** — md.7'nin KODU YAZILDI ve ölçüldü; **CI BEKLİYOR** (push Onur'da)
+**BİTTİ sayacı: 7 ✅ / 7 — LİSTE KAPALI** (CI #59 `5f05b14`: 97 iş, **0 başarısız**)
 Son güncelleme: 15 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
-## 🔴 SIRADAKİ İŞ — md.7 CI'da yeşillenirse ✅ (6→7) · kutu 22 Ağu
-md.7 = "Kullanıcı, iki defterin AYRIŞTIĞINI motordan öğrenir." **Kod yazıldı, DİSKTE, PUSH YOK.**
-(a) motorun yazdığı blok `sahip=` taşır (`kur` iskeleti → `hafiza-kur` · `derle`/`bloklastir` →
-`proje`); sahipsiz blok `H10-SAHIP` OLCULEMEDI satırı basar — **FAIL değil**, eski defterlerde alan
-yoktur. (c) çoklu `canli` UYARI DEĞİL KAPI: iki aday → çıkış 2, diske sıfır bayt, `--esle` ister;
-kilit varsa akış eskisi gibi, tek aday ADDITIVE.
-`faz0/ayrisma_mutanti.py`: **3 kapı YEŞİL, 3/3 mutant AYRI eksende** (A1 sahiplik · A2 görünürlük ·
-C çoklu canlı). CI işi `capraz.yml`'e eklendi (32 iş, YAML doğrulandı, sha çaprazlandı).
-🔴 **ALTIN KÜME YENİDEN ÜRETİLDİ:** 28 ham satır değişti, **hepsi `H2:` boyut satırı, sıfırı başka
-eksende** — 4 × `sahip="hafiza-kur"` = 84 bayt. Davranış değişmedi, çıkış kodu değişmedi.
-Gerileme (bulut, linux): `isir` 34/34 · fazA 6/0 · `altin_kapi_mutanti` 6/6 · `altin_olcut_mutanti`
-7/7 · `karmasiklik_mutanti` 9/9 + çapa TUTUYOR (`cmd_devral` 97 sabit) · `ci_kapsam` çifti yeşil ·
-md.6 kapısı 3/3.
-Sonraya: 25 Ağu yazısı (madde gerektirmez) · depo atfı history rewrite (son tarih **24 Ağu**) ·
-H16 YAPI kapısı (tasarım onaylı, kod yok).
+## 🔴 SIRADAKİ İŞ — liste KAPALI; yeni madde ONUR KİLİDİ bekliyor
+AMAÇ KAPISI (İŞLEYİŞ md.3) yeni `faz0/` aracını yasaklıyor. Üç aday: **25 Ağu yazısı** (BİTTİ
+maddesi GEREKTİRMEZ, bugün başlanabilir, son tarih 10 gün) · **depo atfı history rewrite**
+(son tarih **24 Ağu**, force-push → ayrı açık onay + `git bundle` yedeği) · **H16 YAPI kapısı**
+(tasarım onaylı, kod yok, ADR ister). Ayrıca md.7'nin ayırt edici hâli (kural evi ↔ canlı içerik
+ayrışması) kapsam **B**'yi gerektiriyor ve md.8 olarak açılabilir — bugünkü md.7 bir SAĞLIK
+KONTROLÜDÜR, piyasa ayırt edicisi değildir; 25 Ağu yazısında böyle geçmeli.
+
+## ✅ md.7 KAPANDI (CI #59 `5f05b14`, 97 iş / 0 başarısız) — TEK SATIRA İNDİ
+`sahip=` alanı (`kur` iskeleti → `hafiza-kur` · `derle`/`bloklastir` → `proje`; alan yoksa
+`H10-SAHIP` ÖLÇÜLEMEDİ, FAIL değil) + çoklu `canli` KAPISI (çıkış 2, diske sıfır bayt).
+`faz0/ayrisma_mutanti.py` 3 kapı / 3 mutant AYRI eksende, üç platformda. Altın küme yeniden
+üretildi (28 satır, hepsi `H2:` boyut — 4 × `sahip=` = 84 bayt). Lafız İKİ KEZ ölçülüp daraltıldı.
 
 ## 25 AĞU YAZISI — ikinci dikey dilim
 Eski md.6 KESİLDİ (`CLAUDE.md` §5 — zaman değil ÖLÇÜT kusuru); **kurulum YAPILMADI**. Yazıda

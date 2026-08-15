@@ -18,7 +18,7 @@ değişiklik, getirdiği kolaylık ne olursa olsun yanlıştır. Doktrin: ölç�
 geri getirme · İngilizce kanonik komut + Türkçe alias · depo PUBLIC ama YAYIN YOK · çıkış-kodu
 sözleşmesi kırılırsa minor artar.
 
-## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · 15 Ağu: eski md.6 KESİLDİ §5; md.6 açıldı+kapandı, md.7 AÇILDI — **6 ✅ / 7**)
+## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · 15 Ağu: eski md.6 KESİLDİ §5; md.6 ve md.7 açıldı+kapandı — **7 ✅ / 7**)
 - [x] `kur/kapi/isir/not/derle/devral` Linux'ta koşuyor (CI yeşil)
 - [x] **Windows'ta** tam hüküm — `win_dal_mutanti` CI #43 `cde1998` + gerçek Windows'ta
       `kur→kapi→isir` CI #46 `5d81838`
@@ -30,12 +30,11 @@ sözleşmesi kırılırsa minor artar.
 - [x] **Hafızası KENDİ ADIYLA duran projeyi devralabilir** — `devral --kesif` + `--esle` + DURMA
       KURALI; `devral_kesif_mutanti.py` 3 kapı/3 mutant, CI #57 `ccd9721` (94 iş/0 başarısız).
       Ölçüt (c)'nin VE'li ilk yazımı DELİKTİ, tek koşula indi; M-3 tam onu kurar.
-- [ ] **Kullanıcı, iki defterin AYRIŞTIĞINI motordan öğrenir.** *(AÇILDI 15 Ağu, Onur kilidi;
-      aynı gün iki kez DARALTILDI — gerekçeler §5.)* ÖLÇÜT — (a) motorun yazdığı her blok
-      `sahip=` taşır (`hafiza-kur` = iskelet · `proje` = içerik); alan YOKSA **ÖLÇÜLEMEDİ**
-      basılır, sessizce sahiplenilmez · (c) tanınan `canli` birden çoksa **DURUR** (çıkış ≠ 0,
-      `--esle` ister; bugüne kadar uyarıp ilkini seçiyordu) · (d) ikisi de AYRI mutantla ısırır.
-      Araç: `faz0/ayrisma_mutanti.py` · Kutu **22 Ağu**. Kural evi KAPSAM DIŞI (`SKILL.md` §2).
+- [x] **İki defterin AYRIŞTIĞINI motordan öğrenir** — motorun yazdığı blok `sahip=` taşır (yoksa
+      `H10-SAHIP` **ÖLÇÜLEMEDİ**, sessiz sahiplenme yok); çoklu `canli` UYARI DEĞİL **KAPI**
+      (çıkış ≠ 0, diske sıfır bayt, `--esle` ister). `ayrisma_mutanti.py` 3 kapı/3 mutant,
+      CI #59 `5f05b14` (97 iş / 0 başarısız). Kutu 22 Ağu'ydu, 15 Ağu'da kapandı; lafız iki kez
+      ölçülüp DARALTILDI (§5). Kural evi KAPSAM DIŞI. ŞERH: ölçen CI'dır.
 
 ## 3. SIRADAKİ İŞ (tek madde)
 <`DURUM.md`'den takip edilir; tek dikey dilim.>
