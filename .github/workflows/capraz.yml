@@ -608,13 +608,15 @@ jobs:
   #     hukmu yoktur. `karmasiklik_mutanti.py` olcutun 9 kusurunu enjekte eder,
   #     dokuzu da isirmalidir. `continue-on-error` YOK.
   #
-  #     🔴 ARAC `--kapi` ILE KOSULMAZ: motorda bugun 14 ihlal var (11 CC>20,
-  #     11 satir>80, birlesik 14) ve bunlar Faz C'nin ACIK IS listesidir, bir
-  #     regresyon degil. `--kapi` bu isi her kosumda kirmizi yakardi ve KIRMIZI
-  #     DEGERSIZLESIRDI. Arac burada RAPOR kipinde kosar (exit 0) ve ciktisi
-  #     artefakt olarak saklanir; ihlal listesi boylece kosumdan kosuma
-  #     KARSILASTIRILABILIR olur. Kapi kipine gecis, liste bosaldiginda ayri bir
-  #     kararla yapilir.
+  #     🔴 ARAC `--kapi` ILE KOSULMAZ: motorun ihlal listesi BOS DEGIL ve bunlar
+  #     Faz C'nin ACIK IS listesidir, bir regresyon degil. `--kapi` bu isi her
+  #     kosumda kirmizi yakardi ve KIRMIZI DEGERSIZLESIRDI. Arac burada RAPOR
+  #     kipinde kosar (exit 0) ve ciktisi artefakt olarak saklanir; ihlal listesi
+  #     boylece kosumdan kosuma KARSILASTIRILABILIR olur. Kapi kipine gecis, liste
+  #     bosaldiginda ayri bir kararla yapilir.
+  #     GUNCEL SAYI BURAYA YAZILMAZ — `karmasiklik-ihlal.txt` artefaktindan OKU.
+  #     (Olculdu: 13 Agu'da buraya yazilan "14 / 11 CC>20 / 11 satir>80" 15 Agu'da
+  #     9 / 5 / 9 idi. Iki gunde bayatladi; yorumdaki canli sayi bir BEYANDIR.)
   # ---------------------------------------------------------------------------
   karmasiklik:
     name: karmasiklik olcutu (${{ matrix.os }})

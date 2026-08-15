@@ -20,8 +20,8 @@ noktadan bozar; SABIT bir ornek modul uzerinde sonucun DEGISMESI beklenir.
 Ornek modulun beklenen degerleri ELLE hesaplanmistir ve KONTROL kolu once
 onlari dogrular; tutmuyorsa mutant hukmu ANLAMSIZDIR ve betik durur.
 
-Ayrica CIPA olarak gercek motordan iki deger sinanir (olculdu 13 Agu 2026,
-radon ile caprazlanmis): cmd_isir 17 · cmd_devral 88.
+Ayrica CIPA olarak gercek motordan iki deger sinanir, HER GUNCELLEMEDE radon ile
+CAPRAZLANARAK: cmd_isir 17 (13 Agu'dan beri sabit) · cmd_devral 88 -> 97 (15 Agu).
 
 KULLANIM     python3 faz0/karmasiklik_mutanti.py
 CIKIS KODU   0 hepsi isirdi · 1 en az biri kacti · 2 OLCULEMEDI
@@ -139,8 +139,18 @@ BEKLENEN = {
     "lam": 2,         # 1 + comprehension (lambda govdesi sayilmaz)
 }
 
-# Gercek motordan capa degerler — radon ile caprazlandi (13 Agu 2026)
-CIPA = {"cmd_isir": 17, "cmd_devral": 88}
+# Gercek motordan capa degerler — radon ile caprazlandi.
+#   13 Agu 2026: cmd_isir 17 · cmd_devral 88
+#   15 Agu 2026: cmd_devral 88 -> 97. Sebep BILINEN ve BEYANLI — BITTI md.6
+#     `cmd_devral`a kesif/durma dallarini ekledi (`--kesif` kolu · `--canli`/`--esle`
+#     celiskisi · DURMA KURALI · coklu `canli` adayi uyarisi). CI #56 bu kapiyi UC
+#     PLATFORMDA kirmizi yakti; kapi gorevini YAPTI, sessizce gecmedi.
+#   🔴 CAPA, ARACIN KENDI CIKTISINDAN GUNCELLENMEZ — oyle yapilirsa capa kendi
+#     kendini onaylar ve hicbir suruklenmeyi bir daha yakalayamaz. 15 Agu'da
+#     BAGIMSIZ olculdu: `python -m radon cc -s skill/scripts/hafiza.py` ->
+#     `cmd_devral - F (97)`, `cmd_isir - C (17)`; ayni radon eski motorda 88 diyor.
+#     Yani ikili (arac, radon) YENI degerde de anlasiyor.
+CIPA = {"cmd_isir": 17, "cmd_devral": 97}
 
 # ------------------------------------------------------------------ MUTANTLAR
 # (ad, aciklama, [(eski, yeni)], ayirt eden ornek)
