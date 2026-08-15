@@ -24,27 +24,21 @@ sözleşmesi kırılırsa minor artar.
 
 ## 2. BİTTİ LİSTESİ (KİLİTLENDİ 14 Ağu 2026, Onur onayı — ölçütler yazılı, artık tartışılmaz)
 - [x] Kullanıcı `kur/kapi/isir/not/derle/devral` komutlarını Linux'ta koşabilir (CI yeşil)
-- [x] **Windows'ta** tam hüküm. ÖLÇÜT = (i) `hafiza.py`'nin iki `win32` dalı bir mutantla koparılıp
-      CI'da ISIRIYOR **ve** (ii) `.skill` taze bir projede GERÇEK Windows'ta kurulup `kur→kapi→isir`
-      koşuyor. *(i) CI #43 `cde1998`: `faz0/win_dal_mutanti.py`, üç kapı/dört eksen, windows'ta
-      `KAPI-3 CANLI : YESIL`. (ii) CI #46 `5d81838`: paketten açılmış motor, `win32`, taze proje,
-      `kur`=0 `kapi`=0 `isir`=2 (sözleşme), 8,6 sn. Onur kilidi gereği madde 4 ile birlikte ✅.)*
+- [x] **Windows'ta** tam hüküm. ÖLÇÜT = (i) iki `win32` dalı mutantla koparılıp CI'da ISIRIYOR
+      **ve** (ii) `.skill` taze projede GERÇEK Windows'ta kurulup `kur→kapi→isir` koşuyor.
+      *(i) CI #43 `cde1998` `faz0/win_dal_mutanti.py` · (ii) CI #46 `5d81838` `win32`, 8,6 sn.)*
 - [x] **macOS'ta** tam hüküm. ÖLÇÜT = ortak batarya macos-latest'te `continue-on-error`sız yeşil.
       *(Ölçüldü 14 Ağu, CI #39: `hafiza.py`'de darwin dalı SIFIR — mutasyonu yapılacak platforma
       özgü yüzey yok. NFC/NFD mayını kapıyla değil KAÇINMAYLA yönetiliyor (§4); README'de açık yazar.)*
 - [x] Kullanıcı `.skill` paketini kurup taze bir projede 5 dakikada çalıştırabilir (kurulum belgesiyle)
-      *(CI #46 `5d81838`, üç platform `continue-on-error`sız: `faz0/paketten_kos.py` paketi açar,
-      BELGENİN akışını izler (`SKILL.md` §2 adım 1: motoru `araclar/hafiza/`ya kopyala) ve komutları
-      belgeye karşı ölçer — KAPI-1 BELGE (komut + yol ekseni) · KAPI-2 CANLI. windows'ta 8,6 sn.
-      ŞERH: insanın elleriyle koştuğu bir kurulum yok; ölçen CI'dır — bu projede hüküm CI'nındır.)*
-- [ ] 25 Ağu yazısının okuru, depoya gelip README ile sistemi kendi başına deneyebilir.
-      ÖLÇÜT (Onur onayı, 14 Ağu) = README'nin "Kanıtı kendin koş" bloğu CI'da ÜÇ PLATFORMDA
-      `continue-on-error`sız koşar ve bloktaki HER sayısal beyan gerçekle TUTAR; beklenen
-      değerler BLOKTAN okunur, araca YAZILMAZ (sayı yazılmaz, üretilir). Araç:
-      `faz0/readme_mutanti.py` — üç kapı (BEYAN · GERÇEK · SÖZLEŞME), dört mutant.
-      *(Kod yazıldı 14 Ağu; Linux'ta 3 kapı yeşil + 6/6 mutant. `t_y3`/`t_y42` de BU kapıda
-      `continue-on-error`SIZ koşar ve senaryo sayıları README'yle karşılaştırılır — Onur kararı
-      14 Ağu, çünkü `kanit` işindeki kopyaları `continue-on-error: true` taşıyor. CI bekleniyor.)*
+      *(CI #46 `5d81838`, üç platform: `faz0/paketten_kos.py` BELGENİN akışını izler ve komutları
+      belgeye karşı ölçer; windows'ta 8,6 sn. ŞERH: ölçen CI'dır, insan eli değil.)*
+- [x] 25 Ağu yazısının okuru, depoya gelip README ile sistemi kendi başına deneyebilir.
+      ÖLÇÜT = README'nin "Kanıtı kendin koş" bloğu CI'da ÜÇ PLATFORMDA `continue-on-error`sız koşar
+      ve bloktaki HER sayısal beyan gerçekle TUTAR; beklenen değerler BLOKTAN okunur, araca YAZILMAZ.
+      *(CI #49 `fba20c8`: `faz0/readme_mutanti.py` üç kapı (BEYAN·GERÇEK·SÖZLEŞME) + 6/6 mutant;
+      yedi beyanın yedisi ölçüldü — 34/34 · 2 SINANMADI · exit 2 · 36/36 · exit 0 · 20 · 58 senaryo.
+      `t_y3`/`t_y42` burada `continue-on-error`SIZ koşar. ŞERH: ölçen CI'dır, insan okuru değil.)*
 - [ ] Onur, gerçek bir projesinde (Momentum-dışı) sistemi 1 hafta fiilen kullanmış olur
 
 ## 3. SIRADAKİ İŞ (tek madde)

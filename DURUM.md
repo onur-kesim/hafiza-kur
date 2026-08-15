@@ -1,12 +1,14 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 4 ✅ / 6** (madde 1·2·3·4 kapandı — ölçütler ve kanıtları `CLAUDE.md` §2'de)
-Son güncelleme: 14 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra yazılır**
+**BİTTİ sayacı: 5 ✅ / 6** — kalan tek madde 6 (kod işi DEĞİL, KULLANIM saati: 14→21 Ağu)
+Son güncelleme: 14 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
-## Sıradaki iş (tek madde) — MADDE 5
-**Bir sonraki CI koşumunu oku** (`readme_kapisi`, üç platform). YEŞİL TİK YETMEZ; her kolda
-`KAPI-1 BEYAN : YESIL` · `KAPI-2 GERCEK : YESIL` · `KAPI-3 SOZLESME : YESIL` ·
-`KOSUCU : t_y3 ... 20 senaryo` · `KOSUCU : t_y42 ... 58 senaryo` · `6/6 mutant AYRI eksende
-ISIRDI` aranır. Yeşilse **madde 5 ✅** → BİTTİ 5/6; geriye yalnız madde 6 kalır (saati 21 Ağu).
+## Sıradaki iş — KOD İŞİ YOK, SAAT İŞLİYOR
+**Madde 6:** "Onur, gerçek bir projesinde (Momentum-dışı) sistemi 1 hafta fiilen kullanmış olur."
+14 Ağu başladı, **21 Ağu biter**. Yazılacak kod, koşulacak kapı YOK — sistemi KULLANMAK var.
+Bu madde kapanınca BİTTİ 6/6 ve 25 Ağu yazısı yazılabilir.
+Ara işler (hiçbiri BİTTİ maddesine bağlı DEĞİL, ADR/onay ister): depo atfı history rewrite
+(son tarih 24 Ağu) · H16 YAPI kapısı (tasarım onaylı, kod yok) · `kanit` işindeki
+`t_y3`/`t_y42` hâlâ `continue-on-error: true` (bilinçli; `readme_kapisi` onları kapılı koşuyor).
 
 ## ✅ MADDE 2 + MADDE 4 KAPANDI (CI #43 `cde1998` + CI #46 `5d81838`) — tek satıra indi
 Üç kapı ailesi, hepsi üç platformda ve `continue-on-error`SIZ:
@@ -20,29 +22,19 @@ ISIRDI` aranır. Yeşilse **madde 5 ✅** → BİTTİ 5/6; geriye yalnız madde 
   sat. 4845'ten OKUNDU: `isir` taze projede **2** = SAĞLIKLI, **1 ve 4 KIRMIZI**.
   CI #46 windows: `KAPI-1 BELGE : YESIL` · `C1 komut ISIRDI ✓ · C2 yol ISIRDI ✓` · `8.6 sn, win32`.
 
-## ✅ README KANIT BLOĞU KAPISI (14 Ağu — madde 5'in ölçütü; CI hükmü bekleniyor)
-README'nin "Kanıtı kendin koş" bloğu okurun yapacağı şeydir ve **sayısal beyan taşıyor**
-(`34/34 + 2 SINANMADI, exit 2` · `36/36, exit 0`). Hiçbir kapı ölçmüyordu; ikincisi
-(`derle` sonrası `isir`=0) bu dosyanın "ölçülmüyor" dediği boşluğun ta kendisiydi.
-`faz0/readme_mutanti.py`: **ÜÇ kapı, DÖRT mutant, örtüşme yok.**
-- KAPI-1 BEYAN (blok ayıklanabilir beyan taşıyor mu) · KAPI-2 GERÇEK (blok KOŞULUR; beklenen
-  değerler **BLOKTAN okunur, araca YAZILMAZ** — "sayı yazılmaz, ÜRETİLİR") · KAPI-3 SÖZLEŞME
-  (README'nin ilan ettiği `isir` kod kümesi motorun bastığıyla aynı mı).
-- M-1→KAPI-1 (beyan silinir) · M-2→KAPI-2 (yanlış oran) · M-3→KAPI-2 (yanlış çıkış kodu) ·
-  M-4→KAPI-3 (sözleşmeden kod düşer). Blokta TANIMADIĞI satır görürse ÖLÇÜLEMEDİ der (exit 2):
-  README'ye yeni adım eklenip kapının sessizce yok sayması engellenir.
-- **`t_y3`/`t_y42` DE BU KAPIDA** (Onur kararı 14 Ağu): `kanit` işindeki kopyaları
-  `continue-on-error: true` taşıyor (yani KAPI değil ÖLÇÜM); burada taşımıyor. Senaryo sayıları
-  çıktıdan okunup README'nin `# 20 senaryo` / `# 58 senaryo` beyanlarıyla karşılaştırılır.
-  Ağır koşucular YALNIZ temiz turda koşar; mutant turları yakalanan çıktıyı yeniden kullanır —
-  SINIR: mutant koşucunun davranışını değil KARŞILAŞTIRMAYI ölçer (araç başlığında yazılı).
-- Ölçüldü (Linux): üç kapı yeşil, **6/6 mutant** ayrı eksende ISIRDI, 2 dk 57 sn
-  (`t_y42` tek sefer, ~60 sn). Y-2: ascii dâhil exit 0. **Araç kendi kusurunu da yazdı:** ilk
-  sürümü `shlex` kullanmıyordu, `--metin="ilk not"` bozulup her komut exit 2 dönüyordu — araç
-  README'yi suçlayacaktı.
-- ✏️ README'deki `~13 dk` SİLİNDİ (`CLAUDE.md` §4: süre tahmini belgeye yazılmaz). `capraz.yml`
-  sat. 95 bu beyanın run #2'de ÖLÇÜLÜP YANLIŞ çıktığını zaten yazıyordu — kimse README'yi
-  düzeltmemişti. Adım adındaki `~1-2 dk` de kaldırıldı.
+## ✅ README KANIT BLOĞU KAPISI — MADDE 5 KAPANDI (CI #49 `fba20c8`) — tek satıra indi
+README'nin "Kanıtı kendin koş" bloğu okurun yapacağı şeydir ve **yedi sayısal beyan** taşıyordu;
+hiçbiri ölçülmüyordu (biri — `derle` sonrası `isir`=0 — bu dosyanın "ölçülmüyor" dediği boşluktu).
+`faz0/readme_mutanti.py`: **ÜÇ kapı, ALTI mutant, örtüşme yok.** KAPI-1 BEYAN · KAPI-2 GERÇEK
+(blok KOŞULUR; beklenen değerler **BLOKTAN okunur, araca YAZILMAZ**) · KAPI-3 SÖZLEŞME.
+Blokta TANIMADIĞI satır görürse ÖLÇÜLEMEDİ der — sessiz yok sayma engellenir.
+`t_y3`/`t_y42` BURADA `continue-on-error`SIZ koşar ve senaryo sayıları README'yle karşılaştırılır
+(Onur kararı; `kanit`teki kopyaları `continue-on-error: true` taşıyor, o karara dokunulmadı).
+Ağır koşucu yalnız temiz turda koşar, mutant turları önbelleği kullanır — SINIR aracın başlığında.
+**CI #49 (91 iş, 0 başarısız):** windows 314 sn · ubuntu 153 sn · macos 101 sn; windows logu
+üç kapı YESIL · `t_y3` 20 senaryo · `t_y42` 58 senaryo · `6/6 mutant AYRI eksende ISIRDI`.
+🔴 Aracın kendi kusuru: ilk sürümü `shlex` kullanmıyordu, `--metin="ilk not"` bozulup her komut
+exit 2 dönüyordu — araç README'yi SUÇLAYACAKTI. Ölçüm buldu, CI değil.
 
 ## 🔴 BU TURUN İKİ ÖZ-KUSURU (ikisini de ÖLÇÜM buldu, CI DEĞİL)
 1. **YEŞİL CI, ÖLÇÜLMEMİŞ ŞART.** CI #45 tamamen yeşilken `paketten_kos.py` motoru PAKET
