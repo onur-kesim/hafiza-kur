@@ -18,27 +18,24 @@ değişiklik, getirdiği kolaylık ne olursa olsun yanlıştır. Doktrin: ölç�
 geri getirme · İngilizce kanonik komut + Türkçe alias · depo PUBLIC ama YAYIN YOK · çıkış-kodu
 sözleşmesi kırılırsa minor artar.
 
-## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · 15 Ağu: eski md.6 KESİLDİ §5, yeni md.6 AÇILDI — **5 ✅ / 6**)
-- [x] Kullanıcı `kur/kapi/isir/not/derle/devral` komutlarını Linux'ta koşabilir (CI yeşil)
-- [x] **Windows'ta** tam hüküm — (i) `faz0/win_dal_mutanti.py` CI #43 `cde1998` · (ii) gerçek
-      Windows'ta `.skill` kurulup `kur→kapi→isir` koştu, CI #46 `5d81838`. *(tek satıra indi)*
-- [x] **macOS'ta** tam hüküm — ortak batarya macos-latest'te `continue-on-error`sız yeşil, CI #39;
-      darwin dalı SIFIR, NFC/NFD KAÇINMAYLA yönetiliyor (§4). *(tek satıra indi)*
-- [x] `.skill` taze projede 5 dakikada çalışır — `faz0/paketten_kos.py` BELGEYE karşı ölçer, üç
-      platform, CI #46 `5d81838`. ŞERH: ölçen CI'dır, insan eli değil. *(tek satıra indi)*
-- [x] 25 Ağu okuru README ile sistemi kendi başına deneyebilir — `faz0/readme_mutanti.py` 3 kapı/
-      6 mutant, beklenen değerler BLOKTAN okunur, CI #49 `fba20c8`. ŞERH: ölçen CI'dır.
-- [ ] **Kullanıcı, hafızası KENDİ ADIYLA duran bir projeyi devralabilir.** *(AÇILDI 15 Ağu, Onur
-      kilidi — md.3'ü meşru açar; eski md.6'yla İLGİSİZ, o §5'te kesildi.)* ÖLÇÜT — `devral
-      --kesif`: (a) `CLAUDE.md`·`AGENTS.md`·`DURUM.md`·`memory-bank/`·`.cursor/rules/` ROLÜYLE
-      tanınır · (b) tanınmayan her kök `.md`/`.jsonl` için **ÖLÇÜLEMEDİ** basılır, sessizce
-      atlanmaz · (c) tanınan `canli` YOKSA **yeni defter açmadan DURUR** (çıkış ≠ 0, `--esle`
-      ister) · (d) üçü de AYRI mutantla ısırır.
-      Araç: `faz0/devral_kesif_mutanti.py` · Kutu **22 Ağu 2026** (Onur onayı 15 Ağu).
-      🔴 (c) DÜZELTİLDİ 15 Ağu (Onur kilidi): ilk yazım "canli YOK **ve** tanınmayan aday VAR"
-      idi, DELİKTİ — `CLAUDE.md`+`DURUM.md` taşıyan proje ikisini de TANIDIĞI için "tanınmayan
-      aday" üretmez, koşul ateşlenmez, motor gene boş defter açardı. Ölçüt uğruna yazıldığı iki
-      örneği ıskalıyordu. M-3 mutantı tam bu VE'li yazımı kurar.
+## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · 15 Ağu: eski md.6 KESİLDİ §5; md.6 açıldı+kapandı, md.7 AÇILDI — **6 ✅ / 7**)
+- [x] `kur/kapi/isir/not/derle/devral` Linux'ta koşuyor (CI yeşil)
+- [x] **Windows'ta** tam hüküm — `win_dal_mutanti` CI #43 `cde1998` + gerçek Windows'ta
+      `kur→kapi→isir` CI #46 `5d81838`
+- [x] **macOS'ta** tam hüküm — ortak batarya `continue-on-error`sız yeşil CI #39; darwin dalı
+      SIFIR, NFC/NFD KAÇINMAYLA (§4)
+- [x] `.skill` taze projede 5 dk'da çalışır — `paketten_kos.py` BELGEYE karşı ölçer, CI #46 `5d81838`
+- [x] 25 Ağu okuru README ile deneyebilir — `readme_mutanti.py` 3 kapı/6 mutant, beklenen değerler
+      BLOKTAN okunur, CI #49 `fba20c8`. ŞERH (hepsinde): ölçen CI'dır, insan eli değil.
+- [x] **Hafızası KENDİ ADIYLA duran projeyi devralabilir** — `devral --kesif` + `--esle` + DURMA
+      KURALI; `devral_kesif_mutanti.py` 3 kapı/3 mutant, CI #57 `ccd9721` (94 iş/0 başarısız).
+      Ölçüt (c)'nin VE'li ilk yazımı DELİKTİ, tek koşula indi; M-3 tam onu kurar.
+- [ ] **Kullanıcı, iki defterin AYRIŞTIĞINI motordan öğrenir.** *(AÇILDI 15 Ağu, Onur kilidi;
+      aynı gün iki kez DARALTILDI — gerekçeler §5.)* ÖLÇÜT — (a) motorun yazdığı her blok
+      `sahip=` taşır (`hafiza-kur` = iskelet · `proje` = içerik); alan YOKSA **ÖLÇÜLEMEDİ**
+      basılır, sessizce sahiplenilmez · (c) tanınan `canli` birden çoksa **DURUR** (çıkış ≠ 0,
+      `--esle` ister; bugüne kadar uyarıp ilkini seçiyordu) · (d) ikisi de AYRI mutantla ısırır.
+      Araç: `faz0/ayrisma_mutanti.py` · Kutu **22 Ağu**. Kural evi KAPSAM DIŞI (`SKILL.md` §2).
 
 ## 3. SIRADAKİ İŞ (tek madde)
 <`DURUM.md`'den takip edilir; tek dikey dilim.>
@@ -67,6 +64,10 @@ duyuru YOK ("public repo ≠ yayın"). Semantik arama/embedding bilinçli redded
 **KESİLDİ 14 Ağu 2026:** `cmd_*` bölmeleri ve kalan CC borcu. `CC>20: 5` olduğu yerde kalır;
 `ihlal` 15 Ağu'da 8→**9** (md.6 iki bayrak ekledi, `main` 80→82 satır; ölçüm, kapı değil).
 Gerekçe: hiçbir BİTTİ maddesi CC'ye bağlı değil, 25 Ağu'ya 11 gün var. Yeniden açmak ADR ister.
+**md.7 İKİ KEZ DARALTILDI 15 Ağu (kod yazılmadan):** (i) lafzi D ("aynı rol iki kez = KIRMIZI")
+ELENDİ — altı gerçek ağaç şeklinin dördünde kırmızı, üçü MEŞRU ⇒ kırmızıyı değersizleştirirdi.
+(ii) (b) ayağı ("aynı `konu` iki dosyada FARKLI gövde") KESİLDİ — `derle` eski bloğu arşive TAŞIR,
+gövdeler ZORUNLU farklıdır ⇒ SAĞLIKLI akışta yanardı; "arşivdeki satır değişti" H1'de ZATEN kapılı.
 **KESİLDİ 15 Ağu 2026 (Onur kilidi, İŞLEYİŞ md.1):** eski madde 6 — "gerçek bir projede 1 hafta
 fiilen kullanım" — ve `faz0/kullanim_kapisi.py`. Gerekçe **zaman değil ÖLÇÜT KUSURU:** (d) token
 kazancı ancak hafiza-kur mevcut defterin YERİNE geçerse dürüst ölçülür; "mevcut defter kanonik

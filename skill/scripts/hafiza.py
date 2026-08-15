@@ -1458,7 +1458,7 @@ SAB_CANLI = """# {ad} — CANLI HAFIZA
 > Son guncelleme: {t} · Tavan: {tavan} KB
 
 ## DEVRALAN MODELE İLK TALİMAT
-<!-- blok konu="acilis-protokolu" guncel="{t}" kaynak="-" -->
+<!-- blok konu="acilis-protokolu" guncel="{t}" kaynak="-" sahip="hafiza-kur" -->
 1. Bu dosyayı baştan sona oku. Sohbet geçmişini hafıza sayma.
 2. `hafiza.py kapi` koş. YEŞİL görmeden işe BAŞLAMA.
 3. `git status` temiz mi bak.
@@ -1469,17 +1469,17 @@ SAB_CANLI = """# {ad} — CANLI HAFIZA
 <!-- /blok -->
 
 ## GÜNCEL DURUM
-<!-- blok konu="genel-durum" guncel="{t}" kaynak="-" -->
+<!-- blok konu="genel-durum" guncel="{t}" kaynak="-" sahip="hafiza-kur" -->
 - (boş — ilk fragmanı yaz: hafiza.py not --konu genel-durum --tur durum)
 <!-- /blok -->
 
 ## SONRAKİ ADIM
-<!-- blok konu="sonraki-adim" guncel="{t}" kaynak="-" -->
+<!-- blok konu="sonraki-adim" guncel="{t}" kaynak="-" sahip="hafiza-kur" -->
 - (boş)
 <!-- /blok -->
 
 ## AÇIK KARARLAR / BLOKERLER
-<!-- blok konu="acik-kararlar" guncel="{t}" kaynak="-" -->
+<!-- blok konu="acik-kararlar" guncel="{t}" kaynak="-" sahip="hafiza-kur" -->
 - (boş)
 <!-- /blok -->
 
@@ -2085,7 +2085,9 @@ def cmd_derle(a):
         _gunluk_yolu = "%s/gunluk/%s" % (
             "/".join(x for x in rc.get("hafiza_dizini", "arsiv/hafiza")
                      .replace("\\", "/").split("/") if x not in ("", ".")), f)
-        blok = ['<!-- blok konu="%s" guncel="%s" kaynak="%s" -->'
+        # md.7(a): `sahip` ICERIGIN kaynagini soyler, ISARETI KOYANI degil.
+        # `derle`nin islediği govde KULLANICININ `not` ile yazdigi fragmandir.
+        blok = ['<!-- blok konu="%s" guncel="%s" kaynak="%s" sahip="proje" -->'
                 % (konu, meta.get("tarih", bugun()), _gunluk_yolu)]
         # BAGIMSIZ DENETIM 4. TUR (YUKSEK): fragman govdesinde '## ' varsa `derle` blogu
         # yaziyor, ardindan kapi onu "baslik sinirini asiyor" diye BOZUK ilan ediyordu —
@@ -2558,7 +2560,8 @@ def cmd_bloklastir(a):
     onceki = {p0: oku(p0) for p0 in [y.canli, y.yeni, y.konular, y.kova]}
     eklenen = []
     for p0 in sorted(plan, key=lambda x: -x["i"]):      # SONDAN basa: indeksler kaymasin
-        bas_satir = '<!-- blok konu="%s" guncel="%s" kaynak="devir" -->' % (p0["konu"], bugun())
+        bas_satir = ('<!-- blok konu="%s" guncel="%s" kaynak="devir" sahip="proje" -->'
+                     % (p0["konu"], bugun()))      # md.7(a): icerik PROJENIN, yalniz isaret eklendi
         son_satir = "<!-- /blok -->"
         son = p0["j"]
         while son > p0["i"] + 1 and not anlamli(L[son - 1]):
@@ -2887,10 +2890,20 @@ def cmd_devral(a):
               "python hafiza.py devral --esle canli=PROJE_HAFIZA.md --kok=\"%s\"\n"
               "   3. Once yalnizca BAK (yazmaz): "
               "python hafiza.py devral --kesif --kok=\"%s\"" % (kok, kok, kok))
+    # --- md.7(c): COKLU `canli` UYARI DEGIL KAPI (Onur kilidi 15 Agu) ----
+    # Olculdu: bugune kadar motor "birden cok aday" diye UYARIYOR, sonra ilkini
+    # secip CIKIS 0 veriyordu; oteki defter oksuz kaliyordu. Iki canli defter,
+    # urunun tek vaadi olan olculebilirligi bitirir — bu, `canli` YOK halinden
+    # daha az degil DAHA COK zararlidir. Kullanici kilidi (--canli / --esle)
+    # varsa akis bugunku gibi surer.
     if a.canli is None and not esleme.get("canli") and len(adaylar) > 1:
-        print("  ! birden cok `canli` adayi: %s -> '%s' secildi "
-              "(--canli ya da --esle canli= ile degistirebilirsin)"
-              % (", ".join(adaylar), adaylar[0]))
+        oldur("DEVIR DURDU — `canli` rolunu ustlenen TANINAN %d dosya var:\n"
+              "  %s\n"
+              "  Birini KENDIM SECMIYORUM: iki canli defter, olculebilirligin\n"
+              "  kendisini bitirir ve secmeyen taraf sessizce oksuz kalir.\n"
+              "  Kilitle: python hafiza.py devral --esle canli=<dosya> --kok=\"%s\"\n"
+              "  Once bak: python hafiza.py devral --kesif --kok=\"%s\""
+              % (len(adaylar), ", ".join(adaylar), kok, kok))
     canli_ad = adaylar[0]
     # B-2/B-3 ile ayni gecit: --canli de kok agacinda kalmak zorunda.
     canli_p = cli_yol_coz(kok, canli_ad, "--canli")
@@ -3866,6 +3879,23 @@ def _kapi_h9(F, N, O, kok, y):
 #     _ham  CIT      -> YAPI
 
 
+def _h10_sahiplik(O, bl):
+    """md.7(a): motorun yazdigi her blok `sahip=` tasir. Alan YOKSA hukum
+    OLCULEMEDI'dir — 'motorun' da 'projenin' de DENMEZ. Sessiz sahiplenme,
+    ayrismayi olcmeyi bastan imkansiz kilar (bir blok kimin diye sorulamazsa
+    iki defterin ayristigi da soylenemez).
+
+    Eski defterlerde alan yoktur ve bu bir HATA DEGILDIR: `derle`/`bloklastir`
+    blogu bir daha yazdiginda alan kendiliginden gelir."""
+    sahipsiz = [oz.get("konu", "?") for _, _, oz in bl if not oz.get("sahip")]
+    if sahipsiz:
+        O.append("H10-SAHIP: %d blokta `sahip` alani YOK — sahiplik OLCULEMEDI "
+                 "(sessizce sahiplenilmedi): %s%s"
+                 % (len(sahipsiz), ", ".join(sahipsiz[:4]),
+                    " …" if len(sahipsiz) > 4 else ""))
+    return sahipsiz
+
+
 def _h10_tekillik(F, y):
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
     bl = canli_bloklar(y)
@@ -3963,6 +3993,7 @@ def _h10_sozluk(F, y, say):
 def _kapi_h10(F, N, O, y):
     # ---- H10 KONU TEKILLIGI (anahtar bazli sikistirma) -----------------
     bl, say = _h10_tekillik(F, y)
+    _h10_sahiplik(O, bl)
     _ham = _h10_cit(F, O, y)
     _h10_yapi(F, _ham)
     N.append("H10: %d blok / %d ayrik konu" % (len(bl), len(say)))

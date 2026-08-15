@@ -1352,3 +1352,53 @@ jobs:
           name: devral-kesif-${{ matrix.os }}
           path: devral-kesif-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # AYRISMA MUTANTI — BITTI maddesi 7 (kapsam DAR, Onur kilidi 15 Agu).
+  #     md.7'nin ILK IKI LAFZI kod yazilmadan OLCULDU ve IKISI DE KIRILDI:
+  #       (i) "iki dosya AYNI rolu iddia ederse KIRMIZI" -> alti gercek agac
+  #           seklinin DORDUNDE kirmizi, UCU MESRU (CLAUDE.md+AGENTS.md = iki
+  #           ajanin kural evi · memory-bank/ tasarimi geregi cok dosyali).
+  #       (ii) "ayni `konu` canli ile arsivde FARKLI govdeyle" -> SAGLIKLI akista
+  #           atesliyor: `derle` eski blogu arsive TASIR, govdeler zorunlu farkli.
+  #     Ustelik "arsivdeki satir elle degisti" hali H1'de ZATEN kapili. Geriye
+  #     olculebilir ve ZARARLI tek hal kaldi; md.7 ona indirildi.
+  #
+  #     UC KAPI: A1 SAHIPLIK (`kur` bloklari `sahip="hafiza-kur"` tasir) ·
+  #     A2 GORUNURLUK (sahipsiz blok -> `H10-SAHIP` OLCULEMEDI satiri; FAIL DEGIL) ·
+  #     C COKLU CANLI (C1 iki aday -> cikis != 0 ve DISKE hic yazmaz · C2 `--esle`
+  #     kilidi acar · C3 tek aday -> cikis 0 = ADDITIVE).
+  #
+  #     UC MUTANT, UC AYRI EKSEN: M-1 `sahip` alani silinir -> A1 · M-2 OLCULEMEDI
+  #     bastirilir -> A2 · M-3 coklu canli kosulu ULASILMAZ yapilir (motorun 15 Agu
+  #     oncesi hali: uyar, ilkini sec, cikis 0) -> C. Ortusme olursa arac KIRMIZI yanar.
+  #
+  #     OLCULDU: A2'nin ILK senaryosu `kur`dan sonra dosyayi ELLE kirpiyordu ve
+  #     cipa ile ayrisip H1 "satir KAYIP" veriyordu — kapi KENDI senaryosu yuzunden
+  #     kirmizi yaniyordu. Senaryo GERCEK VAKAYA cevrildi: sahipsiz ESKI defter DEVRALINIR.
+  #
+  #     UC PLATFORM ve `continue-on-error` YOK. `| tee` exit kodunu YUTMAZ.
+  # ---------------------------------------------------------------------------
+  ayrisma_kapisi:
+    name: ayrisma mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: uc kapi + uc mutant
+        shell: bash
+        run: python faz0/ayrisma_mutanti.py 2>&1 | tee ayrisma-cikti.txt
+      - name: ayrisma ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ayrisma-${{ matrix.os }}
+          path: ayrisma-cikti.txt
+          if-no-files-found: warn

@@ -31,11 +31,16 @@ python araclar/hafiza/hafiza.py devral --esle canli=<dosya>[,kural=<dosya>] --ko
   `_ZINCIR.jsonl` · `PROJE_RADAR.jsonl`) · `disarida` (`memory-bank/*`).
   Tanınmayan her kök `.md`/`.jsonl` için **`OLCULEMEDI — tanimadim: <ad>`** basılır;
   sessizce atlanmaz. (`indeks` rolünün tabloda deseni YOKTUR, yalnız `--esle` ile atanır.)
-- **DURMA KURALI:** `canli` rolünü üstlenen tanınan bir dosya YOKSA `devral` **yeni defter
-  açmadan DURUR** (çıkış ≠ 0) ve `--esle canli=<dosya>` ister. Gerekçe ölçüldü: eski keşif
-  yalnız `*HAFIZA.md`/`MEMORY.md` tanıyordu; `CLAUDE.md` + `DURUM.md` taşıyan gerçek bir
-  projeye "sistem yok" deyip BOŞ bir defter açıyordu — **çift defter böyle doğar.**
-  Tanınan `canli` VARSA akış eskisi gibidir; mevcut projeler etkilenmez.
+- **DURMA KURALI — İKİ YÖNLÜ:** `canli` rolünü üstlenen tanınan dosya **YOKSA** ya da **BİRDEN
+  ÇOKSA** `devral` yeni defter açmadan **DURUR** (çıkış ≠ 0, diske tek bayt yazmaz) ve
+  `--esle canli=<dosya>` ister. Çoklu hâl 15 Ağu 2026'ya kadar yalnız bir UYARI satırıydı: motor
+  ilkini seçip çıkış 0 veriyordu, öteki defter öksüz kalıyordu (ölçüldü).
+  Gerekçe ölçüldü: eski keşif yalnız `*HAFIZA.md`/`MEMORY.md` tanıyordu; `CLAUDE.md` + `DURUM.md`
+  taşıyan gerçek bir projeye "sistem yok" deyip BOŞ bir defter açıyordu — **çift defter böyle
+  doğar.** Tanınan tek bir `canli` VARSA akış eskisi gibidir; mevcut projeler etkilenmez.
+- **SAHİPLİK:** motorun yazdığı her blok `sahip=` taşır — `hafiza-kur` (iskelet) ya da `proje`
+  (içerik senin). Alan yoksa `kapi` **`H10-SAHIP … OLCULEMEDI`** satırı basar; bu bir HATA
+  DEĞİLDİR (eski defterlerde alan yoktur), sessiz sahiplenmenin engellenmesidir.
 - Mevcut bir hafıza sistemi var mı bakar (`_KAYNAK*`, `_ZINCIR.jsonl`, `HAFIZA_*.md`).
   Varsa v2 için ayrı bir ad alanı seçer: `arsiv/hafiza/v2`.
   **ŞERH:** bu tespit hafiza-kur'un **kendi v1'ini** arar — başka bir aracın sistemini

@@ -70,8 +70,11 @@ Kararsızsan: **kod varsa KAPILI, yoksa HAFİF.** Hafif'ten Kapılı'ya sonradan
 > `DURUM.md` · `BORCLAR.md`) artık **rolüyle tanınır ve raporlanır**, dokunulmaz;
 > tanımadığı her kök `.md`/`.jsonl` için **OLCULEMEDI** satırı basılır — sessizce
 > atlanmaz. `canli` rolünü üstlenen tanınan bir dosya **YOKSA** `devral` boş defter
-> açmadan **DURUR** (çıkış ≠ 0) ve `--esle` ile kilit ister: iki defter,
-> ölçülebilirliğin kendisini bitirir. Ayrıntı: `references/devir.md`.
+> açmadan **DURUR** (çıkış ≠ 0) ve `--esle` ile kilit ister. Aynı şey `canli` rolünde **birden
+> çok** tanınan dosya varken de geçerlidir — motor ikisinden birini KENDİ seçmez; iki defter,
+> ölçülebilirliğin kendisini bitirir. Motorun yazdığı bloklar ayrıca `sahip=` taşır
+> (`hafiza-kur` = iskelet · `proje` = içerik senin); alan yoksa `kapi` `OLCULEMEDI` der,
+> sessizce sahiplenmez. Ayrıntı: `references/devir.md`.
 
 ```
 # 0) ÖNCE BAK — kuru prova: envanteri ve rol eşlemesini basar, TEK BAYT yazmaz
