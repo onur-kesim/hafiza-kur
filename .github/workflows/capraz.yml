@@ -1301,3 +1301,52 @@ jobs:
           name: readme-kapisi-${{ matrix.os }}
           path: readme-kapisi-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # DEVIR KESFI MUTANTI — BITTI maddesi 6.
+  #     15 Agu 2026'ya kadar `devral`in kesif ayagi YALNIZ `*HAFIZA.md`/`MEMORY.md`
+  #     taniyordu; `CLAUDE.md`·`AGENTS.md`·`DURUM.md`·`memory-bank/`·`.cursor/rules/`
+  #     GORUNMUYORDU ve eslesme yoksa BOS bir defter acilip projenin gercek hafizasi
+  #     yok sayiliyordu — CIFT DEFTER boyle dogar. `devral` yolunun o gune kadarki TEK
+  #     canli olcumu vardi (gercek Windows, 421 MB, exit 0); yani yol OLCULMUYORDU.
+  #
+  #     UC KAPI, UC AYRI SENARYO (senaryolar KASITLI ayrildi ki kapilar birbirinin
+  #     eksenine dokunmasin): KAPI-A ROL TANIMA (on bes dosya, taninmayan YOK) ·
+  #     KAPI-B OLCULEMEDI (taninmayan `.md` + `.jsonl`; taninan dosya listeye DUSMEZ) ·
+  #     KAPI-C DURMA (C1 canli YOK -> cikis != 0 ve DISKE HIC yazmaz · C1b `--esle
+  #     canli=` kilidi durmayi ACAR · C2 taninan canli VARSA cikis 0 = ADDITIVE).
+  #
+  #     UC MUTANT, UC AYRI EKSEN: M-1 tablodan CLAUDE.md silinir -> KAPI-A ·
+  #     M-2 OLCULEMEDI bastirilir -> KAPI-B · M-3 durma kosuluna `and olculemedi`
+  #     eklenir (olcut (c)'nin DELIKLI ilk yazimi) -> KAPI-C. Bir mutant IKI kapiyi
+  #     birden ateslerse arac ORTUSTU deyip KIRMIZI yanar.
+  #
+  #     OLCULDU 15 Agu, ILK KOSUM: M-3'un capasi motorda UC yerde geciyordu ve mutant
+  #     YANLIS fonksiyona kuruldu. Arac bunu KACTI diye raporladi (sessiz yesil VERMEDI).
+  #     Capa artik TEK YERDE olmak zorunda; degilse mutant KURULAMADI = kirmizi.
+  #
+  #     UC PLATFORM ve `continue-on-error` YOK. `| tee` exit kodunu YUTMAZ.
+  # ---------------------------------------------------------------------------
+  devral_kesif_kapisi:
+    name: devir kesfi mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: uc kapi + uc mutant
+        shell: bash
+        run: python faz0/devral_kesif_mutanti.py 2>&1 | tee devral-kesif-cikti.txt
+      - name: devir kesfi ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: devral-kesif-${{ matrix.os }}
+          path: devral-kesif-cikti.txt
+          if-no-files-found: warn

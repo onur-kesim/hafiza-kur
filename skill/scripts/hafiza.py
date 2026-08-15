@@ -2628,6 +2628,194 @@ def onceki_kurulum_izleri(kok, canli_p=None):
             pass
     return sorted(set(izler))
 
+# ------------------------------------------------------------------ devir kesfi
+# BITTI md.6 (15 Agu 2026): `devral`in kesfi YALNIZ `*HAFIZA.md`/`MEMORY.md`
+# taniyordu. `CLAUDE.md`·`AGENTS.md`·`DURUM.md`·`memory-bank/`·`.cursor/rules/`
+# GORUNMUYORDU; eslesme yoksa kesif sessizce `PROJE_HAFIZA.md`ye dusup BOS bir
+# defter aciyor ve projenin GERCEK hafizasini yok sayiyordu. CIFT DEFTER boyle
+# dogar ve olculebilirligin kendisini bitirir.
+#
+# TEK EV: `--kesif` (kuru prova) de, YAZAN yol da AYNI tabloyu okur. Iki tablo
+# iki ayri hukum demektir; bu projede o sinif zaten bir kez isirdi (kur/devral
+# iz deseni ayrismasi, sat. ~2672).
+DEVIR_ROLLERI = ("canli", "kural_evi", "gunluk", "indeks", "disarida")
+
+# (DESEN, ROL) — desen KOK-GORELI yola '/' ayracla ve BUYUK HARFE cevrilmis
+# haliyle uygulanir. SIRA ONEMLI: ilk eslesen kazanir.
+#   canli     : projenin CANLI hafiza defteri (v2 buraya yazar)
+#   kural_evi : kalici kural/protokol evi (rotasyona GIRMEZ)
+#   gunluk    : durum/ilerleme defteri (bayatlar, rotasyona girer)
+#   indeks    : baska dosyalara isaret eden dizin/indeks
+#   disarida  : TANINIR ama v2 ad alaninin DISINDA kalir (baska aracin ad alani)
+# SINIR (gizlenmez): `indeks` rolunun TABLODA deseni YOKTUR — yalniz `--esle`
+# ile elle atanir. Uydurma bir desen eklemek yerine rol bos birakildi.
+DEVIR_ADAPTORU = (
+    (r"^PROJE_HAFIZA\.MD$",                  "canli"),
+    (r"^MEMORY\.MD$",                        "canli"),
+    (r"^[^/]*HAFIZA\.MD$",                   "canli"),
+    (r"^CLAUDE\.MD$",                        "kural_evi"),
+    (r"^AGENTS\.MD$",                        "kural_evi"),
+    (r"^GEMINI\.MD$",                        "kural_evi"),
+    (r"^\.CURSORRULES$",                     "kural_evi"),
+    (r"^\.CURSOR/RULES/[^/]+$",              "kural_evi"),
+    (r"^\.GITHUB/COPILOT-INSTRUCTIONS\.MD$", "kural_evi"),
+    (r"^DURUM\.MD$",                         "gunluk"),
+    (r"^BORCLAR\.MD$",                       "gunluk"),
+    # OLU MANTIK KACINMASI: `.*\.JSONL$` seklindeki bir YAKALA-HEPSI deseni,
+    # olcut (b)'nin `.jsonl` yarisini OLCULEMEZ kilardi — hicbir `.jsonl` asla
+    # "taninmayan" olamaz, dolayisiyla o dal hic atesleneMEZ. Adlandirilmis
+    # defterler taninir, geri kalan `.jsonl` OLCULEMEDI'ye duser.
+    (r"^_ZINCIR\.JSONL$",                    "gunluk"),
+    (r"^PROJE_RADAR\.JSONL$",                "gunluk"),
+    (r"^MEMORY-BANK/[^/]+$",                 "disarida"),
+)
+
+# `--esle` anahtari -> rol. Kisa ad ('kural') da kabul edilir.
+DEVIR_ESLE_ANAHTARLARI = {
+    "canli": "canli", "kural": "kural_evi", "kural_evi": "kural_evi",
+    "gunluk": "gunluk", "indeks": "indeks", "disarida": "disarida",
+}
+
+
+def devir_rolu(rel):
+    """kok-goreli yol -> ROL ya da None. Tablonun TEK okuyucusu."""
+    u = rel.replace(os.sep, "/").upper()
+    for desen, rol in DEVIR_ADAPTORU:
+        if re.match(desen, u):
+            return rol
+    return None
+
+
+def _devir_adaylari(kok):
+    """Kesfin BAKTIGI yuzey (gizlenmez): kok dosyalari + UC bilinen alt yuzey.
+    Agacin tamami TARANMAZ — buyuk projede hem maliyet hem gurultu."""
+    out = []
+    try:
+        for f in sorted(os.listdir(kok)):
+            if os.path.isfile(os.path.join(kok, f)):
+                out.append(f)
+    except OSError:
+        pass
+    for alt in ("memory-bank", ".cursor/rules"):
+        d = os.path.join(kok, *alt.split("/"))
+        if os.path.isdir(d):
+            try:
+                for f in sorted(os.listdir(d)):
+                    if os.path.isfile(os.path.join(d, f)):
+                        out.append(alt + "/" + f)
+            except OSError:
+                pass
+    if os.path.isfile(os.path.join(kok, ".github", "copilot-instructions.md")):
+        out.append(".github/copilot-instructions.md")
+    return out
+
+
+def devir_esle_coz(kok, ham):
+    """`--esle canli=DURUM.md,kural=CLAUDE.md` -> {rol: dosya}. KULLANICI KILIDI.
+
+    Her deger `cli_yol_coz`dan gecer: B-2/B-3 gecidi burada da gecerlidir
+    (mutlak yol, '..' ve agac disina bakan symlink REDDEDILIR)."""
+    if not ham:
+        return {}
+    roller = " · ".join(sorted(set(DEVIR_ESLE_ANAHTARLARI)))
+    out = {}
+    for parca in ham.split(","):
+        parca = parca.strip()
+        if not parca:
+            continue
+        if "=" not in parca:
+            oldur("--esle bicimi: rol=dosya[,rol=dosya] (gelen: %r)\n  Roller: %s"
+                  % (parca, roller))
+        anahtar, dosya = parca.split("=", 1)
+        anahtar, dosya = anahtar.strip().lower(), dosya.strip()
+        if anahtar not in DEVIR_ESLE_ANAHTARLARI:
+            oldur("--esle: bilinmeyen rol %r\n  Roller: %s" % (anahtar, roller))
+        if not dosya:
+            oldur("--esle: `%s=` bos birakilamaz" % anahtar)
+        cli_yol_coz(kok, dosya, "--esle")
+        rol = DEVIR_ESLE_ANAHTARLARI[anahtar]
+        d = dosya.replace(os.sep, "/")
+        if rol in out and out[rol] != d:
+            oldur("--esle: `%s` rolu IKI KEZ verildi (%s, %s)" % (rol, out[rol], d))
+        out[rol] = d
+    return out
+
+
+def devir_kesfi(kok, esleme=None, kaynaklar=None):
+    """(envanter, olculemedi) — DETERMINIST.
+
+    envanter  : [(rel, rol, kaynak)]  kaynak: 'tablo' | 'esle' | 'rc'
+    olculemedi: tablonun TANIMADIGI KOK `.md`/`.jsonl` dosyalari — SESSIZCE
+                ATLANMAZ (doktrin 2: olculemeyene 'temiz' denmez)."""
+    esleme = esleme or {}
+    kaynaklar = kaynaklar or {}
+    ters = dict((d, r) for r, d in esleme.items())
+    envanter, olculemedi = [], []
+    for rel in _devir_adaylari(kok):
+        r = rel.replace(os.sep, "/")
+        if r in ters:
+            envanter.append((r, ters[r], kaynaklar.get(ters[r], "esle")))
+            continue
+        rol = devir_rolu(r)
+        if rol:
+            envanter.append((r, rol, "tablo"))
+        elif "/" not in r and re.search(r"\.(?:md|jsonl)$", r, re.I):
+            olculemedi.append(r)
+    for dosya in sorted(ters):                 # kilitlenip DISKTE OLMAYAN
+        if not any(e[0] == dosya for e in envanter):
+            envanter.append((dosya, ters[dosya], kaynaklar.get(ters[dosya], "esle")))
+    envanter.sort(key=lambda e: (DEVIR_ROLLERI.index(e[1])
+                                 if e[1] in DEVIR_ROLLERI else len(DEVIR_ROLLERI),
+                                 e[0].upper()))
+    return envanter, sorted(olculemedi)
+
+
+def _devir_desen_sirasi(rel):
+    u = rel.replace(os.sep, "/").upper()
+    for i, (desen, _rol) in enumerate(DEVIR_ADAPTORU):
+        if re.match(desen, u):
+            return i
+    return len(DEVIR_ADAPTORU)
+
+
+def devir_rol_adaylari(envanter, rol):
+    """Bir rolu ustlenen dosyalar: once `--esle` kilidi, sonra TABLO SIRASI,
+    sonra alfabetik. (Alfabetik tek basina yanlis olurdu: `AGENTS.md`,
+    `CLAUDE.md`den ONCE gelir ve tablonun bilincli onceligini bozardi.)"""
+    return [e[0] for e in sorted(
+        [x for x in envanter if x[1] == rol],
+        key=lambda e: (0 if e[2] == "esle" else 1,
+                       _devir_desen_sirasi(e[0]), e[0].upper()))]
+
+
+def devir_canli_adaylari(envanter, esleme=None, canli_arg=None):
+    """`canli` rolunu ustlenen dosyalar — SIRA v2.4.1'deki ile AYNI:
+    once `PROJE_HAFIZA.md`, sonra alfabetik (os.listdir SIRASIZ oldugu icin)."""
+    esleme = esleme or {}
+    adaylar = [rel for rel, rol, _k in envanter if rol == "canli"]
+    adaylar.sort(key=lambda f: (f.upper() != "PROJE_HAFIZA.MD", f.upper()))
+    for kilit in (esleme.get("canli"), canli_arg):     # KULLANICI KILIDI one gecer
+        if kilit:
+            adaylar = [kilit] + [x for x in adaylar if x != kilit]
+    return adaylar
+
+
+def devir_kesif_bas(kok, envanter, olculemedi):
+    """Kesif raporu — `--kesif` ve YAZAN yol AYNI metni basar."""
+    print("  taranan yuzey     : kok dosyalari + memory-bank/ + .cursor/rules/"
+          " + .github/copilot-instructions.md")
+    _etiket = {"esle": "   (--esle kilidi)", "rc": "   (%s kaydi)" % RC_AD}
+    if envanter:
+        for rel, rol, kaynak in envanter:
+            print("  %-9s : %s%s" % (rol, rel, _etiket.get(kaynak, "")))
+    else:
+        print("  taninan dosya     : (yok)")
+    for rel in olculemedi:
+        print("  OLCULEMEDI — tanimadim: %s" % rel)
+    if not olculemedi:
+        print("  OLCULEMEDI        : (yok — kokteki her .md/.jsonl tanindi)")
+
+
 def cmd_devral(a):
     """ILERLEMIS bir projeyi v2'ye DEVRALIR (kurulum degil, devir).
 
@@ -2639,23 +2827,71 @@ def cmd_devral(a):
     kok = os.path.abspath(a.kok or os.getcwd())
     if not os.path.isdir(kok):
         oldur("kok yok: " + kok)
+    # --- KESIF (md.6) — TEK EV: kuru prova da yazan yol da BURAYI okur -------
+    esleme = devir_esle_coz(kok, getattr(a, "esle", None))
+    if a.canli and esleme.get("canli") and esleme["canli"] != a.canli.replace(os.sep, "/"):
+        oldur("--canli ve --esle canli= CELISIYOR (%s / %s) — birini sec."
+              % (a.canli, esleme["canli"]))
+    kaynaklar = dict((r, "esle") for r in esleme)
+    # KURULU projede `--kesif` bir TESHIS aracidir: `.hafizarc`ta KAYITLI roller
+    # o projenin gercek kilitleridir. Onlari yok sayip "canli YOK" basmak, BEYAN
+    # ile GERCEGI ayirmak olurdu — bu projede o sinif zaten isirdi.
+    if getattr(a, "kesif", False) and os.path.isfile(os.path.join(kok, RC_AD)):
+        _rc = rc_oku(kok)
+        for _rol, _alan in (("canli", "canli"), ("kural_evi", "kural_evi_dosya")):
+            if _rc.get(_alan) and _rol not in esleme:
+                esleme[_rol] = _rc[_alan].replace(os.sep, "/")
+                kaynaklar[_rol] = "rc"
+    envanter, olculemedi = devir_kesfi(kok, esleme, kaynaklar)
+    adaylar = devir_canli_adaylari(envanter, esleme, a.canli)
+    if getattr(a, "kesif", False):
+        # KURU PROVA: tek bayt YAZMAZ, cikis 0. `.hafizarc` VARKEN de kosar —
+        # kurulu bir projede "motor bu agaci NASIL gordu" sorusu bir TESHIS
+        # sorusudur ve yazma yolu zaten kapalidir.
+        print("=== DEVIR — kesif (KURU PROVA: hicbir sey yazilmaz) ===")
+        devir_kesif_bas(kok, envanter, olculemedi)
+        if adaylar:
+            print("  secilecek canli   : %s" % adaylar[0])
+        else:
+            print("  secilecek canli   : YOK — yazan kosum DURUR "
+                  "(`--esle canli=<dosya>` ile kilitle)")
+        print("  (yazmak icin `--kesif` olmadan kos)")
+        return 0
     if os.path.isfile(os.path.join(kok, RC_AD)):
-        oldur(RC_AD + " ZATEN VAR — bu proje kurulu/devralinmis. Devir bir kez yapilir.")
+        oldur(RC_AD + " ZATEN VAR — bu proje kurulu/devralinmis. Devir bir kez yapilir.\n"
+              "  Motorun bu agaci NASIL gordugunu gormek icin (yazmaz):\n"
+              "    python hafiza.py devral --kesif --kok=\"%s\"" % kok)
     # IC DENETIM (Y-6): `.hafizarc` silinip `devral` kosularak her tahrif aklaniyordu.
     # `devral` yalnizca .hafizarc'in YOKLUGUNA bakiyordu; oysa diskte bir v2 KURULUMU
     # (cipa + zincir + kova) duruyorsa bu "devralinacak eski sistem" DEGIL, YETIM
     # KALMIS BIR v2'dir ve uzerine yeni capa atmak aklamadir.
     print("=== DEVIR — kesif ===")
-    # 1) canli hafiza dosyasi
-    # Fable (kozmetik): os.listdir SIRASIZDIR — ayni projede iki kosuda FARKLI dosya
-    # secilebiliyordu. Artik: once PROJE_HAFIZA.md, sonra alfabetik (determinist).
-    adaylar = sorted(f for f in os.listdir(kok) if f.upper().endswith("HAFIZA.MD")
-                     or f.upper() in ("PROJE_HAFIZA.MD", "MEMORY.MD", "HAFIZA.MD"))
-    adaylar.sort(key=lambda f: (f.upper() != "PROJE_HAFIZA.MD", f.upper()))
-    if a.canli is None and len(adaylar) > 1:
-        print("  ! birden cok aday: %s -> '%s' secildi (--canli ile degistirebilirsin)"
+    devir_kesif_bas(kok, envanter, olculemedi)
+    # --- DURMA KURALI (md.6-c, Onur kilidi 15 Agu 2026) ---------------------
+    # TEK kosul: TANINAN `canli` YOK ise DUR.
+    # Ilk yazim "canli YOK **ve** taninmayan aday VAR" seklinde VE'liydi ve
+    # OLCULDU: DELIK. `CLAUDE.md` + `DURUM.md` tasiyan gercek bir projede
+    # (Momentum · Is-Portfolyo) her iki dosya da TANINDIGI icin "taninmayan aday"
+    # kumesi BOS kalir; VE'li kosul atesleneMEZ ve motor gene BOS defter acardi.
+    # Yani olcut, ugruna yazildigi iki ornegi ISKALIYORDU.
+    # ADDITIVE: taninan `canli` VARSA akis bugunku gibidir; mevcut projeler
+    # etkilenmez. Yeni defteri ACMAK hala mumkun — ama artik KILITLE istenir.
+    if not adaylar:
+        oldur("DEVIR DURDU — bu agacta `canli` rolunu ustlenen TANINAN dosya YOK.\n"
+              "  BOS bir defter ACMIYORUM: projenin hafizasi baska bir dosyada\n"
+              "  yasiyor olabilir ve IKI DEFTER olculebilirligin kendisini bitirir.\n"
+              "  Envanter yukarida. Birini sec:\n"
+              "   1. Var olan defteri KILITLE : "
+              "python hafiza.py devral --esle canli=<dosya> --kok=\"%s\"\n"
+              "   2. Gercekten YENI defter ac : "
+              "python hafiza.py devral --esle canli=PROJE_HAFIZA.md --kok=\"%s\"\n"
+              "   3. Once yalnizca BAK (yazmaz): "
+              "python hafiza.py devral --kesif --kok=\"%s\"" % (kok, kok, kok))
+    if a.canli is None and not esleme.get("canli") and len(adaylar) > 1:
+        print("  ! birden cok `canli` adayi: %s -> '%s' secildi "
+              "(--canli ya da --esle canli= ile degistirebilirsin)"
               % (", ".join(adaylar), adaylar[0]))
-    canli_ad = a.canli or (adaylar[0] if adaylar else "PROJE_HAFIZA.md")
+    canli_ad = adaylar[0]
     # B-2/B-3 ile ayni gecit: --canli de kok agacinda kalmak zorunda.
     canli_p = cli_yol_coz(kok, canli_ad, "--canli")
     if os.path.lexists(canli_p) and not duzenli_dosya(canli_p):
@@ -2749,7 +2985,10 @@ def cmd_devral(a):
     rc = {
         "surum": SURUM, "ad": a.ad or os.path.basename(kok.rstrip(os.sep)),
         "canli": canli_ad,
-        "kural_evi_dosya": "CLAUDE.md", "tavan_kb": tavan, "bayatlik_gun": 30,
+        # md.6: kural evi de KESIFTEN gelir (CLAUDE.md · AGENTS.md · GEMINI.md …).
+        # Hicbiri yoksa v2.4.1'deki varsayilan aynen korunur.
+        "kural_evi_dosya": (devir_rol_adaylari(envanter, "kural_evi") or ["CLAUDE.md"])[0],
+        "tavan_kb": tavan, "bayatlik_gun": 30,
         # BAGIMSIZ DENETIM 6. TUR: hic '## ' baslik yoksa VARSAYILANA dusuluyor ve
         # dosyada OLMAYAN 6 bolum birden isteniyordu -> devral'in kendi sozu ("varsayimla
         # ilk gun kirmizi seli uretmez") ihlal. Baslik yoksa ZORUNLU BOLUM DE YOKTUR;
@@ -5014,6 +5253,8 @@ def main():
 
     p = alt.add_parser("devral", help="ilerlemis/mevcut sistemi olan projeyi v2'ye devralir")
     p.add_argument("--kok"); p.add_argument("--ad"); p.add_argument("--canli")
+    p.add_argument("--kesif", action="store_true", help="KURU PROVA: envanteri ve rol eslemesini basar, TEK BAYT yazmaz")
+    p.add_argument("--esle", help="rol kilidi: canli=<dosya>[,kural=<dosya>,gunluk=…,indeks=…,disarida=…]")
     p.set_defaults(fn=cmd_devral)
 
     p = alt.add_parser("bloklastir", help="devralinan bolumleri geriye donuk blok isaretine alir")
