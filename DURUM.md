@@ -41,6 +41,12 @@ SUÇLAYACAKTI. **Ölçüm buldu, CI değil.**
   `_cikti_kodlamasini_guvenceye_al()` HER faz0 aracına konur; #42/#43/#45/#46 hepsi 0 başarısız.
 
 ## Bilinen sınırlar (ölçülmüş)
+- 🔴 **PROJELER ARASI SAYI BULAŞMASI + OKUNMADAN HÜKÜM** (15 Ağu, ikisi de bu oturumun kusuru,
+  ikisini de dış denetçi buldu): (i) Is-Portfolyo'ya giden nota `araclar/` için **11** yazıldı,
+  doğrusu **10**; 11 sayısı **Momentum'un** belgesinden geldi ve orası için DOĞRU ⇒ sayı yanlış
+  değil, **YANLIŞ PROJEDEN**di — bayat sayıdan sinsi, çünkü kaynağı gerçek ölçüm. Doğru sayı
+  aynı oturumda ölçülmüştü, hatırlanan sayı onu ezdi. (ii) "Bu cümle `CLAUDE.md` §5'e girdi"
+  denildi; `grep` ölçtü, **girmemişti**. Ayrıntı + birebir alıntı: `denetim/2026-08-15_*`.
 - 🔴 **Defter COMMIT'lenmeden `kapi` KIRMIZI** (kum havuzu, 15 Ağu): `[H9] git'te IZLENMIYOR:
   PROJE_HAFIZA.md` → FAIL/çıkış 1; commit'lenince YESIL/çıkış 0. ⇒ "defteri `.gitignore`'a al"
   fikri madde 6(c)'yi ULAŞILMAZ kılar. Hedef projede haftada en az bir commit ŞART.
