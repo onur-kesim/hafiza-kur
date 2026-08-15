@@ -127,9 +127,24 @@ Bunlar gizlenmiyor; `skill/SKILL.md` §9'da tam listesi var. En önemlileri:
 
 ## Denetim
 
-Bu araç üç bağımsız denetçiye verildi ve on üç tur kırılmaya çalışıldı. İlk iki
-denetçinin kararı `KUR` oldu; üçüncüsü son iki turunda `DÜZELT` dedi. Bulgular ve
-kapatılışları `denetim/` ile `skill/references/denetim-yaniti.md` içindedir.
+Bu araç üç dış denetçiye verildi. İlk ikisinin kararı `KUR` oldu; üçüncüsü son iki
+turunda `DÜZELT` dedi. Bulgular ve kapatılışları `denetim/` ile
+`skill/references/denetim-yaniti.md` içindedir.
+
+İki şeyi ayrı yazmak gerekiyor:
+
+- **Denetçilerden yalnız biri depoda adıyla geçiyor** (`Fable 5 Max`); diğer ikisinin
+  çıktısı bu depoda yok. Yani "üç dış denetçi" ifadesi depodan **tek tek doğrulanamaz.**
+- **Turların bir kısmı üreticinin kendi düşman ajanlarıyla koşuldu.** Onlar bağımsız
+  denetim değildir ve öyle sayılmaz.
+
+🔴 **Tur sayısı ölçülemedi, o yüzden burada sayı yazmıyoruz.**
+`denetim/2026-08-01_denetciye-not.md` "toplam on iki tur" diyor, dökümünü yedi + üç +
+iki olarak veriyor ve üstüne "paketten sonra iki tur daha" ekliyor; bu README bir süre
+"on üç" yazdı. Üç ayrı sayı, hiçbiri depodan tek tek sayılamıyor. Aynı belge bunu kendi
+üstünde zaten uygulamıştı: *"doğrulanamaz bir sayı, güven parası olarak kullanılamaz."*
+Bu satırın kendisi, aracın vaadinin kendi kapağında sınanmasıdır — bir kapı bunu
+yakalamadı, dışarıdan bir denetçi yakaladı (bkz. `denetim/2026-08-15_*`).
 
 Açık bulgular kapanmadan bu araç "denetimden geçti" diye sunulmaz.
 

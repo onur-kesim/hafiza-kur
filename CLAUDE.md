@@ -69,7 +69,8 @@ kanonik kalır" şartıyla maliyet tanım gereği artar, kazanç sıfırdır ⇒
 şey ölçüm değil, sayı kılığında ÖLÇÜLEMEDİ'dir.** Aday host Is-Portfolyo'nun bağımsız denetçisi dört
 itirazla reddetti: asimetri (kazanç ölçülmemiş) · 17–31 Ağu teslim penceresi boş, 18–19'da iki teslim ·
 çift defter = o projenin K123/K127 `bayat-sayi` sınıfı · eşzamanlı yazma, ki motorun kendi
-"kilit inode yarışı KAPATILMADI" kusuruna basıyor. Dogfood da çift deftere düşer. 25 Ağu yazısında
+"kilit inode yarışı KAPATILMADI" kusuruna basıyor. Momentum ve dogfood da elendi — üç adayın
+elenme gerekçeleri ÖLÇÜLDÜ ve `denetim/2026-08-15_*`'de. 25 Ağu yazısında
 bu madde **"ölçülemedi, sebebi şu"** diye AÇIK yazılır — gizlenmez. Yeniden açmak ADR ister.
 
 ---
