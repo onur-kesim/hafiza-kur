@@ -33,30 +33,30 @@ dosya/git'li) exit 0, 0 satır silindi — **`devral`'ın TEK canlı ölçümü 
 körlüğü kapandı (`_rel()` + 21 çağrı) · CI #41 KIRMIZI'dan #46'ya.
 
 ## Bilinen sınırlar (ölçülmüş)
-- 🔴 **KAPININ KENDİ SENARYOSU KAPIYI KIRMIZI YAKABİLİR:** md.7/A2'nin ilk senaryosu `kur`dan sonra
-  canlıyı ELLE kırpıyordu ⇒ çıpayla ayrışıp H1 "satır KAYIP" veriyordu. Senaryo gerçek vakaya
-  çevrildi (sahipsiz ESKİ defter DEVRALINIR). Kırmızıyı okumadan "kapı çalışıyor" deme.
+- 🔴 **KAPININ KENDİ SENARYOSU KAPIYI KIRMIZI YAKABİLİR:** md.7/A2 `kur`dan sonra canlıyı ELLE
+  kırpıyordu ⇒ çıpayla ayrışıp H1 "satır KAYIP" veriyordu. Senaryo gerçek vakaya çevrildi.
 - 🔴 **ÖLÇÜT CÜMLESİ SOMUT VAKAYA KOŞULUR — ÜÇ KEZ ısırdı, üçü de kod yazılmadan:** md.6(c)'nin
   VE'li yazımı `CLAUDE.md`+`DURUM.md` projesinde hiç ateşlenmiyordu · md.7'nin lafzi D'si 6 gerçek
   şeklin 4'ünde yanıyordu (3'ü meşru) · md.7(b) SAĞLIKLI akışta yanıyordu (`derle` eski bloğu
   arşive taşır). ⇒ ölçüt yazılır yazılmaz vakaya koşulur; kilit ondan SONRA.
-- 🔴 **ÖLÇÜMÜ KOŞTUM, ONU KORUYAN KAPIYI KOŞMADIM** (CI #56 yakaladı, ben değil):
-  `karmasiklik.py --ihlal` koştum, "rapor kipi, exit 0" dedi — ama o sayıyı KORUYAN
-  `karmasiklik_mutanti.py`'yi koşmadım; çapası kırmızıydı. **`X.py` ile `X_mutanti.py` AYRI
-  DEĞİL, ÇİFTTİR.** "exit 0" uyutur.
-- 🔴 **ÇAPA, ARACIN KENDİ ÇIKTISINDAN GÜNCELLENMEZ** (yoksa çapa kendini onaylar): 88→97
-  BAĞIMSIZ `python -m radon cc` ile çaprazlandı (yeni 97 · eski 88 · `cmd_isir` ikisinde de 17).
-- 🔴 **YORUMDAKİ CANLI SAYI BAYATLAR:** `capraz.yml`'de 13 Ağu'da yazılan "bugün 14 ihlal
-  (11 CC>20, 11 satır>80)" 15 Ağu'da 9/5/9 idi. Sayı silindi, "artefakttan oku" kondu.
-- 🔴 **MUTANT ÇAPASI TEK YERDE OLMALI:** M-3'ün çapası `if not adaylar:` motorda ÜÇ yerde
-  geçiyordu, `str.replace(...,1)` YANLIŞ fonksiyona kurdu, araç KAÇTI dedi. "Uygulandı" ≠
-  "DOĞRU YERE uygulandı". Çapa tek yerde değilse mutant KURULAMADI = kırmızı.
-- 🔴 **YAKALA-HEPSİ DESENİ ÖLÜ MANTIK DOĞURUR:** adaptöre `.*\.JSONL$` konsaydı hiçbir `.jsonl`
-  "tanınmayan" olamaz, ölçüt (b)'nin `.jsonl` yarısı hiç ateşlenemezdi. Bilinçli bedel:
-  `README.md` her projede OLCULEMEDI listesinde görünür — dürüst hâli budur.
+- 🔴 **ÖLÇÜMÜ KOŞTUM, ONU KORUYAN KAPIYI KOŞMADIM — İKİ KEZ ISIRDI, ikisini de CI yakaladı:**
+  (1) CI #56: `karmasiklik.py` koştum, çapasını koruyan `karmasiklik_mutanti.py`'yi koşmadım.
+  (2) CI #58: H10 gövdesine `_h10_sahiplik` satırı ekledim, `h10_bolme_mutanti.py`'yi koşmadım —
+  M-H10e'nin ÇAPASI İKİ BİTİŞİK SATIRDI, araya girince kırıldı ve araç OLCULEMEDI dedi (exit 2).
+  ⇒ **Kapı gövdesine satır eklerken O KAPININ mutant aracının ÇAPALARINA bakılır; araç EL İLE
+  SEÇİLMEZ, TÜM `faz0` bataryası koşulur.** Bataryayı koşarken staged uploads'tan gelen BAYAT
+  kopyaların üzerine yazmamasına dikkat — iki SAHTE kırmızı öyle doğdu (çapa 88, bayat altın küme).
+  Çevre kırmızısını ayırmanın yolu: aynı kabı TEMİZ motorla da koş (fazB/y2/y4 ikisinde de aynı).
+- 🔴 **ÇAPA, ARACIN KENDİ ÇIKTISINDAN GÜNCELLENMEZ** (yoksa kendini onaylar): 88→97 BAĞIMSIZ
+  `radon cc` ile çaprazlandı. **YORUMDAKİ CANLI SAYI BAYATLAR:** `capraz.yml`'deki "bugün 14
+  ihlal" iki günde 9/5/9 oldu; sayı silindi, "artefakttan oku" kondu.
+- 🔴 **MUTANT ÇAPASI TEK YERDE OLMALI:** `if not adaylar:` motorda ÜÇ yerde geçiyordu,
+  `replace(...,1)` YANLIŞ fonksiyona kurdu. "Uygulandı" ≠ "DOĞRU YERE uygulandı"; çapa tek
+  yerde değilse mutant KURULAMADI = kırmızı.
+- 🔴 **YAKALA-HEPSİ DESENİ ÖLÜ MANTIK DOĞURUR:** adaptöre `.*\.JSONL$` konsaydı ölçüt (b)'nin
+  `.jsonl` yarısı hiç ateşlenemezdi. Bedel: `README.md` her projede OLCULEMEDI'de görünür.
 - 🔴 **SAYI BULAŞMASI · OKUNMADAN HÜKÜM · BOZULABİLİR BEYAN** (dış denetçi): başka projenin sayısı
-  yeniden ölçülmeden yazılmaz · dosyanı okumadan beyan etme · commit kimliği tazelik komutuyla
-  yazılır. Ayrıntı: `denetim/2026-08-15_*`.
+  yeniden ölçülmeden yazılmaz · dosyanı okumadan beyan etme. Ayrıntı: `denetim/2026-08-15_*`.
 - 🔴 **YEŞİL CI, ÖLÇÜLMEMİŞ ŞART** (#45 yeşilken `paketten_kos` belgenin 1. adımını atlıyordu) ⇒
   madde ✅ olmadan önce ölçüt cümlesi KELİME KELİME araca karşı okunur. Kardeşi: **"GEÇİYOR MU"
   KAPISI ZAYIFTIR** — "tutarlı mı" AYRI eksendir (S-6; yol ekseni eklendi).

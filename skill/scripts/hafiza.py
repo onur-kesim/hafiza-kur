@@ -3993,8 +3993,13 @@ def _h10_sozluk(F, y, say):
 def _kapi_h10(F, N, O, y):
     # ---- H10 KONU TEKILLIGI (anahtar bazli sikistirma) -----------------
     bl, say = _h10_tekillik(F, y)
-    _h10_sahiplik(O, bl)
     _ham = _h10_cit(F, O, y)
+    # md.7(a): SIRA ONEMSIZ ama YERI ONEMLI — bu cagri `_h10_tekillik` ile
+    # `_h10_cit` ARASINA konulursa `faz0/h10_bolme_mutanti.py`'nin M-H10e (SIRA)
+    # mutantinin capasi kirilir ve arac OLCULEMEDI verir. Olculdu: CI #58, uc
+    # platformda kirmizi. Bir kapinin govdesine satir eklerken O KAPININ mutant
+    # aracinin capalarina bakilir — `X.py` ile `X_mutanti.py` CIFTTIR.
+    _h10_sahiplik(O, bl)
     _h10_yapi(F, _ham)
     N.append("H10: %d blok / %d ayrik konu" % (len(bl), len(say)))
     _h10_sozluk(F, y, say)
