@@ -1,40 +1,26 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 5 ✅ / 6** — kalan tek madde 6 (kod işi DEĞİL, KULLANIM saati: 14→21 Ağu)
+**BİTTİ sayacı: 5 ✅ / 5** — madde 6 KESİLDİ 15 Ağu 2026 (ölçüt kusuru, `CLAUDE.md` §5)
 Son güncelleme: 14 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
-## Sıradaki iş — KOD İŞİ YOK, SAAT İŞLİYOR
-**Madde 6:** "Onur, gerçek bir projesinde (Momentum-dışı) sistemi 1 hafta fiilen kullanmış olur."
-14 Ağu başladı, **21 Ağu biter**. Yazılacak kod, koşulacak kapı YOK — sistemi KULLANMAK var.
-Bu madde kapanınca BİTTİ 6/6 ve 25 Ağu yazısı yazılabilir.
+## Sıradaki iş — BİTTİ LİSTESİ KAPANDI, TEK DİKEY DİLİM: 25 AĞU YAZISI
+Madde 6 KESİLDİ (15 Ağu, Onur kilidi; gerekçe `CLAUDE.md` §5 — zaman değil ÖLÇÜT kusuru).
+**Kurulum YAPILMADI, Is-Portfolyo'ya tek bayt yazılmadı.** `faz0/kullanim_kapisi.py` de kesildi.
+Yazıda kesilen madde **"ölçülemedi + sebebi"** olarak açık geçer; "bir hafta kullandım" iddiası
+KURULMAZ. Denetçi itirazının kendisi yazıya malzemedir: ölçütün nasıl kusurlu çıktığı anlatılır.
 Ara işler (hiçbiri BİTTİ maddesine bağlı DEĞİL, ADR/onay ister): depo atfı history rewrite
 (son tarih 24 Ağu) · H16 YAPI kapısı (tasarım onaylı, kod yok) · `kanit` işindeki
 `t_y3`/`t_y42` hâlâ `continue-on-error: true` (bilinçli; `readme_kapisi` onları kapılı koşuyor).
 
-## ✅ MADDE 2 + MADDE 4 KAPANDI (CI #43 `cde1998` + CI #46 `5d81838`) — tek satıra indi
-Üç kapı ailesi, hepsi üç platformda ve `continue-on-error`SIZ:
-- **`faz0/win_dal_mutanti.py`** (2(i)) — 3 kapı / 4 mutant. KAPI-1 yalnız FAZLA dalı, KAPI-2 EKSİK
-  dalı kovalar → **örtüşme YAPISAL kesildi**. KAPI-3 CANLI yalnız win32'de hüküm verir.
-  CI #43 windows: `KAPI-3 CANLI : YESIL` · `M-3 → KAPI-3 de KIRMIZI ✓` · `4/4 mutant`.
-- **`paketle.sh` + `faz0/paket_mutanti.py`** — SHA kapısı ÖLÜYDÜ, **başlık yalandı**; beyan bırakıldı,
-  **ÜRETİLEN PAKET ölçülüyor** (MOTOR BİT-BİT + ENVANTER, M-1 `zip -l` / M-2 `-x references/*`).
-- **`faz0/paketten_kos.py`** (4 + 2(ii)) — KAPI-1 BELGE (komut **ve** yol ekseni, PAKETTEKİ
-  `SKILL.md`'ye karşı) · KAPI-2 CANLI (belgenin akışıyla). Çıkış kodu sözleşmesi `hafiza.py`
-  sat. 4845'ten OKUNDU: `isir` taze projede **2** = SAĞLIKLI, **1 ve 4 KIRMIZI**.
-  CI #46 windows: `KAPI-1 BELGE : YESIL` · `C1 komut ISIRDI ✓ · C2 yol ISIRDI ✓` · `8.6 sn, win32`.
+## ✅ MADDE 2 + 4 KAPANDI (CI #43 `cde1998` + #46 `5d81838`) — TEK SATIRA İNDİ
+Üç kapı ailesi, üç platform, `continue-on-error`SIZ: `win_dal_mutanti` 3 kapı/4 mutant (örtüşme
+YAPISAL kesildi) · `paketle.sh`+`paket_mutanti` (ölü SHA kapısı → ÜRETİLEN PAKET ölçülüyor) ·
+`paketten_kos` KAPI-1 BELGE (komut **ve** yol ekseni) + KAPI-2 CANLI. Ayrıntı git geçmişinde.
 
-## ✅ README KANIT BLOĞU KAPISI — MADDE 5 KAPANDI (CI #49 `fba20c8`) — tek satıra indi
-README'nin "Kanıtı kendin koş" bloğu okurun yapacağı şeydir ve **yedi sayısal beyan** taşıyordu;
-hiçbiri ölçülmüyordu (biri — `derle` sonrası `isir`=0 — bu dosyanın "ölçülmüyor" dediği boşluktu).
-`faz0/readme_mutanti.py`: **ÜÇ kapı, ALTI mutant, örtüşme yok.** KAPI-1 BEYAN · KAPI-2 GERÇEK
-(blok KOŞULUR; beklenen değerler **BLOKTAN okunur, araca YAZILMAZ**) · KAPI-3 SÖZLEŞME.
-Blokta TANIMADIĞI satır görürse ÖLÇÜLEMEDİ der — sessiz yok sayma engellenir.
-`t_y3`/`t_y42` BURADA `continue-on-error`SIZ koşar ve senaryo sayıları README'yle karşılaştırılır
-(Onur kararı; `kanit`teki kopyaları `continue-on-error: true` taşıyor, o karara dokunulmadı).
-Ağır koşucu yalnız temiz turda koşar, mutant turları önbelleği kullanır — SINIR aracın başlığında.
-**CI #49 (91 iş, 0 başarısız):** windows 314 sn · ubuntu 153 sn · macos 101 sn; windows logu
-üç kapı YESIL · `t_y3` 20 senaryo · `t_y42` 58 senaryo · `6/6 mutant AYRI eksende ISIRDI`.
-🔴 Aracın kendi kusuru: ilk sürümü `shlex` kullanmıyordu, `--metin="ilk not"` bozulup her komut
-exit 2 dönüyordu — araç README'yi SUÇLAYACAKTI. Ölçüm buldu, CI değil.
+## ✅ README KANIT BLOĞU — MADDE 5 KAPANDI (CI #49 `fba20c8`, 91 iş/0 başarısız) — TEK SATIRA İNDİ
+`faz0/readme_mutanti.py`: 3 kapı / 6 mutant, örtüşme yok. Beklenen değerler **BLOKTAN okunur, araca
+YAZILMAZ**; tanımadığı satıra ÖLÇÜLEMEDİ der. `t_y3`(20)/`t_y42`(58) burada KAPILI koşar.
+🔴 Aracın kendi kusuru: `shlex` yoktu, `--metin="ilk not"` bozuluyordu — araç README'yi
+SUÇLAYACAKTI. **Ölçüm buldu, CI değil.**
 
 ## 🔴 BU TURUN İKİ ÖZ-KUSURU (ikisini de ÖLÇÜM buldu, CI DEĞİL)
 1. **YEŞİL CI, ÖLÇÜLMEMİŞ ŞART.** CI #45 tamamen yeşilken `paketten_kos.py` motoru PAKET
@@ -55,6 +41,20 @@ exit 2 dönüyordu — araç README'yi SUÇLAYACAKTI. Ölçüm buldu, CI değil.
   `_cikti_kodlamasini_guvenceye_al()` HER faz0 aracına konur; #42/#43/#45/#46 hepsi 0 başarısız.
 
 ## Bilinen sınırlar (ölçülmüş)
+- 🔴 **Defter COMMIT'lenmeden `kapi` KIRMIZI** (kum havuzu, 15 Ağu): `[H9] git'te IZLENMIYOR:
+  PROJE_HAFIZA.md` → FAIL/çıkış 1; commit'lenince YESIL/çıkış 0. ⇒ "defteri `.gitignore`'a al"
+  fikri madde 6(c)'yi ULAŞILMAZ kılar. Hedef projede haftada en az bir commit ŞART.
+- 🔴 **Derleme artefaktı H14'ün DELİLİNİ bozar** (ölçüldü): `_h14_adaylar` hariç kümesinde (sat.
+  4055) `obj`/`bin`/`.dart_tool` YOK; `.gitignore`'lu oldukları için mtime ile ölçülürler ⇒ "en
+  yeni değişiklik" hep bir artefakt olur (`…/obj/Api.assets.cache3.json`). Hüküm doğru olsa da
+  işaretçi gerçek dosyayı ASLA gösteremez. Flutter `build/` hariç kümesinde VAR, `.dart_tool` yok.
+- 🔴 **SKILL.md §1 kademe tablosu kendi içinde ÇELİŞİYOR** (belge-iç-tutarsızlık sınıfının İKİNCİ
+  ısırığı; ilki paketten_kos S-6 yol ekseniydi): git'li ama KODSUZ proje (Is-Portfolyo) hem
+  "Kod/depo olmayan işler → HAFİF" hem "Depo/git olan projeler → KAPILI" satırlarına uyuyor.
+  Kararsızlık kuralı ("kod varsa KAPILI") HAFİF diyor, ama madde 6 KAPILI'yı zorunlu kılıyor.
+  Bu turda KAPILI seçildi (gerekçe: git + uzun ömürlü + çok oturumlu = KAPILI sütununun iki şartı).
+- 🔴 **Motorda `push`/`fetch`/`remote`/`origin`/`clone` SIFIR eşleşme** — GitHub gerekmiyor; yalnız
+  yerel git. git YOKSA H9 "ÖLÇÜLEMİYOR" (sat. 3605), depo var commit yoksa yine ÖLÇÜLEMEDİ (3599).
 - 🔴 **Artefakt BOYUTU içerik oracle'ı DEĞİLDİR.** `size_in_bytes` ZIP boyutudur; içerik aynıyken
   windows−ubuntu farkı −2…+2 salınır. KESİN KANIT CI #43: `win-dal`ın windows kolu gerçekten
   FARKLI ve DAHA UZUN metin taşıyor, buna rağmen zip'i daha KÜÇÜK (608/613/614). Hüküm

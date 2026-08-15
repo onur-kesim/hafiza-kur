@@ -112,6 +112,14 @@ Bunlar gizlenmiyor; `skill/SKILL.md` §9'da tam listesi var. En önemlileri:
   yoktur; macOS'un bilinen mayını (dosya adlarında NFC/NFD ayrışması) bir kapıyla
   değil bir **kaçınma kuralıyla** yönetiliyor: disk adlarına Türkçe diyakritik
   konmuyor. Kural, kapı değil — ve kuralı zorlayan bir şey yok.
+- **"Gerçek bir projede bir hafta fiilen kullanım" maddesi KESİLDİ** (15 Ağu 2026).
+  Sebep zaman değil, ölçütün kendisi: token kazancı ancak bu sistem mevcut defterin
+  **yerine geçerse** dürüst ölçülebilir. Aday projede mevcut defter kanonik kalacaktı;
+  o şartla maliyet tanım gereği artar, kazanç sıfırdır — **sonucu önceden belli olan
+  şey ölçüm değildir**, sayı kılığına girmiş bir ÖLÇÜLEMEDİ'dir. Aday projenin bağımsız
+  denetçisi ayrıca iki defterin bir arada yaşamasının orada bilinen bir kusur sınıfını
+  doğuracağını gösterdi. Yani bu araç, hâlâ **gerçek bir projede bir hafta boyunca
+  kullanılmış değildir** ve bu satır o boşluğun kendisidir.
 - **Karmaşıklık borcu bilinçli olarak açık bırakıldı.** Motorun sekiz fonksiyonu
   projenin kendi eşiğini aşıyor, beşi CC 20'nin üstünde. 14 Ağu 2026'da bu bölme
   işi KESİLDİ: ölçülebilirliği zayıflatmıyor, yalnız okunabilirliği. Kesim

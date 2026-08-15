@@ -18,14 +18,13 @@ değişiklik, getirdiği kolaylık ne olursa olsun yanlıştır. Doktrin: ölç�
 geri getirme · İngilizce kanonik komut + Türkçe alias · depo PUBLIC ama YAYIN YOK · çıkış-kodu
 sözleşmesi kırılırsa minor artar.
 
-## 2. BİTTİ LİSTESİ (KİLİTLENDİ 14 Ağu 2026, Onur onayı — ölçütler yazılı, artık tartışılmaz)
+## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · liste 6→5 KISALDI 15 Ağu 2026, İŞLEYİŞ md.1 — gerekçe §5)
 - [x] Kullanıcı `kur/kapi/isir/not/derle/devral` komutlarını Linux'ta koşabilir (CI yeşil)
 - [x] **Windows'ta** tam hüküm. ÖLÇÜT = (i) iki `win32` dalı mutantla koparılıp CI'da ISIRIYOR
       **ve** (ii) `.skill` taze projede GERÇEK Windows'ta kurulup `kur→kapi→isir` koşuyor.
       *(i) CI #43 `cde1998` `faz0/win_dal_mutanti.py` · (ii) CI #46 `5d81838` `win32`, 8,6 sn.)*
 - [x] **macOS'ta** tam hüküm. ÖLÇÜT = ortak batarya macos-latest'te `continue-on-error`sız yeşil.
-      *(Ölçüldü 14 Ağu, CI #39: `hafiza.py`'de darwin dalı SIFIR — mutasyonu yapılacak platforma
-      özgü yüzey yok. NFC/NFD mayını kapıyla değil KAÇINMAYLA yönetiliyor (§4); README'de açık yazar.)*
+      *(CI #39, 14 Ağu: darwin dalı SIFIR — platforma özgü yüzey yok; NFC/NFD KAÇINMAYLA yönetiliyor (§4).)*
 - [x] Kullanıcı `.skill` paketini kurup taze bir projede 5 dakikada çalıştırabilir (kurulum belgesiyle)
       *(CI #46 `5d81838`, üç platform: `faz0/paketten_kos.py` BELGENİN akışını izler ve komutları
       belgeye karşı ölçer; windows'ta 8,6 sn. ŞERH: ölçen CI'dır, insan eli değil.)*
@@ -34,15 +33,8 @@ sözleşmesi kırılırsa minor artar.
       ve bloktaki HER sayısal beyan gerçekle TUTAR; beklenen değerler BLOKTAN okunur.
       *(CI #49 `fba20c8`: `faz0/readme_mutanti.py` 3 kapı + 6/6 mutant; yedi beyanın yedisi ölçüldü.
       ŞERH: ölçen CI'dır, insan okuru değil.)*
-- [ ] Onur, gerçek bir projesinde sistemi 1 hafta fiilen kullanmış olur.
-      ÖLÇÜT (Onur onayı, 15 Ağu 2026) = 21 Ağu'da hedef projenin `arsiv/hafiza/` zincirinden
-      MEKANİK ölçülür: (a) en az 5 AYRI günde `not` · (b) en az 2 `derle` · (c) son `kapi` YEŞİL ·
-      (d) hafiza-kur'un token maliyeti/kazancı ÖLÇÜLMÜŞ ve sayı `DURUM.md`'ye yazılmış —
-      **İŞARETİ NE OLURSA OLSUN**; eksi çıkması da geçerli bir sonuçtur. Araç: `faz0/kullanim_kapisi.py`.
-      "Sistem işime yaradı" BEYANDIR, hüküm değil; ayrı satıra yazılır.
-      🟡 HEDEF PROJE KARARI AÇIK: Momentum artık donuk DEĞİL (`yeni-sistem/KURULUM-NOTU.md` sat. 23
-      "donuk (K192)" beyanı 15 Ağu'da bayatladı). Yeni oturumda incelenip karar verilecek; eski
-      "(Momentum-dışı)" kaydı o incelemeye bağlıdır — gerekçesinin yarısı (donukluk) ölçümle düştü.
+*(Eski 6. madde — "gerçek bir projede 1 hafta fiilen kullanım" — 15 Ağu 2026'da KESİLDİ,
+İŞLEYİŞ md.1. Gerekçe §5'te; zaman değil ÖLÇÜT kusuru. Liste 6→5, sayaç **5 ✅ / 5**.)*
 
 ## 3. SIRADAKİ İŞ (tek madde)
 <`DURUM.md`'den takip edilir; tek dikey dilim.>
@@ -70,6 +62,15 @@ Tuzak Avcısı işleri · TSK/gelir hukuku · Reels-bülten operasyonu (ayrı pr
 duyuru YOK ("public repo ≠ yayın"). Semantik arama/embedding bilinçli reddedildi.
 **KESİLDİ 14 Ağu 2026:** `cmd_*` bölmeleri ve kalan CC borcu. `ihlal 8` ve `CC>20: 5` olduğu yerde
 kalır. Gerekçe: hiçbir BİTTİ maddesi CC'ye bağlı değil, 25 Ağu'ya 11 gün var. Yeniden açmak ADR ister.
+**KESİLDİ 15 Ağu 2026 (Onur kilidi, İŞLEYİŞ md.1):** eski madde 6 — "gerçek bir projede 1 hafta
+fiilen kullanım" — ve `faz0/kullanim_kapisi.py`. Gerekçe **zaman değil ÖLÇÜT KUSURU:** (d) token
+maliyeti/kazancı ancak hafiza-kur mevcut defterin YERİNE geçerse dürüst ölçülür; "mevcut sistem
+kanonik kalır" şartıyla maliyet tanım gereği artar, kazanç sıfırdır ⇒ **sonucu önceden belli olan
+şey ölçüm değil, sayı kılığında ÖLÇÜLEMEDİ'dir.** Aday host Is-Portfolyo'nun bağımsız denetçisi dört
+itirazla reddetti: asimetri (kazanç ölçülmemiş) · 17–31 Ağu teslim penceresi boş, 18–19'da iki teslim ·
+çift defter = o projenin K123/K127 `bayat-sayi` sınıfı · eşzamanlı yazma, ki motorun kendi
+"kilit inode yarışı KAPATILMADI" kusuruna basıyor. Dogfood da çift deftere düşer. 25 Ağu yazısında
+bu madde **"ölçülemedi, sebebi şu"** diye AÇIK yazılır — gizlenmez. Yeniden açmak ADR ister.
 
 ---
 
