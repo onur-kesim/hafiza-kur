@@ -138,3 +138,47 @@ kaldı ama "tek tek doğrulanamaz" şerhiyle, iç düşman ajan turları AYRI ya
    Deponun **en görünür sayısal iddiası kapının kapsamı dışında.** 25 Ağu okuru önce bunu okuyacak.
 
 **Karar Onur'da; bu kayıt yalnız ölçümü sabitler.**
+**KAPANDI (Onur kilidi, 15 Ağu): DARALT.** README'den sayısal tur beyanı kaldırıldı; denetçi
+sayısı "tek tek doğrulanamaz" şerhiyle kaldı; iç düşman ajan turları ayrıldı. Kapı koşuldu:
+3 kapı YEŞİL, 6/6 mutant, kapılı blok `diff` boş.
+
+---
+
+## 🔴 SON BULGU — ölçülmeyen sözleşme: `README_EN.md` aynası
+
+Denetçi bugün **üç kez** aynanın bayatladığını ölçtü: damga `478003f` (→ `ca0562f` `~13 dk`'yı
+sildi) · damga `80468eb` (→ `## Denetim` yeniden yazıldı) · damga `ee7f6e2` (şu anki).
+Çeviri notunun kendi sözleşmesi: *"if the two files ever disagree, README.md is canonical — and
+the disagreement itself is a finding."* **Sözleşme doğru, mekanizma YOK.** Üç ayrışmayı da bir
+kapı değil bir insan/oturum fark etti. Bu, bu deponun tam olarak var olma sebebi olan kusur sınıfı.
+
+**Sınıf ayrımı (önemli, aynı kefeye konmamalı):**
+`D-3` bir **YANLIŞ beyandı** — hiç doğru olmamış bir durum iddiası. Buradaki ise **BOZULABİLİR
+beyan**: ölçüldüğü an doğruydu, sonra bayatladı. Üstelik bu turdaki örnek, notun KENDİ talimatı
+uygulandığı için bayatladı (`37ece61f` → Onur commit bloğunu koştu → `ee7f6e21`). İkisinin çaresi
+farklıdır: yanlış beyanın çaresi ölçmek, bozulabilir beyanınki **son kullanma tarihi vermektir.**
+
+**Bu oturumun kendine yazdığı kural:** *nota yazılan her commit kimliği, yanında tazelik
+komutuyla birlikte yazılır.* "origin = X" değil, "origin = X (ölçüm SS:DD) — okurken doğrula".
+
+### Neden CI kapısı ÖNERİLMİYOR (denetçinin 1. şıkkı)
+1. **Amaç kapısı (İŞLEYİŞ md.3):** `faz0/`'a yeni araç ancak bir BİTTİ maddesini DOĞRUDAN açarsa
+   eklenir. BİTTİ listesi **5/5, kapalı** — açılacak madde yok.
+2. **`README_EN.md` bir Is-Portfolyo artefaktıdır**, hafiza-kur'un değil. Depoya alıp kapıya
+   bağlamak, hafiza-kur'un başka bir projenin artefaktı için bedel ödemesi demektir — bu sabah
+   Is-Portfolyo oturumunun **haklı olarak reddettiği asimetrinin aynadaki görüntüsü.**
+3. §5: "public repo ≠ yayın"; depo, göndermeyi planlamadığı bir çevirinin sahipliğini almaz.
+
+### Önerilen üçüncü yol — damgayı KALDIRMA, ANLAMINI DEĞİŞTİR
+Damga bir *güncellik* iddiası olmaktan çıkıp bir *ölçüm çıpası* olur. Çeviri notu şunu der:
+"README.md kanoniktir; bu çeviri `<damga>`'ya karşı yapıldı, sonraki her commit **doğrulanmamış
+sayılır**." Ve yanına okurun koşacağı tek satır konur:
+
+```bash
+git log --oneline <damga>..HEAD -- README.md     # boş = ayna taze · dolu = bayat + neyin değiştiği
+```
+
+**Ölçüldü (kum havuzu, 15 Ağu):** taze durumda `0` satır; kaynak dosya değiştikten sonra `1`
+satır ve değiştiren commit'in kimliği. Yani ayrışma **mekanik olarak ölçülebiliyor** — CI
+gerekmiyor, çünkü ölçümü okur koşuyor. Bu, README'nin kendi "Kanıtı kendin koş" doktrininin
+aynısıdır ve kapı bütçesine dokunmaz. **Karar `README_EN.md`'nin sahibindedir.**
