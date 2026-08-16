@@ -23,11 +23,44 @@ bilinemez: `progress.md` en yaygın olan, `activeContext.md` ise adıyla "günce
 bağlam" diyen. Motorun bunlardan birini KENDİ seçmesi, md.7'nin kapattığı **sessiz
 sahiplenmenin** ta kendisidir.
 
-## Ölçüm 2 — altısını `canli` adayı yapmak sonucu DEĞİŞTİRMEZ
-O hâlde her memory-bank deposunda 5–11 aday olur ve md.7'nin **çoklu `canli`
-KAPISI** ateşlenir: çıkış ≠ 0, diske sıfır bayt, `--esle` ister. Yani araç yine
-durur; değişen tek şey mesajın metnidir. Kapsamı genişletmenin bedeli var, getirisi
-yok.
+## Ölçüm 2 — altısını `canli` adayı yapmak (B şıkkı) NEDEN REDDEDİLDİ
+🔴 **Üreten oturumun ilk gerekçesi YANLIŞTI ve ölçümle düzeltildi.** Önce "sonuç
+değişmez, yalnız mesaj değişir" denmişti. Koşuldu: altı `canli` adayı olan ağaçta
+md.7'nin çoklu-canlı kapısı şunu basıyor —
+
+```
+HATA: DEVIR DURDU — `canli` rolunu ustlenen TANINAN 6 dosya var:
+  PROJE_HAFIZA.md, AKTIF_HAFIZA.md, ... , URUN_HAFIZA.md
+  Birini KENDIM SECMIYORUM: ...
+  Kilitle: python hafiza.py devral --esle canli=<dosya> --kok="..."
+```
+
+Yani B, adayları **adlarıyla listeliyor** ve görünürlük sorununu bedavaya çözüyor.
+Mesaj farkı gerçek bir getiriydi; "aynı yere çıkar" iddiası yanlıştı.
+
+**B'yi asıl eleyen şey başka ve ölçüldü: küme TEK CİNS DEĞİL.** 22 depoda dosya
+dosya bakıldı (ekleme-defteri imzası = 3+ tarih damgası):
+
+| dosya | 3+ tarih damgası | 10+ kayıt | ort bayt |
+|---|---|---|---|
+| `progress.md` | **9/22** | 20/22 | 5.838 |
+| `activeContext.md` | **7/22** | 21/22 | 4.558 |
+| `systemPatterns.md` | **0/21** | 17/21 | 5.611 |
+| `techContext.md` | 1/19 | 15/19 | 4.051 |
+| `productContext.md` | **0/18** | 14/18 | 2.694 |
+| `projectbrief.md` | **0/18** | 14/18 | 1.868 |
+
+Defter imzası yalnız ilk ikisinde var; kalan dördü **durgun bağlam belgesi**
+(`projectbrief` ortalama 1.868 B'lik bir tanıtım metni). Altısını birden `canli`
+adayı yapmak, **dört durgun belgeyi "canlı defter" oylamasına sokar** ve kullanıcı
+`projectbrief.md`'yi seçerse motor bunu sessizce kabul eder. Toptan `disarida`
+ise ters yönde yanlıştır ama **güvenli yönde**: kötü seçeneği önermez, yalnız iyi
+seçeneği duyurmaz — ve o eksik mesajla kapatılabilir (md.9).
+
+**Ölçülmüş ama seçilmeyen üçüncü yol:** `progress.md` + `activeContext.md` → `canli`
+adayı, kalan dördü olduğu gibi. Daha doğru, ama oranlar %41 ve %32 — yani bu bir
+OLGU değil SEZGİDİR, ad tablosuna sezgi konursa kendi kapısını ve mutantını ister.
+Ayrı madde olarak açılabilir; bu turda AÇILMADI.
 
 ## Ölçüm 3 — KAÇIŞ YOLU ZATEN ÇALIŞIYOR (asıl bulgu)
 `devral --esle canli=memory-bank/progress.md` **22 deponun 22'sinde** koşuldu:
