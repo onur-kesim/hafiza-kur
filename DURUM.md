@@ -8,7 +8,6 @@ KAPSAM SINIRI. Gerekçe + B şıkkının elenmesi: `denetim/2026-08-16_*`.
 Adaylar: **md.9 GÖRÜNÜRLÜK** (durma mesajı envanterdeki adayları göstermiyor, "YENİ defter
 aç" hâlâ ilk sırada) · **H16 YAPI kapısı** (tasarım onaylı, kod yok, ADR ister).
 25 Ağu yazısı TASLAK (`fable dosyalama\25agu-yazisi\`, depo DIŞI); yayın kararı ayrı.
-🔴 depo atfı history rewrite KONUSUZ: 10 Ağu'da bitmiş (63/63 tek kimlik, 16 Ağu ölçümü).
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
 **md.8** durma hükmü ayrımı (`_md8_ayrim`): envanteri BOŞ ve rol atanmış ağaç aynı hükmü
@@ -20,10 +19,13 @@ Kapı iki tur KÖR yandı (aşağıda) ·
 küme yeniden üretildi (28 satır, hepsi H2 boyut) · md.2+4 CI #43 `cde1998` + #46 `5d81838` ·
 md.5 README kanıt bloğu CI #49 `fba20c8` (aracın `shlex` kusurunu ÖLÇÜM buldu, CI değil) ·
 yol ayracı körlüğü kapandı (`_rel()` + 21 çağrı) · CI #41 KIRMIZI'dan #46'ya.
-🔴 "**`devral`'ın TEK canlı ölçümü**" ifadesi 16 Ağu'da DÜŞTÜ: `--kesif` **72 gerçek public
-depoda** koşuldu (50 genel + 22 `memory-bank/`), salt okuma, sıfır bayt yazıldı.
+🔴 `--kesif` **72 gerçek public depoda** koşuldu (50 + 22 `memory-bank/`), salt okuma, 0 bayt.
 
 ## Bilinen sınırlar (ölçülmüş)
+- 🔴 **CI kırmızısı KAPI kırmızısı olmayabilir** (#66 `6c6d407a`): 100 işin 2'si kırmızı,
+  ikisi de `upload-artifact` **Finalize 403**; ölçüm+kapı adımları YEŞİL, #67'de 100/0.
+- 🔴 **WebFetch API DE BAYAT** (2. ısırık: en yeni #55 dedi, gerçek #67) ⇒ CI hükmü
+  TARAYICI `fetch`'inden okunur; iş logu API'den 403, sayfadan JS ile açılır.
 - 🔴 **KAPININ KENDİ SENARYOSU KAPIYI KIRMIZI YAKABİLİR:** md.7/A2 `kur`dan sonra canlıyı ELLE
   kırpıyordu ⇒ çıpayla ayrışıp H1 "satır KAYIP" veriyordu. Senaryo gerçek vakaya çevrildi.
 - 🔴 **ÖLÇÜT CÜMLESİ SOMUT VAKAYA KOŞULUR — ÜÇ KEZ ısırdı, üçü de kod yazılmadan:** md.6(c)'nin
@@ -43,8 +45,6 @@ depoda** koşuldu (50 genel + 22 `memory-bank/`), salt okuma, sıfır bayt yazı
   yakaladı; **YEREL BEŞ AYRI ORTAMDA YEŞİL DEDİ.**
   ⇒ akış BİRLEŞTİRİLMEZ · çok-değerli alan LİSTEYE · hüküm öncesi N=1 HAM ÇIKTI gözle okunur ·
   motor A/B'si KOPYA DEPODA yapılır · normalizasyonun OLDUĞU ayrıca doğrulanır, yoksa ÖLÇÜLEMEDİ.
-- 🔴 **README'nin Windows cümlesi BAYAT** (ölçüldü 16 Ağu): `win_dal_mutanti` 4/4 ısırıyor ve
-  CI #60'ta `windows-latest` kolu yeşil. README "o dal ölçülmemiştir" diyor — DÜZELTİLMELİ.
 - 🔴 **ÇAPA, ARACIN KENDİ ÇIKTISINDAN GÜNCELLENMEZ** (yoksa kendini onaylar): 88→97 BAĞIMSIZ
   `radon cc` ile çaprazlandı. **YORUMDAKİ CANLI SAYI BAYATLAR:** `capraz.yml`'deki "bugün 14
   ihlal" iki günde 9/5/9 oldu; sayı silindi, "artefakttan oku" kondu.

@@ -42,9 +42,10 @@ sözleşmesi kırılırsa minor artar.
 <`DURUM.md`'den takip edilir; tek dikey dilim.>
 
 ## 4. ORTAM MAYINLARI (ölçülmüş)
-- Bağlı klasör mount'unda **hiçbir `git` komutu koşma** (`status` dâhil): mount `unlink` vermez,
-  `.git/index.lock` kalıcı kalır. Depo durumunu `find`/`ls`/dosya okumayla anla; git işini komut
-  olarak yaz, Onur koşsun. Push ve commit DAİMA Onur'da.
+- Bağlı klasörde **hiçbir `git` komutu koşma** (`status` dâhil): kalıcı `.git/index.lock` bırakır.
+  Durumu **loose ref** okuyarak anla (`packed-refs` BAYAT olabilir); git işini komut olarak yaz.
+  **Push/commit DAİMA Onur'da; KOD Claude Code'da yazılır** — Cowork ölçer, denetler, kararı
+  hazırlar (Onur kilidi 16 Ağu: üreten ≠ denetleyen).
 - Tek kanonik klon: `C:\Users\gulci\Desktop\fable dosyalama\depo\hafiza-kur`. İkinci klon açma.
 - Disk adlarında Türkçe diyakritik ASLA (macOS NFD/NFC ayrışması zinciri kırar); ASCII bilinçli.
 - `.hafizarc` anahtarları · `_CIPA.json`/`_ZINCIR.jsonl` alan adları · dosya adları ÇEVRİLMEZ.
@@ -65,10 +66,8 @@ duyuru YOK ("public repo ≠ yayın"). Semantik arama/embedding bilinçli redded
 **KESİLDİ 14 Ağu 2026:** `cmd_*` bölmeleri ve kalan CC borcu. `CC>20: 5` olduğu yerde kalır;
 `ihlal` 15 Ağu'da 8→**9** (md.6 iki bayrak ekledi, `main` 80→82 satır; ölçüm, kapı değil).
 Gerekçe: hiçbir BİTTİ maddesi CC'ye bağlı değil, 25 Ağu'ya 11 gün var. Yeniden açmak ADR ister.
-**md.7 İKİ KEZ DARALTILDI 15 Ağu (kod yazılmadan):** (i) lafzi D ("aynı rol iki kez = KIRMIZI")
-ELENDİ — altı gerçek ağaç şeklinin dördünde kırmızı, üçü MEŞRU ⇒ kırmızıyı değersizleştirirdi.
-(ii) (b) ayağı ("aynı `konu` iki dosyada FARKLI gövde") KESİLDİ — `derle` eski bloğu arşive TAŞIR,
-gövdeler ZORUNLU farklıdır ⇒ SAĞLIKLI akışta yanardı; "arşivdeki satır değişti" H1'de ZATEN kapılı.
+**md.7 İKİ KEZ DARALTILDI 15 Ağu (kod yazılmadan):** lafzi D altı gerçek ağacın dördünde yanıyordu
+(üçü MEŞRU); (b) ayağı SAĞLIKLI akışta yanardı (`derle` arşive taşır). İkisi de ELENDİ.
 **KESİLDİ 15 Ağu 2026 (Onur kilidi, İŞLEYİŞ md.1):** eski madde 6 — "gerçek bir projede 1 hafta
 fiilen kullanım" — ve `faz0/kullanim_kapisi.py`. Gerekçe **zaman değil ÖLÇÜT KUSURU:** (d) token
 kazancı ancak hafiza-kur mevcut defterin YERİNE geçerse dürüst ölçülür; "mevcut defter kanonik
