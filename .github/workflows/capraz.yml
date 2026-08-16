@@ -1402,3 +1402,52 @@ jobs:
           name: ayrisma-${{ matrix.os }}
           path: ayrisma-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # DURMA HUKMU AYRIMI KAPISI — BITTI maddesi 8.
+  #     OLCULDU 16 Agu 2026, 72 gercek public depoda (50 genel + 22 `memory-bank/`
+  #     kullanan), salt okuma, sifir bayt yazildi: `devral` `canli` bulamayip
+  #     durdugunda HUKUM METNI iki tamamen farkli hali AYIRT ETMIYORDU.
+  #       flask     -> kokte HIC hafiza adayi yok
+  #       BookSwap  -> `memory-bank/` alti dosya TANINDI, hicbiri `canli` degil
+  #     Durma blogunun sha'si DORT ayri agacta (flask · BookSwap · axios ·
+  #     hafiza-kur) BIREBIR AYNIYDI. Arac BILDIGI seyi hukmune koymuyordu.
+  #     22/22 `memory-bank/` deposunda `canli` YOK (`MEMORY-BANK/*` -> `disarida`),
+  #     yani bu UC DURUM DEGIL, sektorun en yaygin konvansiyonunda VARSAYILAN hal.
+  #
+  #     TEK KAPI (kilit "yalniz hukum ayrimi", Onur 16 Agu): envanteri BOS ve
+  #     DOLU agacin durma bloklari BIREBIR AYNI OLAMAZ. Karsilastirma yol-normalize
+  #     edilir; yoksa iki farkli dizin adi SAHTE bir fark uretir ve kapi KOR olur.
+  #
+  #     IKI MUTANT, AYNI KAPI, AYRI SABOTAJ: M-1 ayrim satiri mesajdan silinir
+  #     (= md.8 oncesi hal) · M-2 ayrim SABIT metne baglanir (satir basilir ama
+  #     bilgi tasimaz — "bir sey yazdim" ile "AYIRT ETTIM" ayni sey degildir).
+  #
+  #     KANIT: kapi md.8 ONCESI motora karsi kosuldu ve KIRMIZI yandi; mutantlar
+  #     orada KURULAMADI (capa yok) ve arac sessiz PASS yerine OLCULEMEDI dedi.
+  #
+  #     UC PLATFORM ve `continue-on-error` YOK. `| tee` exit kodunu YUTMAZ.
+  # ---------------------------------------------------------------------------
+  hukum_ayrimi_kapisi:
+    name: hukum ayrimi mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: bir kapi + iki mutant
+        shell: bash
+        run: python faz0/hukum_ayrimi_mutanti.py 2>&1 | tee hukum-ayrimi-cikti.txt
+      - name: hukum ayrimi ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hukum-ayrimi-${{ matrix.os }}
+          path: hukum-ayrimi-cikti.txt
+          if-no-files-found: warn

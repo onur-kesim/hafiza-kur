@@ -150,7 +150,16 @@ BEKLENEN = {
 #     BAGIMSIZ olculdu: `python -m radon cc -s skill/scripts/hafiza.py` ->
 #     `cmd_devral - F (97)`, `cmd_isir - C (17)`; ayni radon eski motorda 88 diyor.
 #     Yani ikili (arac, radon) YENI degerde de anlasiyor.
-CIPA = {"cmd_isir": 17, "cmd_devral": 97}
+#   16 Agu 2026: cmd_devral 97 -> 99. Sebep BILINEN ve BEYANLI — BITTI md.8
+#     durma HUKMUNE ayrim satirini ekledi (`_md8_ayrim` kosullu ifadesi: 1 If +
+#     1 comprehension). CC>20 kumesi BUYUMEDI (hala 5), birlesik `ihlal` 9'da
+#     KALDI — yani CLAUDE.md §5'teki kesim kararinin kapsami degismedi.
+#     BAGIMSIZ caprazlama (ayni oturum, ayni kap):
+#       python -m radon cc -s <md.8 ONCESI motor>  -> `cmd_devral - F (97)`
+#       python -m radon cc -s skill/scripts/hafiza.py -> `cmd_devral - F (99)`
+#     Ikili (arac, radon) 99'da da anlasiyor. Capa ELLE ve ONCE degistirildi;
+#     motor degisiminden SONRA aracin dedigi sayi kopyalanmadi.
+CIPA = {"cmd_isir": 17, "cmd_devral": 99}
 
 # ------------------------------------------------------------------ MUTANTLAR
 # (ad, aciklama, [(eski, yeni)], ayirt eden ornek)

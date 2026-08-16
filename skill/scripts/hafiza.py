@@ -2879,8 +2879,25 @@ def cmd_devral(a):
     # Yani olcut, ugruna yazildigi iki ornegi ISKALIYORDU.
     # ADDITIVE: taninan `canli` VARSA akis bugunku gibidir; mevcut projeler
     # etkilenmez. Yeni defteri ACMAK hala mumkun — ama artik KILITLE istenir.
+    # --- md.8: DURMA HUKMU IKI HALI AYIRT EDER (Onur kilidi 16 Agu 2026) -----
+    # OLCULDU (50 + 22 gercek public depo, salt okuma): "kokte HIC hafiza adayi
+    # yok" (flask) ile "alti dosyalik CANLI bir `memory-bank/` TANINDI ama
+    # hicbiri `canli` rolunde degil" (BookSwap) hali BIREBIR AYNI hukmu
+    # basiyordu — dort ayri agacta durma blogunun sha'si ayniydi. Arac BILDIGI
+    # seyi hukmune koymuyordu; kullanici "hafizami bulamadi" diye okuyordu.
+    # Not: bu satir `if not adaylar:` in USTUNDE durur — M-3'un capasi
+    # (`if not adaylar:` + hemen ardindan gelen `oldur("DEVIR DURDU`) IKI
+    # BITISIK SATIRDIR, araya girmek onu kirar (CI #58 boyle kirmizi yandi).
+    # ADDITIVE: tek satir eklenir, mevcut hukum metni ve cikis kodu degismez.
+    _md8_ayrim = ("HIC dosya TANINMADI — bu agacta hafiza adayi yok."
+                  if not envanter else
+                  "AMA %d dosya BASKA rollerde TANINDI (%s) — envanter yukarida; "
+                  "biri projenin gercek defteri OLABILIR."
+                  % (len(envanter),
+                     ", ".join(sorted(set(_rol for _r, _rol, _k in envanter)))))
     if not adaylar:
         oldur("DEVIR DURDU — bu agacta `canli` rolunu ustlenen TANINAN dosya YOK.\n"
+              "  %s\n"
               "  BOS bir defter ACMIYORUM: projenin hafizasi baska bir dosyada\n"
               "  yasiyor olabilir ve IKI DEFTER olculebilirligin kendisini bitirir.\n"
               "  Envanter yukarida. Birini sec:\n"
@@ -2889,7 +2906,8 @@ def cmd_devral(a):
               "   2. Gercekten YENI defter ac : "
               "python hafiza.py devral --esle canli=PROJE_HAFIZA.md --kok=\"%s\"\n"
               "   3. Once yalnizca BAK (yazmaz): "
-              "python hafiza.py devral --kesif --kok=\"%s\"" % (kok, kok, kok))
+              "python hafiza.py devral --kesif --kok=\"%s\""
+              % (_md8_ayrim, kok, kok, kok))
     # --- md.7(c): COKLU `canli` UYARI DEGIL KAPI (Onur kilidi 15 Agu) ----
     # Olculdu: bugune kadar motor "birden cok aday" diye UYARIYOR, sonra ilkini
     # secip CIKIS 0 veriyordu; oteki defter oksuz kaliyordu. Iki canli defter,

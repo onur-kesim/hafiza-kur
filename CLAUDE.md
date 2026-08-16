@@ -18,7 +18,7 @@ değişiklik, getirdiği kolaylık ne olursa olsun yanlıştır. Doktrin: ölç�
 geri getirme · İngilizce kanonik komut + Türkçe alias · depo PUBLIC ama YAYIN YOK · çıkış-kodu
 sözleşmesi kırılırsa minor artar.
 
-## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · 15 Ağu: eski md.6 KESİLDİ §5; md.6 ve md.7 açıldı+kapandı — **7 ✅ / 7**)
+## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · eski md.6 KESİLDİ §5 · md.6-7 15 Ağu, md.8 16 Ağu — **8 ✅ / 8**)
 - [x] `kur/kapi/isir/not/derle/devral` Linux'ta koşuyor (CI yeşil)
 - [x] **Windows'ta** tam hüküm — `win_dal_mutanti` CI #43 `cde1998` + gerçek Windows'ta
       `kur→kapi→isir` CI #46 `5d81838`
@@ -27,14 +27,16 @@ sözleşmesi kırılırsa minor artar.
 - [x] `.skill` taze projede 5 dk'da çalışır — `paketten_kos.py` BELGEYE karşı ölçer, CI #46 `5d81838`
 - [x] 25 Ağu okuru README ile deneyebilir — `readme_mutanti.py` 3 kapı/6 mutant, beklenen değerler
       BLOKTAN okunur, CI #49 `fba20c8`. ŞERH (hepsinde): ölçen CI'dır, insan eli değil.
-- [x] **Hafızası KENDİ ADIYLA duran projeyi devralabilir** — `devral --kesif` + `--esle` + DURMA
-      KURALI; `devral_kesif_mutanti.py` 3 kapı/3 mutant, CI #57 `ccd9721` (94 iş/0 başarısız).
-      Ölçüt (c)'nin VE'li ilk yazımı DELİKTİ, tek koşula indi; M-3 tam onu kurar.
-- [x] **İki defterin AYRIŞTIĞINI motordan öğrenir** — motorun yazdığı blok `sahip=` taşır (yoksa
-      `H10-SAHIP` **ÖLÇÜLEMEDİ**, sessiz sahiplenme yok); çoklu `canli` UYARI DEĞİL **KAPI**
-      (çıkış ≠ 0, diske sıfır bayt, `--esle` ister). `ayrisma_mutanti.py` 3 kapı/3 mutant,
-      CI #59 `5f05b14` (97 iş / 0 başarısız). Kutu 22 Ağu'ydu, 15 Ağu'da kapandı; lafız iki kez
-      ölçülüp DARALTILDI (§5). Kural evi KAPSAM DIŞI. ŞERH: ölçen CI'dır.
+- [x] **Hafızası KENDİ ADIYLA duran projeyi devralabilir** — `devral --kesif`+`--esle`+DURMA
+      KURALI; `devral_kesif_mutanti.py` 3/3, CI #57 `ccd9721`. Lafız (c) DELİKTİ, daraltıldı.
+- [x] **İki defterin AYRIŞTIĞINI motordan öğrenir** — blok `sahip=` taşır (yoksa `H10-SAHIP`
+      ÖLÇÜLEMEDİ), çoklu `canli` KAPI. `ayrisma_mutanti.py` 3/3, CI #59 `5f05b14`. Lafız İKİ
+      KEZ daraltıldı (§5); kural evi KAPSAM DIŞI.
+- [x] **Durma HÜKMÜ iki hali AYIRT EDER** — envanteri BOŞ ağaç ile rol atanmış ağaç aynı
+      hükmü basamaz. ÖLÇÜLDÜ (72 gerçek depo): dört ayrı ağaçta durma bloğunun
+      sha'sı AYNIYDI; 22/22 `memory-bank/` deposunda `canli` YOK (`MEMORY-BANK/*`→`disarida`),
+      yani varsayılan hal. `hukum_ayrimi_mutanti.py` 1 kapı/2 mutant; kapı md.8 ÖNCESİ motorda
+      KIRMIZI yandı. Çapa `cmd_devral` 97→99 (radon çaprazlı); `ihlal` 9'da KALDI.
 
 ## 3. SIRADAKİ İŞ (tek madde)
 <`DURUM.md`'den takip edilir; tek dikey dilim.>

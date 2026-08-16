@@ -1,34 +1,31 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 7 ✅ / 7 — LİSTE KAPALI** (CI #59 `5f05b14`: 97 iş, **0 başarısız**)
-Son güncelleme: 15 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+**BİTTİ sayacı: 8 ✅ / 8 — LİSTE KAPALI** (md.8 DİSKTE, **PUSH EDİLMEDİ** → CI hükmü YOK)
+Son güncelleme: 16 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
-## 🔴 SIRADAKİ İŞ — liste KAPALI; yeni madde ONUR KİLİDİ bekliyor
-AMAÇ KAPISI (İŞLEYİŞ md.3) yeni `faz0/` aracını yasaklıyor. Üç aday: **25 Ağu yazısı** (BİTTİ
-maddesi GEREKTİRMEZ, bugün başlanabilir, son tarih 10 gün) · **depo atfı history rewrite**
-(son tarih **24 Ağu**, force-push → ayrı açık onay + `git bundle` yedeği) · **H16 YAPI kapısı**
-(tasarım onaylı, kod yok, ADR ister). Ayrıca md.7'nin ayırt edici hâli (kural evi ↔ canlı içerik
-ayrışması) kapsam **B**'yi gerektiriyor ve md.8 olarak açılabilir — bugünkü md.7 bir SAĞLIK
-KONTROLÜDÜR, piyasa ayırt edicisi değildir; 25 Ağu yazısında böyle geçmeli.
+## 🔴 SIRADAKİ İŞ — md.8 PUSH bekliyor; sonrası ONUR KİLİDİ
+Adaylar: **`memory-bank/` kapsam kararı** (ölçüldü: 22/22 depoda `canli` YOK, `MEMORY-BANK/*`
+→ `disarida`; `devral`ın vaadi ile ad tablosu ayrışıyor) · **öneri sıralaması** (tanınan hafıza
+varken "YENİ defter aç" ilk sırada — çift defteri önlemek için duran araç ikinciyi öneriyor) ·
+**H16 YAPI kapısı** (tasarım onaylı, kod yok, ADR ister). 25 Ağu yazısının TASLAĞI bitti
+(`fable dosyalama\25agu-yazisi\`, depo DIŞI); yayın kararı ayrı.
+🔴 **depo atfı history rewrite KONUSUZ** — 16 Ağu'da ölçüldü, iş 10 Ağu'da bitmiş:
+`git shortlog -sne --all` → **63/63 tek kimlik**. "Bekliyor" kaydı üç belgede BAYATLAMIŞTI.
 
-## ✅ md.7 KAPANDI (CI #59 `5f05b14`, 97 iş / 0 başarısız) — TEK SATIRA İNDİ
-`sahip=` alanı (`kur` iskeleti → `hafiza-kur` · `derle`/`bloklastir` → `proje`; alan yoksa
-`H10-SAHIP` ÖLÇÜLEMEDİ, FAIL değil) + çoklu `canli` KAPISI (çıkış 2, diske sıfır bayt).
-`faz0/ayrisma_mutanti.py` 3 kapı / 3 mutant AYRI eksende, üç platformda. Altın küme yeniden
-üretildi (28 satır, hepsi `H2:` boyut — 4 × `sahip=` = 84 bayt). Lafız İKİ KEZ ölçülüp daraltıldı.
-
-## 25 AĞU YAZISI — ikinci dikey dilim
-Eski md.6 KESİLDİ (`CLAUDE.md` §5 — zaman değil ÖLÇÜT kusuru); **kurulum YAPILMADI**. Yazıda
-"ölçülemedi + sebebi" diye geçer. En güçlü malzeme: **ölçüt YAZMAK ile ölçüt SINAMAK ayrı işlerdir**
-— üç ölçüt lafzı kod yazılmadan somut vakada kırıldı.
+## ✅ md.8 KAPANDI (kod diskte, CI hükmü BEKLEMEDE) — durma hükmü ayrımı
+Envanteri BOŞ ağaç ile rol atanmış ağaç aynı durma hükmünü basamaz (`_md8_ayrim`).
+`faz0/hukum_ayrimi_mutanti.py` 1 kapı / 2 mutant. KANIT: kapı md.8 ÖNCESİ motorda KIRMIZI
+yandı, sonrasında YEŞİL. Çapa `cmd_devral` 97→99, BAĞIMSIZ `radon` ile çaprazlandı; `ihlal`
+9'da kaldı. Batarya (43 araç): 24 yeşil · 15 ÖLÇÜLEMEDİ · 3 kırmızı — üçü de motor KOPYA
+DEPODA değiştirilerek öncesi/sonrası ölçüldü, ikisi de aynı ⇒ ÇEVRE, benim değil.
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**md.6** `devral --kesif`+`--esle`+DURMA KURALI, `devral_kesif_mutanti` 3 kapı/3 mutant, CI #57
-`ccd9721` (94/0); gerileme: altın küme 22 ölçüm BIT-BIT FARK YOK · `isir` 34/34 · fazA 6/0 ·
-`ihlal` 8→9, `cmd_devral` çapası 88→97 · `DEVIR_ADAPTORU` motorda TEK EV ·
-md.2+4 CI #43 `cde1998` + #46 `5d81838` · md.5 README kanıt bloğu CI #49 `fba20c8` (aracın kendi
-`shlex` kusurunu ÖLÇÜM buldu, CI değil) · `devral` gerçek Windows'ta gerçek projede (421 MB/1001
-dosya/git'li) exit 0, 0 satır silindi — **`devral`'ın TEK canlı ölçümü budur** · yol ayracı
-körlüğü kapandı (`_rel()` + 21 çağrı) · CI #41 KIRMIZI'dan #46'ya.
+**md.6** `--kesif`+`--esle`+DURMA KURALI, `devral_kesif_mutanti` 3/3, CI #57 `ccd9721` (94/0) ·
+**md.7** `sahip=` + çoklu `canli` KAPISI, `ayrisma_mutanti` 3/3, CI #59 `5f05b14` (97/0), altın
+küme yeniden üretildi (28 satır, hepsi H2 boyut) · md.2+4 CI #43 `cde1998` + #46 `5d81838` ·
+md.5 README kanıt bloğu CI #49 `fba20c8` (aracın `shlex` kusurunu ÖLÇÜM buldu, CI değil) ·
+yol ayracı körlüğü kapandı (`_rel()` + 21 çağrı) · CI #41 KIRMIZI'dan #46'ya.
+🔴 "**`devral`'ın TEK canlı ölçümü**" ifadesi 16 Ağu'da DÜŞTÜ: `--kesif` **72 gerçek public
+depoda** koşuldu (50 genel + 22 `memory-bank/`), salt okuma, sıfır bayt yazıldı.
 
 ## Bilinen sınırlar (ölçülmüş)
 - 🔴 **KAPININ KENDİ SENARYOSU KAPIYI KIRMIZI YAKABİLİR:** md.7/A2 `kur`dan sonra canlıyı ELLE
@@ -37,14 +34,17 @@ körlüğü kapandı (`_rel()` + 21 çağrı) · CI #41 KIRMIZI'dan #46'ya.
   VE'li yazımı `CLAUDE.md`+`DURUM.md` projesinde hiç ateşlenmiyordu · md.7'nin lafzi D'si 6 gerçek
   şeklin 4'ünde yanıyordu (3'ü meşru) · md.7(b) SAĞLIKLI akışta yanıyordu (`derle` eski bloğu
   arşive taşır). ⇒ ölçüt yazılır yazılmaz vakaya koşulur; kilit ondan SONRA.
-- 🔴 **ÖLÇÜMÜ KOŞTUM, ONU KORUYAN KAPIYI KOŞMADIM — İKİ KEZ ISIRDI, ikisini de CI yakaladı:**
-  (1) CI #56: `karmasiklik.py` koştum, çapasını koruyan `karmasiklik_mutanti.py`'yi koşmadım.
-  (2) CI #58: H10 gövdesine `_h10_sahiplik` satırı ekledim, `h10_bolme_mutanti.py`'yi koşmadım —
-  M-H10e'nin ÇAPASI İKİ BİTİŞİK SATIRDI, araya girince kırıldı ve araç OLCULEMEDI dedi (exit 2).
-  ⇒ **Kapı gövdesine satır eklerken O KAPININ mutant aracının ÇAPALARINA bakılır; araç EL İLE
-  SEÇİLMEZ, TÜM `faz0` bataryası koşulur.** Bataryayı koşarken staged uploads'tan gelen BAYAT
-  kopyaların üzerine yazmamasına dikkat — iki SAHTE kırmızı öyle doğdu (çapa 88, bayat altın küme).
-  Çevre kırmızısını ayırmanın yolu: aynı kabı TEMİZ motorla da koş (fazB/y2/y4 ikisinde de aynı).
+- 🔴 **ÖLÇÜMÜ KOŞTUM, ONU KORUYAN KAPIYI KOŞMADIM (CI #56, #58):** kapı gövdesine satır eklerken
+  O KAPININ mutant ÇAPALARINA bakılır (M-H10e'ninki İKİ BİTİŞİK SATIRDI); araç EL İLE SEÇİLMEZ,
+  **TÜM `faz0` bataryası** koşulur. md.8'de uygulandı: `_md8_ayrim` `if not adaylar:`in ÜSTÜNE
+  kondu, çapa kırılmadı. Çevre kırmızısı TEMİZ motorla ayrılır; staged BAYAT kopya üzerine yazmasın.
+- 🔴 **ÖLÇÜM ALETİ DE YALAN SÖYLER (16 Ağu, ÜÇ KEZ):** `| tail` sonrası `$?` boruyu ölçtü ·
+  toplayıcıdaki `d[rol]=dosya` sözlüğü (son yazan kazanır) OLMAYAN bir kusur UYDURDU ve bir
+  bağımsız denetim turu ona kuruldu · argümanı YOK SAYAN araca yol verip A/B yapmak iki kez de
+  aynı motoru ölçtü. ⇒ çok-değerli alan LİSTEYE yazılır · hüküm öncesi N=1 HAM ÇIKTI gözle
+  okunur · motor A/B'si KOPYA DEPODA dosya değiştirilerek yapılır.
+- 🔴 **README'nin Windows cümlesi BAYAT** (ölçüldü 16 Ağu): `win_dal_mutanti` 4/4 ısırıyor ve
+  CI #60'ta `windows-latest` kolu yeşil. README "o dal ölçülmemiştir" diyor — DÜZELTİLMELİ.
 - 🔴 **ÇAPA, ARACIN KENDİ ÇIKTISINDAN GÜNCELLENMEZ** (yoksa kendini onaylar): 88→97 BAĞIMSIZ
   `radon cc` ile çaprazlandı. **YORUMDAKİ CANLI SAYI BAYATLAR:** `capraz.yml`'deki "bugün 14
   ihlal" iki günde 9/5/9 oldu; sayı silindi, "artefakttan oku" kondu.
