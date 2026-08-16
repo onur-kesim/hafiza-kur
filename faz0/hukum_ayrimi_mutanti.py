@@ -44,6 +44,7 @@ CIKIS KODLARI
   1  kapi kirmizi ya da bir mutant KACTI (kapi kor)
   2  OLCULEMEDI (motor okunamadi, mutant kurulamadi, git yok) — sessiz PASS yok
 """
+import hashlib
 import io
 import os
 import re
@@ -102,11 +103,24 @@ def kos(motor, kok, *ek):
 
 
 def durma_blogu(cikti, kok):
-    """Hukum blogu = ilk `HATA:` satirindan sonu. Yol MASKELENIR."""
+    """Hukum blogu = ilk `HATA:` satirindan sonu. Yol MASKELENIR.
+
+    🔴 OLCULDU — CI #61 bu kapiyi KOR YAKALADI (uc platformda birden):
+    yolu `kok` ile ESITLIK uzerinden maskelemek KIRILGANDIR. Motor `--kok`
+    argumanina `os.path.abspath` uygular; bastigi yol gonderdigimden BIR
+    KARAKTER farkli olabilir (kosucuda oldu, yerelde olmadi). O zaman
+    maskeleme SESSIZCE basarisiz olur, iki senaryonun bloklari senaryo adi
+    yuzunden HEP farkli kalir, karsilastirma HEP "ayri hukum" der ve kapi
+    HEP YESIL gorunur — yani hicbir sey olcmez. Kanit: `--kok`a `/./`
+    eklenince maskeleme tuttu mu = False, mutantlar KACTI.
+    Artik yol ICERIGINE bakilmadan DESENLE silinir; ayrica maskelemenin
+    gerceklestigi CAGIRAN tarafindan DOGRULANIR (`<KOK>` yoksa OLCULEMEDI).
+    """
     i = cikti.find("HATA:")
     if i < 0:
         return None
     blok = cikti[i:]
+    blok = re.sub(r'--kok="[^"]*"', '--kok="<KOK>"', blok)
     blok = blok.replace(kok, "<KOK>").replace(kok.replace(os.sep, "/"), "<KOK>")
     return re.sub(r"\s+", " ", blok).strip()
 
@@ -134,8 +148,18 @@ def kapi_1(motor, taban):
         blok = durma_blogu(cikti, kok)
         if blok is None:
             b.append("%s: cikis %d ama `HATA:` blogu YOK" % (ad, kod))
+        elif "<KOK>" not in blok:
+            # Maskeleme tutmadiysa karsilastirma GUVENILMEZ. Sessizce "ayri
+            # hukum" demek, kapiyi KOR birakmaktir (CI #61'in tam kusuru).
+            b.append("%s: yol MASKELENEMEDI — karsilastirma guvenilmez, "
+                     "kapi kor kalirdi" % ad)
+            blok = None
         bloklar[ad] = blok
     if len(bloklar) == 2 and None not in bloklar.values():
+        h = dict((k, hashlib.sha256(v.encode("utf-8")).hexdigest()[:8])
+                 for k, v in bloklar.items())
+        sys.stdout.write("      imza: s_bos %s · s_dolu %s\n"
+                         % (h["s_bos"], h["s_dolu"]))
         if bloklar["s_bos"] == bloklar["s_dolu"]:
             b.append("AYRIM YOK — envanteri BOS ve DOLU agac BIREBIR AYNI "
                      "hukmu basiyor (md.8 kusuru)")
