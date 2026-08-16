@@ -97,9 +97,24 @@ def kur_senaryo(taban, ad, mb):
 
 
 def kos(motor, kok, *ek):
+    """stdout ve stderr AYRI yakalanir — BIRLESTIRILMEZ.
+
+    🔴 OLCULDU (CI #61 ve #62, uc platformda birden; yerelde ASLA):
+    `stderr=subprocess.STDOUT` ile birlestirmek bu kapiyi KOR EDIYORDU.
+    Motor hukmu `oldur()` ile STDERR'e yazar (tamponsuz), envanteri
+    `print()` ile STDOUT'a (boru arkasinda BLOK TAMPONLU). Boru arkasinda
+    stderr ONCE bosalir, yani HATA blogunun ARDINA envanter satirlari duser.
+    `cikti[find("HATA:"):]` o zaman envanteri de yutar — ve envanter
+    senaryoya gore FARKLIDIR (s_bos 0 satir, s_dolu 6 `disarida` satiri).
+    Sonuc: iki blok HEP farkli, mutantlar HEP kacar, kapi HEP yesil gorunur.
+    Yerelde tampon sirasi tersti; kapi bu yuzden UC KEZ yesil dedi.
+    Akislari ayirmak sinifi kokten kapatir: hukum yalniz stderr'den okunur.
+    """
     p = subprocess.run([sys.executable, motor, "devral", "--kok=" + kok] + list(ek),
-                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    return p.returncode, p.stdout.decode("utf-8", "replace")
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return (p.returncode,
+            p.stdout.decode("utf-8", "replace"),
+            p.stderr.decode("utf-8", "replace"))
 
 
 def durma_blogu(cikti, kok):
@@ -138,16 +153,22 @@ def kapi_1(motor, taban):
     bloklar = {}
     for ad, mb in (("s_bos", False), ("s_dolu", True)):
         kok = kur_senaryo(taban, ad, mb)
-        kod, cikti = kos(motor, kok)
+        kod, _std, hata = kos(motor, kok)
         if kod == 0:
             b.append("%s: cikis 0 — durma kurali hic ateslenmedi" % ad)
             continue
         yazildi = diske_yazildi_mi(kok)
         if yazildi:
             b.append("%s: DURDU ama diske yazdi (%s)" % (ad, yazildi))
-        blok = durma_blogu(cikti, kok)
+        blok = durma_blogu(hata, kok)
         if blok is None:
             b.append("%s: cikis %d ama `HATA:` blogu YOK" % (ad, kod))
+        elif "taranan yuzey" in blok:
+            # Hukum blogu ENVANTER satiri tasiyorsa akislar karismis demektir
+            # (CI #61/#62'nin kok nedeni). Karsilastirma guvenilmez => KIRMIZI.
+            b.append("%s: hukum blogu ENVANTER satiri tasiyor — akislar "
+                     "karismis, karsilastirma guvenilmez" % ad)
+            blok = None
         elif "<KOK>" not in blok:
             # Maskeleme tutmadiysa karsilastirma GUVENILMEZ. Sessizce "ayri
             # hukum" demek, kapiyi KOR birakmaktir (CI #61'in tam kusuru).
@@ -223,8 +244,8 @@ def olcum_md7_kolu(motor, taban):
     for x in ("MEMORY.md", "PROJE_HAFIZA.md"):
         with io.open(os.path.join(kok, x), "w", encoding="utf-8") as f:
             f.write("x\n")
-    kod, cikti = kos(motor, kok)
-    coklu = "TANINAN 2 dosya var" in cikti
+    kod, _std, hata = kos(motor, kok)
+    coklu = "TANINAN 2 dosya var" in hata
     return kod, coklu
 
 
