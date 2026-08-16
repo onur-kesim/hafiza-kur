@@ -3,11 +3,11 @@
 Son güncelleme: 16 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## 🔴 SIRADAKİ İŞ — liste 8/8 KAPALI; yeni madde ONUR KİLİDİ ister
-Adaylar: **`memory-bank/` kapsam kararı** (ölçüldü: 22/22 depoda `canli` YOK, `MEMORY-BANK/*`
-→ `disarida`; `devral`ın vaadi ile ad tablosu ayrışıyor) · **öneri sıralaması** (tanınan hafıza
-varken "YENİ defter aç" ilk sırada — çift defteri önlemek için duran araç ikinciyi öneriyor) ·
-**H16 YAPI kapısı** (tasarım onaylı, kod yok, ADR ister). 25 Ağu yazısı TASLAK hâlde
-(`fable dosyalama\25agu-yazisi\`, depo DIŞI); yayın kararı ayrı.
+✅ `memory-bank/` KAPSAM KARARI KAPANDI (Onur kilidi 16 Ağu): eşleme KALIR — kusur değil
+KAPSAM SINIRI. Gerekçe + B şıkkının elenmesi: `denetim/2026-08-16_*`.
+Adaylar: **md.9 GÖRÜNÜRLÜK** (durma mesajı envanterdeki adayları göstermiyor, "YENİ defter
+aç" hâlâ ilk sırada) · **H16 YAPI kapısı** (tasarım onaylı, kod yok, ADR ister).
+25 Ağu yazısı TASLAK (`fable dosyalama\25agu-yazisi\`, depo DIŞI); yayın kararı ayrı.
 🔴 depo atfı history rewrite KONUSUZ: 10 Ağu'da bitmiş (63/63 tek kimlik, 16 Ağu ölçümü).
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)

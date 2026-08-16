@@ -8,8 +8,9 @@ KAPSAM SINIRI mı?
 depoda `canli` aday YOKTUR ve `devral` durur. Yani "hafızası olan projeyi devral"
 diye tanımlanan komut, hafızası gerçekten olan projelerin tamamında reddediyordu.
 
-**Karar önerisi: EŞLEME KALIR — bu bir kusur değil, kapsam sınırıdır.**
-Karar Onur'undur; bu kayıt yalnız ölçümü ve gerekçeyi sabitler.
+## ✅ KARAR (Onur kilidi, 16 Ağu 2026): EŞLEME KALIR
+`MEMORY-BANK/*` → `disarida` eşlemesi **kusur değil, KAPSAM SINIRIDIR.** Yeniden
+açmak ADR ister. Gerekçe aşağıda ölçülmüştür; açtığı iş md.9'dur (görünürlük).
 
 ---
 
