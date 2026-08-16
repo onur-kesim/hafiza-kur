@@ -1,24 +1,20 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 8 ✅ / 8 — LİSTE KAPALI** (md.8 DİSKTE, **PUSH EDİLMEDİ** → CI hükmü YOK)
+**BİTTİ sayacı: 8 ✅ / 8 — LİSTE KAPALI** (CI #63 `2d6af96`: 100 iş, **0 başarısız**)
 Son güncelleme: 16 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
-## 🔴 SIRADAKİ İŞ — md.8 PUSH bekliyor; sonrası ONUR KİLİDİ
+## 🔴 SIRADAKİ İŞ — liste 8/8 KAPALI; yeni madde ONUR KİLİDİ ister
 Adaylar: **`memory-bank/` kapsam kararı** (ölçüldü: 22/22 depoda `canli` YOK, `MEMORY-BANK/*`
 → `disarida`; `devral`ın vaadi ile ad tablosu ayrışıyor) · **öneri sıralaması** (tanınan hafıza
 varken "YENİ defter aç" ilk sırada — çift defteri önlemek için duran araç ikinciyi öneriyor) ·
-**H16 YAPI kapısı** (tasarım onaylı, kod yok, ADR ister). 25 Ağu yazısının TASLAĞI bitti
+**H16 YAPI kapısı** (tasarım onaylı, kod yok, ADR ister). 25 Ağu yazısı TASLAK hâlde
 (`fable dosyalama\25agu-yazisi\`, depo DIŞI); yayın kararı ayrı.
-🔴 **depo atfı history rewrite KONUSUZ** — 16 Ağu'da ölçüldü, iş 10 Ağu'da bitmiş:
-`git shortlog -sne --all` → **63/63 tek kimlik**. "Bekliyor" kaydı üç belgede BAYATLAMIŞTI.
-
-## ✅ md.8 KAPANDI (kod diskte, CI hükmü BEKLEMEDE) — durma hükmü ayrımı
-Envanteri BOŞ ağaç ile rol atanmış ağaç aynı durma hükmünü basamaz (`_md8_ayrim`).
-`faz0/hukum_ayrimi_mutanti.py` 1 kapı / 2 mutant. KANIT: kapı md.8 ÖNCESİ motorda KIRMIZI
-yandı, sonrasında YEŞİL. Çapa `cmd_devral` 97→99, BAĞIMSIZ `radon` ile çaprazlandı; `ihlal`
-9'da kaldı. Batarya (43 araç): 24 yeşil · 15 ÖLÇÜLEMEDİ · 3 kırmızı — üçü de motor KOPYA
-DEPODA değiştirilerek öncesi/sonrası ölçüldü, ikisi de aynı ⇒ ÇEVRE, benim değil.
+🔴 depo atfı history rewrite KONUSUZ: 10 Ağu'da bitmiş (63/63 tek kimlik, 16 Ağu ölçümü).
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
+**md.8** durma hükmü ayrımı (`_md8_ayrim`): envanteri BOŞ ve rol atanmış ağaç aynı hükmü
+basamaz. `hukum_ayrimi_mutanti` 1 kapı/2 mutant, CI #63 `2d6af96` (100/0). Kapı md.8 ÖNCESİ
+motorda KIRMIZI yandı. Çapa `cmd_devral` 97→99 (radon çaprazlı), `ihlal` 9'da kaldı.
+Kapı iki tur KÖR yandı (aşağıda) ·
 **md.6** `--kesif`+`--esle`+DURMA KURALI, `devral_kesif_mutanti` 3/3, CI #57 `ccd9721` (94/0) ·
 **md.7** `sahip=` + çoklu `canli` KAPISI, `ayrisma_mutanti` 3/3, CI #59 `5f05b14` (97/0), altın
 küme yeniden üretildi (28 satır, hepsi H2 boyut) · md.2+4 CI #43 `cde1998` + #46 `5d81838` ·
@@ -38,11 +34,15 @@ depoda** koşuldu (50 genel + 22 `memory-bank/`), salt okuma, sıfır bayt yazı
   O KAPININ mutant ÇAPALARINA bakılır (M-H10e'ninki İKİ BİTİŞİK SATIRDI); araç EL İLE SEÇİLMEZ,
   **TÜM `faz0` bataryası** koşulur. md.8'de uygulandı: `_md8_ayrim` `if not adaylar:`in ÜSTÜNE
   kondu, çapa kırılmadı. Çevre kırmızısı TEMİZ motorla ayrılır; staged BAYAT kopya üzerine yazmasın.
-- 🔴 **ÖLÇÜM ALETİ DE YALAN SÖYLER (16 Ağu, ÜÇ KEZ):** `| tail` sonrası `$?` boruyu ölçtü ·
-  toplayıcıdaki `d[rol]=dosya` sözlüğü (son yazan kazanır) OLMAYAN bir kusur UYDURDU ve bir
-  bağımsız denetim turu ona kuruldu · argümanı YOK SAYAN araca yol verip A/B yapmak iki kez de
-  aynı motoru ölçtü. ⇒ çok-değerli alan LİSTEYE yazılır · hüküm öncesi N=1 HAM ÇIKTI gözle
-  okunur · motor A/B'si KOPYA DEPODA dosya değiştirilerek yapılır.
+- 🔴 **ÖLÇÜM ALETİ DE YALAN SÖYLER — 16 Ağu'da BEŞ KEZ, sonuncusu İKİ CI TURU yaktı:**
+  `| tail` sonrası `$?` boruyu ölçtü · `d[rol]=dosya` sözlüğü OLMAYAN bir kusur UYDURDU (bir
+  bağımsız denetim turu ona kuruldu) · argümanı YOK SAYAN araca A/B iki kez aynı motoru ölçtü ·
+  eşitlik tabanlı yol maskelemesi sessizce başarısız oldu · **`stderr=STDOUT` birleştirmesi md.8
+  kapısını KÖR etti**: hüküm stderr'e tamponsuz, envanter stdout'a tamponlu gider ⇒ envanter
+  bloğun ARDINA düşüp onu senaryoya göre farklılaştırır ⇒ mutantlar HEP kaçar. CI #61+#62
+  yakaladı; **YEREL BEŞ AYRI ORTAMDA YEŞİL DEDİ.**
+  ⇒ akış BİRLEŞTİRİLMEZ · çok-değerli alan LİSTEYE · hüküm öncesi N=1 HAM ÇIKTI gözle okunur ·
+  motor A/B'si KOPYA DEPODA yapılır · normalizasyonun OLDUĞU ayrıca doğrulanır, yoksa ÖLÇÜLEMEDİ.
 - 🔴 **README'nin Windows cümlesi BAYAT** (ölçüldü 16 Ağu): `win_dal_mutanti` 4/4 ısırıyor ve
   CI #60'ta `windows-latest` kolu yeşil. README "o dal ölçülmemiştir" diyor — DÜZELTİLMELİ.
 - 🔴 **ÇAPA, ARACIN KENDİ ÇIKTISINDAN GÜNCELLENMEZ** (yoksa kendini onaylar): 88→97 BAĞIMSIZ

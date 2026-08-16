@@ -106,12 +106,20 @@ Bunlar gizlenmiyor; `skill/SKILL.md` §9'da tam listesi var. En önemlileri:
   bu yüzden tavan vardır ve canlı dosya **yol taşır, metin taşımaz**.
 
 - **Platform hükmü eşit değildir.** CI, ölçüm bataryasının tamamını Linux ·
-  Windows · macOS üzerinde `continue-on-error`suz koşar. Ama motorda platforma özgü
-  tek dal `sys.platform == "win32"` altındadır ve **o dal henüz bir mutantla
-  ölçülmemiştir** — doktrin gereği hükmü yoktur. macOS'a özgü kod yolu ise hiç
-  yoktur; macOS'un bilinen mayını (dosya adlarında NFC/NFD ayrışması) bir kapıyla
-  değil bir **kaçınma kuralıyla** yönetiliyor: disk adlarına Türkçe diyakritik
-  konmuyor. Kural, kapı değil — ve kuralı zorlayan bir şey yok.
+  Windows · macOS üzerinde `continue-on-error`suz koşar. Motorda platforma özgü tek
+  dal `sys.platform == "win32"` altındadır ve `faz0/win_dal_mutanti.py` onu ölçer:
+  envanter ve davranış kapıları temiz, **4/4 mutant ayrı eksende ısırıyor**. Ama o
+  aracın kendi hükmü **"YEŞİL SINIRLI"**: üçüncü kapısı (gerçek `win32` üzerinde
+  canlı koşum) yalnız Windows kolunda çalışır, diğer iki platformda `ÖLÇÜLEMEDİ`
+  basar. Yani hüküm vardır ama her platformda aynı ağırlıkta değildir.
+  > *Bu madde bir süre "o dal henüz bir mutantla ölçülmemiştir" diyordu. 16 Ağu
+  > 2026'da ölçüldü: cümle bayatlamıştı — mutant zaten vardı ve ısırıyordu.
+  > Tazeliği kendin sına: `python3 faz0/win_dal_mutanti.py`*
+
+  macOS'a özgü kod yolu ise hiç yoktur; macOS'un bilinen mayını (dosya adlarında
+  NFC/NFD ayrışması) bir kapıyla değil bir **kaçınma kuralıyla** yönetiliyor: disk
+  adlarına Türkçe diyakritik konmuyor. Kural, kapı değil — ve kuralı zorlayan bir
+  şey yok.
 - **"Gerçek bir projede bir hafta fiilen kullanım" maddesi KESİLDİ** (15 Ağu 2026).
   Sebep zaman değil, ölçütün kendisi: token kazancı ancak bu sistem mevcut defterin
   **yerine geçerse** dürüst ölçülebilir. Aday projede mevcut defter kanonik kalacaktı;
