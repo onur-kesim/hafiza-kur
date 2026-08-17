@@ -1,7 +1,7 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (yerel ölçüm: `hukum_tutarliligi_mutanti` 1/1 kapı
-temiz + 2/2 mutant KENDİ ekseninde ISIRDI, kapı md.10 ÖNCESİ motorda KIRMIZI yandı; CI push
-sonrası numara/sha ile güncellenir — commit/push Onur'da. Taban: CI #70 `818dc746`, 103/0)
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #71 `afa53fc2`: 106 iş, 0 başarısız**;
+`hukum tutarliligi mutanti` ÜÇ platformda da yeşil. Kapı md.10 ÖNCESİ motorda KIRMIZI yandı.
+Claude Code YAZDI, Cowork taze klondan BAĞIMSIZ DENETLEDİ — disk = HEAD bit-bit, 93/93 dosya)
 Son güncelleme: 17 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
