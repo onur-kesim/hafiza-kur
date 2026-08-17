@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""FAZ 0 — HUKUM IC TUTARLILIGI MUTANTI (bir kapi + iki mutant) — BITTI md.10.
+"""FAZ 0 — HUKUM IC TUTARLILIGI MUTANTI (bir kapi + uc mutant) — BITTI md.10.
 
 NEDEN VAR (kaynak: md10-BRIEF.md, 17 Agu 2026, yedi gercek/sentetik agac + bir
 kenar hali, salt okuma, cikis 2 / diske sifir bayt): durma hukmunun AYRIM
@@ -27,20 +27,36 @@ bakmiyor. ⇒ bu yeni kapi md.9 ile ORTUSMUYOR (orstusen tespit korlugu riski
 yok); md.9'un kendi kapisi ayrica DOKUNULMADI (ADDITIVE, olculdu).
 
 NE OLCER — TEK KAPI, IKI AYRI BULGU DIZESI (kilit: "yalniz ayrim sayisi/rolu",
-Onur 17 Agu 2026)
+Onur 17 Agu 2026 · ONARILDI 17 Agu 2026, ikinci kilit asagida)
   KAPI-1 AYRIM SAYISI — iki senaryo (tek senaryoda SABIT bir sayi yazan
   mutant kacabilirdi):
       s_karma_1 : kok `DURUM.md` + `memory-bank/` 6 dosya -> 1 ici / 6 disi
-      s_karma_2 : kok `CLAUDE.md`+`DURUM.md` + `memory-bank/` 5 dosya
-                  -> 2 ici / 5 disi
+      s_karma_2 : kok `CLAUDE.md`+`DURUM.md`+`BORCLAR.md` + `memory-bank/`
+                  5 dosya -> 3 ici / 5 disi. UCUNCU dosya (`BORCLAR.md`)
+                  BILINCLI: rolu DURUM.md ile AYNI (`gunluk`), yani bu
+                  senaryoda 3 DOSYA ama yalniz 2 FARKLI ROL var — "dosya
+                  say" ile "rol say" ARTIK AYRI SAYI verir (onarim, asagida).
   Ayrim satiri DESENLE cekilir: `AMA (\\d+) dosya BASKA rollerde TANINDI
   \\(([^)]*)\\)`. Her senaryoda:
-    bulgu (a) — yakalanan sayi != kapsam ICI sayisi
-                ("ayrim sayisi KAPSAM DISI'yi da sayiyor")
+    bulgu (a) — yakalanan sayi != kapsam ICI DOSYA sayisi
+                ("ayrim sayisi kapsam ici DOSYA sayisi DEGIL")
     bulgu (b) — yakalanan rol listesinde `disarida` GECIYOR
                 ("ayrim cumlesinin rol listesinde disarida GECIYOR")
   Desen HIC eslesmezse -> OLCULEMEDI (hal-2'ye hic girilmemis demektir,
   senaryo bozulmustur; sessiz PASS yok).
+
+ONARIM (kaynak: md10-ONARIM-BRIEF.md, 17 Agu 2026, canli olcum, Onur kilidi):
+  ILK surumde s_karma_1 (1 dosya/1 rol) VE s_karma_2 (2 dosya/2 rol) HER
+  IKISINDE de kapsam ici DOSYA sayisi == FARKLI ROL sayisi idi. Motora
+  `% (len(ici),` -> `% (len(set(e[1] for e in ici)),` yamasi (DOSYA sayma
+  yerine ROL sayma kusuru) kuruldu ve kapi YESIL dedi — KUSURLU MOTORA YESIL.
+  Doktrin 1 ihlali: olcmediğine hukum verilmez.
+  ⇒ KILIT 2: bir kapinin senaryo kumesi, kapinin karsilastirdigi buyuklugu
+  RAKIPLERINDEN (burada: "dosya sayisi" vs "rol sayisi") AYIRT EDEBILMELIDIR.
+  `BORCLAR.md` eklenip s_karma_2 3 dosya/2 role cekildi; M-c bu ayrimin
+  KENDI KANITI olarak eklendi (asagida). s_karma_1 KASITLI DEGISMEDI: M-c'nin
+  s_karma_1'de KACMASI (1 dosya = 1 rol, ayirt edilemez) beklenen davranistir
+  — kacmiyorsa senaryo yanlis kurulmus demektir.
 
 NE OLCMEZ (hukum degil, SINIR — gizlenmez)
   1. Kirpma notunu (md.9-c: "N dosya KAPSAM DISI … listelenmedi") BU KAPI
@@ -53,7 +69,7 @@ NE OLCMEZ (hukum degil, SINIR — gizlenmez)
      §10) bu dosyayla KAPANDI — artik kapinin ICINDE kosuyor.
 
 CIKIS KODLARI
-  0  kapi temiz VE 2/2 mutant ISIRDI (her biri KENDI bulgusunu)
+  0  kapi temiz VE 3/3 mutant ISIRDI (her biri KENDI bulgusunu)
   1  kapi kirmizi ya da bir mutant KACTI (kapi kor)
   2  OLCULEMEDI (motor okunamadi, mutant kurulamadi, git yok, desen
      eslesmedi) — sessiz PASS yok
@@ -93,7 +109,7 @@ def _git_var():
         return False
 
 
-def kur_senaryo(taban, ad, durum=False, claude=False, mb_sayisi=0):
+def kur_senaryo(taban, ad, durum=False, claude=False, borclar=False, mb_sayisi=0):
     """s_karma_1 / s_karma_2 — TEK DEGISKEN: kapsam ici/disi karisimi. Hepsi
     ayni README.md'yi tasir, boylece fark BASKA bir seyden gelemez."""
     kok = os.path.join(taban, ad)
@@ -108,6 +124,9 @@ def kur_senaryo(taban, ad, durum=False, claude=False, mb_sayisi=0):
     if claude:
         with io.open(os.path.join(kok, "CLAUDE.md"), "w", encoding="utf-8") as f:
             f.write("# claude\n")
+    if borclar:
+        with io.open(os.path.join(kok, "BORCLAR.md"), "w", encoding="utf-8") as f:
+            f.write("# borclar\n")
     if mb_sayisi:
         d = os.path.join(kok, "memory-bank")
         os.makedirs(d)
@@ -173,7 +192,7 @@ def _senaryo_olc(motor, taban, ad, beklenen_ici, **kur_kw):
         return kirmizi, olculemedi
     sayi, roller = int(m.group(1)), m.group(2)
     if sayi != beklenen_ici:
-        kirmizi.append("%s: ayrim sayisi KAPSAM DISI'yi da sayiyor (%d, "
+        kirmizi.append("%s: ayrim sayisi kapsam ici DOSYA sayisi DEGIL (%d, "
                        "beklenen %d)" % (ad, sayi, beklenen_ici))
     if "disarida" in roller:
         kirmizi.append("%s: ayrim cumlesinin rol listesinde `disarida` "
@@ -186,7 +205,7 @@ def kapi_1_ayrim_sayisi(motor, taban):
     kirmizi, olculemedi = [], []
     for ad, beklenen_ici, kw in (
         ("s_karma_1", 1, {"durum": True, "mb_sayisi": 6}),
-        ("s_karma_2", 2, {"durum": True, "claude": True, "mb_sayisi": 5}),
+        ("s_karma_2", 3, {"durum": True, "claude": True, "borclar": True, "mb_sayisi": 5}),
     ):
         k, o = _senaryo_olc(motor, taban, ad, beklenen_ici, **kw)
         kirmizi += k
@@ -198,8 +217,12 @@ def kapi_1_ayrim_sayisi(motor, taban):
 # Motorun KAYNAGINDA str.replace; her biri `_tek_yerde` ile doGrulanir.
 # HER DUZELTMEYE AYRI MUTANT: M-a yalniz SAYI hesabini bozar (`len(ici)` ->
 # `len(envanter)`), M-b yalniz ROL listesini bozar (`for e in ici` ->
-# `for e in envanter`, join icinde). Biri digerinin bulgusunu da yakarsa
-# kapi o ekseni AYRI OLCMUYOR demektir (esdeger mutant != korluk dersi).
+# `for e in envanter`, join icinde), M-c SAYI hesabini FARKLI bir kusurla
+# bozar (`len(ici)` -> `len(set(e[1] for e in ici))`, DOSYA yerine ROL sayar
+# — onarimin kendi kaniti, md10-ONARIM-BRIEF.md). Biri digerinin bulgusunu
+# da yakarsa kapi o ekseni AYRI OLCMUYOR demektir (esdeger mutant != korluk
+# dersi). M-a ve M-c AYNI satiri (`% (len(ici),`) hedefler ama FARKLI degere
+# cevirir (M-a -> 7, M-c -> 2) — esdeger DEGILDIR, ikisi de bagimsiz olcer.
 def _tek_yerde(s, hedef):
     n = s.count(hedef)
     if n != 1:
@@ -227,9 +250,20 @@ def m_b_rol_bulasmasi(s):
     return s.replace(hedef, yeni, 1) if _tek_yerde(s, hedef) else None
 
 
+def m_c_rol_sayar(s):
+    """M-c: sayi, kapsam ici DOSYA sayisi yerine ROL sayisini basar.
+    YALNIZ `s_karma_2` (3 dosya / 2 rol) bunu ayirt edebilir — s_karma_1'de
+    1 dosya = 1 rol oldugu icin kacar. bulgu (a)'yi isirmali, (b)'yi
+    ISIRMAMALI (rol LISTESINE degil rol SAYISINA dokunuyor)."""
+    hedef = "                  % (len(ici),\n"
+    yeni = "                  % (len(set(e[1] for e in ici)),\n"
+    return s.replace(hedef, yeni, 1) if _tek_yerde(s, hedef) else None
+
+
 MUTANTLAR = [
     ("M-a sayi bulasmasi", m_a_sayi_bulasmasi, "bulgu (a) sayi"),
     ("M-b rol bulasmasi", m_b_rol_bulasmasi, "bulgu (b) rol"),
+    ("M-c rol sayar", m_c_rol_sayar, "bulgu (a) sayi"),
 ]
 
 
@@ -237,7 +271,7 @@ def main():
     _cikti_kodlamasini_guvenceye_al()
     yol = sys.argv[1] if len(sys.argv) > 1 else VARSAYILAN
     yol = os.path.abspath(yol)
-    print("=== HUKUM IC TUTARLILIGI MUTANTI (1 kapi + 2 mutant) === motor: %s · platform: %s"
+    print("=== HUKUM IC TUTARLILIGI MUTANTI (1 kapi + 3 mutant) === motor: %s · platform: %s"
           % (os.path.basename(yol), sys.platform))
     if not _git_var():
         print("SONUC: OLCULEMEDI — `git` yok; senaryolar git'li agac ister.")

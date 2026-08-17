@@ -1509,7 +1509,7 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
-  # HUKUM IC TUTARLILIGI KAPISI (BITTI md.10, Onur kilidi 17 Agu 2026) — 1 kapi/2 mutant
+  # HUKUM IC TUTARLILIGI KAPISI (BITTI md.10, Onur kilidi 17 Agu 2026) — 1 kapi/3 mutant
   #
   #     OLCULDU (kaynak: md10-BRIEF.md, yedi gercek/sentetik agac + bir kenar hali):
   #     durma hukmunun ayrim cumlesi (hal-2 dali) kapsam disi (`disarida`)
@@ -1526,11 +1526,20 @@ jobs:
   #     olcuyor, ayrim cumlesinin SAYISINA bakmiyor.
   #
   #     TEK KAPI, IKI AYRI BULGU DIZESI: bulgu (a) sayi bulasmasi (ayrim
-  #     sayisi kapsam disini da sayiyor) · bulgu (b) rol bulasmasi (ayrim
-  #     rol listesinde `disarida` geciyor). IKI mutant, HER BIRI KENDI
-  #     EKSENINI isirmali (M-a yalniz sayi, M-b yalniz rol) — biri
-  #     digerinin bulgusunu da yakarsa kapi o ekseni AYRI OLCMUYOR demektir
-  #     (esdeger mutant != korluk dersi).
+  #     sayisi kapsam ici DOSYA sayisi degil) · bulgu (b) rol bulasmasi (ayrim
+  #     rol listesinde `disarida` geciyor). UC mutant, HER BIRI KENDI
+  #     EKSENINI isirmali (M-a yalniz sayi/kapsam-disi, M-c yalniz
+  #     sayi/dosya-vs-rol, M-b yalniz rol) — biri digerinin bulgusunu da
+  #     yakarsa kapi o ekseni AYRI OLCMUYOR demektir (esdeger mutant != korluk
+  #     dersi).
+  #
+  #     ONARILDI 17 Agu 2026 (md10-ONARIM-BRIEF.md, ayni gun): ILK surumde
+  #     s_karma_1 VE s_karma_2'de kapsam ici DOSYA sayisi == FARKLI ROL sayisi
+  #     idi; "dosya say" yerine "rol say" kusuru (M-c) KACIYORDU — kapi
+  #     kusurlu motora YESIL dedi. s_karma_2'ye rolu DURUM.md ile AYNI
+  #     (`gunluk`) ucuncu bir dosya (`BORCLAR.md`) eklenip 3 dosya/2 role
+  #     cekildi; M-c bu ayrimin kendi kaniti. M-c YALNIZ s_karma_2'de isirir
+  #     (s_karma_1'de 1 dosya=1 rol, ayirt edilemez — beklenen).
   #
   #     KANIT: kapi md.10 ONCESI motora karsi kosuldu ve KIRMIZI yandi
   #     (sayi VE rol birlikte); mutantlar orada KURULAMADI (capa yok) ve
@@ -1552,7 +1561,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: bir kapi + iki mutant
+      - name: bir kapi + uc mutant
         shell: bash
         run: python faz0/hukum_tutarliligi_mutanti.py 2>&1 | tee hukum-tutarliligi-cikti.txt
       - name: hukum tutarliligi ciktisi (artefakt)

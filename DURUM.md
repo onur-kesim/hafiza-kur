@@ -11,16 +11,16 @@ Aday: **H16 YAPI kapısı** (tasarım onaylı, kod yok, ADR ister).
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
 **md.10** hüküm iç tutarlılığı — ayrım cümlesi (hal-2) kapsam dışını "biri gerçek defter
 OLABİLİR" iddiasına artık KATMIYOR: sayı/rol `envanter` değil `ici`den gelir (md.9 kapısı buna
-KÖRDÜ, ayrı eksen). `hukum_tutarliligi_mutanti` (yeni) 1/2, kapı ÖNCESİ motorda KIRMIZI yandı.
+KÖRDÜ, ayrı eksen). `hukum_tutarliligi_mutanti` (yeni) 1/3, kapı ÖNCESİ motorda KIRMIZI yandı.
 Hal-1/hal-3 BİREBİR korundu (byte-diff); CC/`ihlal` DEĞİŞMEDİ ·
 **md.9** görünürlük — kapsam dışı hiç önerilmez, `gorunurluk_mutanti` 4/5, çapa 99→97 ·
-**md.6-8** kesif/esle/durma kuralı + çoklu-`canli` kapısı + hükum ayrımı, kendi ÖNCESİ
-motorlarında kırmızı yandı · md.2+4+5 README kanıt bloğu + yol ayracı körlüğü kapandı.
+**md.6-8** keşif/eşle/durma + çoklu-`canli` + hüküm ayrımı · md.2+4+5 README + yol ayracı ·
 🔴 `--kesif` **72 gerçek public depoda** koşuldu (50 + 22 `memory-bank/`), salt okuma, 0 bayt.
 
 ## Bilinen sınırlar (ölçülmüş)
-- 🔴 **KAPSAM DIŞI ROL, AYRIM CÜMLESİNE SIZAR** (md.10) — bir kapı bir cümlenin VARLIĞINI
-  ölçüyorsa SAYISINI ölçmüyordur: md.9 kapısı buna KÖRDÜ, iki motora bit-bit aynı cikti verdi.
+- 🔴 **KAPI NEYİ ÖLÇTÜĞÜNÜ ÖLÇEMEZ — İKİ ISIRIK** (§8): (1) bir cümlenin VARLIĞINI ölçen kapı
+  SAYISINI ölçmez (md.9, md.10 kusuruna KÖRDÜ) · (2) senaryoda iki büyüklük EŞİTSE hangisinin
+  ölçüldüğü ÖLÇÜLEMEZ — md.10'da kapsam içi DOSYA=ROL ⇒ "rol say" mutantı YEŞİL geçti.
 - 🔴 **CI kırmızısı KAPI kırmızısı olmayabilir** (#66 `6c6d407a`): 100 işin 2'si kırmızı,
   ikisi de `upload-artifact` **Finalize 403**; ölçüm+kapı adımları YEŞİL, #67'de 100/0.
 - 🔴 **WebFetch API DE BAYAT** (2. ısırık: en yeni #55 dedi, gerçek #67) ⇒ CI hükmü

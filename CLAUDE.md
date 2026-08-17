@@ -38,7 +38,7 @@ sözleşmesi kırılırsa minor artar.
 - [x] **Ayrım cümlesi kapsam dışını "gerçek defter OLABİLİR" iddiasına KATMIYOR** — hal-2
       dalının sayısı/rol listesi `envanter` yerine `ici`den gelir (SAYI+ROL bulaşması
       kapandı; md.9 kapısı buna kördü, ayrı eksen). `hukum_tutarliligi_mutanti.py` (yeni)
-      1 kapı/2 mutant, her biri KENDİ ekseni (sayı/rol); kapı md.10 ÖNCESİ motorda KIRMIZI
+      1 kapı/3 mutant, her biri KENDİ ekseni (sayı/rol); kapı md.10 ÖNCESİ motorda KIRMIZI
       yandı. Hal-1/hal-3 BİREBİR korundu (byte-diff). CC/`ihlal` DEĞİŞMEDİ (ADDITIVE).
 
 ## 3. SIRADAKİ İŞ (tek madde)
