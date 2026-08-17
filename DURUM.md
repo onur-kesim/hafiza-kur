@@ -1,26 +1,26 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 9 ✅ / 9 — LİSTE KAPALI** (**CI #69 `7658b4a5`: 103 iş, 0 başarısız**;
-`gorunurluk mutanti` ÜÇ platformda da yeşil. Kapı md.9 ÖNCESİ motorda 4/4 KIRMIZI yandı.
-Claude Code YAZDI, Cowork BAĞIMSIZ ÖLÇTÜ — 8 gerçek/sentetik ağaçta canlı çıktı)
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (yerel ölçüm: `hukum_tutarliligi_mutanti` 1/1 kapı
+temiz + 2/2 mutant KENDİ ekseninde ISIRDI, kapı md.10 ÖNCESİ motorda KIRMIZI yandı; CI push
+sonrası numara/sha ile güncellenir — commit/push Onur'da. Taban: CI #70 `818dc746`, 103/0)
 Son güncelleme: 17 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
-## 🔴 SIRADAKİ İŞ — liste 9/9 KAPALI; yeni madde ONUR KİLİDİ ister
+## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 Aday: **H16 YAPI kapısı** (tasarım onaylı, kod yok, ADR ister).
 25 Ağu yazısı TASLAK (`fable dosyalama\25agu-yazisi\`, depo DIŞI); yayın kararı ayrı.
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**md.9** görünürlük — durma hükmü BİLDİĞİNİ komuta koyar: kapsam içi (`disarida` DIŞI) her
-dosya GERÇEK adıyla kilitlenir (`canli=<dosya>` yalnız hal(1)/(3)'te), "YENİ defter aç"
-kilitleme komutlarının ARDINA iner, `disarida` hiç önerilmez, kapsam dışı SAYI kırpılmaz.
-`gorunurluk_mutanti` 4 kapı/5 mutant, dördü de md.9 ÖNCESİ motorda kırmızı yandı. Govde
-`devir_durma_govdesi`ye taşındı (diğer `devir_*` deseninde); çapa `cmd_devral` 99→97 (radon
-çaprazlı, MODÜLERLİK — regresyon değil), `ihlal` 9'da kaldı, CC>20 kümesi büyümedi (hâlâ 5) ·
-**md.6-8** kesif/esle/durma kuralı + `sahip=`/çoklu-`canli` kapısı + hükum ayrımı, sırasıyla
-`devral_kesif_mutanti` 3/3 · `ayrisma_mutanti` 3/3 · `hukum_ayrimi_mutanti` 1/2, üçü de kendi
-ÖNCESİ motorda kırmızı yandı · md.2+4+5 README kanıt bloğu + yol ayracı körlüğü kapandı.
+**md.10** hüküm iç tutarlılığı — ayrım cümlesi (hal-2) kapsam dışını "biri gerçek defter
+OLABİLİR" iddiasına artık KATMIYOR: sayı/rol `envanter` değil `ici`den gelir (md.9 kapısı buna
+KÖRDÜ, ayrı eksen). `hukum_tutarliligi_mutanti` (yeni) 1/2, kapı ÖNCESİ motorda KIRMIZI yandı.
+Hal-1/hal-3 BİREBİR korundu (byte-diff); CC/`ihlal` DEĞİŞMEDİ ·
+**md.9** görünürlük — kapsam dışı hiç önerilmez, `gorunurluk_mutanti` 4/5, çapa 99→97 ·
+**md.6-8** kesif/esle/durma kuralı + çoklu-`canli` kapısı + hükum ayrımı, kendi ÖNCESİ
+motorlarında kırmızı yandı · md.2+4+5 README kanıt bloğu + yol ayracı körlüğü kapandı.
 🔴 `--kesif` **72 gerçek public depoda** koşuldu (50 + 22 `memory-bank/`), salt okuma, 0 bayt.
 
 ## Bilinen sınırlar (ölçülmüş)
+- 🔴 **KAPSAM DIŞI ROL, AYRIM CÜMLESİNE SIZAR** (md.10) — bir kapı bir cümlenin VARLIĞINI
+  ölçüyorsa SAYISINI ölçmüyordur: md.9 kapısı buna KÖRDÜ, iki motora bit-bit aynı cikti verdi.
 - 🔴 **CI kırmızısı KAPI kırmızısı olmayabilir** (#66 `6c6d407a`): 100 işin 2'si kırmızı,
   ikisi de `upload-artifact` **Finalize 403**; ölçüm+kapı adımları YEŞİL, #67'de 100/0.
 - 🔴 **WebFetch API DE BAYAT** (2. ısırık: en yeni #55 dedi, gerçek #67) ⇒ CI hükmü

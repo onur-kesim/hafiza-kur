@@ -1507,3 +1507,58 @@ jobs:
           name: gorunurluk-${{ matrix.os }}
           path: gorunurluk-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # HUKUM IC TUTARLILIGI KAPISI (BITTI md.10, Onur kilidi 17 Agu 2026) — 1 kapi/2 mutant
+  #
+  #     OLCULDU (kaynak: md10-BRIEF.md, yedi gercek/sentetik agac + bir kenar hali):
+  #     durma hukmunun ayrim cumlesi (hal-2 dali) kapsam disi (`disarida`)
+  #     dosyalari "biri projenin gercek defteri OLABILIR" iddiasinin hem
+  #     SAYISINA hem ROL LISTESINE katiyordu — ekranda "7 dosya … (disarida,
+  #     gunluk)" yazarken aday olan yalniz 1'di. Ayni ekranda hal-3 "hicbiri
+  #     onerilmez" derken hal-2 ayni dosyalari "biri OLABILIR" kumesine
+  #     katiyordu — GORUNURLUK degil HUKUM IC TUTARLILIGI kusuru.
+  #
+  #     md.9 KAPISI (`gorunurluk_mutanti.py`) BUNA KORDU (olculdu, iki motora
+  #     da bit-bit ayni cikti verdi) — KAPI-3 "gercek defteri OLABILIR"
+  #     cumlesini yalniz `s_disi` (0 kapsam ici) senaryosunda yasakliyor,
+  #     karma agacta hic bakmiyor; KAPI-4 yalniz kirpma notunun VARLIGINI
+  #     olcuyor, ayrim cumlesinin SAYISINA bakmiyor.
+  #
+  #     TEK KAPI, IKI AYRI BULGU DIZESI: bulgu (a) sayi bulasmasi (ayrim
+  #     sayisi kapsam disini da sayiyor) · bulgu (b) rol bulasmasi (ayrim
+  #     rol listesinde `disarida` geciyor). IKI mutant, HER BIRI KENDI
+  #     EKSENINI isirmali (M-a yalniz sayi, M-b yalniz rol) — biri
+  #     digerinin bulgusunu da yakarsa kapi o ekseni AYRI OLCMUYOR demektir
+  #     (esdeger mutant != korluk dersi).
+  #
+  #     KANIT: kapi md.10 ONCESI motora karsi kosuldu ve KIRMIZI yandi
+  #     (sayi VE rol birlikte); mutantlar orada KURULAMADI (capa yok) ve
+  #     arac sessiz PASS yerine OLCULEMEDI dedi. YENI DOSYA (md.9'un kapali
+  #     kapi dosyasi acilmadi; madde<->kapi eslemesi temiz kaldi).
+  #
+  #     UC PLATFORM ve `continue-on-error` YOK. `| tee` exit kodunu YUTMAZ.
+  # ---------------------------------------------------------------------------
+  hukum_tutarliligi_kapisi:
+    name: hukum tutarliligi mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: bir kapi + iki mutant
+        shell: bash
+        run: python faz0/hukum_tutarliligi_mutanti.py 2>&1 | tee hukum-tutarliligi-cikti.txt
+      - name: hukum tutarliligi ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hukum-tutarliligi-${{ matrix.os }}
+          path: hukum-tutarliligi-cikti.txt
+          if-no-files-found: warn

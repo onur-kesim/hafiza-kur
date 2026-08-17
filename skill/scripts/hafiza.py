@@ -2842,14 +2842,20 @@ def devir_durma_govdesi(kok, envanter):
     durgun `projectbrief.md`'yi canli defter diye ONERIRDI.
     ADDITIVE: kapsam ici aday YOKKEN (hal 1 ve hal 3) secenek blogu ve cikis
     kodu BIREBIR bugunku metindir; degisen yalniz ayrim cumlesidir.
+    md.10 (Onur kilidi 17 Agu 2026): hal-2 dalinin sayisi/rol listesi `ici`den
+    gelir, `envanter`den DEGIL — envanter = ici + disi oldugu icin `envanter`
+    kullanmak kapsam disi dosyalari da sayip "biri gercek defter OLABILIR"
+    iddiasina katiyordu (SAYI + ROL BULASMASI); ayni ekranda kirpma notuyla
+    CELISEN bir hukumdu. Hal-3 dalinda `envanter` KASITLI kalir: orada `ici`
+    bos, `envanter == disi`, cumle zaten kapsam disi hakkinda konusuyor.
     """
     ici, disi = devir_kapsam_ayir(envanter)
     _md8_ayrim = ("HIC dosya TANINMADI — bu agacta hafiza adayi yok."
                   if not envanter else
                   "AMA %d dosya BASKA rollerde TANINDI (%s) — envanter yukarida; "
                   "biri projenin gercek defteri OLABILIR."
-                  % (len(envanter),
-                     ", ".join(sorted(set(e[1] for e in envanter))))
+                  % (len(ici),
+                     ", ".join(sorted(set(e[1] for e in ici))))
                   if ici else
                   "AMA %d dosya TANINDI (%s) — hepsi KAPSAM DISI: baska bir aracin\n"
                   "  ad alaninda yasiyorlar ve hicbiri canli defter olarak "

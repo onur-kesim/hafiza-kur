@@ -18,7 +18,7 @@ değişiklik, getirdiği kolaylık ne olursa olsun yanlıştır. Doktrin: ölç�
 geri getirme · İngilizce kanonik komut + Türkçe alias · depo PUBLIC ama YAYIN YOK · çıkış-kodu
 sözleşmesi kırılırsa minor artar.
 
-## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · eski md.6 KESİLDİ §5 · md.6-8 15-16 Ağu, md.9 16 Ağu — **9 ✅ / 9**)
+## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · eski md.6 KESİLDİ §5 · md.6-9 15-17 Ağu, md.10 17 Ağu — **10 ✅ / 10**)
 - [x] `kur/kapi/isir/not/derle/devral` Linux'ta koşuyor (CI yeşil)
 - [x] **Windows'ta** tam hüküm — `win_dal_mutanti` CI #43, `kur→kapi→isir` CI #46
 - [x] **macOS'ta** tam hüküm — ortak batarya `continue-on-error`sız yeşil CI #39, NFC/NFD
@@ -26,20 +26,20 @@ sözleşmesi kırılırsa minor artar.
 - [x] `.skill` taze projede 5 dk'da çalışır — `paketten_kos.py` BELGEYE karşı ölçer, CI #46
 - [x] 25 Ağu okuru README ile deneyebilir — `readme_mutanti.py` 3 kapı/6 mutant, CI #49
       `fba20c8`. ŞERH (hepsinde): ölçen CI'dır, insan eli değil.
-- [x] **Hafızası KENDİ ADIYLA duran projeyi devralabilir** — `devral --kesif`+`--esle`+DURMA
-      KURALI; `devral_kesif_mutanti.py` 3/3, CI #57 `ccd9721`. Lafız (c) DELİKTİ, daraltıldı.
-- [x] **İki defterin AYRIŞTIĞINI motordan öğrenir** — blok `sahip=` taşır (yoksa `H10-SAHIP`
-      ÖLÇÜLEMEDİ), çoklu `canli` KAPI. `ayrisma_mutanti.py` 3/3, CI #59 `5f05b14`. Lafız İKİ
-      KEZ daraltıldı (§5); kural evi KAPSAM DIŞI.
-- [x] **Durma HÜKMÜ iki hali AYIRT EDER** — envanteri BOŞ ağaç ile rol atanmış ağaç aynı
-      hükmü basamaz. ÖLÇÜLDÜ (72 gerçek depo): dört ayrı ağaçta durma bloğunun sha'sı AYNIYDI;
-      22/22 `memory-bank/` deposunda `canli` YOK, yani varsayılan hal. `hukum_ayrimi_mutanti.py`
-      1 kapı/2 mutant; kapı md.8 ÖNCESİ motorda KIRMIZI yandı. Çapa 97→99 (radon çaprazlı).
-- [x] **Durma hükmü BİLDİĞİNİ komuta koyar** — kapsam içi (`disarida` DIŞI) dosya GERÇEK
-      adıyla kilitlenir (yer tutucu yalnız kapsam içi aday YOKKEN kalır), "YENİ defter aç"
-      kilitleme komutlarının ARDINA iner, kapsam dışı hiç önerilmez/SESSİZCE kırpılmaz.
-      `gorunurluk_mutanti.py` 4 kapı/5 mutant, md.9 ÖNCESİ motorda 4/4 KIRMIZI, CI #69 `7658b4a5`.
-      Çapa `cmd_devral` 99→97 (govde ayrıştı, radon çaprazlı; MODÜLERLİK); `ihlal` 9'da KALDI.
+- [x] **Hafızası KENDİ ADIYLA duran projeyi devralabilir** — `--kesif`+`--esle`+DURMA KURALI;
+      `devral_kesif_mutanti.py` 3/3, CI #57 `ccd9721`.
+- [x] **İki defterin AYRIŞTIĞINI motordan öğrenir** — `sahip=` taşır, çoklu `canli` KAPI.
+      `ayrisma_mutanti.py` 3/3, CI #59 `5f05b14`; kural evi KAPSAM DIŞI.
+- [x] **Durma HÜKMÜ iki hali AYIRT EDER** — boş ağaç ile rol atanmış ağaç aynı hükmü basamaz
+      (72 gerçek depo). `hukum_ayrimi_mutanti.py` 1/2. Çapa 97→99 (radon çaprazlı).
+- [x] **Durma hükmü BİLDİĞİNİ komuta koyar** — kapsam içi dosya GERÇEK adıyla kilitlenir,
+      kapsam dışı hiç önerilmez/kırpılmaz. `gorunurluk_mutanti.py` 4/5, CI #69 `7658b4a5`.
+      Çapa `cmd_devral` 99→97 (govde ayrıştı, radon çaprazlı).
+- [x] **Ayrım cümlesi kapsam dışını "gerçek defter OLABİLİR" iddiasına KATMIYOR** — hal-2
+      dalının sayısı/rol listesi `envanter` yerine `ici`den gelir (SAYI+ROL bulaşması
+      kapandı; md.9 kapısı buna kördü, ayrı eksen). `hukum_tutarliligi_mutanti.py` (yeni)
+      1 kapı/2 mutant, her biri KENDİ ekseni (sayı/rol); kapı md.10 ÖNCESİ motorda KIRMIZI
+      yandı. Hal-1/hal-3 BİREBİR korundu (byte-diff). CC/`ihlal` DEĞİŞMEDİ (ADDITIVE).
 
 ## 3. SIRADAKİ İŞ (tek madde)
 <`DURUM.md`'den takip edilir; tek dikey dilim.>
