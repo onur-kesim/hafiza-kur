@@ -2643,6 +2643,17 @@ def onceki_kurulum_izleri(kok, canli_p=None):
 # iz deseni ayrismasi, sat. ~2672).
 DEVIR_ROLLERI = ("canli", "kural_evi", "gunluk", "indeks", "disarida")
 
+# md.9 (Onur kilidi 16 Agu 2026): KAPSAM DISI roller — TANINIR, envantere ve
+# kesif raporuna GIRER, ama durma hukmunde `canli` defter adayi olarak KOMUTLA
+# ONERILMEZ. Gerekce OLCULDU (22/22 `memory-bank/` deposu, 16 Agu kapsam
+# karari): o kumede defter imzasi yalniz `progress.md` (9/22) ve
+# `activeContext.md` (7/22) tasiyor; geri kalani 0/18-0/21 durgun tanitim
+# metni (`projectbrief.md` ort. 1.868 B). Hepsini aday yapmak, kullaniciya
+# durgun bir tanitim dosyasini "canli defter" diye ONERIRDI.
+# 🔴 SESSIZ KIRPMA DEGIL: kapsam disi birakilanlarin SAYISI hukumde acikca
+# yazilir (doktrin 2 — olculemeyene/atlanana "temiz" denmez).
+DEVIR_KAPSAM_DISI_ROLLER = ("disarida",)
+
 # (DESEN, ROL) — desen KOK-GORELI yola '/' ayracla ve BUYUK HARFE cevrilmis
 # haliyle uygulanir. SIRA ONEMLI: ilk eslesen kazanir.
 #   canli     : projenin CANLI hafiza defteri (v2 buraya yazar)
@@ -2803,6 +2814,64 @@ def devir_canli_adaylari(envanter, esleme=None, canli_arg=None):
     return adaylar
 
 
+# md.9 (Onur kilidi 16 Agu 2026): KAPSAM ICI/DISI ayrimi + durma hukmunun
+# govdesi — TEK EV: `cmd_devral`in sisirmesini onlemek icin buraya cikarildi
+# (diger `devir_*` yardimcilari gibi). Capa disiplinini bozmaz: `_md8_ayrim`
+# adi ve tek-girintili atama BIREBIR korunur (hukum_ayrimi_mutanti.py:223 m2
+# bu satiri arar); cagiran taraf (`cmd_devral`) `if not adaylar:` in HEMEN
+# UZERINDE kalir (devral_kesif_mutanti.py:274 M-3 iki bitisik satiri arar).
+def devir_kapsam_ayir(envanter):
+    """envanter -> (kapsam_ici, kapsam_disi). `disarida` KAPSAM DISIDIR."""
+    ici = [e for e in envanter if e[1] not in DEVIR_KAPSAM_DISI_ROLLER]
+    disi = [e for e in envanter if e[1] in DEVIR_KAPSAM_DISI_ROLLER]
+    return ici, disi
+
+
+def devir_durma_govdesi(kok, envanter):
+    """Durma hukmunun govdesi: (ayrim_cumlesi, secenek_bloku).
+
+    OLCULDU (yedi agac, salt okuma, cikis 2 / diske sifir bayt; alti agacta
+    hukum GOVDESI BIREBIR AYNIYDI): motor tanidigi dosyalari ADIYLA envantere
+    basiyor, sonra AYNI ekranda `canli=<dosya>` YER TUTUCUSU birakiyordu —
+    bildigi seyi komuta koymuyordu (trpc'de yedi `.cursor/rules/*.mdc`).
+    Dahasi CIFT DEFTERI onlemek icin DURMUS arac, taninmis dosyalar ekranda
+    dururken 2. SIRADA ikinci defter acmayi oneriyordu.
+    KAPSAM (16 Agu karari): `disarida` KAPSAM DISIDIR — komutla ONERILMEZ.
+    Taslak olcut ("taninan dosya varsa adlarini komutta bas") `memory-bank`
+    agacinda OLCULDU ve DELIKTI: alti dosyanin altisi da TANINIYOR, o olcut
+    durgun `projectbrief.md`'yi canli defter diye ONERIRDI.
+    ADDITIVE: kapsam ici aday YOKKEN (hal 1 ve hal 3) secenek blogu ve cikis
+    kodu BIREBIR bugunku metindir; degisen yalniz ayrim cumlesidir.
+    """
+    ici, disi = devir_kapsam_ayir(envanter)
+    _md8_ayrim = ("HIC dosya TANINMADI — bu agacta hafiza adayi yok."
+                  if not envanter else
+                  "AMA %d dosya BASKA rollerde TANINDI (%s) — envanter yukarida; "
+                  "biri projenin gercek defteri OLABILIR."
+                  % (len(envanter),
+                     ", ".join(sorted(set(e[1] for e in envanter))))
+                  if ici else
+                  "AMA %d dosya TANINDI (%s) — hepsi KAPSAM DISI: baska bir aracin\n"
+                  "  ad alaninda yasiyorlar ve hicbiri canli defter olarak "
+                  "onerilmez."
+                  % (len(envanter),
+                     ", ".join(sorted(set(e[1] for e in envanter)))))
+    secenek = [("Var olan defteri KILITLE : python hafiza.py devral "
+                "--esle canli=%s --kok=\"%s\"" % (e[0], kok)) for e in ici]
+    if not secenek:                  # hal 1 ve 3: bugunku YER TUTUCU aynen kalir
+        secenek = ["Var olan defteri KILITLE : python hafiza.py devral "
+                   "--esle canli=<dosya> --kok=\"%s\"" % kok]
+    secenek.append("Gercekten YENI defter ac : python hafiza.py devral "
+                   "--esle canli=PROJE_HAFIZA.md --kok=\"%s\"" % kok)
+    secenek.append("Once yalnizca BAK (yazmaz): python hafiza.py devral "
+                   "--kesif --kok=\"%s\"" % kok)
+    blok = "\n".join("   %d. %s" % (i + 1, s) for i, s in enumerate(secenek))
+    if ici and disi:                 # md.9-c: SESSIZ KIRPMA YASAK — sayi yazilir
+        blok += ("\n  (%d dosya KAPSAM DISI (%s) oldugu icin aday olarak "
+                "listelenmedi.)" % (len(disi), ", ".join(sorted(set(e[1] for e in disi)))))
+    return _md8_ayrim, blok
+
+
 def devir_kesif_bas(kok, envanter, olculemedi):
     """Kesif raporu — `--kesif` ve YAZAN yol AYNI metni basar."""
     print("  taranan yuzey     : kok dosyalari + memory-bank/ + .cursor/rules/"
@@ -2889,25 +2958,19 @@ def cmd_devral(a):
     # (`if not adaylar:` + hemen ardindan gelen `oldur("DEVIR DURDU`) IKI
     # BITISIK SATIRDIR, araya girmek onu kirar (CI #58 boyle kirmizi yandi).
     # ADDITIVE: tek satir eklenir, mevcut hukum metni ve cikis kodu degismez.
-    _md8_ayrim = ("HIC dosya TANINMADI — bu agacta hafiza adayi yok."
-                  if not envanter else
-                  "AMA %d dosya BASKA rollerde TANINDI (%s) — envanter yukarida; "
-                  "biri projenin gercek defteri OLABILIR."
-                  % (len(envanter),
-                     ", ".join(sorted(set(_rol for _r, _rol, _k in envanter)))))
+    # --- md.9: GORUNURLUK — hukum BILDIGINI KOMUTA KOYAR (Onur kilidi 16 Agu) -
+    # govde `devir_durma_govdesi`ye TASINDI (asagida, kaynak: md.9 brief).
+    # ADDITIVE: kapsam ici aday YOKKEN (hal 1 ve hal 3) secenek blogu ve cikis
+    # kodu BIREBIR bugunku metindir; degisen yalniz ayrim cumlesidir.
+    _md8_ayrim, _md9_blok = devir_durma_govdesi(kok, envanter)
     if not adaylar:
         oldur("DEVIR DURDU — bu agacta `canli` rolunu ustlenen TANINAN dosya YOK.\n"
               "  %s\n"
               "  BOS bir defter ACMIYORUM: projenin hafizasi baska bir dosyada\n"
               "  yasiyor olabilir ve IKI DEFTER olculebilirligin kendisini bitirir.\n"
               "  Envanter yukarida. Birini sec:\n"
-              "   1. Var olan defteri KILITLE : "
-              "python hafiza.py devral --esle canli=<dosya> --kok=\"%s\"\n"
-              "   2. Gercekten YENI defter ac : "
-              "python hafiza.py devral --esle canli=PROJE_HAFIZA.md --kok=\"%s\"\n"
-              "   3. Once yalnizca BAK (yazmaz): "
-              "python hafiza.py devral --kesif --kok=\"%s\""
-              % (_md8_ayrim, kok, kok, kok))
+              "%s"
+              % (_md8_ayrim, _md9_blok))
     # --- md.7(c): COKLU `canli` UYARI DEGIL KAPI (Onur kilidi 15 Agu) ----
     # Olculdu: bugune kadar motor "birden cok aday" diye UYARIYOR, sonra ilkini
     # secip CIKIS 0 veriyordu; oteki defter oksuz kaliyordu. Iki canli defter,

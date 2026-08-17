@@ -1,24 +1,23 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 8 ✅ / 8 — LİSTE KAPALI** (CI #63 `2d6af96`: 100 iş, **0 başarısız**)
-Son güncelleme: 16 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+**BİTTİ sayacı: 9 ✅ / 9 — LİSTE KAPALI** (yerel ölçüm: `gorunurluk_mutanti` 4/4 kapı temiz
++ 5/5 mutant ISIRDI, dördü de md.9 ÖNCESİ motorda kırmızı yandı; CI push SONRASI numara/sha
+ile güncellenir — commit/push Onur'da, Claude Code YAZDI/ÖLÇTÜ, Cowork denetler)
+Son güncelleme: 17 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
-## 🔴 SIRADAKİ İŞ — liste 8/8 KAPALI; yeni madde ONUR KİLİDİ ister
-✅ `memory-bank/` KAPSAM KARARI KAPANDI (Onur kilidi 16 Ağu): eşleme KALIR — kusur değil
-KAPSAM SINIRI. Gerekçe + B şıkkının elenmesi: `denetim/2026-08-16_*`.
-Adaylar: **md.9 GÖRÜNÜRLÜK** (durma mesajı envanterdeki adayları göstermiyor, "YENİ defter
-aç" hâlâ ilk sırada) · **H16 YAPI kapısı** (tasarım onaylı, kod yok, ADR ister).
+## 🔴 SIRADAKİ İŞ — liste 9/9 KAPALI; yeni madde ONUR KİLİDİ ister
+Aday: **H16 YAPI kapısı** (tasarım onaylı, kod yok, ADR ister).
 25 Ağu yazısı TASLAK (`fable dosyalama\25agu-yazisi\`, depo DIŞI); yayın kararı ayrı.
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**md.8** durma hükmü ayrımı (`_md8_ayrim`): envanteri BOŞ ve rol atanmış ağaç aynı hükmü
-basamaz. `hukum_ayrimi_mutanti` 1 kapı/2 mutant, CI #63 `2d6af96` (100/0). Kapı md.8 ÖNCESİ
-motorda KIRMIZI yandı. Çapa `cmd_devral` 97→99 (radon çaprazlı), `ihlal` 9'da kaldı.
-Kapı iki tur KÖR yandı (aşağıda) ·
-**md.6** `--kesif`+`--esle`+DURMA KURALI, `devral_kesif_mutanti` 3/3, CI #57 `ccd9721` (94/0) ·
-**md.7** `sahip=` + çoklu `canli` KAPISI, `ayrisma_mutanti` 3/3, CI #59 `5f05b14` (97/0), altın
-küme yeniden üretildi (28 satır, hepsi H2 boyut) · md.2+4 CI #43 `cde1998` + #46 `5d81838` ·
-md.5 README kanıt bloğu CI #49 `fba20c8` (aracın `shlex` kusurunu ÖLÇÜM buldu, CI değil) ·
-yol ayracı körlüğü kapandı (`_rel()` + 21 çağrı) · CI #41 KIRMIZI'dan #46'ya.
+**md.9** görünürlük — durma hükmü BİLDİĞİNİ komuta koyar: kapsam içi (`disarida` DIŞI) her
+dosya GERÇEK adıyla kilitlenir (`canli=<dosya>` yalnız hal(1)/(3)'te), "YENİ defter aç"
+kilitleme komutlarının ARDINA iner, `disarida` hiç önerilmez, kapsam dışı SAYI kırpılmaz.
+`gorunurluk_mutanti` 4 kapı/5 mutant, dördü de md.9 ÖNCESİ motorda kırmızı yandı. Govde
+`devir_durma_govdesi`ye taşındı (diğer `devir_*` deseninde); çapa `cmd_devral` 99→97 (radon
+çaprazlı, MODÜLERLİK — regresyon değil), `ihlal` 9'da kaldı, CC>20 kümesi büyümedi (hâlâ 5) ·
+**md.6-8** kesif/esle/durma kuralı + `sahip=`/çoklu-`canli` kapısı + hükum ayrımı, sırasıyla
+`devral_kesif_mutanti` 3/3 · `ayrisma_mutanti` 3/3 · `hukum_ayrimi_mutanti` 1/2, üçü de kendi
+ÖNCESİ motorda kırmızı yandı · md.2+4+5 README kanıt bloğu + yol ayracı körlüğü kapandı.
 🔴 `--kesif` **72 gerçek public depoda** koşuldu (50 + 22 `memory-bank/`), salt okuma, 0 bayt.
 
 ## Bilinen sınırlar (ölçülmüş)

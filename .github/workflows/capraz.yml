@@ -1451,3 +1451,59 @@ jobs:
           name: hukum-ayrimi-${{ matrix.os }}
           path: hukum-ayrimi-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # GORUNURLUK KAPISI (BITTI md.9, Onur kilidi 16 Agu 2026) — dort kapi/bes mutant
+  #
+  #     OLCULDU (kaynak: md9-BRIEF.md, yedi gercek/sentetik agac, salt okuma,
+  #     cikis 2 / diske sifir bayt): `devral` `canli` bulamayip durdugunda motor
+  #     TANIDIGI dosyalari ADIYLA envantere basiyor, sonra AYNI ekranda
+  #     `canli=<dosya>` YER TUTUCUSU birakiyordu — bildigi seyi hukmune KOYMUYORDU.
+  #     Ayrica CIFT DEFTERI onlemek icin DURMUS arac, taninmis dosyalar ekranda
+  #     dururken 2. SIRADA ikinci defter acmayi ONERIYORDU.
+  #
+  #     DORT KAPI, HER BIRININ KENDI CERRAHI MUTANTI ("ortusen tespit korlugu
+  #     maskeler" — DURUM.md dersi):
+  #       KAPI-1 AD      : s_ici'de GERCEK dosya adiyla kilitleme komutu basilir,
+  #                        `canli=<dosya>` yer tutucusu hic gecmez.
+  #       KAPI-2 SIRA    : "YENI defter ac" secenegi SON gercek kilitleme
+  #                        komutundan SONRA gelir; secenek hic yoksa da KIRMIZI.
+  #       KAPI-3 KAPSAM  : s_disi'de `disarida` dosyalar KOMUTLA ONERILMEZ ve
+  #                        "gercek defteri OLABILIR" cumlesi hic gecmez.
+  #       KAPI-4 KIRPMA  : s_karma'da kapsam ici komut GECER ve kapsam disi
+  #                        SAYI + "listelenmedi" SESSIZCE KIRPILMAZ.
+  #
+  #     BES MUTANT (M-1..M-5), motorun KAYNAGINDA `str.replace`, her biri
+  #     `_tek_yerde` ile doGrulanir. M-1 ve M-3'un yan etkiyle baska kapilari
+  #     da yakmasi KABUL EDILIR (o kapilarin kendi cerrahi isirganlari ayrica
+  #     var); ama beklenen kapi yanmadiysa arac bunu AYRICA kirmizi sayar.
+  #
+  #     KANIT: kapi md.9 ONCESI motora karsi kosuldu ve DORDU DE KIRMIZI yandi;
+  #     mutantlar orada KURULAMADI (capa yok) ve arac sessiz PASS yerine
+  #     OLCULEMEDI dedi.
+  #
+  #     UC PLATFORM ve `continue-on-error` YOK. `| tee` exit kodunu YUTMAZ.
+  # ---------------------------------------------------------------------------
+  gorunurluk_kapisi:
+    name: gorunurluk mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: dort kapi + bes mutant
+        shell: bash
+        run: python faz0/gorunurluk_mutanti.py 2>&1 | tee gorunurluk-cikti.txt
+      - name: gorunurluk ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gorunurluk-${{ matrix.os }}
+          path: gorunurluk-cikti.txt
+          if-no-files-found: warn

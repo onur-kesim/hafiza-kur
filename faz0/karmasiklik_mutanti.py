@@ -159,7 +159,25 @@ BEKLENEN = {
 #       python -m radon cc -s skill/scripts/hafiza.py -> `cmd_devral - F (99)`
 #     Ikili (arac, radon) 99'da da anlasiyor. Capa ELLE ve ONCE degistirildi;
 #     motor degisiminden SONRA aracin dedigi sayi kopyalanmadi.
-CIPA = {"cmd_isir": 17, "cmd_devral": 99}
+#   16 Agu 2026 (ayni gun, md.9): cmd_devral 99 -> 97. Sebep BILINEN ve
+#     BEYANLI — BITTI md.9 GORUNURLUK govdesini (`_md8_ayrim` + secenek
+#     bloku) `cmd_devral`in disina, YENI `devir_durma_govdesi`/
+#     `devir_kapsam_ayir` fonksiyonlarina TASIDI (diger `devir_*` yardimci
+#     fonksiyonlariyla AYNI desen). `cmd_devral` artik o govdeyi TEK satirlik
+#     bir CAGRI ile aliyor; md.8'in eklemis oldugu dallanma da BU CAGRIYLA
+#     birlikte disari cikti, dolayisiyla net deger md.8-ONCESI (97) ile
+#     CAKISIYOR — bu bir REGRESYON DEGIL, MODULERLIGIN SONUCU: yeni fonksiyonlar
+#     kendi CC'sini tasir (`devir_durma_govdesi` C-11, `devir_kapsam_ayir` A-5,
+#     CIPA'ya GIRMEZ). CC>20 kumesi BUYUMEDI (hala 5), birlesik `ihlal` 9'da
+#     KALDI. BAGIMSIZ caprazlama (ayni oturum, ayni kap):
+#       python -m radon cc -s <md.9 ONCESI motor>  -> `cmd_devral - F (99)`
+#       python -m radon cc -s skill/scripts/hafiza.py -> `cmd_devral - F (97)`
+#       python3 faz0/karmasiklik.py <md.9 ONCESI>  -> cmd_devral  99
+#       python3 faz0/karmasiklik.py <md.9 SONRASI> -> cmd_devral  97
+#     Ikili (arac, radon) 97'de de anlasiyor. Capa ARACIN KENDI CIKTISINDAN
+#     guncellenmedi: once radon'la BAGIMSIZ caprazlandi, ikisi anlastigi icin
+#     capa o degere kuruldu.
+CIPA = {"cmd_isir": 17, "cmd_devral": 97}
 
 # ------------------------------------------------------------------ MUTANTLAR
 # (ad, aciklama, [(eski, yeni)], ayirt eden ornek)

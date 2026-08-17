@@ -18,25 +18,28 @@ değişiklik, getirdiği kolaylık ne olursa olsun yanlıştır. Doktrin: ölç�
 geri getirme · İngilizce kanonik komut + Türkçe alias · depo PUBLIC ama YAYIN YOK · çıkış-kodu
 sözleşmesi kırılırsa minor artar.
 
-## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · eski md.6 KESİLDİ §5 · md.6-7 15 Ağu, md.8 16 Ağu — **8 ✅ / 8**)
+## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · eski md.6 KESİLDİ §5 · md.6-8 15-16 Ağu, md.9 16 Ağu — **9 ✅ / 9**)
 - [x] `kur/kapi/isir/not/derle/devral` Linux'ta koşuyor (CI yeşil)
-- [x] **Windows'ta** tam hüküm — `win_dal_mutanti` CI #43 `cde1998` + gerçek Windows'ta
-      `kur→kapi→isir` CI #46 `5d81838`
-- [x] **macOS'ta** tam hüküm — ortak batarya `continue-on-error`sız yeşil CI #39; darwin dalı
-      SIFIR, NFC/NFD KAÇINMAYLA (§4)
-- [x] `.skill` taze projede 5 dk'da çalışır — `paketten_kos.py` BELGEYE karşı ölçer, CI #46 `5d81838`
-- [x] 25 Ağu okuru README ile deneyebilir — `readme_mutanti.py` 3 kapı/6 mutant, beklenen değerler
-      BLOKTAN okunur, CI #49 `fba20c8`. ŞERH (hepsinde): ölçen CI'dır, insan eli değil.
+- [x] **Windows'ta** tam hüküm — `win_dal_mutanti` CI #43, `kur→kapi→isir` CI #46
+- [x] **macOS'ta** tam hüküm — ortak batarya `continue-on-error`sız yeşil CI #39, NFC/NFD
+      KAÇINMAYLA (§4)
+- [x] `.skill` taze projede 5 dk'da çalışır — `paketten_kos.py` BELGEYE karşı ölçer, CI #46
+- [x] 25 Ağu okuru README ile deneyebilir — `readme_mutanti.py` 3 kapı/6 mutant, CI #49
+      `fba20c8`. ŞERH (hepsinde): ölçen CI'dır, insan eli değil.
 - [x] **Hafızası KENDİ ADIYLA duran projeyi devralabilir** — `devral --kesif`+`--esle`+DURMA
       KURALI; `devral_kesif_mutanti.py` 3/3, CI #57 `ccd9721`. Lafız (c) DELİKTİ, daraltıldı.
 - [x] **İki defterin AYRIŞTIĞINI motordan öğrenir** — blok `sahip=` taşır (yoksa `H10-SAHIP`
       ÖLÇÜLEMEDİ), çoklu `canli` KAPI. `ayrisma_mutanti.py` 3/3, CI #59 `5f05b14`. Lafız İKİ
       KEZ daraltıldı (§5); kural evi KAPSAM DIŞI.
 - [x] **Durma HÜKMÜ iki hali AYIRT EDER** — envanteri BOŞ ağaç ile rol atanmış ağaç aynı
-      hükmü basamaz. ÖLÇÜLDÜ (72 gerçek depo): dört ayrı ağaçta durma bloğunun
-      sha'sı AYNIYDI; 22/22 `memory-bank/` deposunda `canli` YOK (`MEMORY-BANK/*`→`disarida`),
-      yani varsayılan hal. `hukum_ayrimi_mutanti.py` 1 kapı/2 mutant; kapı md.8 ÖNCESİ motorda
-      KIRMIZI yandı. Çapa `cmd_devral` 97→99 (radon çaprazlı); `ihlal` 9'da KALDI.
+      hükmü basamaz. ÖLÇÜLDÜ (72 gerçek depo): dört ayrı ağaçta durma bloğunun sha'sı AYNIYDI;
+      22/22 `memory-bank/` deposunda `canli` YOK, yani varsayılan hal. `hukum_ayrimi_mutanti.py`
+      1 kapı/2 mutant; kapı md.8 ÖNCESİ motorda KIRMIZI yandı. Çapa 97→99 (radon çaprazlı).
+- [x] **Durma hükmü BİLDİĞİNİ komuta koyar** — kapsam içi (`disarida` DIŞI) dosya GERÇEK
+      adıyla kilitlenir (yer tutucu yalnız kapsam içi aday YOKKEN kalır), "YENİ defter aç"
+      kilitleme komutlarının ARDINA iner, kapsam dışı hiç önerilmez/SESSİZCE kırpılmaz.
+      `gorunurluk_mutanti.py` 4 kapı/5 mutant, dördü de md.9 ÖNCESİ motorda KIRMIZI yandı.
+      Çapa `cmd_devral` 99→97 (govde ayrıştı, radon çaprazlı; MODÜLERLİK); `ihlal` 9'da KALDI.
 
 ## 3. SIRADAKİ İŞ (tek madde)
 <`DURUM.md`'den takip edilir; tek dikey dilim.>
@@ -63,11 +66,10 @@ sözleşmesi kırılırsa minor artar.
 ## 5. KAPSAM DIŞI (gizlenmez)
 Tuzak Avcısı işleri · TSK/gelir hukuku · Reels-bülten operasyonu (ayrı projeler). PyPI/marketplace/
 duyuru YOK ("public repo ≠ yayın"). Semantik arama/embedding bilinçli reddedildi.
-**KESİLDİ 14 Ağu 2026:** `cmd_*` bölmeleri ve kalan CC borcu. `CC>20: 5` olduğu yerde kalır;
-`ihlal` 15 Ağu'da 8→**9** (md.6 iki bayrak ekledi, `main` 80→82 satır; ölçüm, kapı değil).
-Gerekçe: hiçbir BİTTİ maddesi CC'ye bağlı değil, 25 Ağu'ya 11 gün var. Yeniden açmak ADR ister.
-**md.7 İKİ KEZ DARALTILDI 15 Ağu (kod yazılmadan):** lafzi D altı gerçek ağacın dördünde yanıyordu
-(üçü MEŞRU); (b) ayağı SAĞLIKLI akışta yanardı (`derle` arşive taşır). İkisi de ELENDİ.
+**KESİLDİ 14 Ağu 2026:** `cmd_*` bölmeleri ve kalan CC borcu. `CC>20: 5` sabit; `ihlal` 9'da
+(md.6-9 ölçüm, kapı değil). Gerekçe: hiçbir BİTTİ maddesi CC'ye bağlı değil. Açmak ADR ister.
+**md.7 İKİ KEZ DARALTILDI 15 Ağu (kod yazılmadan):** lafzi D + (b) ayağı ELENDİ (gerekçe git
+geçmişinde).
 **KESİLDİ 15 Ağu 2026 (Onur kilidi, İŞLEYİŞ md.1):** eski madde 6 — "gerçek bir projede 1 hafta
 fiilen kullanım" — ve `faz0/kullanim_kapisi.py`. Gerekçe **zaman değil ÖLÇÜT KUSURU:** (d) token
 kazancı ancak hafiza-kur mevcut defterin YERİNE geçerse dürüst ölçülür; "mevcut defter kanonik
