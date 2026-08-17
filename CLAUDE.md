@@ -38,7 +38,7 @@ sözleşmesi kırılırsa minor artar.
 - [x] **Durma hükmü BİLDİĞİNİ komuta koyar** — kapsam içi (`disarida` DIŞI) dosya GERÇEK
       adıyla kilitlenir (yer tutucu yalnız kapsam içi aday YOKKEN kalır), "YENİ defter aç"
       kilitleme komutlarının ARDINA iner, kapsam dışı hiç önerilmez/SESSİZCE kırpılmaz.
-      `gorunurluk_mutanti.py` 4 kapı/5 mutant, dördü de md.9 ÖNCESİ motorda KIRMIZI yandı.
+      `gorunurluk_mutanti.py` 4 kapı/5 mutant, md.9 ÖNCESİ motorda 4/4 KIRMIZI, CI #69 `7658b4a5`.
       Çapa `cmd_devral` 99→97 (govde ayrıştı, radon çaprazlı; MODÜLERLİK); `ihlal` 9'da KALDI.
 
 ## 3. SIRADAKİ İŞ (tek madde)

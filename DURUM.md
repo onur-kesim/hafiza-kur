@@ -1,7 +1,7 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 9 ✅ / 9 — LİSTE KAPALI** (yerel ölçüm: `gorunurluk_mutanti` 4/4 kapı temiz
-+ 5/5 mutant ISIRDI, dördü de md.9 ÖNCESİ motorda kırmızı yandı; CI push SONRASI numara/sha
-ile güncellenir — commit/push Onur'da, Claude Code YAZDI/ÖLÇTÜ, Cowork denetler)
+**BİTTİ sayacı: 9 ✅ / 9 — LİSTE KAPALI** (**CI #69 `7658b4a5`: 103 iş, 0 başarısız**;
+`gorunurluk mutanti` ÜÇ platformda da yeşil. Kapı md.9 ÖNCESİ motorda 4/4 KIRMIZI yandı.
+Claude Code YAZDI, Cowork BAĞIMSIZ ÖLÇTÜ — 8 gerçek/sentetik ağaçta canlı çıktı)
 Son güncelleme: 17 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## 🔴 SIRADAKİ İŞ — liste 9/9 KAPALI; yeni madde ONUR KİLİDİ ister
