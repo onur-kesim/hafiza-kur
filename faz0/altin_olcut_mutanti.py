@@ -127,6 +127,16 @@ ARAC = os.path.join(KOK, "faz0", "altin_cikti.py")
 REFERANS = os.path.join(KOK, "faz0", "altin_kapi.json")
 MOTOR = os.path.join(KOK, "skill", "scripts", "hafiza.py")
 
+# TANI (H16-TANI-BRIEF.md §2.2): gorunurluk bayragi, varsayilan KAPALI. Bu
+# dosyanin hicbir olcut/hukum davranisini DEGISTIRMEZ — yalniz M-A8 KACTIGINDA
+# (ya da bu bayrakla HER kosumda) ORTAMI (sym/gercek yollari, realpath(sym),
+# cocugun TMPDIR'i, YENI kolun ham fark satiri) ekstra basar.
+TANI = ("--tani" in sys.argv) or (os.environ.get("ALTIN_OLCUT_TANI") == "1")
+
+
+def _girinti(metin, on="        "):
+    return "\n".join(on + s for s in (metin or "").splitlines())
+
 # Kume kac OLCUM iceriyor? SABIT YAZILMAZ, REFERANSTAN OLCULUR. Sabit 10 yaziliydi
 # ve altin kume 22'ye genisletildiginde bu mutantin uc kolu KACTI dedi (olculdu
 # 11 Agu 2026). Kol dogru davraniyordu; YANLIS OLAN BEKLENTIYDI. Sabit sayi, kardes
@@ -575,6 +585,7 @@ def ma8_realpath_maskesi(taban):
     ad = ("M-A8 REALPATH MASKESI (KALEM A, 18 Agu 2026): normalize() "
           "os.path.realpath(kok)'u da maskeliyor mu")
     sym = sembolik_tmp_kur(taban)
+    gercek = os.path.join(os.path.dirname(sym), "gercek")   # sembolik_tmp_kur'un kurdugu esi
     ek_env = {"TMP": sym, "TEMP": sym, "TMPDIR": sym}
     eski = agac_kur(taban, "a8_eski", [yama_realpath_maskesi_sok])
     yeni = agac_kur(taban, "a8_yeni", [])
@@ -588,7 +599,7 @@ def ma8_realpath_maskesi(taban):
     # CI #75'in ta kendisi). YENI (duzeltilmis): FARK YOK.
     tamam = (e_rc == 1 and ei["davranis_degisti"] and not ei["traceback"]
              and y_rc == 0 and yi["fark_yok"] and not yi["traceback"])
-    kayit(ad, ISIRDI if tamam else KACTI,
+    ayrinti = (
           "symlink'li TMPDIR (realpath(kok)!=kok) | ESKI (maske sokulu): "
           "exit=%s 'davranis DEGISTI'=%s | YENI (duzeltilmis): exit=%s "
           "'FARK YOK'=%s (beklenen: 1/VAR -> 0/VAR; ayni cikarsa duzeltme "
@@ -596,6 +607,17 @@ def ma8_realpath_maskesi(taban):
           "geri gelir)"
           % (e_rc, "VAR" if ei["davranis_degisti"] else "yok",
              y_rc, "VAR" if yi["fark_yok"] else "yok"))
+    if TANI or not tamam:
+        # H16-TANI-BRIEF.md §2.2: KACTIGINDA (ya da --tani/ALTIN_OLCUT_TANI=1
+        # ile HER kosumda) ORTAMI bas. Hicbir hukmu/kaydi DEGISTIRMEZ.
+        ayrinti += (
+            "\n      TANI: sym=%s\n"
+            "      TANI: gercek=%s\n"
+            "      TANI: realpath(sym)=%s\n"
+            "      TANI: cocugun TMPDIR'i (TMP=TEMP=TMPDIR)=%s\n"
+            "      TANI: YENI kolun ham ciktisi:\n%s"
+            % (sym, gercek, os.path.realpath(sym), sym, _girinti(y_c)))
+    kayit(ad, ISIRDI if tamam else KACTI, ayrinti)
 
 
 def main():

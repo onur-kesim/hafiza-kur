@@ -358,6 +358,11 @@ jobs:
       # PLATFORMDA da kosar — bu sinif artik hicbiri beklenmeden Linux'ta da
       # kirmizi yakar. Junction/symlink AYRICALIK ISTEMEZ (mklink /J Windows'ta,
       # os.symlink POSIX'te) — ayrica ADR/M-A8 ile dogrulandi.
+      # H16-TANI-BRIEF.md §2.3 (18 Agu 2026, tani turu — DUZELTME YOK): CI #76
+      # bu kolu macOS+Windows'ta KIRMIZI yakti (M-A8 KACTI) ve altin_cikti
+      # ayri bir kayitta (h8_kesilme_dizin) 6 karakter kayip gosterdi; hicbiri
+      # aciklanamadi. `--tani` eklendi: hukmu/exit kodunu DEGISTIRMEZ, yalniz
+      # FARK bulunan kayitlar icin ham/maskesiz teshis blogu artefakta yazar.
       - name: kapi ciktisi altin kumeyle AYNI mi (symlink'li TMPDIR)
         shell: bash
         run: |
@@ -383,7 +388,8 @@ jobs:
           env["TEMP"] = sym
           env["TMPDIR"] = sym
           r = subprocess.run([sys.executable, "faz0/altin_cikti.py",
-                              "--karsilastir", "faz0/altin_kapi.json"], env=env)
+                              "--karsilastir", "faz0/altin_kapi.json",
+                              "--tani"], env=env)
           sys.exit(r.returncode)
           PYEOF
       - name: altin cikti artefakti

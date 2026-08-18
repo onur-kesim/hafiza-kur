@@ -338,6 +338,8 @@ def kume_uret(motor, taban):
                 raise Kurulamadi("%s / %s: zaman asimi" % (ad, " ".join(komut)))
             kume.append({"hal": ad, "komut": " ".join(komut), "exit": rc,
                          "cikti": normalize(c, kok)})
+            if TANI:
+                _TANI_HAM[(ad, " ".join(komut))] = {"kok": kok, "ham": c}
     return kume
 
 
@@ -460,6 +462,78 @@ def satir_farki(eski, yeni):
     return gorunmez_teshis(eski, yeni), False
 
 
+# --------------------------------------------------------------- TANI (H16-TANI-BRIEF.md §2.1)
+# Gorunurluk EKI — hicbir kusuru DUZELTMEZ, yalniz maskelenmemis/ham metni
+# GORUNUR kilar. Varsayilan KAPALI: `--tani` verilmedigi VE `ALTIN_TANI=1`
+# ortam degiskeni tanimlanmadigi surece TANI False kalir, `_TANI_HAM` hic
+# doldurulmaz ve asagidaki hicbir satir basilmaz — bayraksiz cikti ONCEKI
+# GIBI BIT-BIT kalir (kabul olcutu (a); KIRMIZI CIZGI, H16-TANI-BRIEF.md §2.1).
+#
+# NEDEN GEREKLI: CI #76'da h8_kesilme_dizin kaydi ALTIN 96 · YENI 90 karakter
+# (6 karakter — "IZA.md" — eksik) ve M-A8 iki platformda da symlink'li
+# TMPDIR'de FARK uretiyor; hicbir mevcut olcum bu 6 karakteri aciklamiyor.
+# Bu tur o farki GORUNUR kilar; sebebini bir SONRAKI tur duzeltir.
+TANI = False
+_TANI_HAM = {}          # (hal, komut) -> {"kok": ham kok, "ham": cocugun ham ciktisi}
+
+
+def _ilk_fark_satiri(eski, yeni):
+    """satir_farki()'nin bir KOPYASI degil, TANI icin AYRI/BAGIMSIZ bir okuma:
+    satir_farki()'nin kendisine BILEREK DOKUNULMAZ — o fonksiyon her kosumda
+    (bayraksiz da) calisir; TANI kodu ondan ayri tutulur ki bir TANI
+    degisikligi hic yanlislikla onun (varsayilan-acik) davranisini etkilemesin."""
+    e, y = eski.splitlines(), yeni.splitlines()
+    for i in range(max(len(e), len(y))):
+        se = e[i] if i < len(e) else "<YOK>"
+        sy = y[i] if i < len(y) else "<YOK>"
+        if se != sy:
+            return i + 1, se, sy
+    return None, None, None
+
+
+def _tani_blok(kok, ham_yeni, altin_cikti_maskeli, yeni_cikti_maskeli):
+    """FARK bulunan bir kayit icin HAM/maskesiz teshis metni (H16-TANI-BRIEF.md
+    §2.1): kok · realpath(kok) · motorun bastigi HAFIZA KAPISI satiri (ham) ·
+    ilk fark satirinin repr()'i · len().
+
+    🔴 SINIR (beyan edilir, gizlenmez): 'ALTIN' tarafi --kaydet aninda ZATEN
+    normalize() edilmis olarak saklanir — altin_kapi.json ne 'kok' ne 'ham
+    cikti' tasir, bu yuzden ALTIN icin gercek ham metin YOKTUR/OLCULEMEZ;
+    asagidaki 'ALTIN kayitli' satiri KAYITLI (maskeli) halin repr'idir. 'YENI'
+    tarafi ise GERCEKTEN HAM (bu kosumun cocuk surecinden, normalize()
+    ONCESI). repr() ikisinde de gorunmez karakter/kodlama farkini gosterir;
+    duz basim (yukaridaki ana FARK satiri) gizler."""
+    try:
+        rp = os.path.realpath(kok)
+    except OSError:
+        rp = kok
+    ham_satirlari = (ham_yeni or "").splitlines()
+    baslik = next((s for s in ham_satirlari if s.startswith("=== HAFIZA KAPISI")),
+                  "<YOK>")
+    satirlar = [
+        "        TANI (--tani / ALTIN_TANI=1):",
+        "          kok                        : %s" % kok,
+        "          realpath(kok)              : %s" % rp,
+        "          HAFIZA KAPISI satiri (ham) : %s" % baslik,
+    ]
+    no, se, sy = _ilk_fark_satiri(altin_cikti_maskeli, yeni_cikti_maskeli)
+    if no is not None:
+        # normalize() satir SAYISINI/SIRASINI degistirmez (yalniz alt-dize
+        # degistirir) — bu yuzden YENI tarafta HAM satira AYNI indeksle
+        # ulasilabilir (bkz. yukaridaki SINIR notu: ALTIN tarafinda bu yol YOK).
+        ham_sy = ham_satirlari[no - 1] if no - 1 < len(ham_satirlari) else None
+        satirlar.append("          ilk fark satiri: %d" % no)
+        satirlar.append("            ALTIN kayitli, maskeli (repr) : %r" % se)
+        satirlar.append("            YENI  maskeli (repr)          : %r" % sy)
+        if ham_sy is not None:
+            satirlar.append("            YENI  HAM/maskesiz (repr)     : %r" % ham_sy)
+        uzunluk = "len(ALTIN)=%d  len(YENI maskeli)=%d" % (len(se), len(sy))
+        if ham_sy is not None:
+            uzunluk += "  len(YENI ham)=%d" % len(ham_sy)
+        satirlar.append("            " + uzunluk)
+    return "\n".join(satirlar)
+
+
 # --------------------------------------------------------------- KENDINI SINA
 # Arac once KENDINI kanitlar: motora kasitli bir NOT DEGISIKLIGI enjekte edilir.
 # Bu bir URUN kusuru degildir; aracin GORME YETISINI olcer.
@@ -524,7 +598,14 @@ def main():
     g.add_argument("--karsilastir", metavar="DOSYA", help="altin kumeyle karsilastir")
     g.add_argument("--kendini-sina", action="store_true",
                    dest="kendini_sina", help="arac gorebiliyor mu (SABOTAJ)")
+    ap.add_argument("--tani", action="store_true",
+                    help="FARK bulunan kayitlar icin HAM/maskesiz teshis blogu "
+                         "bas (varsayilan KAPALI; ALTIN_TANI=1 ile de acilir; "
+                         "hukmu/exit kodunu DEGISTIRMEZ — H16-TANI-BRIEF.md §2.1)")
     a = ap.parse_args()
+
+    global TANI
+    TANI = bool(a.tani) or os.environ.get("ALTIN_TANI") == "1"
 
     motor = os.path.abspath(a.motor)
     if not os.path.isfile(motor):
@@ -579,6 +660,12 @@ def main():
         return 0
     for (hal, komut), aciklama, _sinif in farklar:
         print("  FARK  %-14s %-12s | %s" % (hal, komut, aciklama))
+        if TANI:
+            bilgi = _TANI_HAM.get((hal, komut))
+            a_rec = next((k for k in altin if k["hal"] == hal and k["komut"] == komut), None)
+            y_rec = next((k for k in kume if k["hal"] == hal and k["komut"] == komut), None)
+            if bilgi is not None and a_rec is not None and y_rec is not None:
+                print(_tani_blok(bilgi["kok"], bilgi["ham"], a_rec["cikti"], y_rec["cikti"]))
     print(CIZGI)
     # DUZELTME-2: satir duzeyinde ADLANDIRILAMAYAN fark bir URUN hukmu DEGILDIR.
     # Eski surum bunu "davranis DEGISTI" (exit 1) diye raporluyordu; oysa sebep
