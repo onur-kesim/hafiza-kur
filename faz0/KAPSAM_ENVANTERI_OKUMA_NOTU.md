@@ -1,19 +1,48 @@
 # `kapsam_envanteri*.json` — HANGİSİ BUGÜNE AİT?
 
-Bu dizinde artık **iki** kapsam envanteri var. İkisi de kanıttır, ikisi de
+Bu dizinde artık **altı** kapsam envanteri var. Hepsi kanıttır, hiçbiri
 üzerine yazılmaz — ama yalnızca biri bugünkü motoru ölçer.
 
 | Dosya | Madde | Motor kimliği | O motorun `lineno`+kapı tutarlılığı | Durum |
 |---|---|---|---|---|
 | `kapsam_envanteri.json` | 60 | **yalnız yol** (`/home/claude/dogrulama/hafiza.py`) — SHA yok | kimliksiz | 🗄️ tarihsel |
 | `sabotaj_rapor.json` | 61 | **yalnız yol** (`C:\dev\hafiza-kur\…`) — SHA yok | kimliksiz | 🗄️ tarihsel |
-| `kapsam_envanteri_61283ff7.json` | 61 | `motor_sha256: 61283FF7…` | 61 / 61 (o motorda) | 🗄️ H11 bölmesiyle aşıldı |
-| **`kapsam_envanteri_9b72160a.json`** | 61 | `motor_sha256: 9B72160A…` | **61 / 61** | ✅ **GÜNCEL** |
+| `kapsam_envanteri_61283ff7.json` | 61 | `motor: 61283FF7…` | 61 / 61 (o motorda) | 🗄️ H11 bölmesiyle aşıldı |
+| `kapsam_envanteri_9b72160a.json` | 61 | `motor: 9B72160A…` | 61 / 61 (o motorda) | 🗄️ **57/61 KAYMIŞ** — md.6→md.10 turları satırları kaydırdı, H16'dan ÖNCE bu tabanın kendisi bayattı (ölçüldü, ADR_H16_UYGULAMA_KISITI.md §5) |
+| `kapsam_envanteri_81798e30.json` | 61 | `motor: 81798E30…` (SHA — `motor_yolu` altında ayrıca yol) | 61 / 61 | 🗄️ H16 ÖNCESİ taban (17 Ağu 2026, bu turda üretildi) |
+| **`kapsam_envanteri_f77cff03.json`** | 64 | `motor: F77CFF03…` | **64 / 64** | ✅ **GÜNCEL** (17 Ağu 2026, H16 SONRASI) |
 
-> `9b72160a`, `_kapi_h11` dörde bölündükten sonraki motordur (14 Ağu 2026).
-> Bölme sonrası **sabotaj diferansiyeli ölçüldü: 61/61 `(kapı, hüküm)` dizisi
-> AYNI** — yani bölme kapsamı değiştirmedi, yalnızca satır numaralarını kaydırdı.
+> `f77cff03` H16 YAPI kapısı eklendikten sonraki motordur (17 Ağu 2026).
+> H16 ÖNCESİ/SONRASI **sabotaj diferansiyeli ÖLÇÜLDÜ: fail() 61 → 64 (N=3,
+> `_kapi_h16`'nin üç `fail()` çağrısı) VE diğer 61'in `(kapı, kapı-içi-sıra)`
+> bazında hükmü+sebebi BİREBİR AYNI** — bölme/ekleme kapsamı değiştirmedi,
+> yalnızca satır numaralarını kaydırdı (bu turda da, her turda olduğu gibi).
+> H16'nın 3 yeni `fail()`i bu turda **KAPSAMSIZ** görünüyor — bu bir kusur
+> DEĞİL: `isir`in ESKİ mutant kataloğunda H16'ya özgü mutant yok (H16'yı
+> ölçen `faz0/yapi_kapisi_mutanti.py`dir, 9/9 mutant ISIRDI — ayrı ölçüm).
 > Eski dosyalar silinmedi: kanıt dosyası üzerine yazılmaz.
+
+## 🔴 "GÜNCEL" bir tarihtir, bir ölçüm değil (üçüncü ısırık, 17 Ağu 2026)
+
+`9b72160a` bu notta "✅ GÜNCEL" işaretliydi. Ölçüldü (H16 turu, ADR §5): o
+61 kaydın `lineno` alanının bugünkü motorda **yalnızca 4'ü** gerçek bir
+`fail(…)` çağrısına denk geliyordu — 57'si kaymıştı. İşaret bir kez doğruydu
+ve sonra sessizce bayatladı; onu düzelten hiçbir mekanizma yoktu.
+
+> Bir artefakta **"GÜNCEL" yazan her satırın yanında, o güncelliği O AN ölçen
+> komut durur; komut yoksa işaret yazılmaz.**
+
+Tazelik komutu (bu tablodaki `f77cff03` satırı için — motor değiştikçe SHA
+da değişir, komut GÜNCELLENMEDEN kopyalanmaz):
+
+```
+python3 faz0/sabotaj.py --motor skill/scripts/hafiza.py \
+    --json faz0/kapsam_envanteri_$(python3 -c "import hashlib;print(hashlib.sha256(open('skill/scripts/hafiza.py','rb').read()).hexdigest()[:8])").json
+```
+
+Çıktıdaki `fail_sayisi` bugünküyle (bu belgenin yazıldığı an: **64**) aynı
+değilse, ya da yukarıdaki JSON dosya adı depoda YOKSA, bu tablo BAYATLAMIŞTIR
+— "✅ GÜNCEL" satırını silin, yeni üretileni ekleyin, bu notu güncelleyin.
 
 ## Nasıl ölçüldü (14 Ağu 2026)
 

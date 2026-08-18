@@ -245,8 +245,14 @@ def main():
     print(CIZGI)
 
     if a.json:
+        # H16-BRIEF §3.1 (17 Agu 2026): `motor` alani bir YOL yaziyordu; yol
+        # tasinabilir/kopyalanabilir/silinebilir, kimlik degildir. OLCULDU:
+        # eski bir raporun `motor` yolu artik yok olan bir kopyayi gosteriyordu
+        # ve sayilarin HANGI baytlara ait oldugu dosya ADINDAKI kisa SHA'dan
+        # baska hicbir yerden anlasilamiyordu. `motor` artik SHA256 tasir; yol
+        # (hata ayiklama icin faydali) `motor_yolu` altina TASINDI, kaybolmadi.
         with open(a.json, "w", encoding="utf-8", newline="\n") as f:
-            json.dump({"motor": motor, "motor_sha256": motor_sha,
+            json.dump({"motor": motor_sha, "motor_yolu": motor,
                        "fail_sayisi": len(fail_cagrilari(kaynak)),
                        "sonuclar": sonuclar}, f, ensure_ascii=False, indent=2)
         print("JSON rapor: %s" % a.json)

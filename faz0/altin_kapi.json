@@ -131,6 +131,18 @@
       "komut": "kapi --siki",
       "exit": 1,
       "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H0: cipa saglam · zincir KIRIK\n  · H2: 2.1 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H8: 0 korunan blok\n  · H10: 4 blok / 4 ayrik konu\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: FAIL (6 bulgu)\n  [H0] defter MUHURSUZ degismis: politika:KONULAR.md (muhurle: hafiza.py muhur \"gerekce\")\n  [H1] 3 satir BEYANSIZ EKLENMIS (--siki):\n        - FAZLA: - PAZARLIKSIZ: kural 0 yanlis evde duruyor.\n        - FAZLA: - PAZARLIKSIZ: kural 1 yanlis evde duruyor.\n        - FAZLA: - PAZARLIKSIZ: kural 2 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 20) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 0 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 21) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 1 yanlis evde duruyor.\n  [H7] KALICI KURAL yanlis evde (satir 22) — rotasyona girer, gorunmez olur:\n      - PAZARLIKSIZ: kural 2 yanlis evde duruyor.\n  [KAPI] OLCUM YARIDA KESILDI: DOSYA UTF-8 DEGIL: <KOK>/KONULAR.md\n        -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.\nHATA: DOSYA UTF-8 DEGIL: <KOK>/KONULAR.md\n  Bayt 0 cozulemedi (invalid start byte).\n  Bu sistem UTF-8 sarttir (Turkce karakterler icin). Dosyayi UTF-8'e cevir:\n  Not Defteri > Farkli Kaydet > Kodlama: UTF-8  ·  VS Code > sag alt > Reopen with Encoding.\n"
+    },
+    {
+      "hal": "h12_h_kacis",
+      "komut": "kapi",
+      "exit": 1,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H2: 2.0 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 0 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: FAIL (5 bulgu)\n  [H16] gunluk_ars YOK: <KOK>/arsiv/hafiza/gunluk\n  [H16] h PROJE DISINA BAGLI: <KOK>/arsiv/hafiza -> <KOK>_disari\n  [H0] _KAYNAK.md / _CIPA.json yok — kanit tabani kayip\n  [H4] OLU BAGLANTI: arsiv/hafiza/HAFIZA_01.md (hicbir yerde yok)\n  [H6] DIZINDE var ama diskte YOK: HAFIZA_01.md\n"
+    },
+    {
+      "hal": "h12_h_kacis",
+      "komut": "kapi --siki",
+      "exit": 1,
+      "cikti": "=== HAFIZA KAPISI v2.5.0-dev === kok: <KOK>\n  · H2: 2.0 / 60 KB (%3 dolu)\n  · H5: kanonik_artefakt tanimsiz — uygulanmadi\n  · H10: 4 blok / 4 ayrik konu\n  · H11: henuz karar dosyasi yok\n  · H12: son guncelleme <GUN> gun once (<TARIH>)\n  · H13: 7 seri tanimli\n  · H2: defterler 0 KB\n  · H15: politika 4 kural isareti · tavan 60 KB · gecikme 2 gun\n  · H14: karsilastirilacak proje dosyasi yok\n  ? H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)\n\nSONUC: FAIL (5 bulgu)\n  [H16] gunluk_ars YOK: <KOK>/arsiv/hafiza/gunluk\n  [H16] h PROJE DISINA BAGLI: <KOK>/arsiv/hafiza -> <KOK>_disari\n  [H0] _KAYNAK.md / _CIPA.json yok — kanit tabani kayip\n  [H4] OLU BAGLANTI: arsiv/hafiza/HAFIZA_01.md (hicbir yerde yok)\n  [H6] DIZINDE var ama diskte YOK: HAFIZA_01.md\n"
     }
   ]
 }

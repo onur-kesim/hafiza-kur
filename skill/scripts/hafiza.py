@@ -15,7 +15,7 @@ ALT KOMUTLAR
   emekli   Canli hafizadan satir blogunu arsive TASIR (byte-birebir, geri alinabilir).
   karar    Yeni ADR (karar dosyasi) acar; --yerine ile eskisini "yerine gecildi" yapar.
   muhur    Beyan defterlerindeki bilincli degisikligi zincire muhurler (gerekce ZORUNLU).
-  kapi     H0..H13 kapilarini kosar. FAIL -> exit 1.
+  kapi     H0..H16 kapilarini kosar. FAIL -> exit 1.
   isir     Kapinin gercekten ISIRDIGINI mutantla kanitlar (kor kapi protokolu).
 
 KOK COZUMU (sessiz varsayim YOK):
@@ -3361,7 +3361,14 @@ def _kapi_govde(a, F, N, O):
     rc = rc_oku(kok); y = Y(kok, rc)
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
     siki = bool(a.siki)
-    _cokad = yol_on_kontrol(y, dizinler=(y.h,), dosyalar=_korunacak_dosyalar(y, rc),
+    # H16 (Onur kilidi 17 Agu 2026, YAPI_KAPISI_TASARIM.md §4.4): y.h ARTIK burada
+    # DIZIN olarak sinanmiyor. Eskiden `dizinler=(y.h,)` idi ve y.h "dizin degil"
+    # ya da "kacis" oldugunda bu cagri `oldur()` cagirip SystemExit(2) atiyordu ->
+    # cmd_kapi yakalayip exit 3 ("OLCUM YARIDA KESILDI") basiyordu -> H16 DAHIL
+    # HICBIR kapi kosmuyordu. Sozlesme degisti: y.h "dizin degil"/"kacis" artik
+    # _kapi_h16'nin OLCTUGU, fail() ile RAPORLADIGI bir bulgu (exit 1) — kesilme
+    # (exit 3) degil. `dosyalar=` kolu (H-LINK) DEGISMEDI, bu turun disinda.
+    _cokad = yol_on_kontrol(y, dizinler=(), dosyalar=_korunacak_dosyalar(y, rc),
                             sessiz=True)
     if _cokad:
         fail("H-LINK", "%d dosyanin proje DISINDA da bir adi var (hardlink) — bu dosyalara "
@@ -3372,6 +3379,7 @@ def _kapi_govde(a, F, N, O):
     if not os.path.isdir(y.h):
         fail("H6", "HAFIZA DIZINI YOK: %s — arsiv tabani kayip." % y.h)
         return
+    _kapi_h16(F, N, O, y)
 
     if not os.path.isfile(y.canli):
         fail("H-", "CANLI HAFIZA YOK: %s — hicbir kapi olculemez." % y.canli)
@@ -4493,6 +4501,47 @@ def _kapi_h14(F, N, O, kok, rc, y, t_son):
         _h14_hukum(F, N, gecikme, t_son, en_yeni_t, en_yeni_f)
 
 
+def _kapi_h16(F, N, O, y):
+    """H16 YAPI (Onur kilidi 12+17 Agu 2026, YAPI_KAPISI_TASARIM.md).
+
+    OLCULDU: `kapi` yalnizca `y.h`in dizin olup olmadigina bakiyordu
+    (`_kapi_govde` @ eski `yol_on_kontrol(dizinler=(y.h,), …)`); diger UC
+    dizin (`y.gunluk` · `y.gunluk_ars` · `y.kararlar`) hem "dizin degil" hem
+    "proje disina kacis" sinifinda TAMAMEN OLCULMUYORDU — bozuk projede
+    `kapi` exit 0 (YEŞİL) diyordu ve stdout/stderr'de dizin adi HIC gecmiyordu
+    (grep sayimi 0): hukum yalniz yanlis degil, GIZLIYDI. `derle` ayni bozmayi
+    TEMIZ hata ile yakaliyordu — bilgi URUNDE vardi, OLCUM KAPISINDA yoktu.
+
+    KAPSAM KILITLI — DORT dizin, genisletme YOK (ADR_H16_UYGULAMA_KISITI.md
+    §4.2; `arsiv/hafiza/` altindaki `v2/`, `.kilit`, politika yollari AYRI IS).
+    Her dizin icin UC hal FAIL'dir: dizin degil · hic yok · proje disina kacis.
+    Kacis olcutu `kok_disina_mi` — `yol_on_kontrol`'un kendi kacis yardimcisiyla
+    AYNI fonksiyon (B-2/B-3 TEK TANIM ilkesi, ikinci bir kacis tanimi YOK).
+
+    `y.h` OZEL: "hic yok" hali H16'nin KAPSAMI DISINDA kalir, H6'da KALIR
+    (`_kapi_govde`'deki `if not os.path.isdir(y.h): fail("H6", …); return`
+    SOKULMEDI — altin kumenin `h6_fail` kaydi ona bagli). H16 y.h icin
+    SADECE `_kapi_govde`'deki bu erken cikistan SONRA cagrilir, yani buraya
+    ulastiginda y.h zaten `os.path.isdir()==True`dir — "dizin degil" hali
+    DOGAL olarak asagidaki dongude hic ateslenmez (ozel durum YAZILMAZ);
+    pratikte y.h icin olculen TEK hal KACIS'tir (`y9_h_kacis`, §4.4: bugun
+    exit 3, artik exit 1).
+
+    TEMIZDE HICBIR SATIR BASMAZ — H1/H3/H4/H6/H7 emsali (tasarim §4.2).
+    ADDITIVE: cagrildigi yer (`_kapi_govde`, H6 erken cikisindan SONRA)
+    SIRAYI bozmaz; M-Y7 bu sirayi mutantla sinar.
+    """
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
+    for ad, d in (("kararlar", y.kararlar), ("gunluk", y.gunluk),
+                  ("gunluk_ars", y.gunluk_ars), ("h", y.h)):
+        if not os.path.lexists(d):
+            fail("H16", "%s YOK: %s" % (ad, d))
+        elif not os.path.isdir(d):
+            fail("H16", "%s DIZIN DEGIL: %s" % (ad, d))
+        elif kok_disina_mi(y.kok, d):
+            fail("H16", "%s PROJE DISINA BAGLI: %s -> %s" % (ad, d, os.path.realpath(d)))
+
+
 # ---------------------------------------------------------------- ISIRMA KANITI
 
 def _kapi_metni(kok):
@@ -5418,7 +5467,7 @@ def main():
     p.add_argument("--gerekce", required=True)
     p.set_defaults(fn=cmd_korunan)
 
-    p = alt.add_parser("kapi", help="H0..H13 kapilarini kosar")
+    p = alt.add_parser("kapi", help="H0..H16 kapilarini kosar")
     p.add_argument("--kok"); p.add_argument("--siki", action="store_true")
     p.set_defaults(fn=cmd_kapi)
 

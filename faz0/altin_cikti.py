@@ -169,10 +169,51 @@ def _boz_dizin_yap(kok, rel):
     os.makedirs(p)
 
 
+def _boz_kacis_link(kok, rel):
+    """H16 (Onur kilidi 17 Agu 2026, YAPI_KAPISI_TASARIM.md §4.4): `rel`
+    dizini PROJE DISINA baglanir (`arsiv/hafiza` icin: y9_h_kacis). Bugune
+    kadar exit 3 (KESILME) idi; H16 ile exit 1 (olculmus kirmizi) olur —
+    sozlesme degisikligi burada KALICI olarak kilitlenir.
+
+    Harici hedef `kok + "_disari"` — `kok`in kendisini ONEK olarak tasir,
+    boylece `normalize()`nin `m.replace(kok, "<KOK>")` cagrisi bu yolu da
+    <KOK>_disari'ya indirger (AYRI bir desen EKLEMEDEN). Sabit-taban disinda
+    (SIBLING olarak taban'in kendi altinda) bir hedef secilseydi, iki ayri
+    `--kaydet`/`--karsilastir` kosumu FARKLI gecici taban kullandigi icin
+    "gercek hedef yolu" metni HER SEFERINDE degisir ve bu kayit KALICI
+    OLARAK sahte-FARK uretirdi (OLCULDU, yapi_kapisi_mutanti.py'nin ilk
+    surumunde ayni sinif kusur cikti — DUZELTILDI, aynisi burada da
+    onceden onlenir).
+
+    Windows'ta `os.symlink` Gelistirici Modu/Yonetici ister (WinError 1314,
+    OLCULDU); NTFS JUNCTION (`mklink /J`) istemez ve `kok_disina_mi`/
+    `os.path.realpath` karsisinda symlink'le AYNI davranir (AYRICA
+    dogrulandi, Python 3.12 `os.path.isjunction()` farkindaligi `shutil.
+    rmtree`yi de guvenli kilar). POSIX'te duz `os.symlink` kullanilir."""
+    harici = kok + "_disari"
+    os.makedirs(harici, exist_ok=True)
+    p = _yol(kok, rel)
+    # `kur` az once bu yolu SIRADAN bir dizin olarak yaratti (bozma her zaman
+    # taze bir proje uzerinde kosar) — link/junction OLASILIGI yok, bu yuzden
+    # `os.path.isjunction` (yalniz 3.12+) GEREKMEZ, `shutil.rmtree` yeter.
+    if os.path.isdir(p):
+        shutil.rmtree(p)
+    elif os.path.lexists(p):
+        os.remove(p)
+    if os.name == "nt":
+        r = subprocess.run(["cmd", "/c", "mklink", "/J", p, harici],
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if r.returncode != 0:
+            raise OSError(r.stderr.decode("utf-8", "replace"))
+    else:
+        os.symlink(harici, p, target_is_directory=True)
+
+
 BOZMALAR = {
     "kural_yanlis_ev": _boz_kural_yanlis_ev,
     "gecersiz_utf8": _boz_gecersiz_utf8,
     "dizin_yap": _boz_dizin_yap,
+    "kacis_link": _boz_kacis_link,
 }
 
 # --------------------------------------------------------------- PROJE HALLERI
@@ -206,6 +247,12 @@ HALLER = [
                                    ("gecersiz_utf8", "arsiv/hafiza/_KOVA.json")]),
     ("h11_karisik_cok", [], False, [("kural_yanlis_ev", KURAL_SAYISI),
                                     ("gecersiz_utf8", "KONULAR.md")]),
+    # --- H16 SOZLESME DEGISIKLIGI: y.h (arsiv/hafiza) PROJE DISINA link ---
+    # (Onur kilidi 17 Agu 2026, YAPI_KAPISI_TASARIM.md §4.4/kabul olcutu j).
+    # BUGUNE KADAR bu hal exit 3 (KESILME) idi; H16 ile exit 1 (olculmus
+    # kirmizi, bulgu [H16]) olur. Kayit YALNIZ ekleniyor (ADDITIVE) — mevcut
+    # 11 kayit DEGISMEDI, bu 12.si.
+    ("h12_h_kacis", [], False, [("kacis_link", "arsiv/hafiza")]),
     # <<< GENISLEME SONU
 ]
 

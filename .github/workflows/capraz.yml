@@ -1571,3 +1571,53 @@ jobs:
           name: hukum-tutarliligi-${{ matrix.os }}
           path: hukum-tutarliligi-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # YAPI KAPISI (H16) MUTANTI (Onur kilidi 12+17 Agu 2026) — 11 hal / 9 mutant
+  #
+  #     OLCULDU (YAPI_KAPISI_TASARIM.md + ADR_H16_UYGULAMA_KISITI.md): `kapi`
+  #     yalniz `y.h`in (arsiv/hafiza) dizin olup olmadigina bakiyordu; diger UC
+  #     dizin (`y.gunluk` · `y.gunluk_ars` · `y.kararlar`) hem "dizin degil" hem
+  #     "proje disina kacis" sinifinda TAMAMEN OLCULMUYORDU — bozuk projede
+  #     `kapi` exit 0 (YESIL) diyordu ve ciktida bozuk dizinin adi HIC gecmiyordu
+  #     (hukum GIZLIYDI, yalniz yanlis degil). `_kapi_h16` bu boslugu kapatir;
+  #     TEMIZ projede hicbir satir basmaz (H1/H3/H4/H6/H7 emsali) — bu iddia
+  #     `faz0/altin_cikti.py --karsilastir` (22 sabit referans) ile AYRICA
+  #     kanitlanir, bu is o kapiyi TEKRARLAMAZ.
+  #
+  #     11 proje hali (p00 temiz KONTROL-1 · p01-p05 dizin-degil/yok ·
+  #     p06 arsiv-dosya KONTROL-2 (H6 sinirini dogrular) · p07-p09 kacis ·
+  #     p10 ic-link KONTROL-3) + 9 motor mutanti (M-Y1..M-Y9). UC'u (M-Y5/
+  #     M-Y7/M-Y9) kapinin degil, MALIYET ve SOZLESME iddialarinin (temizde
+  #     sessizlik · H6 siniri · exit3->exit1 degisikligi) isirip isirmadigini
+  #     olcen OLCUT mutantidir.
+  #
+  #     KACIS halleri (p07-p10) `os.symlink` gerektirir; sembolik link
+  #     kurulamayan platform/izinde bu haller ARACIN KENDISI TARAFINDAN
+  #     OLCULEMEDI diye ISARETLENIR (sessiz atlama YOK).
+  #
+  #     UC PLATFORM ve `continue-on-error` YOK. `| tee` exit kodunu YUTMAZ.
+  # ---------------------------------------------------------------------------
+  yapi_kapisi_kapisi:
+    name: yapi kapisi mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 11 hal + 9 mutant
+        shell: bash
+        run: python faz0/yapi_kapisi_mutanti.py 2>&1 | tee yapi-kapisi-cikti.txt
+      - name: yapi kapisi ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yapi-kapisi-${{ matrix.os }}
+          path: yapi-kapisi-cikti.txt
+          if-no-files-found: warn
