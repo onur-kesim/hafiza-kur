@@ -3377,7 +3377,14 @@ def _kapi_govde(a, F, N, O):
             F.append("      - " + _rel(_p0, kok))
         F.append("      -> Yedek amacliysa: 'cp -al' yerine 'cp -a' kullan (bagimsiz kopya).")
     if not os.path.isdir(y.h):
-        fail("H6", "HAFIZA DIZINI YOK: %s — arsiv tabani kayip." % y.h)
+        # KALEM C (Onur kilidi 18 Agu 2026, H16-DUZELTME-BRIEF.md §3): "YOK"/
+        # "DIZIN DEGIL" ayrimi + TEK `fail()` cagrisi gerekcesi icin bkz.
+        # `_kapi_h16`nin docstring'i (asagida) — [H6] etiketi burada KALIR.
+        fail("H6", ("HAFIZA DIZINI DIZIN DEGIL: %s — bir dosya, "
+                    "kirik link ya da link dongusu kaplamis olabilir. Tasi ya "
+                    "da sil." % y.h)
+                   if os.path.lexists(y.h) else
+                   "HAFIZA DIZINI YOK: %s — arsiv tabani kayip." % y.h)
         return
     _kapi_h16(F, N, O, y)
 
@@ -4518,14 +4525,22 @@ def _kapi_h16(F, N, O, y):
     Kacis olcutu `kok_disina_mi` — `yol_on_kontrol`'un kendi kacis yardimcisiyla
     AYNI fonksiyon (B-2/B-3 TEK TANIM ilkesi, ikinci bir kacis tanimi YOK).
 
-    `y.h` OZEL: "hic yok" hali H16'nin KAPSAMI DISINDA kalir, H6'da KALIR
-    (`_kapi_govde`'deki `if not os.path.isdir(y.h): fail("H6", …); return`
-    SOKULMEDI — altin kumenin `h6_fail` kaydi ona bagli). H16 y.h icin
-    SADECE `_kapi_govde`'deki bu erken cikistan SONRA cagrilir, yani buraya
-    ulastiginda y.h zaten `os.path.isdir()==True`dir — "dizin degil" hali
-    DOGAL olarak asagidaki dongude hic ateslenmez (ozel durum YAZILMAZ);
-    pratikte y.h icin olculen TEK hal KACIS'tir (`y9_h_kacis`, §4.4: bugun
-    exit 3, artik exit 1).
+    `y.h` OZEL: "hic yok" VE "dizin degil" halleri H16'nin KAPSAMI DISINDA
+    kalir, H6'da KALIR (`_kapi_govde`'deki erken cikis SOKULMEDI). GEREKCE
+    DUZELTILDI (18 Agu 2026, H16-DUZELTME-BRIEF.md §3 — KALEM C): erken cikis
+    bir altin kume kaydini korumak icin degil, YAPISAL SINIR oldugu icin
+    kalir — H16 bu erken cikistan SADECE SONRA cagrilir, yani buraya
+    ulastiginda y.h zaten `os.path.isdir()==True`dir; "dizin degil"/"yok"
+    halleri DOGAL olarak asagidaki dongude hic ateslenmez (ozel durum
+    YAZILMAZ). Pratikte y.h icin olculen TEK hal KACIS'tir (`y9_h_kacis`,
+    §4.4: bugun exit 3, artik exit 1). Bu sinir M-Y7 ile sinanir.
+
+    KALEM C AYRICA: `_kapi_govde`'deki H6 erken cikis mesaji artik "YOK" ile
+    "DIZIN DEGIL"i AYIRT EDER (biri "olustur" ister, digeri "tasi/sil") —
+    ETIKET [H6] KALIR, H16'ya TASINMAZ. TEK `fail()` cagrisi (kosullu metin)
+    BILINCLI: sabotaj.py fail() cagri YERLERINI AST ile SAYAR (statik sayim);
+    iki ayri cagri kapsam envanterini 64 -> 65'e cikarirdi (kabul olcutu (i):
+    "DEGISMEMELI").
 
     TEMIZDE HICBIR SATIR BASMAZ — H1/H3/H4/H6/H7 emsali (tasarim §4.2).
     ADDITIVE: cagrildigi yer (`_kapi_govde`, H6 erken cikisindan SONRA)

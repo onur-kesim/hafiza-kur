@@ -51,8 +51,10 @@ NE OLCMEZ (SINIR — gizlenmez)
      Baglanti hicbir yontemle kurulamazsa o HAL OLCULEMEDI sayilir, sessizce
      ATLANMAZ — YOK-SAYILMAZ, HERKESE YAZILIR.
   2. "p00 çıktısı bölme öncesiyle bit-bit ayni" iddiasinin ASIL kaniti
-     `faz0/altin_cikti.py --karsilastir` (kabul olcutu madde a, 22 sabit
-     referans) — bu dosya p00'i yalniz "exit 0 ve H16 sessiz" olarak dogrular
+     `faz0/altin_cikti.py --karsilastir` (kabul olcutu madde a; kumedeki
+     kayit sayisi ARTEFAKTTAN okunur, burada sabit YAZILMAZ — bir onceki
+     sayi bayatladi, bkz. `faz0/altin_kapi.json`) — bu dosya p00'i yalniz
+     "exit 0 ve H16 sessiz" olarak dogrular
      ve motoru IKI KEZ kosarak DETERMINIZM'i sinar; 22 referansla bit-bit
      karsilastirma bu dosyanin ekseni DEGILDIR (ortusen olcum onlenir).
   3. Windows/macOS harici platformlar kosulmadi; kacis sinifinin oradaki
@@ -319,10 +321,19 @@ _KACIS_DALI = ('        elif kok_disina_mi(y.kok, d):\n'
               '            fail("H16", "%s PROJE DISINA BAGLI: %s -> %s" '
               '% (ad, d, os.path.realpath(d)))')
 
-_H6_BLOK_VE_CAGRI = ('    if not os.path.isdir(y.h):\n'
-                     '        fail("H6", "HAFIZA DIZINI YOK: %s — arsiv tabani kayip." % y.h)\n'
-                     '        return\n'
-                     '    _kapi_h16(F, N, O, y)')
+_H6_BLOK_VE_CAGRI = (
+    '    if not os.path.isdir(y.h):\n'
+    '        # KALEM C (Onur kilidi 18 Agu 2026, H16-DUZELTME-BRIEF.md §3): "YOK"/\n'
+    '        # "DIZIN DEGIL" ayrimi + TEK `fail()` cagrisi gerekcesi icin bkz.\n'
+    '        # `_kapi_h16`nin docstring\'i (asagida) — [H6] etiketi burada KALIR.\n'
+    '        fail("H6", ("HAFIZA DIZINI DIZIN DEGIL: %s — bir dosya, "\n'
+    '                    "kirik link ya da link dongusu kaplamis olabilir. Tasi ya "\n'
+    '                    "da sil." % y.h)\n'
+    '                   if os.path.lexists(y.h) else\n'
+    '                   "HAFIZA DIZINI YOK: %s — arsiv tabani kayip." % y.h)\n'
+    '        return\n'
+    '    _kapi_h16(F, N, O, y)'
+)
 
 
 def m_y1_kapi_dusurme(s):
@@ -374,10 +385,16 @@ def m_y6_gunluk_ars_dusur(s):
 def m_y7_sinir_kaymasi(s):
     """M-Y7 (OLCUT mutanti): H16, H6'nin erken cikisinin ONUNE alinir ->
     y6_arsiv_dosya kolu [H6]'dan [H16]'ya doner, ADDITIVE kisit BOZULUR."""
-    yeni = ('    _kapi_h16(F, N, O, y)  # MUTANT M-Y7: H6 erken cikisinin ONUNE alindi\n'
-            '    if not os.path.isdir(y.h):\n'
-            '        fail("H6", "HAFIZA DIZINI YOK: %s — arsiv tabani kayip." % y.h)\n'
-            '        return')
+    yeni = (
+        '    _kapi_h16(F, N, O, y)  # MUTANT M-Y7: H6 erken cikisinin ONUNE alindi\n'
+        '    if not os.path.isdir(y.h):\n'
+        '        fail("H6", ("HAFIZA DIZINI DIZIN DEGIL: %s — bir dosya, "\n'
+        '                    "kirik link ya da link dongusu kaplamis olabilir. Tasi ya "\n'
+        '                    "da sil." % y.h)\n'
+        '                   if os.path.lexists(y.h) else\n'
+        '                   "HAFIZA DIZINI YOK: %s — arsiv tabani kayip." % y.h)\n'
+        '        return'
+    )
     return s.replace(_H6_BLOK_VE_CAGRI, yeni, 1) if _tek_yerde(s, _H6_BLOK_VE_CAGRI) else None
 
 

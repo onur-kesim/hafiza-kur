@@ -22,6 +22,13 @@ Bu dizinde artık **altı** kapsam envanteri var. Hepsi kanıttır, hiçbiri
 > ölçen `faz0/yapi_kapisi_mutanti.py`dir, 9/9 mutant ISIRDI — ayrı ölçüm).
 > Eski dosyalar silinmedi: kanıt dosyası üzerine yazılmaz.
 
+> 🔴 **KALEM E (18 Ağu 2026, H16-DÜZELTME-BRİEF.md §5.2) — bu YAPISALDIR:**
+> `sabotaj.py` tek bir **temiz** şablon kurup her `fail()` satırını silerek
+> `isir` koşuyor; H16 temiz projede hiç ateşlenmediği için satırı silinse
+> `isir` fark etmez. **KAPSAMSIZ = `isir`ın temiz şablonu o satırı
+> ateşlemiyor demektir; "hiç ölçülmüyor" demek DEĞİLDİR** — H16'yı
+> `yapi_kapisi_mutanti.py` ölçer.
+
 ## 🔴 "GÜNCEL" bir tarihtir, bir ölçüm değil (üçüncü ısırık, 17 Ağu 2026)
 
 `9b72160a` bu notta "✅ GÜNCEL" işaretliydi. Ölçüldü (H16 turu, ADR §5): o

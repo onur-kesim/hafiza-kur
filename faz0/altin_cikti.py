@@ -79,10 +79,33 @@ _RE_KOK_YOLU = re.compile(r"<KOK>([\\/][^\s:;,'\"]*)")
 
 def normalize(metin, kok):
     """Kacinilmaz gurultuyu siler. HER EKLENEN DESEN BIR KORLUK ADAYIDIR:
-    yeni desen eklemeden once `--kendini-sina` yeniden kosulmalidir."""
-    m = metin.replace(kok, "<KOK>")
-    # Windows'ta ayni yol ters bolu ile de basilabilir.
-    m = m.replace(kok.replace("/", "\\"), "<KOK>")
+    yeni desen eklemeden once `--kendini-sina` yeniden kosulmalidir.
+
+    KALEM A (Onur kilidi 18 Agu 2026, H16-DUZELTME-BRIEF.md §1 — ENGELLEYICI):
+    `kok` ile `os.path.realpath(kok)` AYRI dizgeler olabilir (Windows 8.3/uzun
+    ad, macOS `/private` oneki, symlink'li TMPDIR — `realpath(kok) != kok`
+    olan HER ortamda). `_kapi_h16`nin kacis mesaji sag yarisina
+    `os.path.realpath(d)` basar; yalniz `kok` maskelenince sag yari CIPLAK
+    kalir ve iki ayri kosum (farkli gecici taban) arasinda SAHTE FARK uretir.
+    OLCULDU: CI (Windows runner) + Linux'ta symlink'li TMPDIR ile YENIDEN
+    URETILDI. ⇒ `realpath(kok)` da maskelenir.
+
+    🔴 SIRALAMA TUZAGI: `kok` ve `realpath(kok)` BIRBIRININ ONEKI olabilir
+    (macOS `/var/folders/X` ve `/private/var/folders/X`). Kisa aday ONCE
+    uygulanirsa UZUN adayin ICINI bozar (`/private/var/folders/X` ->
+    `/private<KOK>` — YARIM maskeleme, <KOK> ayri bir yol parcasinin ICINDE
+    kalir). ⇒ iki aday UZUNLUGA GORE AZALAN sirada uygulanir; esitlerse
+    (Linux'ta olagan hal, symlink yoksa) ikinci gecis etkisizdir, zararsizdir.
+    """
+    try:
+        _rk = os.path.realpath(kok)
+    except OSError:
+        _rk = kok
+    m = metin
+    for _aday in sorted({kok, _rk}, key=len, reverse=True):
+        m = m.replace(_aday, "<KOK>")
+        # Windows'ta ayni yol ters bolu ile de basilabilir.
+        m = m.replace(_aday.replace("/", "\\"), "<KOK>")
     # HATA ve KESILME halleri kok ALTINDAKI yolu da basiyor
     # ("DOSYA UTF-8 DEGIL: <KOK>/arsiv/hafiza/_CIPA.json"). Windows'ta ayni yol
     # ters bolu ile gelir. Desen YALNIZ <KOK>'e YAPISIK yol belirtecine dokunur;

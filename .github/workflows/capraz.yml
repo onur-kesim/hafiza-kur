@@ -351,6 +351,41 @@ jobs:
       - name: kapi ciktisi altin kumeyle AYNI mi
         shell: bash
         run: python faz0/altin_cikti.py --karsilastir faz0/altin_kapi.json 2>&1 | tee altin-fark.txt
+      # KALEM B (Onur kilidi 18 Agu 2026, H16-DUZELTME-BRIEF.md §2.2 — CI #75'i
+      # kirmizi yakan sinifin DOGRUDAN olcumu): `realpath(kok) != kok` olan bir
+      # ortamda (symlink'li TMPDIR) ayni karsilastirma. `continue-on-error` YOK,
+      # `| tee` (shell: bash altinda pipefail acik) exit kodunu YUTMAZ. UC
+      # PLATFORMDA da kosar — bu sinif artik hicbiri beklenmeden Linux'ta da
+      # kirmizi yakar. Junction/symlink AYRICALIK ISTEMEZ (mklink /J Windows'ta,
+      # os.symlink POSIX'te) — ayrica ADR/M-A8 ile dogrulandi.
+      - name: kapi ciktisi altin kumeyle AYNI mi (symlink'li TMPDIR)
+        shell: bash
+        run: |
+          python - <<'PYEOF' 2>&1 | tee altin-fark-symlink.txt
+          import os, subprocess, sys, tempfile
+          taban = tempfile.mkdtemp(prefix="ci_symtest_")
+          gercek = os.path.join(taban, "gercek")
+          sym = os.path.join(taban, "sym")
+          os.makedirs(gercek)
+          if os.name == "nt":
+              r = subprocess.run(["cmd", "/c", "mklink", "/J", sym, gercek])
+              if r.returncode != 0:
+                  print("OLCULEMEDI: junction kurulamadi")
+                  sys.exit(2)
+          else:
+              os.symlink(gercek, sym)
+          if os.path.realpath(sym) == sym:
+              print("OLCULEMEDI: baglanti tutmadi (realpath(sym) == sym)")
+              sys.exit(2)
+          print("sym: %s -> realpath: %s" % (sym, os.path.realpath(sym)))
+          env = dict(os.environ)
+          env["TMP"] = sym
+          env["TEMP"] = sym
+          env["TMPDIR"] = sym
+          r = subprocess.run([sys.executable, "faz0/altin_cikti.py",
+                              "--karsilastir", "faz0/altin_kapi.json"], env=env)
+          sys.exit(r.returncode)
+          PYEOF
       - name: altin cikti artefakti
         if: always()
         uses: actions/upload-artifact@v4
@@ -359,6 +394,7 @@ jobs:
           path: |
             altin-sina.txt
             altin-fark.txt
+            altin-fark-symlink.txt
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
@@ -1582,8 +1618,11 @@ jobs:
   #     `kapi` exit 0 (YESIL) diyordu ve ciktida bozuk dizinin adi HIC gecmiyordu
   #     (hukum GIZLIYDI, yalniz yanlis degil). `_kapi_h16` bu boslugu kapatir;
   #     TEMIZ projede hicbir satir basmaz (H1/H3/H4/H6/H7 emsali) — bu iddia
-  #     `faz0/altin_cikti.py --karsilastir` (22 sabit referans) ile AYRICA
-  #     kanitlanir, bu is o kapiyi TEKRARLAMAZ.
+  #     `faz0/altin_cikti.py --karsilastir` ile AYRICA kanitlanir (kumedeki
+  #     kayit sayisi ARTEFAKTTAN okunur, burada sabit YAZILMAZ — bir onceki
+  #     yorum "22 sabit referans" diyordu ve bayatladi, DURUM.md'nin
+  #     "YORUMDAKI CANLI SAYI BAYATLAR" dersi 18 Agu'da burada da ISIRDI), bu
+  #     is o kapiyi TEKRARLAMAZ.
   #
   #     11 proje hali (p00 temiz KONTROL-1 · p01-p05 dizin-degil/yok ·
   #     p06 arsiv-dosya KONTROL-2 (H6 sinirini dogrular) · p07-p09 kacis ·
@@ -1592,9 +1631,11 @@ jobs:
   #     sessizlik · H6 siniri · exit3->exit1 degisikligi) isirip isirmadigini
   #     olcen OLCUT mutantidir.
   #
-  #     KACIS halleri (p07-p10) `os.symlink` gerektirir; sembolik link
-  #     kurulamayan platform/izinde bu haller ARACIN KENDISI TARAFINDAN
-  #     OLCULEMEDI diye ISARETLENIR (sessiz atlama YOK).
+  #     KACIS halleri (p07-p09 — p10 ic-link KONTROL 3'tur, kacis DEGIL) bir
+  #     dizin-kacis baglantisi gerektirir (POSIX'te symlink, Windows'ta
+  #     ayricalik istemeyen NTFS junction); baglanti kurulamayan platform/
+  #     izinde bu haller ARACIN KENDISI TARAFINDAN OLCULEMEDI diye
+  #     ISARETLENIR (sessiz atlama YOK).
   #
   #     UC PLATFORM ve `continue-on-error` YOK. `| tee` exit kodunu YUTMAZ.
   # ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""ALTIN OLCUT MUTANTI — altin_cikti.py'nin UC duzeltmesi ISIRIYOR MU?
+"""ALTIN OLCUT MUTANTI — altin_cikti.py'nin DORT duzeltmesi ISIRIYOR MU?
 
 NEDEN BU DOSYA VAR
   CI #17 ve #18'de `Altin cikti / kapi esdegerligi (windows-latest)` isi kirmizi
@@ -44,10 +44,19 @@ NEDEN BU DOSYA VAR
     DUZELTME-3  Referansin SEKLI kapida sinanir (_kume_sekli_dogrula): eksik alan
                 ya da yanlis tur ARAC KUSURU (exit 3) olur, ham traceback + exit 1
                 olmaz. M-A7 bunu olcer.
+    DUZELTME-4  (18 Agu 2026, H16-DUZELTME-BRIEF.md §1) `normalize()` artik
+                `os.path.realpath(kok)`'u da maskeler, `kok`un kendisi gibi.
+                `_kapi_h16`nin kacis mesaji (`y9_h_kacis`/`h12_h_kacis`)
+                `os.path.realpath(d)` basar; `realpath(kok) != kok` olan HER
+                ortamda (Windows 8.3/uzun ad, macOS `/private`, symlink'li
+                TMPDIR) yalniz `kok` maskesi bu sag yariyi CIPLAK birakiyordu
+                ve iki kosum arasinda SAHTE FARK uretiyordu — CI #75'i kirmizi
+                yakan kusurun ta kendisi. M-A8 bunu olcer.
 
-  Duzeltmelerin katkisi YALNIZ satir-sonu ceviren bir ortamda gorunur. POSIX'te
-  eski olcut de "FARK YOK" der; yani duzeltme burada KENDI KORLUGUNU tekrarlar.
-  Bu yuzden mutant ORTAMI URETIR (asagi bak).
+  Duzeltmelerin katkisi YALNIZ satir-sonu ceviren bir ortamda (DUZELTME-1/2)
+  ya da `realpath(kok) != kok` olan bir ortamda (DUZELTME-4) gorunur. Ne
+  duz POSIX'te ne duz `/tmp`'te eski olcut fark URETIR; yani duzeltme burada
+  KENDI KORLUGUNU tekrarlar. Bu yuzden mutant ORTAMI URETIR (asagi bak).
 
 ORTAM URETIMI — motora DOKUNULMAZ
   `sitecustomize.py` + `PYTHONPATH` ile COCUK SURECIN satir sonu kipi degistirilir:
@@ -63,7 +72,7 @@ ORTAM URETIMI — motora DOKUNULMAZ
   ve "gordugunu ADLANDIRABILIYOR mu"dur. Windows'un kendi hukmu CI'da olculur;
   bu dosya onun YERINE GECMEZ.
 
-YEDI MUTANT — her biri AYRI bir korumayi olcer
+SEKIZ MUTANT — her biri AYRI bir korumayi olcer
   M-A1 SATIR SONU (CRLF)   : eski olcut yanlis hukum verir, yeni olcut FARK YOK der.
   M-A2 SATIR SINIRI        : DUZELTME-1'in kapatMADIGI sinif (\\x0b VE \\x85 ile
                              olculur) — yeni olcut
@@ -82,6 +91,11 @@ YEDI MUTANT — her biri AYRI bir korumayi olcer
                              veriyordu — yani ARAC KUSURU yine "davranis DEGISTI"
                              diye okunuyordu. Duzeltilen kusurun BASKA KAPIDAN
                              donusu. Artik sekil kapida sinanir: exit 3.
+  M-A8 REALPATH MASKESI    : DUZELTME-4. `realpath(kok)` maskesi SOKULUNCE,
+                             KENDI KURDUGU symlink'li TMPDIR ortaminda eski
+                             olcut "davranis DEGISTI" (exit 1) der; yeni olcut
+                             "FARK YOK" (exit 0) der. CI #75'i kirmizi yakan
+                             kusurun dogrudan olcumu.
 
 CIKIS KODLARI (proje sozlesmesi)
   0 olculen her mutant ISIRDI · 1 en az biri KACTI · 2 OLCULEMEDI · 3 ARAC KUSURU
@@ -218,6 +232,30 @@ def yama_eski_sekil(m):
         "mutant/eski-sekil")
 
 
+def yama_realpath_maskesi_sok(m):
+    """KALEM A'nin duzeltmesini (18 Agu 2026, H16-DUZELTME-BRIEF.md §1) geri
+    alir: yalniz `kok` maskelenir, `os.path.realpath(kok)` MASKELENMEZ (18 Agu
+    ONCESI hali). `_kapi_h16`nin kacis mesaji `os.path.realpath(d)` bastigi
+    icin bu, `realpath(kok) != kok` olan ortamlarda (Windows 8.3/uzun ad,
+    macOS `/private`, symlink'li TMPDIR) sahte FARK'i GERI GETIRIR."""
+    hedef = (
+        '    try:\n'
+        '        _rk = os.path.realpath(kok)\n'
+        '    except OSError:\n'
+        '        _rk = kok\n'
+        '    m = metin\n'
+        '    for _aday in sorted({kok, _rk}, key=len, reverse=True):\n'
+        '        m = m.replace(_aday, "<KOK>")\n'
+        '        # Windows\'ta ayni yol ters bolu ile de basilabilir.\n'
+        '        m = m.replace(_aday.replace("/", "\\\\"), "<KOK>")\n'
+    )
+    yeni = (
+        '    m = metin.replace(kok, "<KOK>")  # MUTANT: realpath maskesi SOKULU\n'
+        '    m = m.replace(kok.replace("/", "\\\\"), "<KOK>")\n'
+    )
+    return _degistir(m, hedef, yeni, "mutant/realpath-maskesi-sok")
+
+
 # Teslim gunundeki (commit 8e3993f) aracin ciktisini birebir ureten yama kumesi.
 ESKI_TAM = [yama_eski_kos, yama_eski_teshis, yama_eski_hukum, yama_eski_sekil]
 
@@ -257,6 +295,31 @@ SINIR_HALLERI = [
     ("\\x85", '"\\x85"', "SONRAKI SATIR (NEL, U+0085)"),
 ]
 SC_VT = SC_SINIR % {"ad": "\\x0b (dikey sekme)", "kacis": '"\\x0b"'}
+
+
+def sembolik_tmp_kur(taban):
+    """`realpath(kok) != kok` ureten bir TMPDIR cifti kurar (Onur kilidi 18
+    Agu 2026, H16-DUZELTME-BRIEF.md §2.1): maskeyi dusurmek DUZ `/tmp`'te
+    (realpath(kok)==kok orada) HICBIR FARK URETMEZ — yani mutant KENDI
+    ortamini KURMAZSA KACAR ve kactigi GORULMEZ. Windows'ta NTFS JUNCTION
+    (`mklink /J`, ayricalik ISTEMEZ — `os.symlink` Gelistirici Modu/Yonetici
+    ister, WinError 1314); POSIX'te duz `os.symlink`."""
+    d = os.path.join(taban, "semtest")
+    gercek = os.path.join(d, "gercek")
+    sym = os.path.join(d, "sym")
+    os.makedirs(gercek)
+    if os.name == "nt":
+        r = subprocess.run(["cmd", "/c", "mklink", "/J", sym, gercek],
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if r.returncode != 0:
+            raise AracKusuru("sembolik TMPDIR kurulamadi (junction): %s"
+                             % r.stderr.decode("utf-8", "replace"))
+    else:
+        os.symlink(gercek, sym, target_is_directory=True)
+    if os.path.realpath(sym) == sym:
+        raise AracKusuru("sembolik TMPDIR kurulamadi: realpath(sym) == sym "
+                         "(baglanti tutmadi) — mutant bu ortamda OLCEMEZ")
+    return sym
 
 
 def ortam_kur(taban, ad, kaynak):
@@ -310,12 +373,14 @@ def agac_kur(taban, ad, yamalar, motor_sabotaji=False, referansi_boz=False):
     return hedef
 
 
-def kos(arac, ortam_dizini=None, saniye=900):
+def kos(arac, ortam_dizini=None, saniye=900, ek_env=None):
     o = dict(os.environ)
     o["PYTHONIOENCODING"] = "utf-8"
     if ortam_dizini:
         onceki = o.get("PYTHONPATH")
         o["PYTHONPATH"] = ortam_dizini + (os.pathsep + onceki if onceki else "")
+    if ek_env:      # M-A8: cocuk surecin GECICI DIZIN kokunu degistirir (TMP/TEMP/TMPDIR)
+        o.update(ek_env)
     ref = os.path.join(os.path.dirname(arac), "altin_kapi.json")
     try:
         r = subprocess.run([sys.executable, arac, "--karsilastir", ref],
@@ -506,6 +571,33 @@ def ma7_bozuk_referans(taban):
              "VAR" if yi["traceback"] else "yok"))
 
 
+def ma8_realpath_maskesi(taban):
+    ad = ("M-A8 REALPATH MASKESI (KALEM A, 18 Agu 2026): normalize() "
+          "os.path.realpath(kok)'u da maskeliyor mu")
+    sym = sembolik_tmp_kur(taban)
+    ek_env = {"TMP": sym, "TEMP": sym, "TMPDIR": sym}
+    eski = agac_kur(taban, "a8_eski", [yama_realpath_maskesi_sok])
+    yeni = agac_kur(taban, "a8_yeni", [])
+    e_rc, e_c = kos(eski, ek_env=ek_env)
+    y_rc, y_c = kos(yeni, ek_env=ek_env)
+    if e_rc is None or y_rc is None:
+        kayit(ad, OLCULEMEDI, "zaman asimi (eski=%s yeni=%s)" % (e_rc, y_rc))
+        return
+    ei, yi = imza(e_c), imza(y_c)
+    # ESKI (maske SOKULU): symlink'li TMPDIR'de FARK VAR (kusur geri gelir —
+    # CI #75'in ta kendisi). YENI (duzeltilmis): FARK YOK.
+    tamam = (e_rc == 1 and ei["davranis_degisti"] and not ei["traceback"]
+             and y_rc == 0 and yi["fark_yok"] and not yi["traceback"])
+    kayit(ad, ISIRDI if tamam else KACTI,
+          "symlink'li TMPDIR (realpath(kok)!=kok) | ESKI (maske sokulu): "
+          "exit=%s 'davranis DEGISTI'=%s | YENI (duzeltilmis): exit=%s "
+          "'FARK YOK'=%s (beklenen: 1/VAR -> 0/VAR; ayni cikarsa duzeltme "
+          "kendi kendini onaylar ve bir sonraki ortam ayrismasinda sessizce "
+          "geri gelir)"
+          % (e_rc, "VAR" if ei["davranis_degisti"] else "yok",
+             y_rc, "VAR" if yi["fark_yok"] else "yok"))
+
+
 def main():
     print("=" * 82)
     print("ALTIN OLCUT MUTANTI — altin_cikti.py'nin uc duzeltmesi ISIRIYOR mu?")
@@ -522,7 +614,7 @@ def main():
     try:
         for f in (ma1_satir_sonu, ma2_satir_siniri, ma3_gercek_fark,
                   ma4_temiz_kol, ma5_kapi_dusurme, ma6_iz_kilidi,
-                  ma7_bozuk_referans):
+                  ma7_bozuk_referans, ma8_realpath_maskesi):
             try:
                 f(taban)
             except AracKusuru as e:

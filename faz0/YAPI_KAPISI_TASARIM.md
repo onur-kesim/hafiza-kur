@@ -115,9 +115,17 @@ Onaylanan şıklar (12 Ağu 2026, Onur):
 
 ### 4.1 Kapsam — dört dizin, üç hâl
 
+**DÜZELTİLDİ (18 Ağu 2026, H16-DÜZELTME-BRİEF.md §3 — KALEM C):** `y.h`in
+"dizin değil" satırı **H16 FAIL değil H6'dır** — H16 `_kapi_govde`'deki H6
+erken çıkışından **sonra** çağrılır, yani `y.h` "dizin değil" (ör. düz dosya)
+olduğunda `os.path.isdir(y.h)` zaten `False` döner ve H6 erken çıkışı
+**önce** tetiklenir; H16 bu hâle hiç ulaşamaz. H16'nın pratikte ölçtüğü
+`y.h` hâli yalnız **kaçıştır** (`os.path.isdir(y.h)` kaçış hâlinde `True`
+döner — hedef gerçek bir dizindir, yalnız proje dışındadır).
+
 | dizin | dizin değil | hiç yok | proje dışına kaçış |
 |---|---|---|---|
-| `y.h` (`arsiv/hafiza`) | H16 FAIL | **H6'da KALIR** (§4.3) | **H16 FAIL** — bugün exit 3 (§4.4) |
+| `y.h` (`arsiv/hafiza`) | **H6** (§4.3) | **H6'da KALIR** (§4.3) | **H16 FAIL** — bugün exit 3 (§4.4) |
 | `y.gunluk` (`gunluk/`) | H16 FAIL | H16 FAIL | H16 FAIL |
 | `y.gunluk_ars` (`arsiv/hafiza/gunluk/`) | H16 FAIL | H16 FAIL | H16 FAIL |
 | `y.kararlar` (`kararlar/`) | H16 FAIL | H16 FAIL | H16 FAIL |
@@ -141,13 +149,28 @@ konuşur hâle getirilmesi **ayrıca değerlendirilmelidir** (açık iş).
 `_kapi_govde`'deki `if not os.path.isdir(y.h): fail("H6", "HAFIZA DIZINI YOK…"); return`
 **yerinde kalır.** H16 onu devralmaz, çoğaltmaz, öne geçmez.
 
-Gerekçe: `arsiv/` düz dosya hâli bugün `[H6]` ile exit 1 veriyor ve bu
-**altın kümenin kayıtlı davranışıdır**. H16 bu yolu değiştirirse küme kırılır —
-yani tam olarak kaçınmak istediğimiz maliyet doğar. H16 o erken çıkıştan
-**sonra** koşar.
+**GEREKÇE DÜZELTİLDİ (18 Ağu 2026, H16-DÜZELTME-BRİEF.md §3 — KALEM C):**
+Karar **korunur**, ilk gerekçe **yanlıştı**. İlk yazım: *"`arsiv/` düz dosya
+hâli bugün `[H6]` ile exit 1 veriyor ve bu altın kümenin kayıtlı
+davranışıdır; H16 bu yolu değiştirirse küme kırılır."* **Ölçüldü ve
+YANLIŞ bulundu:** altın kümedeki tek `[H6]` kaydı (`h12_h_kacis` hâlinde:
+`[H6] DIZINDE var ama diskte YOK: HAFIZA_01.md`) bu erken çıkışla
+**ilgisizdir** — `HAFIZA DIZINI YOK` metni kümenin **hiçbir** kaydında
+geçmiyor. Ve `h6_fail` hâli aslında `kural_yanlis_ev` bozmasıyla
+kuruluyor, H6 erken çıkışıyla **hiç ilgisi yok** — adı yanıltıcı
+(`h8_kesilme_dizin`in dosya sınıfı olması gibi bir kalıntı).
 
-Sonuç: `y.h`'nin YOK hâli H6'da, DİZİN DEĞİL ve KAÇIŞ hâlleri H16'da ölçülür.
-Bu bir **örtüşme değil, sınır**; ve M-Y7 ile sınanır.
+**Doğru gerekçe:** H6 erken çıkışı `_kapi_h16`nin kapsamını sınırlayan
+**yapısal sınırdır** (§4.1: H16 yalnız H6'dan SONRA çağrıldığı için `y.h`nin
+"dizin değil"/"hiç yok" hâllerine hiç ulaşamaz, yalnız kaçışa ulaşır) — bir
+altın küme kaydını korumak için değil. Bu sınır **M-Y7 ile ölçülür**
+(`y6_arsiv_dosya` kolu `[H6]`→`[H16]`'ya dönerse mutant ISIRIR) ve
+`yapi_kapisi_mutanti.py`nin kendi referans doğrulaması `p06` kolunun
+`[H6]` verdiğini (ve `[H16]` VERMEDİĞİNİ) ayrıca sınar.
+
+Sonuç: `y.h`'nin YOK **ve DİZİN DEĞİL** hâlleri H6'da (H16 pratikte
+ulaşamaz), yalnız KAÇIŞ hâli H16'da ölçülür (§4.1). Bu bir **örtüşme
+değil, sınır**; ve M-Y7 ile sınanır.
 
 ### 4.4 🔴 SÖZLEŞME DEĞİŞİKLİĞİ — `y.h` kaçışı: exit 3 → exit 1
 
