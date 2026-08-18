@@ -1,26 +1,28 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #71 `afa53fc2`: 106 iş, 0 başarısız**;
-`hukum tutarliligi mutanti` ÜÇ platformda da yeşil. Kapı md.10 ÖNCESİ motorda KIRMIZI yandı.
-Claude Code YAZDI, Cowork taze klondan BAĞIMSIZ DENETLEDİ — disk = HEAD bit-bit, 93/93 dosya)
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #71 `afa53fc2`: 106 iş, 0 başarısız**)
 Son güncelleme: 17 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
-Aday: **H16 YAPI kapısı** (tasarım onaylı, kod yok, ADR ister).
-25 Ağu yazısı TASLAK (`fable dosyalama\25agu-yazisi\`, depo DIŞI); yayın kararı ayrı.
+H16 kapısı + `[:160]` düzeltmesi KOŞUYOR, madde AÇILMADI (18 Ağu). Açık: kapsam envanteri
+BAYAT (motor `401a3f71`) · md.11 yönü · README_EN kapısı · 25 Ağu yazısı TASLAK (depo DIŞI).
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**md.10** hüküm iç tutarlılığı — ayrım cümlesi (hal-2) kapsam dışını "biri gerçek defter
-OLABİLİR" iddiasına artık KATMIYOR: sayı/rol `envanter` değil `ici`den gelir (md.9 kapısı buna
-KÖRDÜ, ayrı eksen). `hukum_tutarliligi_mutanti` (yeni) 1/3, kapı ÖNCESİ motorda KIRMIZI yandı.
-Hal-1/hal-3 BİREBİR korundu (byte-diff); CC/`ihlal` DEĞİŞMEDİ ·
+**md.10** hüküm iç tutarlılığı — hal-2'nin sayı/rolü `envanter` değil `ici`den gelir;
+`hukum_tutarliligi_mutanti` 1/3, kapı ÖNCESİ motorda KIRMIZI yandı ·
 **md.9** görünürlük — kapsam dışı hiç önerilmez, `gorunurluk_mutanti` 4/5, çapa 99→97 ·
 **md.6-8** keşif/eşle/durma + çoklu-`canli` + hüküm ayrımı · md.2+4+5 README + yol ayracı ·
 🔴 `--kesif` **72 gerçek public depoda** koşuldu (50 + 22 `memory-bank/`), salt okuma, 0 bayt.
 
 ## Bilinen sınırlar (ölçülmüş)
-- 🔴 **KAPI NEYİ ÖLÇTÜĞÜNÜ ÖLÇEMEZ — İKİ ISIRIK** (§8): (1) bir cümlenin VARLIĞINI ölçen kapı
+- 🔴 **KAPI NEYİ ÖLÇTÜĞÜNÜ ÖLÇEMEZ — ÜÇ ISIRIK** (§8): (1) bir cümlenin VARLIĞINI ölçen kapı
   SAYISINI ölçmez (md.9, md.10 kusuruna KÖRDÜ) · (2) senaryoda iki büyüklük EŞİTSE hangisinin
-  ölçüldüğü ÖLÇÜLEMEZ — md.10'da kapsam içi DOSYA=ROL ⇒ "rol say" mutantı YEŞİL geçti.
+  ölçüldüğü ÖLÇÜLEMEZ — md.10'da kapsam içi DOSYA=ROL ⇒ "rol say" mutantı YEŞİL geçti ·
+  (3) `M-A8`in adı "realpath maskesi" ama kırmızıyı yakan KESMEYDİ ⇒ maske macOS/Windows'ta
+  HİÇ ölçülmemişti; düzeltmeden SONRA ısırdı (18 Ağu).
+- 🔴 **YOL UZUNLUĞU BİR ÖLÇÜM EKSENİDİR** (18 Ağu): `hafiza.py:3326` `kesildi[:160]`, kök 98
+  karakteri aşınca mesaj kuyruğunu YİYORDU (macOS 6 · Windows 3 · Linux 0; imza `31+160=191`).
+  Kısa `/tmp` ile koşan TÜM faz0 bataryası KÖRDÜ; CI'ın yakalaması KAZAYDI. `--uzun-yol` +
+  `yol_uzunlugu_mutanti` (M-Y2 = kapının YANLIŞ ORTAMDA kaçtığını ölçer).
 - 🔴 **CI kırmızısı KAPI kırmızısı olmayabilir** (#66 `6c6d407a`): 100 işin 2'si kırmızı,
   ikisi de `upload-artifact` **Finalize 403**; ölçüm+kapı adımları YEŞİL, #67'de 100/0.
 - 🔴 **WebFetch API DE BAYAT** (2. ısırık: en yeni #55 dedi, gerçek #67) ⇒ CI hükmü
@@ -85,5 +87,3 @@ Hal-1/hal-3 BİREBİR korundu (byte-diff); CC/`ihlal` DEĞİŞMEDİ ·
   KEŞİF+DURMA ölçer · `derle` sonrası ikinci `isir` ölçülmüyor.
 - `t_y42.py` 1 senaryo root altında ÖLÇÜLEMEDİ · dört ölçümün koşucusu pakette yok (beyandır) ·
   kilit inode yarışı daraltıldı, kapatılmadı · zincir anahtarsız (bilinçli).
-- Cowork proje talimatındaki depo adresi (`tuzakavcisi1-cloud`) YANLIŞ; doğrusu
-  `onur-kesim/hafiza-kur`. Talimat Onur'un panelinde, depodan düzeltilemez.
