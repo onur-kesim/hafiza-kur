@@ -602,6 +602,11 @@ def main():
                     help="FARK bulunan kayitlar icin HAM/maskesiz teshis blogu "
                          "bas (varsayilan KAPALI; ALTIN_TANI=1 ile de acilir; "
                          "hukmu/exit kodunu DEGISTIRMEZ — H16-TANI-BRIEF.md §2.1)")
+    ap.add_argument("--uzun-yol", action="store_true", dest="uzun_yol",
+                    help="sandbox kokunu HER KAYIT icin esigi (eski kesme: 160) "
+                         "asacak uzunluga tasi (kok >= 150) ve AYNI altin kumeyle "
+                         "karsilastir (KALEM 2, H16-KESME-DUZELTME-BRIEF.md); "
+                         "varsayilan KAPALI, verilmezse taban ONCEKI GIBI kalir")
     a = ap.parse_args()
 
     global TANI
@@ -616,8 +621,30 @@ def main():
         return kendini_sina(motor)
 
     taban = tempfile.mkdtemp(prefix="altin_")
+    calisma_tabani = taban
+    if a.uzun_yol:
+        # KALEM 2 (H16-KESME-DUZELTME-BRIEF.md): kok'u ESIGI (eski kesme: 160)
+        # asacak, ama Windows'un klasik MAX_PATH (260) sinirinin ALTINDA kalacak
+        # uzunluga tasi. Sabit bir dolgu UZUNLUGU platforma gore (Linux ~20 ·
+        # Windows ~50-70 · macOS ~70+ taban) COK FARKLI toplam verir — Windows'ta
+        # sabit 180 karakterlik bir dolguyla OLCULDU: h5_gitli'nin `git init`i
+        # MAX_PATH'i asip Kurulamadi/OLCULEMEDI uretti (git.exe kendisi coktu,
+        # urun degil). Bu yuzden dolgu, GOZLENEN taban uzunluguna gore HESAPLANIR
+        # (hedef: kok ~170 — 150 esiginin rahat ustunde, 260 sinirinin altinda,
+        # git'in .git/ alt-yollarina da pay birakir).
+        # Dolgu HEX OLMAYAN harflerden secilir ("zq" tekrari) — hex bir dolgu
+        # (ör. "ddd…") normalize()'nin `_RE_SHA` deseniyle YANLIS eslesip <SHA>
+        # sanilir (H16-KOK-SEBEP-RAPORU.md §2b'nin kendi mayini, BILEREK tekrar
+        # edilmez).
+        HEDEF_KOK = 170
+        en_uzun_hal_adi = max(len(ad) for ad, _adimlar, _gitli, _bozmalar in HALLER)
+        gerekli = HEDEF_KOK - len(taban) - 1 - en_uzun_hal_adi - 1
+        gerekli = max(gerekli, 8)   # cok kisa bir tabanda bile anlamli dolgu kalsin
+        dolgu = ("zq" * ((gerekli // 2) + 1))[:gerekli]
+        calisma_tabani = os.path.join(taban, dolgu)
+        os.makedirs(calisma_tabani, exist_ok=True)
     try:
-        kume = kume_uret(motor, taban)
+        kume = kume_uret(motor, calisma_tabani)
     except Kurulamadi as e:
         print("OLCULEMEDI: %s" % e)
         return 2

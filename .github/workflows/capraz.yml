@@ -392,6 +392,16 @@ jobs:
                               "--tani"], env=env)
           sys.exit(r.returncode)
           PYEOF
+      # KALEM 4 (H16-KESME-DUZELTME-BRIEF.md, Onur onayi 18 Agu 2026 —
+      # H16-KOK-SEBEP-RAPORU.md'nin ta kendisi): CI #76'nin UC kirmizisinin TEK
+      # kok sebebi symlink DEGIL, `hafiza.py:3326`deki sabit `kesildi[:160]`
+      # kesmesiydi — kok dizininin KARAKTER UZUNLUGU. `--uzun-yol` (KALEM 2)
+      # sandbox kokunu HER KAYIT icin esigi asacak uzunlukta kurar (kok ~170)
+      # ve AYNI altin kumeyle karsilastirir. `continue-on-error` YOK, `| tee`
+      # exit kodunu YUTMAZ. Mevcut symlink kolu KALDI (ayri eksen; ADDITIVE).
+      - name: kapi ciktisi altin kumeyle AYNI mi (uzun yol)
+        shell: bash
+        run: python faz0/altin_cikti.py --karsilastir faz0/altin_kapi.json --uzun-yol --tani 2>&1 | tee altin-fark-uzunyol.txt
       - name: altin cikti artefakti
         if: always()
         uses: actions/upload-artifact@v4
@@ -401,6 +411,7 @@ jobs:
             altin-sina.txt
             altin-fark.txt
             altin-fark-symlink.txt
+            altin-fark-uzunyol.txt
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
@@ -480,6 +491,45 @@ jobs:
         with:
           name: altin-olcut-${{ matrix.os }}
           path: altin-olcut-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-8b) YOL UZUNLUGU MUTANTI — `--uzun-yol` kolu KESILDI[:160] REGRESYONUNU
+  #     yakaliyor mu? (H16-KESME-DUZELTME-BRIEF.md KALEM 3, H16-KOK-SEBEP-
+  #     RAPORU.md'nin dogrudan sonucu)
+  #     CI #76'nin UC kirmizisinin TEK kok sebebi `hafiza.py:3326`deki sabit
+  #     `kesildi[:160]` kesmesiydi — symlink'le, `realpath`le ILGISI YOKTU;
+  #     belirleyici degisken kok dizininin KARAKTER UZUNLUGUYDU. Kusur AYLARDIR
+  #     oradaydi ve BUTUN faz0 bataryasi onu goremedi, cunku hepsi KISA `/tmp`
+  #     altinda kosuyordu — CI'in onu yakalamasi KAZA eseriydi. DORT mutant:
+  #     motora kesme GERI enjekte edilince `--uzun-yol` kolu YAKALIYOR mu
+  #     (M-Y1), AYNI sabotaj KISA yolda GERCEKTEN KOR mu — bu korlugun kendisi
+  #     olculur, KACMASI BEKLENIR (M-Y2, EN ONEMLI KOL) —, tarihi esik (kok=98
+  #     ve 99) duzeltme sonrasi GERCEKTEN kapandi mi (M-Y3), duzeltme kisa
+  #     yoldaki altin kumeyi BOZMUYOR mu (M-Y4). `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  yol_uzunlugu_mutanti:
+    name: Yol uzunlugu mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: uzun-yol kolu kesme regresyonunu yakaliyor mu (dort mutant)
+        shell: bash
+        run: python faz0/yol_uzunlugu_mutanti.py 2>&1 | tee yol-uzunlugu-cikti.txt
+      - name: yol uzunlugu mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yol-uzunlugu-${{ matrix.os }}
+          path: yol-uzunlugu-cikti.txt
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------

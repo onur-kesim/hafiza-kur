@@ -3323,7 +3323,7 @@ def cmd_kapi(a):
         if isinstance(e.code, int) and e.code == 0:
             raise
         kesildi = (SON_HATA[0] or "olcum durdu").split("\n")[0]
-        F.append("[KAPI] OLCUM YARIDA KESILDI: %s" % kesildi[:160])
+        F.append("[KAPI] OLCUM YARIDA KESILDI: %s" % kesildi)
         F.append("      -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.")
     print("=== HAFIZA KAPISI v%s === kok: %s" % (SURUM, _KAPI_KOK[0] or "?"))
     for n in N:

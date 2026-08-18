@@ -105,8 +105,13 @@ Bunlar gizlenmiyor; `skill/SKILL.md` §9'da tam listesi var. En önemlileri:
 - **Uzun hafıza her zaman iyi değildir.** Girdi uzadıkça model başarımı düşer;
   bu yüzden tavan vardır ve canlı dosya **yol taşır, metin taşımaz**.
 
-- **Platform hükmü eşit değildir.** CI, ölçüm bataryasının tamamını Linux ·
-  Windows · macOS üzerinde `continue-on-error`suz koşar. Motorda platforma özgü tek
+- **Platform hükmü eşit değildir.** `capraz.yml`deki adımlar iki sınıftır: KAPI
+  (`continue-on-error` YOK — üç platformlu MUTANT bataryası: h1/h4/h10/h12/h14
+  kenar mutantları, altın çıktı/ölçüt/küme ailesi, yapı kapısı, karmaşıklık
+  ölçütü ve benzerleri) ve ÖLÇÜM (`continue-on-error: true` — kanıt koşucuları,
+  Y-1/Y-3 probları, ortam sınıfı, kalite taraması). Hangi adımın hangi sınıfta
+  olduğu ve kaçının bu bayrağı taşıdığı `capraz.yml`den okunur; sayı burada
+  yazılmaz (bir kez yazıldı, iki gün içinde bayatladı). Motorda platforma özgü tek
   dal `sys.platform == "win32"` altındadır ve `faz0/win_dal_mutanti.py` onu ölçer:
   envanter ve davranış kapıları temiz, **4/4 mutant ayrı eksende ısırıyor**. Ama o
   aracın kendi hükmü **"YEŞİL SINIRLI"**: üçüncü kapısı (gerçek `win32` üzerinde

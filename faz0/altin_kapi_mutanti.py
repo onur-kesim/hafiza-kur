@@ -115,11 +115,15 @@ def yama_kismi_cikti_dusur(m):
     """FAZ C KUSURUNUN TAM SEKLI: kapi yarida kesilince o ana kadarki bulgu
     silinir. Sonuc: FAIL(2)/exit 1 -> FAIL(1)/exit 3. Tek satirlik enjeksiyon,
     cunku kusur de tek satirlik bir garanti kaybiydi."""
+    # H16-KESME-DUZELTME-BRIEF.md KALEM 1 (18 Agu 2026, hafiza.py:3326):
+    # `kesildi[:160]` -> `kesildi` (kesme kaldirildi). Hedef dize O DEGISIKLIGE
+    # gore GUNCELLENDI — bu mutantin OLCTUGU sey (kismi cikti/`del F[:]`)
+    # kesmeyle ILGISIZ, yalniz ANKOR satiri kaynakla birebir eslesmeli.
     return _degistir(
         m,
-        '        F.append("[KAPI] OLCUM YARIDA KESILDI: %s" % kesildi[:160])\n',
+        '        F.append("[KAPI] OLCUM YARIDA KESILDI: %s" % kesildi)\n',
         '        del F[:]   # MUTANT: KISMI CIKTI GARANTISI DUSURULDU\n'
-        '        F.append("[KAPI] OLCUM YARIDA KESILDI: %s" % kesildi[:160])\n',
+        '        F.append("[KAPI] OLCUM YARIDA KESILDI: %s" % kesildi)\n',
         "mutant/kismi-cikti")
 
 

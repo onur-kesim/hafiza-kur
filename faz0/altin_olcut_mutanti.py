@@ -72,7 +72,7 @@ ORTAM URETIMI — motora DOKUNULMAZ
   ve "gordugunu ADLANDIRABILIYOR mu"dur. Windows'un kendi hukmu CI'da olculur;
   bu dosya onun YERINE GECMEZ.
 
-SEKIZ MUTANT — her biri AYRI bir korumayi olcer
+DOKUZ MUTANT — her biri AYRI bir korumayi olcer
   M-A1 SATIR SONU (CRLF)   : eski olcut yanlis hukum verir, yeni olcut FARK YOK der.
   M-A2 SATIR SINIRI        : DUZELTME-1'in kapatMADIGI sinif (\\x0b VE \\x85 ile
                              olculur) — yeni olcut
@@ -96,6 +96,20 @@ SEKIZ MUTANT — her biri AYRI bir korumayi olcer
                              olcut "davranis DEGISTI" (exit 1) der; yeni olcut
                              "FARK YOK" (exit 0) der. CI #75'i kirmizi yakan
                              kusurun dogrudan olcumu.
+                             🔴 AMBIGUITE (KALEM 3b, H16-KESME-DUZELTME-BRIEF.md
+                             eki, Onur kilidi 18 Agu 2026 — CI 32126896779
+                             artefakti): bu kolun KENDI kurdugu symlink'li
+                             TMPDIR'in uzunlugu PLATFORMUN varsayilan gecici
+                             dizinine BAGLIdir — macOS'ta 6, Windows'ta 3
+                             karakter DUSUYORDU (Ubuntu'da 0), yani M-A8'i
+                             kirmizi yakan sey bazen MASKELEME degil KESME
+                             (hafiza.py:3326, ayri turde duzeltildi) olabiliyordu.
+                             Iki degisken TEK gozlemde birlesiyordu.
+  M-A8b REALPATH MASKESI —  M-A8'in AYNISI ama `sembolik_tmp_kur_kisa()` ile:
+  KISA YOL KONTROLU          kok KESIN 98'in ALTINDA (kesme sinifi DEVRE DISI).
+                             Bu kol GECERSE M-A8 gercekten maskelemeyi olcuyor
+                             demektir; GECMEZSE maskenin KENDISINDE M-A8'den
+                             BAGIMSIZ ikinci bir kusur vardir.
 
 CIKIS KODLARI (proje sozlesmesi)
   0 olculen her mutant ISIRDI · 1 en az biri KACTI · 2 OLCULEMEDI · 3 ARAC KUSURU
@@ -329,6 +343,44 @@ def sembolik_tmp_kur(taban):
     if os.path.realpath(sym) == sym:
         raise AracKusuru("sembolik TMPDIR kurulamadi: realpath(sym) == sym "
                          "(baglanti tutmadi) — mutant bu ortamda OLCEMEZ")
+    return sym
+
+
+def sembolik_tmp_kur_kisa(taban):
+    """KALEM 3b (H16-KESME-DUZELTME-BRIEF.md eki, Onur kilidi 18 Agu 2026):
+    `realpath(kok) != kok` ureten AMA kok uzunlugu KESIN 98'in ALTINDA kalan
+    bir taban kurar. `sembolik_tmp_kur()`nin AKSINE uzunluk PLATFORMUN
+    varsayilan gecici dizinine BIRAKILMAZ — macOS/Windows'ta bu taban zaten
+    90+ karakter olabilir (H16-KOK-SEBEP-RAPORU.md), o yuzden isim BILEREK
+    tek harfli tutulur (Windows junction/POSIX symlink'in kendisi ek
+    ayricalik istemez, ustteki fonksiyonla ayni gerekce).
+
+    NEDEN GEREKLI (Onur kilidi, CI 32126896779 artefakti): M-A8'in adi
+    "REALPATH MASKESI" ama YENI kolunu kirmizi yakan sey macOS'ta 6, Windows'ta
+    3 karakter dusuren KESME idi (Ubuntu'da 0) — maskeleme VE kesme TEK
+    gozlemde birlesiyordu, yani DUZELTME-4'un (realpath maskesi) macOS/
+    Windows'ta calistigi HICBIR ZAMAN AYRI OLCULMEDI. Bu fonksiyon kesme
+    sinifini DEVRE DISI birakip yalniz maskelemeyi izole eder."""
+    kisa = os.path.join(taban, "k")
+    gercek = kisa + "g"
+    sym = kisa + "s"
+    os.makedirs(gercek)
+    if os.name == "nt":
+        r = subprocess.run(["cmd", "/c", "mklink", "/J", sym, gercek],
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if r.returncode != 0:
+            raise AracKusuru("kisa sembolik TMPDIR kurulamadi (junction): %s"
+                             % r.stderr.decode("utf-8", "replace"))
+    else:
+        os.symlink(gercek, sym, target_is_directory=True)
+    if os.path.realpath(sym) == sym:
+        raise AracKusuru("kisa sembolik TMPDIR kurulamadi: realpath(sym) == "
+                         "sym (baglanti tutmadi) — mutant bu ortamda OLCEMEZ")
+    if len(sym) >= 98:
+        raise AracKusuru(
+            "kisa taban HEDEFI TUTMADI: len(sym)=%d >= 98 — bu platformun "
+            "varsayilan gecici dizini zaten uzun; M-A8b kisa/uzun ayrimini "
+            "YAPAMAZ (OLCULEMEDI, sessizce YOK SAYILMAZ): %s" % (len(sym), sym))
     return sym
 
 
@@ -620,6 +672,53 @@ def ma8_realpath_maskesi(taban):
     kayit(ad, ISIRDI if tamam else KACTI, ayrinti)
 
 
+def ma8b_realpath_maskesi_kisa_yol(taban):
+    ad = ("M-A8b REALPATH MASKESI — KISA YOL KONTROLU (KALEM 3b, H16-KESME-"
+          "DUZELTME-BRIEF.md eki): M-A8'in maskeleme VE kesme degiskenlerini "
+          "AYIRAN kol — kok < 98 karakter, symlink'li")
+    try:
+        sym = sembolik_tmp_kur_kisa(taban)
+    except AracKusuru as e:
+        # DIGER 8 kolun aksine bu HATA scripti DUSURMEZ: `taban`nin kendisi
+        # (ornek: bu script DISARIDAN uzun bir TMPDIR ile cagrildiysa — H16-
+        # KESME-DUZELTME-BRIEF.md'nin kendi (d) olcumu tam bunu yapar) zaten
+        # uzunsa M-A8b YAPISAL OLARAK olculemez; bu bir ARAC KUSURU DEGIL,
+        # bu TEK kolun bu kosumdaki SINIRIDIR — sessizce atlanmaz, YAZILIR.
+        kayit(ad, OLCULEMEDI, "kisa taban bu kosumda kurulamadi: %s" % e)
+        return
+    gercek = sym[:-1] + "g"     # sembolik_tmp_kur_kisa'nin kurdugu esi (bkz. o fonksiyon)
+    ek_env = {"TMP": sym, "TEMP": sym, "TMPDIR": sym}
+    eski = agac_kur(taban, "a8b_eski", [yama_realpath_maskesi_sok])
+    yeni = agac_kur(taban, "a8b_yeni", [])
+    e_rc, e_c = kos(eski, ek_env=ek_env)
+    y_rc, y_c = kos(yeni, ek_env=ek_env)
+    if e_rc is None or y_rc is None:
+        kayit(ad, OLCULEMEDI, "zaman asimi (eski=%s yeni=%s)" % (e_rc, y_rc))
+        return
+    ei, yi = imza(e_c), imza(y_c)
+    # ESKI (maske SOKULU): KISA symlink'li TMPDIR'de bile FARK VAR olmali —
+    # kesme sinifi burada hic ATESLENMEZ (kok<98), yani fark SADECE maskeleme
+    # eksikliginden gelebilir. YENI (duzeltilmis): FARK YOK.
+    tamam = (e_rc == 1 and ei["davranis_degisti"] and not ei["traceback"]
+             and y_rc == 0 and yi["fark_yok"] and not yi["traceback"])
+    ayrinti = (
+          "symlink'li KISA TMPDIR (len=%d, kok<98, kesme sinifi DEVRE DISI) | "
+          "ESKI (maske sokulu): exit=%s 'davranis DEGISTI'=%s | YENI "
+          "(duzeltilmis): exit=%s 'FARK YOK'=%s (beklenen: 1/VAR -> 0/VAR; bu "
+          "kol GECERSE M-A8 gercekten maskelemeyi olcuyor demektir — GECMEZSE "
+          "maskenin KENDISINDE M-A8'den BAGIMSIZ ikinci bir kusur var)"
+          % (len(sym), e_rc, "VAR" if ei["davranis_degisti"] else "yok",
+             y_rc, "VAR" if yi["fark_yok"] else "yok"))
+    if TANI or not tamam:
+        ayrinti += (
+            "\n      TANI: sym(kisa)=%s (len=%d)\n"
+            "      TANI: gercek=%s\n"
+            "      TANI: realpath(sym)=%s\n"
+            "      TANI: YENI kolun ham ciktisi:\n%s"
+            % (sym, len(sym), gercek, os.path.realpath(sym), _girinti(y_c)))
+    kayit(ad, ISIRDI if tamam else KACTI, ayrinti)
+
+
 def main():
     print("=" * 82)
     print("ALTIN OLCUT MUTANTI — altin_cikti.py'nin uc duzeltmesi ISIRIYOR mu?")
@@ -636,7 +735,8 @@ def main():
     try:
         for f in (ma1_satir_sonu, ma2_satir_siniri, ma3_gercek_fark,
                   ma4_temiz_kol, ma5_kapi_dusurme, ma6_iz_kilidi,
-                  ma7_bozuk_referans, ma8_realpath_maskesi):
+                  ma7_bozuk_referans, ma8_realpath_maskesi,
+                  ma8b_realpath_maskesi_kisa_yol):
             try:
                 f(taban)
             except AracKusuru as e:
