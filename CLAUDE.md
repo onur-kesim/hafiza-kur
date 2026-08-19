@@ -47,8 +47,8 @@ sözleşmesi kırılırsa minor artar.
 ## 4. ORTAM MAYINLARI (ölçülmüş)
 - Bağlı klasörde **hiçbir `git` komutu koşma** (`status` dâhil): kalıcı `.git/index.lock` bırakır.
   Durumu **loose ref** okuyarak anla (`packed-refs` BAYAT olabilir); git işini komut olarak yaz.
-  **Push/commit DAİMA Onur'da; KOD Claude Code'da yazılır** — Cowork ölçer, denetler, kararı
-  hazırlar (Onur kilidi 16 Ağu: üreten ≠ denetleyen).
+  **PUSH Onur'da; KOD ve COMMIT Claude Code'da** — Cowork ölçer, denetler, kararı hazırlar
+  (Onur kilidi 16 Ağu: üreten ≠ denetleyen · commit ayrımı 19 Ağu).
 - Tek kanonik klon: `C:\Users\gulci\Desktop\fable dosyalama\depo\hafiza-kur`. İkinci klon açma.
 - Disk adlarında Türkçe diyakritik ASLA (macOS NFD/NFC ayrışması zinciri kırar); ASCII bilinçli.
 - `.hafizarc` anahtarları · `_CIPA.json`/`_ZINCIR.jsonl` alan adları · dosya adları ÇEVRİLMEZ.

@@ -42,6 +42,49 @@ NE OLCER — BES KOL, IKI SINIF
   `rev-parse`e gecince "her yerde git var" demeye baslayabilir; bunu olcen
   TEK sey bu iki koldur — biri ayirdedir (dizin), digeri BINARY yoklugudur.
 
+  6. KAYNAK KAPISI (Onur denetimi 19 Agu 2026 — my4-epsilon iki numarali is
+     emri): Cowork bagimsiz denetiminde OLCTU: kusurun İKİ yeri var —
+     `hafiza.py:3923` (H9) VE `hafiza.py:4405` (`git_var`, H14'un kirli/
+     izlenen gorusu). Motorda YALNIZ 3923 duzeltilip 4405 birakilirsa
+     yukaridaki BES kol 5/5 YESIL, exit 0 verir — YARIM DUZELTME KAPIDAN
+     GECER, cunku hicbir kol 4405'in KENDI belirtisini olcmez. Bu, projenin
+     kendi kuralinin ("her duzeltmeye AYRI mutant") ihlaliydi.
+     6. kol bu BOSLUGU KAYNAK SEVIYESINDE kapatir: `hafiza.py` metninde
+     `os.path.isdir(os.path.join(kok, ".git"))` deseni KAC KEZ geciyor?
+     KEHANET: 0. OLCULDU (Onur denetimi): su anki motorda 2, yarim
+     duzeltmede (yalniz 3923) 1, tam duzeltmede (3923+4405) 0 — desen ucunu
+     da AYIRT EDIYOR. Yanlis-pozitif riski OLCULDU: motorda toplam
+     `os.path.isdir(` cagrisi 30 (Onur denetimi tekrar sayidi; is emrindeki
+     ilk beyan 20'ydi — TUTMADI, duzeltildi burada beyan edilir), ama TAM
+     desene uyan YALNIZ bu 2'si; digerlerinin hicbiri `.git` sinamasi degil.
+  7. DAVRANIS KOLU — H14 SESSIZ BASTIRMA (Onur denetimi 19 Agu 2026, Cowork'un
+     ARADIGI AMA BULAMADIGI ayirici — bkz. asagidaki 🔴 not): worktree +
+     ESKI TARIHLI commit'te git_var YANLIŞ FALSE dondugunde H14'un KENDI
+     "[H14] hafiza tarihi proje dosyalarindan N gun ILERIDE — tutarsiz."
+     FAIL'i SESSIZCE KAYBOLUYOR (duz depoda AYNI kurulumda GORUNUYOR).
+     Yani kusur yalniz "git YOK" yanlis SINIFLAMASI degil, GERCEK bir H14
+     bulgusunu da YUTUYOR. KEHANET: bu satir GECMELI (saglikli motorun
+     davranisi). Su an GECMIYOR — BEKLENMEDIK.
+
+🔴 4405'IN DAVRANISSAL BELIRTISI ARANDI VE BULUNDU (Onur denetimi 19 Agu
+2026 — Cowork'un kendi ölçümünde bulamadığı ayrım): `_h14_git_durumu`nun
+`git_var`i False donerse H14 TUM adaylari HAM mtime ile kiyaslar
+(`_h14_en_yeni`); True donerse TAKIP EDILEN+TEMIZ dosyalar `git log -1
+--format=%ct` (ICERIK tarihi) ile, geri kalani mtime ile kiyaslanir.
+GERCEKTEN KOSULDU (Windows + WSL, N=1 ham cikti): ayni proje (kur + bir
+IZLENEN dosya + ESKI TARIHLI commit `GIT_AUTHOR_DATE`), iki kol —
+  duz depo   : `H14: hafiza projeyle es (en yeni degisiklik 2026-08-01, ...)`
+               + `[H14] hafiza tarihi proje dosyalarindan 18 gun ILERIDE — tutarsiz.`
+  worktree   : `H14: hafiza projeyle es (en yeni degisiklik 2026-08-19, ...)`
+               (FAIL satiri YOK — git_var False, dosya mtime "simdi"ye
+               dusuyor, gercek eski commit tarihi hic GORULMUYOR)
+Cowork'un kendi denemesi (mtime tazeleme + tarih geri cekme, TEK SENARYODA)
+bu ayrimi YAKALAYAMAMISTI; sebebi muhtemelen "hafiza tarihi" (`t_son`)
+PROJE_HAFIZA.md ICERIGINDEN cozulup HER IKI kolda da ayni kaldigindan (dogru
+gozlem), ama PROJE dosyasi tarafinin (`en_yeni_t`) ayni AYRIMA ugramasi icin
+en az bir gercek IZLENEN dosyanin (`kur` cikisinin kendi disinda) var olmasi
+GEREKIYORDU — o adim bu denetimde EKLENDI. ⇒ 7. kol BULUNDU ve eklendi.
+
 DUZELTME TASARIMINA OLCULMUS UYARI (bu turda UYGULANMAZ — my4-epsilon/
 IS_EMRI_EPSILON.md §2.4): dogru prob `git -C <kok> rev-parse --git-dir`,
 AMA ust dizinlere YURUR — bir git deposunun ICINDEKI alt proje de "git var"
@@ -53,11 +96,13 @@ CAPA: motora KOD PARCACIGIYLA anchor atilir gerekirse (bu turda motor hic
 DEGISMEZ, capa YOK — bu dosya yalniz OKUR).
 
 CIKIS KODLARI (proje sozlesmesi)
-  0  bes kolun BESI DE BEKLENDIGI GIBI (kusur DUZELTILMIS demektir)
-  1  en az bir kol BEKLENMEDIK (BEKLENEN ILK SONUC — kusur henuz duzeltilmedi)
+  0  yedi kolun YEDISI DE BEKLENDIGI GIBI (kusur TAMAMEN DUZELTILMIS demektir)
+  1  en az bir kol BEKLENMEDIK (BEKLENEN ILK SONUC — kusur henuz duzeltilmedi;
+     su an 1·2·3·6·7 BEKLENMEDIK, 4·5 BEKLENDIGI GIBI ⇒ 2/7)
   2  en az bir kol OLCULEMEDI (BEKLENMEDIK yoksa)
   3  ARAC KUSURU (kum havuzu kurulamadi)
 """
+import datetime as _dt
 import os
 import shutil
 import subprocess
@@ -241,6 +286,90 @@ def _kur_git_path_disi(alt):
     return kok, yalitilmis
 
 
+# --------------------------------------------------------------- 6. KOL: KAYNAK
+
+_ISDIR_DESEN = 'os.path.isdir(os.path.join(kok, ".git"))'
+
+
+def sinama_kaynak_kapisi():
+    """6. kol (Onur denetimi 19 Agu 2026): DAVRANIS DEGIL KAYNAK olcer —
+    motor metninde `_ISDIR_DESEN` KAC KEZ geciyor? KEHANET: 0. Su an 2
+    (3923 + 4405); YARIM duzeltmede (yalniz 3923) 1 kalir ve YINE
+    BEKLENMEDIK'tir — yarim duzeltme bu kolu da GECEMEZ."""
+    ad = "6. KAYNAK KAPISI (os.path.isdir(kok/.git) deseni KAC KEZ geciyor)"
+    try:
+        src = open(MOTOR, encoding="utf-8").read()
+    except OSError as e:
+        _kayit(ad, OLCULEMEDI, "motor okunamadi: %s" % e)
+        return
+    n = src.count(_ISDIR_DESEN)
+    dogru = (n == 0)
+    _kayit(ad, BEKLENDIGI_GIBI if dogru else BEKLENMEDIK,
+          "desen %r motorda %d kez geciyor (beklenen: 0). %s"
+          % (_ISDIR_DESEN, n,
+             "TAM DUZELTILMIS."
+             if dogru else
+             "3923 VE/veya 4405 hala eski deseni tasiyor."))
+
+
+# --------------------------------------------------------------- 7. KOL: DAVRANIS
+
+def _kur_worktree_eski_tarihli(alt):
+    """7. kol icin: worktree + GERCEK bir IZLENEN dosya (kur'un kendi
+    cikisi disinda — `_h14_adaylar` PROJE_HAFIZA.md/.hafizarc'i HARIC
+    tutar, bu yuzden H14'un ayrisma URETMESI icin EN AZ bir baska izlenen
+    dosya SART) + BUGUNDEN 30 gun ONCEYE backdate'lenmis commit (statik
+    tarih YAZILMAZ — `hafiza_gecikme_gun` varsayilani 2 gun, 30 gun HER
+    kosumda rahat asar)."""
+    ana = os.path.join(alt, "ana")
+    os.makedirs(ana, exist_ok=True)
+    _git(ana, "init", "-q")
+    rc, c = _kos(["kur", "--ad", "GF7", "--kok=" + ana])
+    if rc != 0:
+        raise AracKusuru("kur basarisiz (exit=%s): %s" % (rc, c[-300:]))
+    with open(os.path.join(ana, "uygulama.py"), "w", encoding="utf-8") as f:
+        f.write("ornek kaynak kodu\n")
+    _git(ana, "add", "-A")
+    eski = (_dt.datetime.now() - _dt.timedelta(days=30)).strftime("%Y-%m-%dT12:00:00")
+    ortam = dict(os.environ, **_GIT_ORTAM)
+    ortam["GIT_AUTHOR_DATE"] = eski
+    ortam["GIT_COMMITTER_DATE"] = eski
+    _git(ana, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "eski taban", env=ortam)
+    baglanan = os.path.join(alt, "baglanan")
+    _git(ana, "worktree", "add", "-q", "-b", "dal-gf7", baglanan,
+        env=dict(os.environ, **_GIT_ORTAM))
+    return baglanan, None
+
+
+def sinama_davranis_bastirma(taban):
+    """7. kol (Onur denetimi 19 Agu 2026, Cowork'un aradigi ama BULAMADIGI
+    ayirici — modul docstring'inde 🔴 not): worktree + eski tarihli
+    commit'te H14'un GERCEK '[H14] hafiza tarihi ... ILERIDE' FAIL'i
+    SESSIZCE mi kayboluyor? KEHANET: satir GECMELI (saglikli/duz depo
+    davranisi — asagida ayrica dogrulanan N=1 ham cikti)."""
+    ad = ("7. DAVRANIS KOLU: H14 'hafiza tarihi ... ILERIDE' FAIL'i worktree'de "
+          "SESSIZCE kayboluyor mu")
+    alt = os.path.join(taban, "dav")
+    os.makedirs(alt, exist_ok=True)
+    try:
+        kok, env = _kur_worktree_eski_tarihli(alt)
+    except AracKusuru as e:
+        _kayit(ad, OLCULEMEDI, "kum havuzu kurulamadi: %s" % e)
+        return
+    rc, c = _kapi_ham(kok, env=env)
+    if rc is None:
+        _kayit(ad, OLCULEMEDI, "kapi kosturulamadi: %s" % c)
+        return
+    satir = next((s for s in c.splitlines()
+                  if "hafiza tarihi proje dosyalarindan" in s), None)
+    gecti = satir is not None
+    _kayit(ad, BEKLENDIGI_GIBI if gecti else BEKLENMEDIK,
+          "exit=%s | '[H14] hafiza tarihi proje dosyalarindan ... ILERIDE' satiri "
+          "gecti mi=%s (beklenen: VAR — saglikli motor bunu basar)\n      kok=%s%s"
+          % (rc, "VAR" if gecti else "yok", kok,
+             ("\n      satir: " + satir.strip()) if satir else ""))
+
+
 def main():
     print("=" * 82)
     print("GITFILE KORLUGU MUTANTI — `.git` DOSYA oldugunda saglikli depo 'git YOK' mu?")
@@ -259,6 +388,8 @@ def main():
         _sinama(taban, "sub", "3. submodule (KUSUR KOLU)", _kur_submodule, False)
         _sinama(taban, "yok", "4. git hic yok (KONTROL)", _kur_git_yok, True)
         _sinama(taban, "yolsuz", "5. git PATH'te yok (KONTROL, AYRI EKSEN)", _kur_git_path_disi, True)
+        sinama_kaynak_kapisi()
+        sinama_davranis_bastirma(taban)
         print()
         for ad, durum, ayrinti in SONUC:
             print("  %-16s %s" % (durum, ad))
