@@ -25,7 +25,7 @@ NE OLCER — CIFT KOLLU (M-Y3 ile AYNI kalip; POSIX SARTI YOK, UC PLATFORMDA KAP
                     DONMEZ — kor kolun ON SARTININ sinamadigi bir hal, bir
                     kusur BULGUSU degildir.
 
-  🔴 DUZELTME (Onur kilidi 20 Agu 2026, Cowork CI 32250138848 + yerel
+  🔴 DUZELTME 1 (Onur kilidi 20 Agu 2026, Cowork CI 32250138848 + yerel
   yeniden uretim): KISA KOL "kok kisa = mkdtemp varsayilani" VARSAYIMINI
   tasiyordu. `tempfile.mkdtemp()`nin varsayilan tabani PLATFORMA GORE COK
   FARKLI: Linux ~24 karakter (mesaj 24+53=77, esik 120'nin ALTINDA — kor
@@ -34,14 +34,28 @@ NE OLCER — CIFT KOLLU (M-Y3 ile AYNI kalip; POSIX SARTI YOK, UC PLATFORMDA KAP
   (macos-latest)` bu yuzden KIRMIZI yandi: `1/2 kol - 1 beklenmedik`.
   UZUN KOL YESILDI — yani ε₂ tetikleyicisinin KENDISI macOS'ta calisiyor;
   kusur yalniz KISA KOL'un ON SART VARSAYIMINDAYDI.
-  Kok'u KENDIMIZ kisa kurmak da TEK BASINA YETMEZ: macOS `/tmp`yi
+  Kok'u KENDIMIZ kisa kurmak TEK BASINA YETMEZ: macOS `/tmp`yi
   `/private/tmp`e cozer ve git REALPATH basar (M-A8 dersiyle AYNI mayin —
-  H16-KESME-DUZELTME-BRIEF.md). Bu yuzden dogru duzeltme kok'u KISALTMAK
+  H16-KESME-DUZELTME-BRIEF.md). Bu yuzden BIRINCI duzeltme kok'u KISALTMAK
   DEGIL, kolun ON SARTINI dogrudan OLCMEKTIR: duzeltilmis motorla (sabotaj
   YOK) ayni kok/ortamda H9 satiri BIR KEZ kosulur, mesaj uzunlugu esikle
   (dinamik olarak `_SABOTAJLI`den okunur, sabit YAZILMAZ) karsilastirilir.
   Esikten TUREYEN bir PAY (`esik // 10`, sabit sayi YAZILMAZ) ile guvenli
   sinir belirlenir; asilirsa OLCULEMEDI (exit 2), asilmazsa sabotaj kosulur.
+
+  🔴 DUZELTME 2 (Onur kilidi 20 Agu 2026, SIK (a) — "kisa tabani KUR"):
+  DUZELTME 1 DOGRUYDU ve yalanci kirmiziyi bitirdi — dogrulandi (kok 66-170
+  arasi butun ara degerler exit 2, 0 beklenmedik). AMA "exit 2 de sifirdan
+  farkli" ve `h9_kesme_mutanti` isinde `continue-on-error` YOK ⇒ macOS
+  KALICI KIRMIZI kalirdi (dogru kirmizi, ama hala kirmizi). Cozum
+  DUZELTME 1'i GEREKSIZ KILMAZ, ONA EKLENIR: KISA KOL artik KENDI kisa
+  tabanini `_kisa_taban_ac()` ile ACAR (POSIX literal `/tmp` altinda,
+  varsa) — `mkdtemp(dir=...)` acikca `dir` verilince TMPDIR/TMP/TEMP ortam
+  degiskenlerini YOK SAYAR. OLCULDU (Linux): dis TMPDIR 48/110/150 iken
+  bile kok hep ~22 kaliyor, 2/2 exit 0. macOS icin bu bir TAHMINdir (kok
+  ~33, mesaj ~86 — guvenli sinirin altinda BEKLENIYOR); ON SART OLCUMU
+  (DUZELTME 1) GEREKSIZ OLMAZ — GERCEK OTORITE odur, kisa taban yalnizca
+  on sartin cogu ortamda kendiliginden saglanmasini KOLAYLASTIRIR.
 
 URETIM TARIFI (SIK EPSILON, 19 Agu 2026 Onur kilidi — birebir OLCULDU)
   git init + commit -> `kur` -> defterler commit'lenir -> `kapi`, git'in KENDI
@@ -238,6 +252,11 @@ def _sabotaj_esigi():
 
 
 def _my4_kol(taban, ad, hedef_uzunluk, beklenen_kirpilmamis):
+    try:
+        esik = _sabotaj_esigi()
+    except AracKusuru as e:
+        _kayit(ad, OLCULEMEDI, str(e))
+        return
     alt = os.path.join(taban, "u" if hedef_uzunluk else "k")
     os.makedirs(alt, exist_ok=True)
     if hedef_uzunluk:
@@ -269,9 +288,9 @@ def _my4_kol(taban, ad, hedef_uzunluk, beklenen_kirpilmamis):
     kirpilmamis = satir.rstrip().endswith("'")
     dogru = (kirpilmamis == beklenen_kirpilmamis)
     _kayit(ad, BEKLENDIGI_GIBI if dogru else BEKLENMEDIK,
-          "kok uzunlugu=%d | sabotajli motor ([:120] geri) | satir kapanis tirnagi "
+          "kok uzunlugu=%d | sabotajli motor ([:%d] geri) | satir kapanis tirnagi "
           "(') ile bitiyor (kirpilmamis)=%s (beklenen: %s)\n      satir: %s"
-          % (len(kok), "VAR" if kirpilmamis else "yok",
+          % (len(kok), esik, "VAR" if kirpilmamis else "yok",
              "VAR" if beklenen_kirpilmamis else "yok", satir.strip()))
 
 
@@ -289,78 +308,117 @@ def my4_uzun_kol(taban):
         _kayit("M-Y4 UZUN KOL", OLCULEMEDI, str(e))
 
 
-def my4_kisa_kol(taban):
-    """20 Agu 2026 duzeltmesi: "kisa kok" ARTIK bir VARSAYIM DEGIL, bir
-    OLCUM. `tempfile.mkdtemp()`nin varsayilan tabani Linux'ta ~24, macOS'ta
-    ~68 karakterdir — macOS'ta mesaj (68+53=121) esigi (120) ASAR ve kor
-    kol kor KALMAZ (CI 32250138848, Onur kilidi). Kok'u BIZ kisa kursak
-    bile macOS `/tmp`yi `/private/tmp`e REALPATH'ler (M-A8 mayini) — bu
-    yuzden dogru duzeltme kok UZUNLUGUNU degil, kolun ON SARTINI (kirpilmamis
-    mesaj esigin altinda mi) DOGRUDAN OLCMEKTIR: once DUZELTILMIS (sabotajsiz)
-    motorla ayni kok/ortamda BIR KEZ kosulur; ancak on sart SAGLANIYORSA
-    sabotaj kosulur. Saglanmiyorsa OLCULEMEDI (exit 2) doner — ASLA
-    BEKLENMEDIK: bu bir kusur bulgusu degil, bu ortamda ölcülemeyen bir
-    ON SARTTIR."""
+def _kisa_taban_ac():
+    """KISA KOL icin GENEL `mkdtemp` yerine KISA bir taban acar (20 Agu 2026
+    ikinci duzeltme, Onur kilidi SIK (a) — kisa tabani KUR). POSIX'te
+    literal `/tmp` altinda (varsa): `tempfile.mkdtemp(dir=...)` acikca
+    `dir` verilince TMPDIR/TMP/TEMP ortam degiskenlerini YOK SAYAR, bu
+    yuzden disaridan enjekte edilmis UZUN bir TMPDIR (baska bir aracin
+    testi, ya da enjeksiyon) KISA KOL'u ARTIK ETKILEMEZ. OLCULDU (Linux):
+    dis TMPDIR 48/110/150 iken bile bu yolla kok hep ~22 karakter kaliyor.
+
+    🔴 GARANTI DEGIL, IYILESTIRME: macOS `/tmp`yi `/private/tmp`e
+    REALPATH'ler (M-A8 mayini, H16-KESME-DUZELTME-BRIEF.md) — bu TAHMINdir
+    (kok ~33, mesaj ~86, guvenli sinirin altinda BEKLENIYOR ama CI'in
+    KENDISI olcecek). Bu yuzden kisa taban ON SART OLCUMUNU GEREKSIZ
+    KILMAZ — ölçüm hala OTORITEDIR, kisa taban yalnizca cogu ortamda on
+    sartin KENDILIGINDEN saglanmasini kolaylastiran bir on-hazirliktir.
+    `/tmp` yoksa (POSIX-disi/Windows) GENEL varsayilana duser."""
+    if os.name == "posix" and os.path.isdir("/tmp"):
+        try:
+            return tempfile.mkdtemp(prefix="h16km_", dir="/tmp")
+        except OSError:
+            pass
+    return tempfile.mkdtemp(prefix="h16km_")
+
+
+def my4_kisa_kol():
+    """20 Agu 2026: IKI duzeltme BIRLIKTE calisir.
+    (1) "kisa kok" bir VARSAYIM DEGIL, bir OLCUMDUR (ilk duzeltme):
+        `tempfile.mkdtemp()`nin GENEL varsayilan tabani Linux'ta ~24,
+        macOS'ta ~68 karakterdir — macOS'ta mesaj (68+53=121) esigi (120)
+        ASAR ve kor kol kor KALMAZ (CI 32250138848, Onur kilidi). Kolun
+        KENDI ON SARTI ("kirpilmamis H9 mesaji esigin altinda mi")
+        sabotajsiz/duzeltilmis motorla ONCE OLCULUR; ancak SAGLANIYORSA
+        sabotaj kosulur. Saglanmiyorsa OLCULEMEDI (exit 2) doner — ASLA
+        BEKLENMEDIK: bir kusur BULGUSU degil, bu ortamda olculemeyen bir
+        ON SARTTIR.
+    (2) Kisa taban artik AYRICA KURULUYOR (ikinci duzeltme, `_kisa_taban_ac`):
+        ON SART OLCUMU DOGRUdur ama "exit 2 de sifirdan farkli" ve
+        `h9_kesme_mutanti` isinde `continue-on-error` YOK — yalanci kirmizi
+        DURUST kirmiziya donse de macOS KALICI KIRMIZI kalirdi. Kok'u
+        `/tmp` altinda BIZ kisa kurmak (1)'i GEREKSIZ KILMAZ (macOS
+        `/private/tmp` REALPATH riski hala var, bu TAHMINdir) — (1) hala
+        OTORITEDIR, (2) yalnizca cogu ortamda on sartin kendiliginden
+        saglanmasini kolaylastirir."""
     ad = "M-Y4 KISA KOL (KOR KOL): kisa kokte AYNI sabotaj GORUNMEZ KALMALI (KACMASI BEKLENEN)"
-    alt = os.path.join(taban, "k")
-    os.makedirs(alt, exist_ok=True)
-    kok = os.path.join(alt, "kk")
-    os.makedirs(kok, exist_ok=True)
     try:
-        esik = _sabotaj_esigi()
-        _kum_havuzu_kur(MOTOR, kok)
-    except AracKusuru as e:
-        _kayit(ad, OLCULEMEDI, "on sart hazirlanamadi: %s" % e)
+        kisa_taban = _kisa_taban_ac()
+    except OSError as e:
+        _kayit(ad, OLCULEMEDI, "kisa taban acilamadi: %s" % e)
         return
-
-    # --- ON SART OLCUMU: duzeltilmis (sabotajsiz) motorla BIR KEZ kos -----
-    env = _sahipligi_supheli_kil()
-    rc0, c0 = _kos(MOTOR, ["kapi", "--kok=" + kok], env=env)
-    satir0 = _h9_satiri(c0)
-    if satir0 is None:
-        _kayit(ad, OLCULEMEDI,
-              "on sart OLCULEMEDI: duzeltilmis motorla H9 OKUNAMADI satiri "
-              "bulunamadi (kok uzunlugu=%d, exit=%s) — "
-              "GIT_TEST_ASSUME_DIFFERENT_OWNER bu git yapisinda ETKISIZ olabilir "
-              "(surum/platform). Ham cikti kuyrugu:\n%s" % (len(kok), rc0, c0[-500:]))
-        return
-    mesaj_uzunlugu = len(_h9_mesaj_govdesi(satir0))
-    pay = max(1, esik // 10)              # esikten TUREYEN pay, sabit YAZILMAZ
-    guvenli_sinir = esik - pay
-    if mesaj_uzunlugu > guvenli_sinir:
-        _kayit(ad, OLCULEMEDI,
-              "ON SART SAGLANMIYOR (bu ortamda kisa kol OLCULEMEZ — kusur "
-              "BULGUSU DEGIL): kirpilmamis H9 mesaj uzunlugu=%d > guvenli "
-              "sinir=%d (esik=%d - pay=%d). kok uzunlugu=%d, kok=%s\n"
-              "      ham (sabotajsiz) satir: %s"
-              % (mesaj_uzunlugu, guvenli_sinir, esik, pay, len(kok), kok,
-                 satir0.strip()))
-        return
-
-    # --- ON SART SAGLANDI: simdi sabotaji kos, KEHANETI sina --------------
-    sab_dizin = os.path.join(alt, "sab")
-    os.makedirs(sab_dizin, exist_ok=True)
     try:
-        motor_sab = _sabotajli_motor(sab_dizin)
-    except AracKusuru as e:
-        _kayit(ad, OLCULEMEDI, "sabotajli motor kurulamadi: %s" % e)
-        return
-    rc, c = _kos(motor_sab, ["kapi", "--kok=" + kok], env=env)
-    satir = _h9_satiri(c)
-    if satir is None:
-        _kayit(ad, OLCULEMEDI,
-              "sabotajli kosumda H9 OKUNAMADI satiri bulunamadi (kok uzunlugu=%d, "
-              "exit=%s) — on sart olcumunde VARDI, sabotajli kosumda YOK: "
-              "tutarsizlik. Ham cikti kuyrugu:\n%s" % (len(kok), rc, c[-500:]))
-        return
-    kirpilmamis = satir.rstrip().endswith("'")
-    _kayit(ad, BEKLENDIGI_GIBI if kirpilmamis else BEKLENMEDIK,
-          "ON SART OLCULDU: kirpilmamis mesaj uzunlugu=%d (guvenli sinir=%d, "
-          "esik=%d, pay=%d) | sabotajli motor ([:120] geri) | satir kapanis "
-          "tirnagi (') ile bitiyor (kirpilmamis)=%s (beklenen: VAR)\n"
-          "      kok uzunlugu=%d, kok=%s"
-          % (mesaj_uzunlugu, guvenli_sinir, esik, pay,
-             "VAR" if kirpilmamis else "yok", len(kok), kok))
+        alt = os.path.join(kisa_taban, "k")
+        os.makedirs(alt, exist_ok=True)
+        kok = os.path.join(alt, "kk")
+        os.makedirs(kok, exist_ok=True)
+        try:
+            esik = _sabotaj_esigi()
+            _kum_havuzu_kur(MOTOR, kok)
+        except AracKusuru as e:
+            _kayit(ad, OLCULEMEDI, "on sart hazirlanamadi: %s" % e)
+            return
+
+        # --- ON SART OLCUMU: duzeltilmis (sabotajsiz) motorla BIR KEZ kos -----
+        env = _sahipligi_supheli_kil()
+        rc0, c0 = _kos(MOTOR, ["kapi", "--kok=" + kok], env=env)
+        satir0 = _h9_satiri(c0)
+        if satir0 is None:
+            _kayit(ad, OLCULEMEDI,
+                  "on sart OLCULEMEDI: duzeltilmis motorla H9 OKUNAMADI satiri "
+                  "bulunamadi (kok uzunlugu=%d, exit=%s) — "
+                  "GIT_TEST_ASSUME_DIFFERENT_OWNER bu git yapisinda ETKISIZ olabilir "
+                  "(surum/platform). Ham cikti kuyrugu:\n%s" % (len(kok), rc0, c0[-500:]))
+            return
+        mesaj_uzunlugu = len(_h9_mesaj_govdesi(satir0))
+        pay = max(1, esik // 10)              # esikten TUREYEN pay, sabit YAZILMAZ
+        guvenli_sinir = esik - pay
+        if mesaj_uzunlugu > guvenli_sinir:
+            _kayit(ad, OLCULEMEDI,
+                  "ON SART SAGLANMIYOR (bu ortamda kisa kol OLCULEMEZ — kusur "
+                  "BULGUSU DEGIL): kirpilmamis H9 mesaj uzunlugu=%d > guvenli "
+                  "sinir=%d (esik=%d - pay=%d). kok uzunlugu=%d, kok=%s\n"
+                  "      ham (sabotajsiz) satir: %s"
+                  % (mesaj_uzunlugu, guvenli_sinir, esik, pay, len(kok), kok,
+                     satir0.strip()))
+            return
+
+        # --- ON SART SAGLANDI: simdi sabotaji kos, KEHANETI sina --------------
+        sab_dizin = os.path.join(alt, "sab")
+        os.makedirs(sab_dizin, exist_ok=True)
+        try:
+            motor_sab = _sabotajli_motor(sab_dizin)
+        except AracKusuru as e:
+            _kayit(ad, OLCULEMEDI, "sabotajli motor kurulamadi: %s" % e)
+            return
+        rc, c = _kos(motor_sab, ["kapi", "--kok=" + kok], env=env)
+        satir = _h9_satiri(c)
+        if satir is None:
+            _kayit(ad, OLCULEMEDI,
+                  "sabotajli kosumda H9 OKUNAMADI satiri bulunamadi (kok uzunlugu=%d, "
+                  "exit=%s) — on sart olcumunde VARDI, sabotajli kosumda YOK: "
+                  "tutarsizlik. Ham cikti kuyrugu:\n%s" % (len(kok), rc, c[-500:]))
+            return
+        kirpilmamis = satir.rstrip().endswith("'")
+        _kayit(ad, BEKLENDIGI_GIBI if kirpilmamis else BEKLENMEDIK,
+              "kisa taban=%s | ON SART OLCULDU: kirpilmamis mesaj uzunlugu=%d "
+              "(guvenli sinir=%d, esik=%d, pay=%d) | sabotajli motor ([:%d] geri) "
+              "| satir kapanis tirnagi (') ile bitiyor (kirpilmamis)=%s "
+              "(beklenen: VAR)\n      kok uzunlugu=%d, kok=%s"
+              % (kisa_taban, mesaj_uzunlugu, guvenli_sinir, esik, pay, esik,
+                 "VAR" if kirpilmamis else "yok", len(kok), kok))
+    finally:
+        shutil.rmtree(kisa_taban, ignore_errors=True)
 
 
 def main():
@@ -377,7 +435,7 @@ def main():
         return 3
     try:
         my4_uzun_kol(taban)
-        my4_kisa_kol(taban)
+        my4_kisa_kol()
         print()
         for ad, durum, ayrinti in SONUC:
             print("  %-16s %s" % (durum, ad))
