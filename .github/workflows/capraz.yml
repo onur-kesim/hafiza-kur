@@ -1756,16 +1756,24 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # 2b-18) H9 KESME MUTANTI (M-Y4, D2) — `_kapi_h9`nun OKUNAMADI hukmu, git'in
-  #     ilk stderr satirini KIRPMADAN mi basiyor? (kalem5-tarama/IS_EMRI_SIK_A.md
-  #     D2, Onur kilidi SIK A 19 Agu 2026)
-  #     Uretim tarifi `chown -R nobody <KOK>` ile "dubious ownership" hatasi
-  #     uretir — POSIX'e OZGUDUR ve kok/sudo ister. Linux runner'inda sudo
-  #     sifresiz calisir; macOS/Windows'ta script kendisi OLCULEMEDI (exit 2)
-  #     doner — bu bir ARAC KUSURU DEGIL, platformun kendisi (§4 ACIK RISKI,
-  #     BEYAN EDILDI). Bu yuzden SADECE ubuntu kolu KAPI (`continue-on-error`
-  #     YOK); macOS/Windows kollari `continue-on-error: true` ile OLCUM
-  #     olarak isaretli — DURUM.md'ye ACIKCA yazilir, sessizce tek platforma
-  #     indirilmez.
+  #     ilk stderr satirini KIRPMADAN mi basiyor? (my4-epsilon/IS_EMRI_EPSILON.md
+  #     KALEM 1, Onur kilidi SIK ε₂, 19 Agu 2026)
+  #     Uretim tarifi ARTIK `chown -R nobody` DEGIL: git'in KENDI sahiplik
+  #     denetimi `GIT_TEST_ASSUME_DIFFERENT_OWNER=1` cevre degiskeniyle
+  #     tetiklenir — dosya sistemine DOKUNMAZ, root/sudo GEREKTIRMEZ. Eski
+  #     tarif CI #80'de (`32236392253`) UC PLATFORMDA DA kirmizi yakti: GitHub
+  #     runner'i `runner` kullanicisidir, root DEGILDIR, `chown` bu yuzden HER
+  #     YERDE basarisizdi — kusur ORTAM VARSAYIMINDAYDI, platform farkinda
+  #     DEGILDI. ε₂ POSIX sartı TASIMAZ; UC PLATFORM da KAPI (`continue-on-
+  #     error` YOK).
+  #     🔴 VARSAYIM (OLCULEMEDI): `GIT_TEST_ASSUME_DIFFERENT_OWNER` bu
+  #     konteynerde yalniz git 2.43.0/Debian ile OLCULDU; macOS/Windows git
+  #     yapilarinda ETKISI CI'IN KENDISIYLE olculecek (yerel Windows git
+  #     2.55.0.windows.4 + WSL git 2.53.0'da AYRICA dogrulandi, 19 Agu 2026 —
+  #     ama CI runner'i FARKLI olabilir). Mac/win kolu OLCULEMEDI (exit 2)
+  #     verirse kusur DEGIL, platform bilgisidir; o iki kola
+  #     `continue-on-error: true` GERI KONUR ve DURUM.md'ye ACIKCA yazilir
+  #     (sessizce tek platforma indirilmez — eski metnin kendi sarti).
   # ---------------------------------------------------------------------------
   h9_kesme_mutanti:
     name: H9 kesme mutanti (${{ matrix.os }})
@@ -1780,9 +1788,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: H9 OKUNAMADI hukmu kirpilmadan mi basiyor (cift kollu — Linux'ta KAPI, digerinde OLCUM)
+      - name: H9 OKUNAMADI hukmu kirpilmadan mi basiyor (cift kollu — uc platformda KAPI)
         shell: bash
-        continue-on-error: ${{ matrix.os != 'ubuntu-latest' }}
         run: python faz0/h9_kesme_mutanti.py 2>&1 | tee h9-kesme-cikti.txt
       - name: h9 kesme mutanti ciktisi (artefakt)
         if: always()
@@ -1790,4 +1797,40 @@ jobs:
         with:
           name: h9-kesme-${{ matrix.os }}
           path: h9-kesme-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-19) GITFILE KORLUGU MUTANTI — `.git` bir DOSYA (gitfile: worktree ·
+  #     separate-git-dir · submodule) oldugunda `_kapi_h9` saglikli bir depoyu
+  #     "git YOK" diye mi raporluyor? (my4-epsilon/IS_EMRI_EPSILON.md KALEM 2,
+  #     Onur kilidi ONCE-MUTANT, 19 Agu 2026)
+  #     🔴 BU IS OLCUM'DUR, KAPI DEGIL (simdilik): kusur bu turda DUZELTILMEDI,
+  #     yalniz OLCULUYOR — beklenen sonuc exit 1 (3 kusur kolu BEKLENMEDIK).
+  #     `continue-on-error: true`, DURUM.md'nin kendi sinifi geregi ("continue-
+  #     on-error tasiyan is KAPI DEGIL OLCUMDUR"). Duzeltme turunde bu satir
+  #     SILINIR ve is KAPI olur.
+  # ---------------------------------------------------------------------------
+  gitfile_korlugu_mutanti:
+    name: Gitfile korlugu mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: worktree/separate-git-dir/submodule 'git YOK' diyor mu (bes kol, ONCE-MUTANT)
+        shell: bash
+        continue-on-error: true
+        run: python faz0/gitfile_korlugu_mutanti.py 2>&1 | tee gitfile-korlugu-cikti.txt
+      - name: gitfile korlugu mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitfile-korlugu-${{ matrix.os }}
+          path: gitfile-korlugu-cikti.txt
           if-no-files-found: warn

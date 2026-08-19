@@ -11,7 +11,7 @@ NEDEN VAR
   DIZININ YOLUNU tasir. Kok uzunsa yol KIRPILIR, kullanici HANGI DIZIN
   oldugunu YARIM gorur.
 
-NE OLCER — CIFT KOLLU (M-Y3 ile AYNI kalip)
+NE OLCER — CIFT KOLLU (M-Y3 ile AYNI kalip; POSIX SARTI YOK, UC PLATFORMDA KAPI)
     M-Y4 UZUN KOL : kok >= 200 karakter. Motora ESKI kesme ([:120]) GERI
                     enjekte edilir; H9 satiri KIRPILMALI (kapanis tirnagi
                     `'` ile BITMEMELI) — kapi kusuru DOGRU yakaladi (ISIRDI).
@@ -19,20 +19,28 @@ NE OLCER — CIFT KOLLU (M-Y3 ile AYNI kalip)
                     mesaji <120 karakter oldugu icin GORUNMEZ KALMALI (satir
                     kapanis tirnagi `'` ile BITMELI) — KACIS BEKLENEN sonuc.
 
-URETIM TARIFI (IS_EMRI_SIK_A.md §4, birebir OLCULDU)
-  git init + commit -> `kur` -> defterler commit'lenir -> depo BASKA bir
-  kullaniciya devredilir (`chown -R nobody <KOK>`) -> `kapi`. Git `fatal:
-  detected dubious ownership in repository at '<KOK>'` verir (exit 128); hem
-  `log` hem `rev-parse --git-dir` duser -> `_kapi_h9`nun OKUNAMADI dali kosar.
-  Olculmus imza: kisa kokte girdi ~67 karakter, uzun kokte ~268.
+URETIM TARIFI (SIK EPSILON, 19 Agu 2026 Onur kilidi — birebir OLCULDU)
+  git init + commit -> `kur` -> defterler commit'lenir -> `kapi`, git'in KENDI
+  sahiplik denetimi `GIT_TEST_ASSUME_DIFFERENT_OWNER=1` ile tetiklenmis olarak
+  kosulur. Git `fatal: detected dubious ownership in repository at '<KOK>'`
+  verir (exit 128); hem `log` hem `rev-parse --git-dir` duser -> `_kapi_h9`nun
+  OKUNAMADI dali kosar. Olculmus imza: kisa kokte 72 karakter (H9 satiri 98),
+  uzun kokte 252 (H9 satiri 278).
 
-  🔴 ACIK RISK (IS_EMRI_SIK_A.md §4, BEYAN EDILDI — gizlenmez): `chown`
-  POSIX'e ozgudur ve kok-yetki ister. Linux CI runner'inda calisir (sudo
-  passwordless); macOS ve Windows'ta bu script OLCULEMEDI (exit 2) doner —
-  bu bir ARAC KUSURU DEGIL, platformun kendisi. `capraz.yml`de M-Y4 SADECE
-  Linux kolunda KAPI (`continue-on-error` YOK); macOS/Windows kollarinda
-  `continue-on-error: true` ile OLCUM olarak isaretlenir ve bu DURUM.md'ye
-  ACIKCA yazilir. Sessizce tek platforma indirilmez.
+  🔴 NEDEN `chown` DEGIL (19 Agu 2026, CI #80 `32236392253` ISIRDI): eski tarif
+  `chown -R nobody <KOK>` idi. `chown` ile BASKA kullaniciya sahiplik devri
+  POSIX'te ROOT ister; GitHub runner'i `runner` kullanicisidir, root DEGILDIR
+  -> UC PLATFORMDA DA "kum havuzu kurulamadi" (exit 2). Arac DURUST davrandi;
+  kusur ORTAM VARSAYIMINDAYDI. `GIT_TEST_ASSUME_DIFFERENT_OWNER` AYNI mesaji
+  uretir, ROOT/sudo GEREKTIRMEZ ve DOSYA SISTEMINE DOKUNMAZ.
+
+  🔴 KALAN ACIK RISK (gizlenmez): degisken git'in KENDI TEST kancasidir; upstream
+  kaldirirsa ya da runner'da kuresel `safe.directory` onu etkisizlestirirse mesaj
+  URETILMEZ. O halde bu arac SESSIZCE GECMEZ: H9 OKUNAMADI satirini bulamaz ve
+  OLCULEMEDI (exit 2) doner — OLCULDU (bkz. asagidaki kuresel-ayar bagisikligi).
+  Kuresel ayar bagisikligi icin `GIT_CONFIG_GLOBAL/SYSTEM=os.devnull` +
+  `GIT_CONFIG_NOSYSTEM=1` de gecirilir; `safe.directory=*` tanimliyken bile
+  iki kol da BEKLENDIGI GIBI olctu.
 
 CAPA (H16-KESME-DUZELTME-BRIEF.md §5 dersi): motora KOD PARCACIGIYLA anchor
 atilir, satir NUMARASIYLA DEGIL.
@@ -40,7 +48,7 @@ atilir, satir NUMARASIYLA DEGIL.
 CIKIS KODLARI (proje sozlesmesi)
   0  iki kolun IKISI DE BEKLENDIGI GIBI (KISA icin 'beklenen' KACIStir)
   1  en az bir kol BEKLENMEDIK cikti verdi
-  2  OLCULEMEDI (BEKLENMEDIK yoksa) — POSIX-disi platform DAHIL
+  2  OLCULEMEDI (BEKLENMEDIK yoksa) — tetikleyici mesaji uretmediyse DAHIL
   3  ARAC KUSURU (sabotaj hedefi bulunamadi, kum havuzu kurulamadi)
 """
 import os
@@ -144,21 +152,22 @@ def _kok_hedef_uzunlukta(taban_dizini, hedef_uzunluk):
     return kok
 
 
-def _kok_disina_devret(kok):
-    """`chown -R nobody <kok>` (IS_EMRI_SIK_A.md §4 D2 tarifi). POSIX DISINDA
-    (Windows) ya da yetkisiz ortamda YAPILAMAZ -> AracKusuru; cagiran bunu
-    OLCULEMEDI olarak ilan eder — §4'un ACIK RISKI, sessizce yutulmaz."""
-    if os.name != "posix":
-        raise AracKusuru(
-            "chown POSIX-disi platformda YOK (Windows) — D2 UZUN/KISA kollari "
-            "bu ortamda OLCULEMEZ (IS_EMRI_SIK_A.md §4 ACIK RISKI, capraz.yml'de "
-            "Linux-only kapi olarak ele alinir)")
-    if shutil.which("chown") is None:
-        raise AracKusuru("chown komutu bulunamadi (PATH'te yok)")
-    r = subprocess.run(["chown", "-R", "nobody", kok], capture_output=True, text=True)
-    if r.returncode != 0:
-        raise AracKusuru("chown basarisiz (yetki eksik olabilir, root/sudo gerekir): %s"
-                         % r.stderr.strip()[:200])
+# 🔴 AD, YAPILAN ISI SOYLER (M-A8 dersi: adi "realpath maskesi" olup KESMEYI olcen
+# bir mutant, maskeyi hic olcmedigini UC AY gizledi). Burada sahiplik DEVREDILMEZ;
+# git'in sahiplik DENETIMI supheli hale getirilir. Ad da onu soyler.
+_OLCUM_ORTAMI = {
+    "GIT_TEST_ASSUME_DIFFERENT_OWNER": "1",   # tetikleyici (root/sudo GEREKMEZ)
+    "GIT_CONFIG_NOSYSTEM": "1",               # kuresel/sistem `safe.directory`
+    "GIT_CONFIG_GLOBAL": os.devnull,          # bagisikligi — OLCULDU: `*` tanimli
+    "GIT_CONFIG_SYSTEM": os.devnull,          # olsa bile iki kol da olcuyor
+}
+
+
+def _sahipligi_supheli_kil():
+    """SIK EPSILON: dosya sistemine DOKUNMAZ, kullanici/izin DEGISTIRMEZ.
+    Git'in kendi sahiplik denetimi cevre degiskeniyle tetiklenir; uretilen mesaj
+    `chown` tarifiyle BIREBIR AYNIDIR (olculdu 19 Agu 2026, git 2.43.0)."""
+    return dict(_OLCUM_ORTAMI)
 
 
 def _kum_havuzu_kur(motor, kok):
@@ -173,7 +182,6 @@ def _kum_havuzu_kur(motor, kok):
     _git(kok, "add", "-A")
     _git(kok, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "taban",
         env=dict(os.environ, **_GIT_ORTAM))
-    _kok_disina_devret(kok)
 
 
 def _h9_satiri(cikti):
@@ -199,12 +207,14 @@ def _my4_kol(taban, ad, hedef_uzunluk, beklenen_kirpilmamis):
     sab_dizin = os.path.join(alt, "sab")
     os.makedirs(sab_dizin, exist_ok=True)
     motor_sab = _sabotajli_motor(sab_dizin)
-    rc, c = _kos(motor_sab, ["kapi", "--kok=" + kok])
+    rc, c = _kos(motor_sab, ["kapi", "--kok=" + kok],
+                 env=_sahipligi_supheli_kil())
     satir = _h9_satiri(c)
     if satir is None:
         _kayit(ad, OLCULEMEDI,
-              "H9 OKUNAMADI satiri bulunamadi (kok uzunlugu=%d, exit=%s) — 'dubious "
-              "ownership' bu ortamda TETIKLENMEMIS olabilir. Ham cikti kuyrugu:\n%s"
+              "H9 OKUNAMADI satiri bulunamadi (kok uzunlugu=%d, exit=%s) — "
+              "GIT_TEST_ASSUME_DIFFERENT_OWNER bu git yapisinda ETKISIZ olabilir "
+              "(surum/platform). SESSIZ GECIS DEGIL, OLCULEMEDI. Ham cikti kuyrugu:\n%s"
               % (len(kok), rc, c[-500:]))
         return
     kirpilmamis = satir.rstrip().endswith("'")
@@ -246,11 +256,6 @@ def main():
     print("  platform : %s (os.name=%s)" % (sys.platform, os.name))
     print("  motor    : %s" % MOTOR)
     print("=" * 82)
-    if os.name != "posix":
-        print("\nOLCULEMEDI: chown POSIX-disi platformda YOK (IS_EMRI_SIK_A.md §4 ACIK RISKI).")
-        print("  Bu bir ARAC KUSURU DEGIL; capraz.yml'de bu platform kolu OLCUM (continue-on-error)")
-        print("  olarak isaretlenir, KAPI SADECE Linux'tadir.")
-        return 2
     try:
         taban = tempfile.mkdtemp(prefix="h16km_")
     except OSError as e:
