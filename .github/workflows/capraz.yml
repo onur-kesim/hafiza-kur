@@ -1718,3 +1718,76 @@ jobs:
           name: yapi-kapisi-${{ matrix.os }}
           path: yapi-kapisi-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-17) OLCULEMEDI KESME MUTANTI (M-Y3, D1) — `kapi_yalit()`nin OLCULEMEDI
+  #     hukmu, dosya adini KIRPMADAN mi basiyor? (kalem5-tarama/IS_EMRI_SIK_A.md
+  #     D1, Onur kilidi SIK A 19 Agu 2026)
+  #     18 Agu turunda hafiza.py:3326'daki kesildi[:160] kaldirildi; ayni
+  #     kalibin bir uyesi daha (kapi_yalit'in `ilk[:150]`si) o turda ATLANMISTI.
+  #     Bu is o duzeltmeyi TAMAMLAR. Cift kollu (--uzun-yol/M-Y2 kalibi): UZUN
+  #     KOL (kok>=170) sabotajin (kesme geri) ISIRDIGINI, KISA KOL (kor kol)
+  #     AYNI sabotajin GORUNMEZ KALDIGINI (KACMASI BEKLENEN) olcer. UC PLATFORM,
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  olculemedi_kesme_mutanti:
+    name: Olculemedi kesme mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: kapi_yalit OLCULEMEDI hukmu kirpilmadan mi basiyor (cift kollu)
+        shell: bash
+        run: python faz0/olculemedi_kesme_mutanti.py 2>&1 | tee olculemedi-kesme-cikti.txt
+      - name: olculemedi kesme mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: olculemedi-kesme-${{ matrix.os }}
+          path: olculemedi-kesme-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-18) H9 KESME MUTANTI (M-Y4, D2) — `_kapi_h9`nun OKUNAMADI hukmu, git'in
+  #     ilk stderr satirini KIRPMADAN mi basiyor? (kalem5-tarama/IS_EMRI_SIK_A.md
+  #     D2, Onur kilidi SIK A 19 Agu 2026)
+  #     Uretim tarifi `chown -R nobody <KOK>` ile "dubious ownership" hatasi
+  #     uretir — POSIX'e OZGUDUR ve kok/sudo ister. Linux runner'inda sudo
+  #     sifresiz calisir; macOS/Windows'ta script kendisi OLCULEMEDI (exit 2)
+  #     doner — bu bir ARAC KUSURU DEGIL, platformun kendisi (§4 ACIK RISKI,
+  #     BEYAN EDILDI). Bu yuzden SADECE ubuntu kolu KAPI (`continue-on-error`
+  #     YOK); macOS/Windows kollari `continue-on-error: true` ile OLCUM
+  #     olarak isaretli — DURUM.md'ye ACIKCA yazilir, sessizce tek platforma
+  #     indirilmez.
+  # ---------------------------------------------------------------------------
+  h9_kesme_mutanti:
+    name: H9 kesme mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: H9 OKUNAMADI hukmu kirpilmadan mi basiyor (cift kollu — Linux'ta KAPI, digerinde OLCUM)
+        shell: bash
+        continue-on-error: ${{ matrix.os != 'ubuntu-latest' }}
+        run: python faz0/h9_kesme_mutanti.py 2>&1 | tee h9-kesme-cikti.txt
+      - name: h9 kesme mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h9-kesme-${{ matrix.os }}
+          path: h9-kesme-cikti.txt
+          if-no-files-found: warn

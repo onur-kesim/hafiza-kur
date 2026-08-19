@@ -19,10 +19,10 @@ BAYAT (motor `401a3f71`) · md.11 yönü · README_EN kapısı · 25 Ağu yazıs
   ölçüldüğü ÖLÇÜLEMEZ — md.10'da kapsam içi DOSYA=ROL ⇒ "rol say" mutantı YEŞİL geçti ·
   (3) `M-A8`in adı "realpath maskesi" ama kırmızıyı yakan KESMEYDİ ⇒ maske macOS/Windows'ta
   HİÇ ölçülmemişti; düzeltmeden SONRA ısırdı (18 Ağu).
-- 🔴 **YOL UZUNLUĞU BİR ÖLÇÜM EKSENİDİR** (18 Ağu): `hafiza.py:3326` `kesildi[:160]`, kök 98
-  karakteri aşınca mesaj kuyruğunu YİYORDU (macOS 6 · Windows 3 · Linux 0; imza `31+160=191`).
-  Kısa `/tmp` ile koşan TÜM faz0 bataryası KÖRDÜ; CI'ın yakalaması KAZAYDI. `--uzun-yol` +
-  `yol_uzunlugu_mutanti` (M-Y2 = kapının YANLIŞ ORTAMDA kaçtığını ölçer).
+- 🔴 **YOL UZUNLUĞU BİR ÖLÇÜM EKSENİDİR** (18-19 Ağu): sabit `[:N]` kesmeleri kök uzunsa
+  mesaj kuyruğunu YİYORDU (3326, 379, 3956 — SIK A'da hepsi düzeltildi). Kısa `/tmp` TÜM bataryayı
+  KÖR bırakıyordu; `--uzun-yol` + M-Y2 kalıbı kapının YANLIŞ ORTAMDA kaçtığını ölçer. Kalan: B2/B3
+  kilit, B6 `.split`, ÖLÇÜLEMEDİ kalanlar — sonraki tur.
 - 🔴 **CI kırmızısı KAPI kırmızısı olmayabilir** (#66 `6c6d407a`): 100 işin 2'si kırmızı,
   ikisi de `upload-artifact` **Finalize 403**; ölçüm+kapı adımları YEŞİL, #67'de 100/0.
 - 🔴 **WebFetch API DE BAYAT** (2. ısırık: en yeni #55 dedi, gerçek #67) ⇒ CI hükmü

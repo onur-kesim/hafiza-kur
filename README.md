@@ -111,7 +111,10 @@ Bunlar gizlenmiyor; `skill/SKILL.md` §9'da tam listesi var. En önemlileri:
   ölçütü ve benzerleri) ve ÖLÇÜM (`continue-on-error: true` — kanıt koşucuları,
   Y-1/Y-3 probları, ortam sınıfı, kalite taraması). Hangi adımın hangi sınıfta
   olduğu ve kaçının bu bayrağı taşıdığı `capraz.yml`den okunur; sayı burada
-  yazılmaz (bir kez yazıldı, iki gün içinde bayatladı). Motorda platforma özgü tek
+  yazılmaz (bir kez yazıldı, iki gün içinde bayatladı). Tek belgelenmiş istisna
+  `h9_kesme_mutanti`dir: `chown` POSIX'e özgü olduğu için ubuntu kolu KAPI,
+  macOS/Windows kolları platform sınırı nedeniyle ÖLÇÜM (`capraz.yml`de
+  gerekçesiyle yazılı). Motorda platforma özgü tek
   dal `sys.platform == "win32"` altındadır ve `faz0/win_dal_mutanti.py` onu ölçer:
   envanter ve davranış kapıları temiz, **4/4 mutant ayrı eksende ısırıyor**. Ama o
   aracın kendi hükmü **"YEŞİL SINIRLI"**: üçüncü kapısı (gerçek `win32` üzerinde
