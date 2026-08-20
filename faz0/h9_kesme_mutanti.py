@@ -40,8 +40,10 @@ NE OLCER — CIFT KOLLU (M-Y3 ile AYNI kalip; POSIX SARTI YOK, UC PLATFORMDA KAP
   DEGIL, kolun ON SARTINI dogrudan OLCMEKTIR: duzeltilmis motorla (sabotaj
   YOK) ayni kok/ortamda H9 satiri BIR KEZ kosulur, mesaj uzunlugu esikle
   (dinamik olarak `_SABOTAJLI`den okunur, sabit YAZILMAZ) karsilastirilir.
-  Esikten TUREYEN bir PAY (`esik // 10`, sabit sayi YAZILMAZ) ile guvenli
-  sinir belirlenir; asilirsa OLCULEMEDI (exit 2), asilmazsa sabotaj kosulur.
+  Ilk yazimda esikten TUREYEN bir PAY (`esik // 10`) ile bir "guvenli sinir"
+  belirleniyordu; bu DUZELTME 3'te KALDIRILDI (asagiya bak, CI #83) —
+  karsilastirma simdi DOGRUDAN esige karsi: asilirsa OLCULEMEDI (exit 2),
+  asilmazsa sabotaj kosulur.
 
   🔴 DUZELTME 2 (Onur kilidi 20 Agu 2026, SIK (a) — "kisa tabani KUR"):
   DUZELTME 1 DOGRUYDU ve yalanci kirmiziyi bitirdi — dogrulandi (kok 66-170
@@ -53,9 +55,30 @@ NE OLCER — CIFT KOLLU (M-Y3 ile AYNI kalip; POSIX SARTI YOK, UC PLATFORMDA KAP
   varsa) — `mkdtemp(dir=...)` acikca `dir` verilince TMPDIR/TMP/TEMP ortam
   degiskenlerini YOK SAYAR. OLCULDU (Linux): dis TMPDIR 48/110/150 iken
   bile kok hep ~22 kaliyor, 2/2 exit 0. macOS icin bu bir TAHMINdir (kok
-  ~33, mesaj ~86 — guvenli sinirin altinda BEKLENIYOR); ON SART OLCUMU
+  ~33, mesaj ~86 — esigin (120) altinda BEKLENIYOR); ON SART OLCUMU
   (DUZELTME 1) GEREKSIZ OLMAZ — GERCEK OTORITE odur, kisa taban yalnizca
   on sartin cogu ortamda kendiliginden saglanmasini KOLAYLASTIRIR.
+  🔴 DOGRULANDI (CI #83 `32374821806`, is `macos-latest`): SUCCESS —
+  `_kisa_taban_ac()` `/private/tmp` realpath'ine RAGMEN calisti, bu
+  tahmin TUTTU.
+
+  🔴 DUZELTME 3 (Onur kilidi 20 Agu 2026, CI #83 `32374821806`, is
+  `96443570144` KIRMIZI): `windows-latest`de ON SART OLCUMU "112 > guvenli
+  sinir=108 (esik=120-pay=12)" icin OLCULEMEDI dondu — AMA 112 < 120:
+  gercek sabotaj KIRPMAZDI, kol DOGRU olcerdi. Reddeden fiziksel esik
+  DEGIL, PAY'in KENDISIYDI. ON SART, sabotajin kullanacagi AYNI kokte
+  AYNI mesaji olcuyor (H9 satiri) — ikisi arasindaki TEK fark kesmenin
+  kendisi (`[:120]`); ARADA GURULTU YOK, bu yuzden pay HICBIR SEYI
+  KORUMUYORDU, yalniz 109-120 bandini (Windows'un varsayilan kok/
+  kullanici-adi uzunlugu tam bu bantta) yalanci OLCULEMEDI'ye
+  CEVIRIYORDU. DUZELTME: `pay` KALDIRILDI, karsilastirma FIZIKLE AYNI:
+  `mesaj_uzunlugu > esik` ⇒ OLCULEMEDI, `<= esik` ⇒ kol kosar (Cowork
+  olcumu: mesaj 119→exit 0, 120(=esik)→exit 0, 121→exit 2, 122→exit 2,
+  123→exit 2 — `[:120]` TAM 120 karakterlik dizgeyi kesmez, esikte
+  ölçüt birebir dogru). 🔴 PAY GERI EKLENMEZ: on sart GURULTUSUZ oldugu
+  icin (ayni kok, ayni ortam, TEK degisken kesmenin kendisi) fiziksel
+  esikten daha KATI bir olcut hicbir seyi korumaz, yalniz yalanci-
+  kirmizi uretir — sonraki tur "guvenlik payi ekleyeyim" DEMESIN.
 
 URETIM TARIFI (SIK EPSILON, 19 Agu 2026 Onur kilidi — birebir OLCULDU)
   git init + commit -> `kur` -> defterler commit'lenir -> `kapi`, git'in KENDI
@@ -318,12 +341,13 @@ def _kisa_taban_ac():
     dis TMPDIR 48/110/150 iken bile bu yolla kok hep ~22 karakter kaliyor.
 
     🔴 GARANTI DEGIL, IYILESTIRME: macOS `/tmp`yi `/private/tmp`e
-    REALPATH'ler (M-A8 mayini, H16-KESME-DUZELTME-BRIEF.md) — bu TAHMINdir
-    (kok ~33, mesaj ~86, guvenli sinirin altinda BEKLENIYOR ama CI'in
-    KENDISI olcecek). Bu yuzden kisa taban ON SART OLCUMUNU GEREKSIZ
-    KILMAZ — ölçüm hala OTORITEDIR, kisa taban yalnizca cogu ortamda on
-    sartin KENDILIGINDEN saglanmasini kolaylastiran bir on-hazirliktir.
-    `/tmp` yoksa (POSIX-disi/Windows) GENEL varsayilana duser."""
+    REALPATH'ler (M-A8 mayini, H16-KESME-DUZELTME-BRIEF.md) — bu TAHMIN idi
+    (kok ~33, mesaj ~86, esigin altinda BEKLENIYORDU); CI #83 `32374821806`
+    macos-latest'te SUCCESS ile DOGRULADI. Bu yuzden kisa taban ON SART
+    OLCUMUNU GEREKSIZ KILMAZ — ölçüm hala OTORITEDIR, kisa taban yalnizca
+    cogu ortamda on sartin KENDILIGINDEN saglanmasini kolaylastiran bir
+    on-hazirliktir. `/tmp` yoksa (POSIX-disi/Windows) GENEL varsayilana
+    duser."""
     if os.name == "posix" and os.path.isdir("/tmp"):
         try:
             return tempfile.mkdtemp(prefix="h16km_", dir="/tmp")
@@ -333,7 +357,7 @@ def _kisa_taban_ac():
 
 
 def my4_kisa_kol():
-    """20 Agu 2026: IKI duzeltme BIRLIKTE calisir.
+    """20 Agu 2026: UC duzeltme BIRLIKTE calisir.
     (1) "kisa kok" bir VARSAYIM DEGIL, bir OLCUMDUR (ilk duzeltme):
         `tempfile.mkdtemp()`nin GENEL varsayilan tabani Linux'ta ~24,
         macOS'ta ~68 karakterdir — macOS'ta mesaj (68+53=121) esigi (120)
@@ -347,10 +371,17 @@ def my4_kisa_kol():
         ON SART OLCUMU DOGRUdur ama "exit 2 de sifirdan farkli" ve
         `h9_kesme_mutanti` isinde `continue-on-error` YOK — yalanci kirmizi
         DURUST kirmiziya donse de macOS KALICI KIRMIZI kalirdi. Kok'u
-        `/tmp` altinda BIZ kisa kurmak (1)'i GEREKSIZ KILMAZ (macOS
-        `/private/tmp` REALPATH riski hala var, bu TAHMINdir) — (1) hala
+        `/tmp` altinda BIZ kisa kurmak (1)'i GEREKSIZ KILMAZ — (1) hala
         OTORITEDIR, (2) yalnizca cogu ortamda on sartin kendiliginden
-        saglanmasini kolaylastirir."""
+        saglanmasini kolaylastirir. (macOS `/private/tmp` REALPATH riski
+        bir TAHMINdi; CI #83 `32374821806` SUCCESS ile DOGRULADI.)
+    (3) ON SART karsilastirmasinda PAY YOK (ucuncu duzeltme, CI #83 is
+        `96443570144` windows-latest KIRMIZI): esikten TUREYEN bir pay
+        (`esik // 10`) mesaj=112'yi esik=120'nin ALTINDAYKEN bile
+        OLCULEMEDI'ye ceviriyordu — sabotaj GERCEKTE kirpmazdi. On sart
+        GURULTUSUZ oldugu icin (sabotajin AYNI kokte AYNI mesaji, tek
+        fark kesmenin kendisi) pay hicbir seyi korumuyordu; simdi
+        `mesaj_uzunlugu > esik` FIZIGIN KENDISI."""
     ad = "M-Y4 KISA KOL (KOR KOL): kisa kokte AYNI sabotaj GORUNMEZ KALMALI (KACMASI BEKLENEN)"
     try:
         kisa_taban = _kisa_taban_ac()
@@ -381,15 +412,19 @@ def my4_kisa_kol():
                   "(surum/platform). Ham cikti kuyrugu:\n%s" % (len(kok), rc0, c0[-500:]))
             return
         mesaj_uzunlugu = len(_h9_mesaj_govdesi(satir0))
-        pay = max(1, esik // 10)              # esikten TUREYEN pay, sabit YAZILMAZ
-        guvenli_sinir = esik - pay
-        if mesaj_uzunlugu > guvenli_sinir:
+        # DUZELTME 3 (20 Agu 2026, CI #83): PAY YOK — on sart GURULTUSUZ
+        # (sabotajin kullanacagi AYNI kokte AYNI mesaji olcer, TEK degisken
+        # kesmenin kendisi), bu yuzden karsilastirma DOGRUDAN fizikle AYNI:
+        # sabotaj `[:esik]` KIRPAR ancak mesaj esigi ASARSA. Bir PAY EKLEMEK
+        # yalniz yalanci-kirmizi uretir (Windows CI #83, mesaj=112<esik=120
+        # gercekte kirpilmazdi) — pay BURAYA GERI EKLENMEZ.
+        if mesaj_uzunlugu > esik:
             _kayit(ad, OLCULEMEDI,
                   "ON SART SAGLANMIYOR (bu ortamda kisa kol OLCULEMEZ — kusur "
-                  "BULGUSU DEGIL): kirpilmamis H9 mesaj uzunlugu=%d > guvenli "
-                  "sinir=%d (esik=%d - pay=%d). kok uzunlugu=%d, kok=%s\n"
+                  "BULGUSU DEGIL): kirpilmamis H9 mesaj uzunlugu=%d > esik=%d. "
+                  "kok uzunlugu=%d, kok=%s\n"
                   "      ham (sabotajsiz) satir: %s"
-                  % (mesaj_uzunlugu, guvenli_sinir, esik, pay, len(kok), kok,
+                  % (mesaj_uzunlugu, esik, len(kok), kok,
                      satir0.strip()))
             return
 
@@ -412,10 +447,10 @@ def my4_kisa_kol():
         kirpilmamis = satir.rstrip().endswith("'")
         _kayit(ad, BEKLENDIGI_GIBI if kirpilmamis else BEKLENMEDIK,
               "kisa taban=%s | ON SART OLCULDU: kirpilmamis mesaj uzunlugu=%d "
-              "(guvenli sinir=%d, esik=%d, pay=%d) | sabotajli motor ([:%d] geri) "
+              "(esik=%d) | sabotajli motor ([:%d] geri) "
               "| satir kapanis tirnagi (') ile bitiyor (kirpilmamis)=%s "
               "(beklenen: VAR)\n      kok uzunlugu=%d, kok=%s"
-              % (kisa_taban, mesaj_uzunlugu, guvenli_sinir, esik, pay, esik,
+              % (kisa_taban, mesaj_uzunlugu, esik, esik,
                  "VAR" if kirpilmamis else "yok", len(kok), kok))
     finally:
         shutil.rmtree(kisa_taban, ignore_errors=True)
