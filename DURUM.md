@@ -1,89 +1,79 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #71 `afa53fc2`: 106 iş, 0 başarısız**)
-Son güncelleme: 17 Ağu 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #86 `3c9b8559`: 121 iş, 0 başarısız — 4 Eyl ölçüldü**)
+Son güncelleme: 4 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
-H16 kapısı + `[:160]` düzeltmesi KOŞUYOR, madde AÇILMADI (18 Ağu). Açık: kapsam envanteri
-BAYAT (motor `401a3f71`) · md.11 yönü · README_EN kapısı · 25 Ağu yazısı TASLAK (depo DIŞI).
+M-Y3'e M-Y4 düzeltmesi (marj ~42 karakter — ÖLÇÜLMEDİ) · ŞIK B kilit ailesi (B2+B3) ·
+B6 `.split("\n")[0]` · md.11 eşitlik körlüğü yönü · kapsam envanteri α/β (motor `401a3f71` BAYAT) ·
+README_EN kapısı · 25 Ağu yazısı TASLAK, depo DIŞI, YAYIN KARARI Onur'da.
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**md.10** hüküm iç tutarlılığı — hal-2'nin sayı/rolü `envanter` değil `ici`den gelir;
-`hukum_tutarliligi_mutanti` 1/3, kapı ÖNCESİ motorda KIRMIZI yandı ·
-**md.9** görünürlük — kapsam dışı hiç önerilmez, `gorunurluk_mutanti` 4/5, çapa 99→97 ·
-**md.6-8** keşif/eşle/durma + çoklu-`canli` + hüküm ayrımı · md.2+4+5 README + yol ayracı ·
-🔴 `--kesif` **72 gerçek public depoda** koşuldu (50 + 22 `memory-bank/`), salt okuma, 0 bayt.
+**gitfile körlüğü** (4 Eyl, CI #86) — `.git` DİZİN sanılıyordu; worktree/`--separate-git-dir`/
+submodule'de METİN DOSYASIDIR ⇒ sağlam depoda "H9: git YOK", izlenirlik zinciri hiç koşmuyordu.
+ŞIK D üç kademeli prob; 4 aday × 12 kol (M0 6/6 · A 7/5 · B 10/2 · C 11/1 · **D 12/0**).
+`--git-dir` ELENDİ: üst dizine yürüyüp alt-dizin projesinde 3 kolun 2'sini kırmızıya taşıyor.
+Mutant 7→10 kol, ÜÇ PLATFORMDA yeşil ⇒ **macOS/Windows ÖLÇÜLEMEDİ maddesi de KAPANDI** ·
+**M-Y4** (20 Ağu, CI #84) — `pay = esik//10` KALDIRILDI, ön şart fizikle aynı ölçüt oldu
+(`mesaj > esik`); pay, Windows'un düştüğü 109-120 bandını yalancı ÖLÇÜLEMEDİ'ye çeviriyordu.
+**PAY GERİ EKLENMEZ** · **md.10** hüküm iç tutarlılığı · **md.9** görünürlük · **md.6-8**
+keşif/eşle/durma + çoklu-`canli` + hüküm ayrımı · **md.2+4+5** README + yol ayracı ·
+🔴 `--kesif` **72 gerçek public depoda** koşuldu, salt okuma, 0 bayt.
 
 ## Bilinen sınırlar (ölçülmüş)
-- 🔴 **KAPI NEYİ ÖLÇTÜĞÜNÜ ÖLÇEMEZ — ÜÇ ISIRIK** (§8): (1) bir cümlenin VARLIĞINI ölçen kapı
-  SAYISINI ölçmez (md.9, md.10 kusuruna KÖRDÜ) · (2) senaryoda iki büyüklük EŞİTSE hangisinin
-  ölçüldüğü ÖLÇÜLEMEZ — md.10'da kapsam içi DOSYA=ROL ⇒ "rol say" mutantı YEŞİL geçti ·
-  (3) `M-A8`in adı "realpath maskesi" ama kırmızıyı yakan KESMEYDİ ⇒ maske macOS/Windows'ta
-  HİÇ ölçülmemişti; düzeltmeden SONRA ısırdı (18 Ağu).
-- 🔴 **YOL UZUNLUĞU BİR ÖLÇÜM EKSENİDİR** (18-19 Ağu): sabit `[:N]` kesmeleri kök uzunsa
-  mesaj kuyruğunu YİYORDU (3326, 379, 3956 — SIK A'da hepsi düzeltildi). Kısa `/tmp` TÜM bataryayı
-  KÖR bırakıyordu; `--uzun-yol` + M-Y2 kalıbı kapının YANLIŞ ORTAMDA kaçtığını ölçer. Kalan: B2/B3
-  kilit, B6 `.split`, ÖLÇÜLEMEDİ kalanlar — sonraki tur.
-- 🔴 **CI kırmızısı KAPI kırmızısı olmayabilir** (#66 `6c6d407a`): 100 işin 2'si kırmızı,
-  ikisi de `upload-artifact` **Finalize 403**; ölçüm+kapı adımları YEŞİL, #67'de 100/0.
-- 🔴 **WebFetch API DE BAYAT** (2. ısırık: en yeni #55 dedi, gerçek #67) ⇒ CI hükmü
-  TARAYICI `fetch`'inden okunur; iş logu API'den 403, sayfadan JS ile açılır.
-- 🔴 **KAPININ KENDİ SENARYOSU KAPIYI KIRMIZI YAKABİLİR:** md.7/A2 `kur`dan sonra canlıyı ELLE
-  kırpıyordu ⇒ çıpayla ayrışıp H1 "satır KAYIP" veriyordu. Senaryo gerçek vakaya çevrildi.
-- 🔴 **ÖLÇÜT CÜMLESİ SOMUT VAKAYA KOŞULUR — ÜÇ KEZ ısırdı, üçü de kod yazılmadan:** md.6(c)'nin
-  VE'li yazımı `CLAUDE.md`+`DURUM.md` projesinde hiç ateşlenmiyordu · md.7'nin lafzi D'si 6 gerçek
-  şeklin 4'ünde yanıyordu (3'ü meşru) · md.7(b) SAĞLIKLI akışta yanıyordu (`derle` eski bloğu
-  arşive taşır). ⇒ ölçüt yazılır yazılmaz vakaya koşulur; kilit ondan SONRA.
-- 🔴 **ÖLÇÜMÜ KOŞTUM, ONU KORUYAN KAPIYI KOŞMADIM (CI #56, #58):** kapı gövdesine satır eklerken
-  O KAPININ mutant ÇAPALARINA bakılır (M-H10e'ninki İKİ BİTİŞİK SATIRDI); araç EL İLE SEÇİLMEZ,
-  **TÜM `faz0` bataryası** koşulur. md.8'de uygulandı: `_md8_ayrim` `if not adaylar:`in ÜSTÜNE
-  kondu, çapa kırılmadı. Çevre kırmızısı TEMİZ motorla ayrılır; staged BAYAT kopya üzerine yazmasın.
-- 🔴 **ÖLÇÜM ALETİ DE YALAN SÖYLER — 16 Ağu'da BEŞ KEZ, sonuncusu İKİ CI TURU yaktı:**
-  `| tail` sonrası `$?` boruyu ölçtü · `d[rol]=dosya` sözlüğü OLMAYAN bir kusur UYDURDU (bir
-  bağımsız denetim turu ona kuruldu) · argümanı YOK SAYAN araca A/B iki kez aynı motoru ölçtü ·
-  eşitlik tabanlı yol maskelemesi sessizce başarısız oldu · **`stderr=STDOUT` birleştirmesi md.8
-  kapısını KÖR etti**: hüküm stderr'e tamponsuz, envanter stdout'a tamponlu gider ⇒ envanter
-  bloğun ARDINA düşüp onu senaryoya göre farklılaştırır ⇒ mutantlar HEP kaçar. CI #61+#62
-  yakaladı; **YEREL BEŞ AYRI ORTAMDA YEŞİL DEDİ.**
-  ⇒ akış BİRLEŞTİRİLMEZ · çok-değerli alan LİSTEYE · hüküm öncesi N=1 HAM ÇIKTI gözle okunur ·
-  motor A/B'si KOPYA DEPODA yapılır · normalizasyonun OLDUĞU ayrıca doğrulanır, yoksa ÖLÇÜLEMEDİ.
-- 🔴 **ÇAPA, ARACIN KENDİ ÇIKTISINDAN GÜNCELLENMEZ** (yoksa kendini onaylar): 88→97 BAĞIMSIZ
-  `radon cc` ile çaprazlandı. **YORUMDAKİ CANLI SAYI BAYATLAR:** `capraz.yml`'deki "bugün 14
-  ihlal" iki günde 9/5/9 oldu; sayı silindi, "artefakttan oku" kondu.
-- 🔴 **MUTANT ÇAPASI TEK YERDE OLMALI:** `if not adaylar:` motorda ÜÇ yerde geçiyordu,
-  `replace(...,1)` YANLIŞ fonksiyona kurdu. "Uygulandı" ≠ "DOĞRU YERE uygulandı"; çapa tek
-  yerde değilse mutant KURULAMADI = kırmızı.
-- 🔴 **YAKALA-HEPSİ DESENİ ÖLÜ MANTIK DOĞURUR:** adaptöre `.*\.JSONL$` konsaydı ölçüt (b)'nin
-  `.jsonl` yarısı hiç ateşlenemezdi. Bedel: `README.md` her projede OLCULEMEDI'de görünür.
-- 🔴 **SAYI BULAŞMASI · OKUNMADAN HÜKÜM · BOZULABİLİR BEYAN** (dış denetçi): başka projenin sayısı
-  yeniden ölçülmeden yazılmaz · dosyanı okumadan beyan etme. Ayrıntı: `denetim/2026-08-15_*`.
-- 🔴 **YEŞİL CI, ÖLÇÜLMEMİŞ ŞART** (#45 yeşilken `paketten_kos` belgenin 1. adımını atlıyordu) ⇒
-  madde ✅ olmadan önce ölçüt cümlesi KELİME KELİME araca karşı okunur. Kardeşi: **"GEÇİYOR MU"
-  KAPISI ZAYIFTIR** — "tutarlı mı" AYRI eksendir (S-6; yol ekseni eklendi).
-- 🔴 **Defter COMMIT'lenmeden `kapi` KIRMIZI** ([H9] git'te IZLENMIYOR → çıkış 1) ⇒ "defteri
-  `.gitignore`'a al" fikri md.6(c)'yi ULAŞILMAZ kılar.
-- 🔴 **Derleme artefaktı H14'ün DELİLİNİ bozar:** hariç kümesinde `obj`/`bin`/`.dart_tool` YOK ⇒
-  "en yeni değişiklik" hep bir artefakt olur; işaretçi gerçek dosyayı gösteremez.
-- 🔴 **SKILL.md §1 kademe tablosu kendi içinde ÇELİŞİYOR** (belge-iç-tutarsızlık, İKİNCİ ısırık):
-  git'li ama KODSUZ proje hem HAFİF hem KAPILI satırına uyuyor; bu turda KAPILI seçildi.
-- 🔴 Motorda `push`/`fetch`/`remote`/`origin` SIFIR eşleşme — yalnız yerel git.
-- 🔴 **Artefakt BOYUTU içerik oracle'ı DEĞİLDİR** (CI #43: win kolu daha UZUN metin taşıyor ama
-  zip'i daha KÜÇÜK). Hüküm `conclusion` + log metnidir.
-- 🔴 **GitHub API 403'ü ARALIKLIDIR** (aynı oturumda hem 403 hem başarı): tek 403'te vazgeçme,
-  URL'i değiştir, iki kez 403 ise TARAYICIDAN sayfa bağlamında `fetch`. **HTML `/actions`
-  sayfasını WebFetch ile OKUMA — BAYAT dönüyor** ("#23 Queued" dedi, gerçek #55'ti).
+- 🔴 **`continue-on-error` TAŞIYAN YEŞİL KAPI DEĞİLDİR — ISIRDI (4 Eyl):** CI #85'in gitfile yeşili
+  HİÇBİR ŞEY ölçmüyordu; POZİTİF KONTROLLE bulundu (#84 `922e5e4f`'te motor HENÜZ kusurluyken ve
+  mutant exit 1 verirken hem iş hem adım "success" görünüyor). `capraz.yml` KAPI'ya çevrildi, #86'da
+  gerçek yeşil alındı. **Talimat yalnız YAML yorumunda durursa iş emrine girmez ve kaçar.** Bilinçli
+  ÖLÇÜM işleri: `win_kill_probu` · `boru_probu` · `ortam` · `kalite` · `kanit`in ölçüm adımları.
+- 🔴 **KAPI NEYİ ÖLÇTÜĞÜNÜ ÖLÇEMEZ — ÜÇ ISIRIK** (§8): (1) VARLIĞI ölçen kapı SAYIYI ölçmez ·
+  (2) senaryoda iki büyüklük EŞİTSE hangisinin ölçüldüğü ÖLÇÜLEMEZ (md.10: dosya=rol) · (3) `M-A8`in
+  adı "realpath maskesi"ydi ama kırmızıyı yakan KESMEYDİ ⇒ maske hiç ölçülmemişti.
+- 🔴 **YOL UZUNLUĞU BİR ÖLÇÜM EKSENİDİR:** sabit `[:N]` kesmeleri kök uzunsa mesaj kuyruğunu yer
+  (3326/379/3956 ŞIK A'da düzeltildi). Kısa `/tmp` TÜM bataryayı KÖR bırakıyordu; `--uzun-yol` +
+  M-Y2 kalıbı kapının YANLIŞ ORTAMDA kaçtığını ölçer.
+- 🔴 **ÖLÇÜM ALETİ DE YALAN SÖYLER — DOKUZ VAKA:** `| tail` sonrası `$?` boruyu ölçtü · `d[rol]=dosya`
+  OLMAYAN kusur uydurdu · argümanı YOK SAYAN araç A/B'de aynı motoru ölçtü · eşitlik tabanlı yol
+  maskelemesi sessizce başarısız oldu · `stderr=STDOUT` md.8 kapısını KÖR etti (tamponlama farkı;
+  YEREL BEŞ ORTAMDA yeşil dedi, CI #61/#62 yakaladı) · **PAYLAŞILAN KUM HAVUZU YALANCI KIRMIZI
+  ÜRETİR** — her motora AYRI depo, "temizleyip" yeniden kullanma · **`A or B` düşme zincirinde
+  "boş"u AÇIKÇA tanımla** — hata taşıyan sözlük truthy'dir, düzeltilmiş ölçüme hiç düşmez (dört kolu
+  ÖLÇÜLEMEDİ gösterdi) · **regex HAM BLOĞU okumadan hüküm vermez** (`python-version:` arandı, matris
+  anahtarı `python:`ti; alet "tek sürüm" dedi, gerçek 3.11+3.13) · artefakt BOYUTU içerik oracle'ı
+  DEĞİL. ⇒ akış BİRLEŞTİRİLMEZ · çok-değerli alan LİSTEYE · hüküm öncesi N=1 HAM ÇIKTI gözle okunur ·
+  motor A/B'si KOPYA DEPODA yapılır · sayı için ham bloğa bakılır.
+- 🔴 **CI HÜKMÜNÜ OKUMA YOLU (4 Eyl'de yeniden ölçüldü):** WebFetch API **403** (3. ısırık) · jobs
+  `/logs` **403** · HTML log görüntüleyici DOM'a gelmiyor · **tarayıcı sekmesi bağlamında `fetch` BU
+  OTURUMDA ÇALIŞMADI** (`TypeError: Failed to fetch`, iki deneme). ÇALIŞAN YOL: API URL'ine DOĞRUDAN
+  NAVİGASYON + `JSON.parse(document.body.innerText)`; sayım tarayıcıda yapılır (ucuz). 🔴 SAYFA
+  BAŞINA 100 DÖNER — `total_count` ile karşılaştır, SAYFALA. **403 ARALIKLIDIR** (aynı oturumda
+  hem 403 hem başarı): tek 403'te vazgeçme, URL'i değiştir. **HTML `/actions` sayfasını WebFetch ile
+  OKUMA — BAYAT döner** ("#23 Queued" dedi, gerçek #55'ti).
+- 🔴 **CI kırmızısı KAPI kırmızısı olmayabilir** (#66): `upload-artifact` Finalize 403 koşumu yakar.
+- 🔴 **KAPININ KENDİ SENARYOSU KAPIYI KIRMIZI YAKABİLİR** (md.7/A2 elle kırpma) ⇒ gerçek vakaya çevir.
+- 🔴 **ÖLÇÜT CÜMLESİ SOMUT VAKAYA KOŞULUR — ÜÇ KEZ ısırdı, üçü de kod yazılmadan:** md.6(c) hiç
+  ateşlenmiyordu · md.7 lafzi D 6 şeklin 4'ünde yanıyordu · md.7(b) SAĞLIKLI akışta yanıyordu.
+- 🔴 **KAPI GÖVDESİNE SATIR EKLERKEN O KAPININ MUTANT ÇAPALARINA BAKILIR** (CI #56/#58); araç EL İLE
+  SEÇİLMEZ, **TÜM `faz0` bataryası** koşulur. **ÇAPA ARACIN KENDİ ÇIKTISINDAN GÜNCELLENMEZ** (88→97
+  bağımsız `radon cc` ile çaprazlandı). **MUTANT ÇAPASI TEK YERDE OLMALI** (`replace(...,1)` yanlış
+  fonksiyona kurmuştu). **YORUMDAKİ CANLI SAYI BAYATLAR** ⇒ "artefakttan oku". Çevre kırmızısı TEMİZ motorla ayrılır;
+  staged BAYAT kopya üzerine yazmasın.
+- 🔴 **İŞ EMRİ KISITI EN BAŞA YAZILIR** (üç turdur tutuyor). Kaldırılacak geçici satırın talimatı
+  **KALEM 1'e** girer — yalnız kodun içindeki yorumda bırakılırsa kaçar (İKİ ISIRIK). **Tarihi ÖLÇEN
+  taraf yazar**; yazılmazsa uydurulur ("21 Agu 2026" çıktı, düzeltildi).
+- 🔴 **YEŞİL CI, ÖLÇÜLMEMİŞ ŞART** (#45) ⇒ madde ✅ olmadan önce ölçüt cümlesi KELİME KELİME araca
+  karşı okunur. Kardeşi: "GEÇİYOR MU" kapısı zayıftır; "tutarlı mı" AYRI eksendir.
+- 🔴 **YAKALA-HEPSİ DESENİ ÖLÜ MANTIK DOĞURUR** (bedel: `README.md` her projede ÖLÇÜLEMEDİ'de) · **SAYI BULAŞMASI / OKUNMADAN HÜKÜM** (dış denetçi;
+  `denetim/2026-08-15_*`) · **SKILL.md §1 kademe tablosu kendi içinde ÇELİŞİYOR** (İKİNCİ ısırık).
+- 🔴 **Defter COMMIT'lenmeden `kapi` KIRMIZI** ([H9]) ⇒ "defteri `.gitignore`'a al" md.6(c)'yi
+  ULAŞILMAZ kılar. **Derleme artefaktı H14'ün DELİLİNİ bozar** (`obj`/`bin`/`.dart_tool` hariç değil).
 - 🔴 **BAĞLI KLASÖRDE KOŞMAYANLAR:** `hafiza.py` (H9 `git status` → kalıcı `.git/index.lock`) ve
-  `paketle.sh` (mount `zip`e izin vermiyor). Kum havuzu `/tmp`'e kurulur; gerçek ağaç probu
-  gerekiyorsa kök dosyaları `$HOME/kesif_probu/` altına KOPYALANIR (mount dışı).
-  Mount `unlink` vermiyor — silmek yerine `fable dosyalama/_to_delete/` altına TAŞI.
-- ✏️ `.github/workflows/*` köprüden YAZILABİLİYOR: `device_commit_files` reddediyor, `device_bash`
-  yazıyor (beş kez ölçüldü, sha bulut kopyasıyla birebir).
-- 🟡 Beyan/mtime çelişkisini ölçen kapı YOK (§8: ikinci ısırıkta H12'ye "İŞARET" hâli).
-- **`continue-on-error: true` taşıyan iş KAPI DEĞİL, ÖLÇÜMDÜR** — bilinçli olanlar: `kanit`in
-  ölçüm adımları (hüküm kapısı HARİÇ) · `win_kill_probu` · `boru_probu` · `ortam` · `kalite`.
-- `ruff/mypy/bandit` YALNIZ `hafiza.py`'yi tarar · `ci_kapsam_kapisi.py` deseni `faz0/*_mutanti.py`
-  — `yol_ayraci_kapisi.py`/`paketten_kos.py` girmez, işleri elle konur.
-- `readme_mutanti` README'nin ANLATIMINI ölçmez · `paketten_kos` belgenin ANLAMINI değil GEÇTİĞİNİ
-  ölçer · `devral`ın YAZIM ayağı (çıpa/zincir/yedek/triyaj) hâlâ mutantsız; yeni kapı yalnız
-  KEŞİF+DURMA ölçer · `derle` sonrası ikinci `isir` ölçülmüyor.
-- `t_y42.py` 1 senaryo root altında ÖLÇÜLEMEDİ · dört ölçümün koşucusu pakette yok (beyandır) ·
-  kilit inode yarışı daraltıldı, kapatılmadı · zincir anahtarsız (bilinçli).
+  `paketle.sh` (mount `zip` vermiyor). Kum havuzu bulut `/tmp`'e; gerçek ağaç probu gerekiyorsa kök dosyaları `$HOME/kesif_probu/` altına
+  KOPYALANIR (mount dışı). Mount `unlink` vermiyor — silmek
+  yerine `fable dosyalama/_to_delete/` altına TAŞI. ✏️ `.github/workflows/*` köprüden `device_bash`
+  ile YAZILABİLİYOR (BOM'suz UTF-8/LF korunuyor); `device_commit_files` o yolu REDDEDİYOR.
+- 🟡 Beyan/mtime çelişkisini ölçen kapı YOK · `ruff/mypy/bandit` YALNIZ `hafiza.py`'yi tarar ·
+  `ci_kapsam_kapisi.py` deseni `faz0/*_mutanti.py` (diğerleri elle konur) · `readme_mutanti` README'nin
+  ANLATIMINI ölçmez · `paketten_kos` belgenin ANLAMINI değil GEÇTİĞİNİ ölçer · `devral`ın YAZIM ayağı
+  mutantsız · `derle` sonrası ikinci `isir` ölçülmüyor · `t_y42.py` 1 senaryo root altında ÖLÇÜLEMEDİ ·
+  dört ölçümün koşucusu pakette yok (beyandır) · kilit inode yarışı daraltıldı, kapatılmadı · zincir
+  anahtarsız (bilinçli) · motorda `push`/`fetch`/`remote`/`origin` SIFIR eşleşme.
