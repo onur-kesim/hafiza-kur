@@ -3917,10 +3917,50 @@ def _kapi_h8(F, N, O, kok, y):
         N.append("H8: %d korunan blok" % len(kor))
 
 
+def _git_kokte_mi(kok):
+    """`kok` KENDISI bir git calisma agacinin KOKU mu? (v2.5.0, 20 Agu 2026)
+
+    Eski sinama `os.path.isdir(kok/".git")`ydi ve SEKLE bakiyordu. Modern git'te
+    `.git` cogu zaman DIZIN degil, gitdir'e isaret eden bir METIN DOSYASIDIR:
+    `git worktree add`, `git init --separate-git-dir`, ve HER submodule calisma
+    dizini bu sekli kullanir. Ucunde de depo TAMAMEN SAGLIKLIDIR ama `isdir()`
+    False doner -> motor "git YOK" der, izlenirlik zinciri HIC kosmaz.
+
+    UC KADEME (sirasi sozlesmedir):
+      1. git BINARY yoksa -> False. (Ayri eksen: `.git` VAR ama git calismiyor.)
+      2. `kok/.git` VARSA (dizin YA DA dosya) -> True. Icerigi COP ise bile True
+         doner; bu BILEREKTIR — asagidaki `git log`/`rev-parse` dalı o zaman
+         "git deposu OKUNAMADI: invalid gitfile format" diye DOGRU TESHIS basar.
+         "git YOK" demek YANLIS TESHIS olurdu (kapatilmis P-1'in kardesi).
+      3. `.git` yoksa git'in KENDISINE sorulur ama YALNIZ `--show-toplevel`
+         KOKE ESITSE kabul edilir. `--git-dir` UST DIZINLERE YURUR; onunla bir
+         git deposunun ALT DIZININDEKI her proje aniden "git var" olur ve
+         defterleri commit'siz oldugu icin [H9] KIRMIZI yanar. OLCULDU
+         (20 Agu 2026): `--git-dir` 3 alt-dizin kolunun 2'sini exit 0'dan
+         exit 1'e tasiyor; bu kademe tasimiyor.
+      ARIZASIZ BOZULMA: 3. kademedeki yol esitligi bir platformda sessizce
+      bozulursa sinama 2. kademeye duser (= saf `exists`) ve 12 kolun 11'i
+      dogru kalir; worktree/submodule korlugu GERI DONMEZ."""
+    if not shutil.which("git"):
+        return False
+    if os.path.exists(os.path.join(kok, ".git")):
+        return True
+    r = subprocess.run(["git", "-C", kok, "rev-parse", "--show-toplevel"],
+                       capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        return False
+    tepe = (r.stdout or "").strip()
+    if not tepe:
+        return False
+    _n = lambda p: os.path.normcase(os.path.realpath(p))
+    return _n(tepe) == _n(kok)
+
+
 def _kapi_h9(F, N, O, kok, y):
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H9 GERCEK (git) -----------------------------------------------
-    if shutil.which("git") and os.path.isdir(os.path.join(kok, ".git")):
+    if _git_kokte_mi(kok):
         r = subprocess.run(["git", "-C", kok, "log", "--oneline", "-1"],
                            capture_output=True, text=True, encoding="utf-8", errors="replace")
         if r.returncode == 0:
@@ -4402,7 +4442,7 @@ def _h14_git_durumu(kok):
     # sinifina dusuyor, `git log` de onlar icin bir sey dondurmuyordu -> mtime'lari
     # TAMAMEN devre disi kaliyordu (v2.1.0'a gore REGRESYON). Cozum: IZLENEN dosya
     # listesini ayrica al; izlenmeyen her dosya (ignore'lu dahil) mtime ile olculur.
-    git_var = bool(shutil.which("git")) and os.path.isdir(os.path.join(kok, ".git"))
+    git_var = _git_kokte_mi(kok)
     kirli, izlenen = set(), set()
     if git_var:
         def _git_z(*args):

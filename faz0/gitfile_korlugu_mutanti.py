@@ -4,17 +4,29 @@
 SAGLIKLI bir depoyu "git YOK" diye mi raporluyor? (my4-epsilon/IS_EMRI_EPSILON.md
 KALEM 2, Onur kilidi ONCE-MUTANT, 19 Agu 2026)
 
-🔴 BU TUR DUZELTME YAPMAZ. Kalip `hukum_tutarliligi_mutanti.py`: kusuru
-DUZELTMEDEN ONCE motorda KIRMIZI yanan bir kapi. Beklenen ILK SONUC exit 1'dir
-— kusur ISIRIYOR, kanit budur.
+🔴 O TURDE DUZELTME YAPILMADI (asagidaki iki paragraf my4-epsilon turunun
+KENDI kaydidir, tarihsel referans icin oldugu gibi birakildi): Kalip
+`hukum_tutarliligi_mutanti.py`: kusuru DUZELTMEDEN ONCE motorda KIRMIZI
+yanan bir kapi. Beklenen ILK SONUC exit 1'dir — kusur ISIRIYOR, kanit budur.
+
+GUNCELLEME (20 Agu 2026, gitfile korlugu turu, Onur kilidi — IS_EMRI_GITFILE.md
+KALEM 2): kusur bu turda GERCEKTEN DUZELTILDI — `_git_kokte_mi` adinda TEK
+bir yardimci fonksiyon yazildi ve `_kapi_h9` ile `_h14_git_durumu`nun IKISI
+de ona baglandi. Bu dosya artik ONCE-MUTANT degil — DUZELTILMIS motora karsi
+kosulan SONRA-MUTANT/REGRESYON bataryasidir. my4-epsilon'un yedi koluna UC
+YENI kol (8, 9, 10 — asagida NE OLCER) eklendi; BEKLENEN SONUC artik
+**exit 0 · 10/10 kol BEKLENDIGI GIBI**'dir. Asagidaki "NEDEN VAR" ve "NE
+OLCER" bolumlerindeki gecmis-zamanli anlatim BILEREKTIR — kusurun neden var
+OLDUGUNU aciklar; kollarin KENDISI (kurulum kodu) DEGISMEDI, yalniz
+BEKLENEN HUKUM DEGISTI (BEKLENMEDIK -> BEKLENDIGI GIBI).
 
 NEDEN VAR (my4-epsilon/MY4_OLCUM_RAPORU.md §4, M-Y4 turunun YAN URUNU)
-  `_kapi_h9`, git varligini `os.path.isdir(kok/".git")` ile sinar
-  (`hafiza.py:3923`) — AYNI kontrol `hafiza.py:4405`de `git_var`
-  (H14'un kirli/izlenen gorusu) icin de tekrarlanir. Ama modern git'te `.git`
-  cogu zaman bir DIZIN degil, gitdir'e isaret eden bir METIN DOSYASIDIR
-  ("gitfile"): `git worktree add`, `git init --separate-git-dir`, ve HER
-  submodule calisma dizini bu sekli kullanir. Ucunde de depo TAMAMEN
+  `_kapi_h9`, git varligini `os.path.isdir(kok/".git")` ile SINARDI (bu
+  fonksiyonun kendi govdesinde) — AYNI kontrol `_h14_git_durumu`de `git_var`
+  (H14'un kirli/izlenen gorusu) icin de TEKRARLANIYORDU. Ama modern git'te
+  `.git` cogu zaman bir DIZIN degil, gitdir'e isaret eden bir METIN
+  DOSYASIDIR ("gitfile"): `git worktree add`, `git init --separate-git-dir`,
+  ve HER submodule calisma dizini bu sekli kullanir. Ucunde de depo TAMAMEN
   SAGLIKLIDIR (`git log` exit 0) ama `isdir()` False doner ⇒ motor "H9: git
   YOK" der. Hukum YANLIS **ve** `izlenmeli` zinciri (defterler git'te
   izleniyor mu?) HIC KOSMAZ — kapi sessizce "YESIL (SINIRLI)" kapanir.
@@ -23,14 +35,17 @@ NEDEN VAR (my4-epsilon/MY4_OLCUM_RAPORU.md §4, M-Y4 turunun YAN URUNU)
   'okunamadi' diye YANLIS teshis edilmesin") IKIZIDIR ⇒ sinifin IKINCI
   ISIRIGI (ISLEYIS md.8: iki kez isirmayan olay kural olamaz — bu ISIRDI).
 
-NE OLCER — BES KOL, IKI SINIF
-  KUSUR KOLLARI (su an BEKLENMEDIK vermeli — kusur henuz duzeltilmedi):
+NE OLCER — ON KOL, IKI SINIF (my4-epsilon'un yedi kolu + 20 Agu 2026'da
+EKLENEN uc yeni kol)
+  KUSUR KOLLARI (my4-epsilon turunde, duzeltmeden ONCE, BEKLENMEDIK
+  veriyordu; DUZELTILMIS motorda BEKLENDIGI GIBI vermesi GEREKIR):
     1. worktree          : `git worktree add` ile baglanan calisma agaci
     2. separate-git-dir   : `git init --separate-git-dir=<harici>`
     3. submodule          : bir submodule'un KENDI calisma dizini
     Her uc kolda da GERCEK vaka kurulur (sahte metin degil), defterler
     commit'lenir, `kapi` kosulur; KEHANET: ciktida "H9: git YOK" GECMEMELI.
-    (Su an GECIYOR — kusur budur.)
+    (my4-epsilon turunde GECIYORDU — kusur buydu; DUZELTILMIS motorda
+    GECMEMESI GEREKIR.)
   KONTROL KOLLARI (simdi de duzeltmeden sonra da BEKLENDIGI GIBI vermeli):
     4. git hic yok (salt dizin) : KEHANET: "H9: git YOK" GECMELI. Duzeltmenin
        asiri-tetiklemedigini (`.git` gercekten yoksa hala doğru "YOK" demeli)
@@ -43,20 +58,30 @@ NE OLCER — BES KOL, IKI SINIF
   TEK sey bu iki koldur — biri ayirdedir (dizin), digeri BINARY yoklugudur.
 
   6. KAYNAK KAPISI (Onur denetimi 19 Agu 2026 — my4-epsilon iki numarali is
-     emri): Cowork bagimsiz denetiminde OLCTU: kusurun İKİ yeri var —
-     `hafiza.py:3923` (H9) VE `hafiza.py:4405` (`git_var`, H14'un kirli/
-     izlenen gorusu). Motorda YALNIZ 3923 duzeltilip 4405 birakilirsa
-     yukaridaki BES kol 5/5 YESIL, exit 0 verir — YARIM DUZELTME KAPIDAN
-     GECER, cunku hicbir kol 4405'in KENDI belirtisini olcmez. Bu, projenin
-     kendi kuralinin ("her duzeltmeye AYRI mutant") ihlaliydi.
-     6. kol bu BOSLUGU KAYNAK SEVIYESINDE kapatir: `hafiza.py` metninde
-     `os.path.isdir(os.path.join(kok, ".git"))` deseni KAC KEZ geciyor?
-     KEHANET: 0. OLCULDU (Onur denetimi): su anki motorda 2, yarim
-     duzeltmede (yalniz 3923) 1, tam duzeltmede (3923+4405) 0 — desen ucunu
-     da AYIRT EDIYOR. Yanlis-pozitif riski OLCULDU: motorda toplam
-     `os.path.isdir(` cagrisi 30 (Onur denetimi tekrar sayidi; is emrindeki
-     ilk beyan 20'ydi — TUTMADI, duzeltildi burada beyan edilir), ama TAM
-     desene uyan YALNIZ bu 2'si; digerlerinin hicbiri `.git` sinamasi degil.
+     emri; GUNCELLEME 20 Agu 2026 — gitfile korlugu turu KALEM 2): Cowork
+     bagimsiz denetiminde OLCTU: kusurun İKİ yeri var — `_kapi_h9` (H9) VE
+     `_h14_git_durumu` (`git_var`, H14'un kirli/izlenen gorusu). Motorda
+     YALNIZ birincisi duzeltilip ikincisi birakilsaydi yukaridaki BES kol
+     5/5 YESIL, exit 0 verirdi — YARIM DUZELTME KAPIDAN GECERDI, cunku
+     hicbir kol ikinci cagri yerinin KENDI belirtisini olcmuyordu. Bu,
+     projenin kendi kuralinin ("her duzeltmeye AYRI mutant") ihlali olurdu.
+     6. kol bu BOSLUGU KAYNAK SEVIYESINDE kapatir; TEK sayac degil UC sayac
+     birden olculur (20 Agu 2026 guncellemesi — eski TEK sayacli hali
+     helper'in ikinci cagri yerinden [`_h14_git_durumu`] de cagrildigini
+     OLCMUYORDU): `hafiza.py` metninde eski desen
+     `os.path.isdir(os.path.join(kok, ".git"))` KAC KEZ geciyor (KEHANET:
+     0), `_git_kokte_mi(` KAC KEZ geciyor (KEHANET: TAM 3 — 1 tanim + 2
+     cagri) ve helper'in KENDI icindeki
+     `os.path.exists(os.path.join(kok, ".git"))` KAC KEZ geciyor (KEHANET:
+     TAM 1). OLCULDU (Onur denetimi, 19 Agu 2026): eski motorda eski desen
+     2, yarim duzeltmede (yalniz `_kapi_h9`) 1, tam duzeltmede 0 — desen
+     ucunu de AYIRT EDIYOR; UC SAYAC birlikte, "helper tanimli ama ikinci
+     cagri yerine hic baglanmamis" gibi YARIM bir duzeltmeyi de yakalar (o
+     durumda `_git_kokte_mi(` 2 kalirdi, 3 degil). Yanlis-pozitif riski
+     OLCULDU: motorda toplam `os.path.isdir(` cagrisi 30 (Onur denetimi
+     tekrar sayidi; is emrindeki ilk beyan 20'ydi — TUTMADI, duzeltildi
+     burada beyan edilir), ama TAM desene uyan YALNIZ bu 2'si; digerlerinin
+     hicbiri `.git` sinamasi degil.
   7. DAVRANIS KOLU — H14 SESSIZ BASTIRMA (Onur denetimi 19 Agu 2026, Cowork'un
      ARADIGI AMA BULAMADIGI ayirici — bkz. asagidaki 🔴 not): worktree +
      ESKI TARIHLI commit'te git_var YANLIŞ FALSE dondugunde H14'un KENDI
@@ -64,10 +89,35 @@ NE OLCER — BES KOL, IKI SINIF
      FAIL'i SESSIZCE KAYBOLUYOR (duz depoda AYNI kurulumda GORUNUYOR).
      Yani kusur yalniz "git YOK" yanlis SINIFLAMASI degil, GERCEK bir H14
      bulgusunu da YUTUYOR. KEHANET: bu satir GECMELI (saglikli motorun
-     davranisi). Su an GECMIYOR — BEKLENMEDIK.
+     davranisi). (my4-epsilon turunde GECMIYORDU — BEKLENMEDIK'ti;
+     DUZELTILMIS motorda GECMESI GEREKIR.)
 
-🔴 4405'IN DAVRANISSAL BELIRTISI ARANDI VE BULUNDU (Onur denetimi 19 Agu
-2026 — Cowork'un kendi ölçümünde bulamadığı ayrım): `_h14_git_durumu`nun
+  YENI KOLLAR (20 Agu 2026 EKLENDI — gitfile korlugu turu, Onur kilidi,
+  IS_EMRI_GITFILE.md KALEM 2; asagidaki uc kol DUZELTILMIS motora karsi
+  kosulur, my4-epsilon'un yedisi gibi ONCE-MUTANT olarak yazilmadi):
+    8. ALT DIZIN (uc alt-hal — commit'siz / commit'li / parent
+       .gitignore'lu): bir git deposunun alt dizinindeki proje. KEHANET:
+       ucunde de exit 0 VE ciktida "H9: git YOK" GECMELI. NIYE: SIK A
+       (`--git-dir`, ust dizinlere yurur) bu 3 alt-halin 2'sinde exit 0'i
+       exit 1'e tasiyip uc adet "[H9] git'te IZLENMIYOR" FAIL'i basiyordu
+       (OLCULDU — bkz. gitfile-turu/OLCUM_RAPORU_GITFILE.md §3); bu kol o
+       kapsam patlamasinin GERI GELMEDIGINI dogrular. DEVIR'in sart kostugu
+       kol.
+    9. BOZUK GITFILE + HAYALI GITDIR (iki alt-hal — `.git` DOSYA icerigi
+       COP / gitfile var-olmayan bir gitdir'e isaret ediyor). KEHANET:
+       "H9: git deposu OKUNAMADI" GECMELI, "H9: git YOK" GECMEMELI — hukum
+       ikisinde de SARI/SINIRLI, olculen TESHIS METNIDIR, hukum degil. NIYE:
+       bu D'yi SIK B'den ayiran TEK koldur; B burada "git YOK" der —
+       kapatilmis P-1'in kardesi (yanlis teshis).
+    10. GIT_DIR ORTAM DEGISKENI: kokte `.git` YOK, depo GIT_DIR +
+        GIT_WORK_TREE ortam degiskenleriyle baglaniyor. KEHANET:
+        "H9: git var" GECMELI. NIYE: D'yi SIK C'den (saf `exists`) ayiran
+        TEK kol; bu kol olmasaydi "sadece exists" yarim duzeltmesi kapidan
+        gecerdi.
+  Bu uc kolla toplam ON kol olur; hepsi BEKLENDIGI GIBI verince exit 0.
+
+🔴 `_h14_git_durumu`NUN DAVRANISSAL BELIRTISI ARANDI VE BULUNDU (Onur denetimi
+19 Agu 2026 — Cowork'un kendi ölçümünde bulamadığı ayrım): `_h14_git_durumu`nun
 `git_var`i False donerse H14 TUM adaylari HAM mtime ile kiyaslar
 (`_h14_en_yeni`); True donerse TAKIP EDILEN+TEMIZ dosyalar `git log -1
 --format=%ct` (ICERIK tarihi) ile, geri kalani mtime ile kiyaslanir.
@@ -85,20 +135,33 @@ gozlem), ama PROJE dosyasi tarafinin (`en_yeni_t`) ayni AYRIMA ugramasi icin
 en az bir gercek IZLENEN dosyanin (`kur` cikisinin kendi disinda) var olmasi
 GEREKIYORDU — o adim bu denetimde EKLENDI. ⇒ 7. kol BULUNDU ve eklendi.
 
-DUZELTME TASARIMINA OLCULMUS UYARI (bu turda UYGULANMAZ — my4-epsilon/
-IS_EMRI_EPSILON.md §2.4): dogru prob `git -C <kok> rev-parse --git-dir`,
-AMA ust dizinlere YURUR — bir git deposunun ICINDEKI alt proje de "git var"
-sayilir. Bir proje sinifini SARI'dan KIRMIZI'ya tasiyabilir (defterler
-commit'siz kalirsa `izlenmeli` zinciri kirmizi yakar). Bu ayri bir tasarim
-karari, Onur kilidi ister; bu dosyanin KAPSAMI DISINDA.
+DUZELTME TASARIMINA OLCULMUS UYARI (my4-epsilon/IS_EMRI_EPSILON.md §2.4'te
+o turda UYGULANMADI): dogru prob `git -C <kok> rev-parse --git-dir`, AMA ust
+dizinlere YURUR — bir git deposunun ICINDEKI alt proje de "git var" sayilir.
+Bir proje sinifini SARI'dan KIRMIZI'ya tasiyabilir (defterler commit'siz
+kalirsa `izlenmeli` zinciri kirmizi yakar). Bu ayri bir tasarim karari, Onur
+kilidi isterdi.
 
-CAPA: motora KOD PARCACIGIYLA anchor atilir gerekirse (bu turda motor hic
-DEGISMEZ, capa YOK — bu dosya yalniz OKUR).
+GUNCELLEME (20 Agu 2026): gitfile korlugu turunde uygulanan gercek duzeltme
+(`_git_kokte_mi`, uc kademeli) TAM OLARAK bu riski onlemek icin `--git-dir`
+YERINE `--show-toplevel` + KOK ESITLIGI kullanir (bkz. skill/scripts/
+hafiza.py, `_git_kokte_mi`). 8. kol (ALT DIZIN) bu secimin — SIK A DEGIL SIK
+D'nin — dogrulugunu olcer.
+
+CAPA: motora KOD PARCACIGIYLA anchor atilir gerekirse (my4-epsilon turunde
+motor DEGISMEDI, capa YOK'tu — bu dosya yalniz OKUR. GUNCELLEME 20 Agu 2026:
+gitfile korlugu turunde motor GERCEKTEN DEGISTI, ama capa YINE ATILMADI —
+KALEM 3'teki `altin_cikti.py --karsilastir` ve `karmasiklik.py --ihlal` ayri
+kapilar DEGISEN kaynagi zaten dogruluyor; bu dosyanin kendi govdesi
+degismedigi surece ayrica capaya GEREK YOK).
 
 CIKIS KODLARI (proje sozlesmesi)
-  0  yedi kolun YEDISI DE BEKLENDIGI GIBI (kusur TAMAMEN DUZELTILMIS demektir)
-  1  en az bir kol BEKLENMEDIK (BEKLENEN ILK SONUC — kusur henuz duzeltilmedi;
-     su an 1·2·3·6·7 BEKLENMEDIK, 4·5 BEKLENDIGI GIBI ⇒ 2/7)
+  0  on kolun ONU DA BEKLENDIGI GIBI (kusur TAMAMEN DUZELTILMIS demektir —
+     20 Agu 2026 gitfile korlugu turundan sonraki BEKLENEN durum budur)
+  1  en az bir kol BEKLENMEDIK (my4-epsilon turunde — kusur duzeltilmeden
+     ONCE — BEKLENEN ILK SONUC buydu: 1·2·3·6·7 BEKLENMEDIK, 4·5 BEKLENDIGI
+     GIBI ⇒ 2/7. Motor DUZELTILDIKTEN sonra herhangi bir kolun BEKLENMEDIK
+     kalmasi REGRESYONDUR — Onur'a donulur)
   2  en az bir kol OLCULEMEDI (BEKLENMEDIK yoksa)
   3  ARAC KUSURU (kum havuzu kurulamadi)
 """
@@ -289,27 +352,50 @@ def _kur_git_path_disi(alt):
 # --------------------------------------------------------------- 6. KOL: KAYNAK
 
 _ISDIR_DESEN = 'os.path.isdir(os.path.join(kok, ".git"))'
+_HELPER_CAGRI_DESEN = '_git_kokte_mi('
+_EXISTS_DESEN = 'os.path.exists(os.path.join(kok, ".git"))'
 
 
 def sinama_kaynak_kapisi():
-    """6. kol (Onur denetimi 19 Agu 2026): DAVRANIS DEGIL KAYNAK olcer —
-    motor metninde `_ISDIR_DESEN` KAC KEZ geciyor? KEHANET: 0. Su an 2
-    (3923 + 4405); YARIM duzeltmede (yalniz 3923) 1 kalir ve YINE
-    BEKLENMEDIK'tir — yarim duzeltme bu kolu da GECEMEZ."""
-    ad = "6. KAYNAK KAPISI (os.path.isdir(kok/.git) deseni KAC KEZ geciyor)"
+    """6. kol (Onur denetimi 19 Agu 2026; GUNCELLEME 20 Agu 2026 — gitfile
+    korlugu turu KALEM 2): DAVRANIS DEGIL KAYNAK olcer. Eski hali TEK sayac
+    olcuyordu (yalniz `_ISDIR_DESEN`in 0'a indigini) — bu, helper'in
+    `_h14_git_durumu`den de (ikinci cagri yeri) cagrildigini OLCMUYORDU: bir
+    duzeltme `_kapi_h9`'u guncelleyip `_h14_git_durumu`yu unutsa bile eski
+    desen YINE 0 olurdu (unutulan cagri eski desen DEGIL, hala eski
+    ISDIR/exists kombinasyonuysa farkli hikaye; ama helper'a hic
+    BAGLANMAMIS bir cagri yeri de TEK sayacta gorunmez). GUNCEL hali UC
+    sayacin UCUNU BIRDEN olcer:
+      · eski desen `_ISDIR_DESEN`               -> KEHANET: 0
+      · `_HELPER_CAGRI_DESEN`                    -> KEHANET: TAM 3 (1 tanim
+        + 2 cagri: `_kapi_h9` VE `_h14_git_durumu`)
+      · `_EXISTS_DESEN` (helper'in KENDI icinde) -> KEHANET: TAM 1
+    UCU BIRDEN dogru olmadan kol BEKLENDIGI GIBI SAYILMAZ — `_HELPER_CAGRI_
+    DESEN` sayaci 3'ten AZSA (ornegin 2) helper tanimli ama iki cagri
+    yerinden biri hala baglanmamis demektir; bu YARIM duzeltmeyi eski TEK
+    sayac YAKALAYAMAZDI (eski desen orada da 0'a duserdi), yeni UC sayac
+    YAKALAR."""
+    ad = ("6. KAYNAK KAPISI (uc sayac: eski desen · _git_kokte_mi( · "
+          "exists(kok/.git))")
     try:
         src = open(MOTOR, encoding="utf-8").read()
     except OSError as e:
         _kayit(ad, OLCULEMEDI, "motor okunamadi: %s" % e)
         return
-    n = src.count(_ISDIR_DESEN)
-    dogru = (n == 0)
+    n_eski = src.count(_ISDIR_DESEN)
+    n_helper = src.count(_HELPER_CAGRI_DESEN)
+    n_exists = src.count(_EXISTS_DESEN)
+    dogru = (n_eski == 0 and n_helper == 3 and n_exists == 1)
     _kayit(ad, BEKLENDIGI_GIBI if dogru else BEKLENMEDIK,
-          "desen %r motorda %d kez geciyor (beklenen: 0). %s"
-          % (_ISDIR_DESEN, n,
-             "TAM DUZELTILMIS."
+          "eski desen %r: %d kez (beklenen 0) · %r: %d kez (beklenen 3) · "
+          "%r: %d kez (beklenen 1). %s"
+          % (_ISDIR_DESEN, n_eski, _HELPER_CAGRI_DESEN, n_helper,
+             _EXISTS_DESEN, n_exists,
+             "TAM DUZELTILMIS VE HER IKI CAGRI YERI DE (_kapi_h9, "
+             "_h14_git_durumu) HELPER'A BAGLANMIS."
              if dogru else
-             "3923 VE/veya 4405 hala eski deseni tasiyor."))
+             "_kapi_h9 VE/veya _h14_git_durumu hala eski deseni tasiyor, "
+             "ya da helper'a baglanan cagri sayisi beklenenden farkli."))
 
 
 # --------------------------------------------------------------- 7. KOL: DAVRANIS
@@ -370,12 +456,255 @@ def sinama_davranis_bastirma(taban):
              ("\n      satir: " + satir.strip()) if satir else ""))
 
 
+# --------------------------------------------------------------- 8. KOL: ALT DIZIN
+# (20 Agu 2026 EKLENDI — gitfile korlugu turu KALEM 2, DEVIR'in sart kostugu kol)
+
+def _kur_alt_dizin_commitsiz(alt):
+    """8a: bir git deposunun (`dis`) alt dizininde bir proje (`proje` = test
+    edilen `kok`); `proje` altindaki defterler HENUZ commit'lenmedi. `kok`in
+    KENDISI hicbir zaman bir git KOKU DEGILDIR (`--show-toplevel` `dis`i
+    doner, `proje`yi degil) ⇒ `_git_kokte_mi(kok)` HER ZAMAN False olmali —
+    defterlerin commit durumu bu hukmu DEGISTIRMEMELI (kolun konusu budur)."""
+    dis = os.path.join(alt, "dis")
+    os.makedirs(dis, exist_ok=True)
+    _git(dis, "init", "-q")
+    with open(os.path.join(dis, "README.md"), "w", encoding="utf-8") as f:
+        f.write("dis depo\n")
+    _git(dis, "add", "-A")
+    _git(dis, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "dis taban",
+        env=dict(os.environ, **_GIT_ORTAM))
+    proje = os.path.join(dis, "proje")
+    os.makedirs(proje, exist_ok=True)
+    rc, c = _kos(["kur", "--ad", "GF8a", "--kok=" + proje])
+    if rc != 0:
+        raise AracKusuru("kur basarisiz (exit=%s): %s" % (rc, c[-300:]))
+    # BILEREKTIR: proje/ altindaki defterler DIS depoya commit'lenmiyor —
+    # kolun adi ("commit'siz") budur.
+    return proje, None
+
+
+def _kur_alt_dizin_commitli(alt):
+    """8b: ayni kurulum, ama `proje/` defterleri DIS depoya commit'leniyor."""
+    dis = os.path.join(alt, "dis")
+    os.makedirs(dis, exist_ok=True)
+    _git(dis, "init", "-q")
+    with open(os.path.join(dis, "README.md"), "w", encoding="utf-8") as f:
+        f.write("dis depo\n")
+    proje = os.path.join(dis, "proje")
+    os.makedirs(proje, exist_ok=True)
+    rc, c = _kos(["kur", "--ad", "GF8b", "--kok=" + proje])
+    if rc != 0:
+        raise AracKusuru("kur basarisiz (exit=%s): %s" % (rc, c[-300:]))
+    _git(dis, "add", "-A")
+    _git(dis, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "dis taban + proje",
+        env=dict(os.environ, **_GIT_ORTAM))
+    return proje, None
+
+
+def _kur_alt_dizin_gitignore(alt):
+    """8c: DIS depoda `proje/`nin bir kismini (canli hafiza dosyasi
+    PROJE_HAFIZA.md) DISLAYAN bir `.gitignore` var. KEHANET degismez:
+    `kok` (`proje/`) yine bir git KOKU DEGIL — `.gitignore`in kapsami
+    `_git_kokte_mi` icin ILGISIZDIR, o yalniz `--show-toplevel`in `kok`e
+    ESIT olup olmadigina bakar."""
+    dis = os.path.join(alt, "dis")
+    os.makedirs(dis, exist_ok=True)
+    _git(dis, "init", "-q")
+    with open(os.path.join(dis, ".gitignore"), "w", encoding="utf-8") as f:
+        f.write("proje/PROJE_HAFIZA.md\n")
+    _git(dis, "add", "-A")
+    _git(dis, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "dis taban + gitignore",
+        env=dict(os.environ, **_GIT_ORTAM))
+    proje = os.path.join(dis, "proje")
+    os.makedirs(proje, exist_ok=True)
+    rc, c = _kos(["kur", "--ad", "GF8c", "--kok=" + proje])
+    if rc != 0:
+        raise AracKusuru("kur basarisiz (exit=%s): %s" % (rc, c[-300:]))
+    return proje, None
+
+
+def sinama_alt_dizin(taban):
+    """8. kol (DEVIR sarti — bkz. gitfile-turu/OLCUM_RAPORU_GITFILE.md §3):
+    git deposunun ALT DIZININDEKI proje UC farkli defter-durumunda
+    (commit'siz / commit'li / DIS `.gitignore`'lu) de HEP "H9: git YOK"
+    vermeli VE exit 0 KALMALI. SIK A (`--git-dir`, ust dizinlere yurur) bu
+    3 alt-halin 2'sinde exit 0'i exit 1'e tasiyip UC adet
+    "[H9] git'te IZLENMIYOR" FAIL'i basiyordu (OLCULDU) — bu kol o kapsam
+    patlamasinin GERI GELMEDIGINI dogrular. UC alt-halin HEPSI dogru
+    OLMADAN kol BEKLENDIGI GIBI SAYILMAZ (tek bir _kayit'te toplanir —
+    my4-epsilon'un 1-7. kollariyla ayni SONUC satir sayisini korumak icin:
+    toplam ON kol, 13 degil)."""
+    ad = "8. ALT DIZIN (git deposu icinde proje — commit'siz / commit'li / .gitignore'lu)"
+    alt_hal = [
+        ("alt-a", "commit'siz", _kur_alt_dizin_commitsiz),
+        ("alt-b", "commit'li", _kur_alt_dizin_commitli),
+        ("alt-c", "DIS .gitignore'lu", _kur_alt_dizin_gitignore),
+    ]
+    detaylar = []
+    olculemedi = False
+    hepsi_dogru = True
+    for etiket, isim, kurucu in alt_hal:
+        alt_dizin = os.path.join(taban, etiket)
+        os.makedirs(alt_dizin, exist_ok=True)
+        try:
+            kok, env = kurucu(alt_dizin)
+        except AracKusuru as e:
+            olculemedi = True
+            detaylar.append("%s: kum havuzu kurulamadi: %s" % (isim, e))
+            continue
+        rc, c = _kapi_ham(kok, env=env)
+        if rc is None:
+            olculemedi = True
+            detaylar.append("%s: kapi kosturulamadi: %s" % (isim, c))
+            continue
+        gecti = _KEHANET in c
+        dogru = gecti and (rc == 0)
+        hepsi_dogru = hepsi_dogru and dogru
+        detaylar.append(
+            "%s: exit=%s (beklenen 0) | '%s' gecti mi=%s (beklenen: VAR)"
+            % (isim, rc, _KEHANET, "VAR" if gecti else "yok"))
+    if olculemedi:
+        _kayit(ad, OLCULEMEDI, "\n      ".join(detaylar))
+        return
+    _kayit(ad, BEKLENDIGI_GIBI if hepsi_dogru else BEKLENMEDIK,
+          "\n      ".join(detaylar))
+
+
+# --------------------------------------------------------- 9. KOL: BOZUK GITFILE
+# (20 Agu 2026 EKLENDI — gitfile korlugu turu KALEM 2, D'yi SIK B'den ayiran TEK kol)
+
+_KEHANET_OKUNAMADI = "H9: git deposu OKUNAMADI"
+
+
+def _kur_gitfile_cop(alt):
+    """9a: `.git` bir DOSYA ama icerigi COP (gecerli bir gitfile degil)."""
+    kok = os.path.join(alt, "proje")
+    os.makedirs(kok, exist_ok=True)
+    rc, c = _kos(["kur", "--ad", "GF9a", "--kok=" + kok])
+    if rc != 0:
+        raise AracKusuru("kur basarisiz (exit=%s): %s" % (rc, c[-300:]))
+    with open(os.path.join(kok, ".git"), "w", encoding="utf-8") as f:
+        f.write("bu gecerli bir gitfile degil — duz metin cop\n")
+    return kok, None
+
+
+def _kur_gitfile_hayalet(alt):
+    """9b: `.git` DOSYASI var, ama isaret ettigi gitdir VAR OLMAYAN bir
+    yol (hayalet gitdir)."""
+    kok = os.path.join(alt, "proje")
+    os.makedirs(kok, exist_ok=True)
+    rc, c = _kos(["kur", "--ad", "GF9b", "--kok=" + kok])
+    if rc != 0:
+        raise AracKusuru("kur basarisiz (exit=%s): %s" % (rc, c[-300:]))
+    hayalet = os.path.join(alt, "hic_olmayan_gitdir")
+    with open(os.path.join(kok, ".git"), "w", encoding="utf-8") as f:
+        f.write("gitdir: %s\n" % hayalet.replace("\\", "/"))
+    return kok, None
+
+
+def sinama_bozuk_gitfile(taban):
+    """9. kol: D'yi SIK B'den ayiran TEK kol. Iki alt-hal — (a) `.git`
+    DOSYA icerigi COP, (b) gitfile HAYALET gitdir'e isaret ediyor. KEHANET
+    IKISINDE DE: "H9: git deposu OKUNAMADI" GECMELI **ve** "H9: git YOK"
+    GECMEMELI. Hukum ikisinde de SARI/SINIRLI — olculen TESHIS METNIDIR,
+    PASS/FAIL degil. NIYE: SIK B burada "git YOK" derdi — kapatilmis P-1'in
+    kardesi (yanlis teshis); C ve D "OKUNAMADI" der (dogru teshis)."""
+    ad = "9. BOZUK GITFILE + HAYALI GITDIR (.git DOSYA/cop icerik · gitdir -> yok)"
+    alt_hal = [
+        ("gf-cop", ".git DOSYA, icerigi COP", _kur_gitfile_cop),
+        ("gf-hayalet", "gitfile -> HAYALET gitdir", _kur_gitfile_hayalet),
+    ]
+    detaylar = []
+    olculemedi = False
+    hepsi_dogru = True
+    for etiket, isim, kurucu in alt_hal:
+        alt_dizin = os.path.join(taban, etiket)
+        os.makedirs(alt_dizin, exist_ok=True)
+        try:
+            kok, env = kurucu(alt_dizin)
+        except AracKusuru as e:
+            olculemedi = True
+            detaylar.append("%s: kum havuzu kurulamadi: %s" % (isim, e))
+            continue
+        rc, c = _kapi_ham(kok, env=env)
+        if rc is None:
+            olculemedi = True
+            detaylar.append("%s: kapi kosturulamadi: %s" % (isim, c))
+            continue
+        okunamadi = _KEHANET_OKUNAMADI in c
+        yanlis_git_yok = _KEHANET in c
+        dogru = okunamadi and not yanlis_git_yok
+        hepsi_dogru = hepsi_dogru and dogru
+        detaylar.append(
+            "%s: exit=%s | '%s' gecti mi=%s (beklenen: VAR) · '%s' gecti "
+            "mi=%s (beklenen: yok)"
+            % (isim, rc, _KEHANET_OKUNAMADI, "VAR" if okunamadi else "yok",
+               _KEHANET, "VAR" if yanlis_git_yok else "yok"))
+    if olculemedi:
+        _kayit(ad, OLCULEMEDI, "\n      ".join(detaylar))
+        return
+    _kayit(ad, BEKLENDIGI_GIBI if hepsi_dogru else BEKLENMEDIK,
+          "\n      ".join(detaylar))
+
+
+# --------------------------------------------------------- 10. KOL: GIT_DIR ORTAM
+# (20 Agu 2026 EKLENDI — gitfile korlugu turu KALEM 2, D'yi SIK C'den ayiran TEK kol)
+
+_KEHANET_GIT_VAR = "H9: git var"
+
+
+def _kur_git_dir_ortam(alt):
+    """10. kol: kokte `.git` YOK; depo YALNIZ GIT_DIR + GIT_WORK_TREE ortam
+    degiskenleriyle baglaniyor (worktree/submodule/separate-git-dir'in
+    HICBIRINDE `kok` icinde bir gitfile/dizin YOKTUR — bu kolu onlardan
+    ayiran budur). `_git_kokte_mi` 2. kademede (`kok/.git` var mi) BOS
+    doner (yok cunku); 3. kademe (`--show-toplevel`) GIT_WORK_TREE
+    sayesinde `kok`u dogru rapor etmeli."""
+    kok = os.path.join(alt, "proje")
+    gitdir = os.path.join(alt, "harici.git")
+    os.makedirs(kok, exist_ok=True)
+    _git(alt, "init", "-q", "--separate-git-dir=" + gitdir, "proje")
+    _kur_ve_commitle(kok)
+    # `--separate-git-dir` `proje/` icine bir GITFILE birakti (2. kolun
+    # sinadigi durum budur) — 10. kol onu SILER: `kok`te HICBIR `.git` izi
+    # kalmamali, TEK baglanti ortam degiskenleri olmali.
+    os.remove(os.path.join(kok, ".git"))
+    ortam = dict(os.environ, **_GIT_ORTAM)
+    ortam["GIT_DIR"] = gitdir
+    ortam["GIT_WORK_TREE"] = kok
+    return kok, ortam
+
+
+def sinama_git_dir_ortam(taban):
+    """10. kol: D'yi SIK C'den (saf `exists`) ayiran TEK kol — bu kol
+    olmasaydi "sadece exists" yarim duzeltmesi kapidan gecerdi (6. kolun
+    dersinin aynisi, davranis duzeyinde). KEHANET: "H9: git var" GECMELI."""
+    ad = ("10. GIT_DIR ORTAM DEGISKENI (kokte .git YOK, GIT_DIR+GIT_WORK_TREE "
+          "ile baglanan depo)")
+    alt_dizin = os.path.join(taban, "gitdirenv")
+    os.makedirs(alt_dizin, exist_ok=True)
+    try:
+        kok, env = _kur_git_dir_ortam(alt_dizin)
+    except AracKusuru as e:
+        _kayit(ad, OLCULEMEDI, "kum havuzu kurulamadi: %s" % e)
+        return
+    rc, c = _kapi_ham(kok, env=env)
+    if rc is None:
+        _kayit(ad, OLCULEMEDI, "kapi kosturulamadi: %s" % c)
+        return
+    gecti = _KEHANET_GIT_VAR in c
+    _kayit(ad, BEKLENDIGI_GIBI if gecti else BEKLENMEDIK,
+          "exit=%s | '%s' gecti mi=%s (beklenen: VAR)\n      kok=%s"
+          % (rc, _KEHANET_GIT_VAR, "VAR" if gecti else "yok", kok))
+
+
 def main():
     print("=" * 82)
     print("GITFILE KORLUGU MUTANTI — `.git` DOSYA oldugunda saglikli depo 'git YOK' mu?")
     print("  python   : %s" % sys.version.split()[0])
     print("  platform : %s (os.name=%s)" % (sys.platform, os.name))
-    print("  motor    : %s (BU TURDA DEGISMEDI)" % MOTOR)
+    print("  motor    : %s (20 Agu 2026 gitfile korlugu turunde DUZELTILDI —"
+          " bu batarya artik SONRA-MUTANT/REGRESYON)" % MOTOR)
     print("=" * 82)
     try:
         taban = tempfile.mkdtemp(prefix="h16km_")
@@ -390,6 +719,9 @@ def main():
         _sinama(taban, "yolsuz", "5. git PATH'te yok (KONTROL, AYRI EKSEN)", _kur_git_path_disi, True)
         sinama_kaynak_kapisi()
         sinama_davranis_bastirma(taban)
+        sinama_alt_dizin(taban)
+        sinama_bozuk_gitfile(taban)
+        sinama_git_dir_ortam(taban)
         print()
         for ad, durum, ayrinti in SONUC:
             print("  %-16s %s" % (durum, ad))
@@ -401,7 +733,9 @@ def main():
         print("SONUC: %d/%d kol BEKLENDIGI GIBI - %d beklenmedik - %d olculemedi"
               % (gibi, len(SONUC), beklenmedik, olculemedi))
         if beklenmedik:
-            print("  (BEKLENEN ILK SONUC budur: kusur henuz DUZELTILMEDI — bu tur ONCE-MUTANT.)")
+            print("  (BEKLENEN SONUC 20 Agu 2026'dan sonra ON kolun ONU DA "
+                  "BEKLENDIGI GIBI'dir — bir kol BEKLENMEDIK ise REGRESYON "
+                  "demektir, Onur'a donulur.)")
             return 1
         if olculemedi:
             return 2
