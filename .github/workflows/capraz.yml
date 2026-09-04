@@ -1801,14 +1801,20 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # 2b-19) GITFILE KORLUGU MUTANTI — `.git` bir DOSYA (gitfile: worktree ·
-  #     separate-git-dir · submodule) oldugunda `_kapi_h9` saglikli bir depoyu
-  #     "git YOK" diye mi raporluyor? (my4-epsilon/IS_EMRI_EPSILON.md KALEM 2,
-  #     Onur kilidi ONCE-MUTANT, 19 Agu 2026)
-  #     🔴 BU IS OLCUM'DUR, KAPI DEGIL (simdilik): kusur bu turda DUZELTILMEDI,
-  #     yalniz OLCULUYOR — beklenen sonuc exit 1 (3 kusur kolu BEKLENMEDIK).
-  #     `continue-on-error: true`, DURUM.md'nin kendi sinifi geregi ("continue-
-  #     on-error tasiyan is KAPI DEGIL OLCUMDUR"). Duzeltme turunde bu satir
-  #     SILINIR ve is KAPI olur.
+  #     separate-git-dir · submodule · alt dizin · bozuk gitfile · GIT_DIR
+  #     ortami) oldugunda `_kapi_h9`/`_h14_git_durumu` saglikli bir depoyu
+  #     dogru mu raporluyor? (IS_EMRI_GITFILE.md KALEM 2, Onur kilidi 20 Agu
+  #     2026)
+  #     Bu is KAPIDIR (KAPI'ya cevrildi: IS_EMRI_CAPRAZ_KAPI.md, Onur kilidi
+  #     4 Eyl 2026) — kusur `1af10041`de DUZELTILDI, beklenen sonuc
+  #     exit 0 · 10/10 kol BEKLENDIGI GIBI. `continue-on-error: true`
+  #     SILINDI: o satir varken CI'nin gitfile yesili HICBIR SEY OLCMUYORDU
+  #     (CI #84 `922e5e4f`de kusurlu motor exit 1 verirken de is `success`
+  #     gorunuyordu — POZITIF KONTROLLE OLCULDU).
+  #     `| tee` + `2>&1` BILEREKTIR KALDI: `pipefail` `shell: bash`
+  #     varsayilaninda zaten ETKIN (CI #83 `d8127bd8`, ayni desen dogru
+  #     KIRMIZI yandi); hukum exit kodundan gelir, mutant stderr'e 0 bayt
+  #     yazar (IS_EMRI_CAPRAZ_KAPI.md §1, 4 Eyl 2026).
   # ---------------------------------------------------------------------------
   gitfile_korlugu_mutanti:
     name: Gitfile korlugu mutanti (${{ matrix.os }})
@@ -1823,9 +1829,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: worktree/separate-git-dir/submodule 'git YOK' diyor mu (bes kol, ONCE-MUTANT)
+      - name: worktree/separate-git-dir/submodule/alt dizin/bozuk gitfile/GIT_DIR 'git YOK' diyor mu (uc platformda KAPI)
         shell: bash
-        continue-on-error: true
         run: python faz0/gitfile_korlugu_mutanti.py 2>&1 | tee gitfile-korlugu-cikti.txt
       - name: gitfile korlugu mutanti ciktisi (artefakt)
         if: always()
