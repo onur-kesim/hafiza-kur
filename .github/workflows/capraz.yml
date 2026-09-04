@@ -1839,3 +1839,44 @@ jobs:
           name: gitfile-korlugu-${{ matrix.os }}
           path: gitfile-korlugu-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-20) B6 SATIR SAYISI MUTANTI (SIK β) — `_ilk_satir_isaretli`, cok satirli
+  #     `oldur()` mesajlarinda kayip satirlarin VARLIGINI hukumde isaretliyor
+  #     mu? (kalem5-tarama/IS_EMRI_B6_BETA.md, Onur kilidi 4 Eylul 2026)
+  #     OLCULDU (kalem5-tarama/OLCUM_RAPORU_B6.md): `kapi_yalit()`nin
+  #     OLCULEMEDI hukmu `oldur()`un TAM mesajini `.split("\n")[0]` ile tek
+  #     satira dusuruyordu — H8/UTF-8 vakasinda 4 satirlik mesajin 3'u
+  #     (%81'i) hukme HIC ULASMIYORDU. Duzeltme ilk satirin ardina
+  #     "(+N satir: stderr)" isareti ekler; kayip ENGELLENMEZ, GIZLENEMEZ
+  #     olur.
+  #     🔴 EKSEN SATIR SAYISIDIR, YOL UZUNLUGU DEGIL — `--uzun-yol` kolu bu
+  #     sinifi YAPISAL OLARAK GOREMEZ, bu yuzden bu mutant AYRI is, o kola
+  #     BAGLANMAZ. UC PLATFORM, `continue-on-error` YOK (uyari 8: CI #85
+  #     dersi — `continue-on-error` tasiyan yesil KAPI DEGILDIR).
+  #     KAPSAM DISI (bilerek): `hafiza.py:3325`/`:3996` AYNI kaliptan ama bu
+  #     turda BAGLANMADI, gercek vakalari kosulmadi — ayri tur.
+  # ---------------------------------------------------------------------------
+  b6_satir_sayisi_mutanti:
+    name: B6 satir sayisi mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: cok satirli oldur() mesaji hukumde isaretleniyor mu (pozitif kontrol + mutant)
+        shell: bash
+        run: python faz0/b6_satir_sayisi_mutanti.py 2>&1 | tee b6-satir-sayisi-cikti.txt
+      - name: b6 satir sayisi mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b6-satir-sayisi-${{ matrix.os }}
+          path: b6-satir-sayisi-cikti.txt
+          if-no-files-found: warn

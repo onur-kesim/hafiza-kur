@@ -366,6 +366,51 @@ def oldur(msg, kod=2):
     sys.stderr.write("HATA: " + msg + "\n")
     sys.exit(kod)
 
+# B6 SIK BETA sabit: AYRAC TEK bu satirda tanimli (kalem5-tarama/IS_EMRI_B6_BETA.md
+# KALEM 1) -- faz0/b6_satir_sayisi_mutanti.py bu degeri BURADAN, TEKRAR YAZMADAN
+# kullanir (sabotaj SOURCE METNI uzerinde calisir, deger ayrica beyan edilmez).
+_ILK_SATIR_ISARET_AYRAC = " "
+
+
+def _ilk_satir_isaretli(mesaj):
+    """B6 SIK β (kalem5-tarama/IS_EMRI_B6_BETA.md, Onur kilidi 4 Eylul 2026):
+    `kapi_yalit()`nin (`SystemExit` yakalandiginda) tasidigi TAM `oldur()`
+    mesaji eskiden `.split("\n")[0]` ile HUKUM KANALINDA (stdout, `O` listesi)
+    TEK SATIRA dusuyordu -- tani ve cozum satirlari SESSIZCE KAYBOLUYORDU
+    (OLCULDU: kalem5-tarama/OLCUM_RAPORU_B6.md -- 4 satirlik bir mesajin 3'u,
+    %81'i, hic gorunmeden kayboluyordu). Bu fonksiyon kaybi ENGELLEMEZ (hukum
+    satiri hala TEK SATIRDIR, uzun mesaj hala kirpilir) -- GIZLENEMEZ kilar:
+    kaybin VARLIGINI acikca isaretler.
+
+    SOZLESME:
+      - Girdi TEK SATIRLIKSA cikti girdinin AYNISIDIR -- hicbir isaret
+        EKLENMEZ.
+      - Girdi COK SATIRLIYSA: `ilk_satir + AYRAC + "(+N satir: stderr)"`.
+      - `N` = ANLAMLI satir sayisi - 1. "Anlamli" = `splitlines()` SONRASI,
+        SONDAKI bos/yalniz-bosluk satirlari ATILMIS liste -- sondaki tek
+        `\n` sahte bir "+1" URETMEZ.
+      - `.split("\n")` DEGIL `.splitlines()`: Windows'ta `\r` kalintisini
+        hukme SIZDIRMAZ ve sondaki newline'i sahte satir SAYMAZ (OLCULDU:
+        ikisi de AYRI kusur sinifi).
+      - Ilk satirin SAG tarafi KIRPILIR (`rstrip()`) -- `\r` kalintisi
+        hukme giremez.
+      - ISARET ASCII'dir (diyakritiksiz): motorun mesaj govdesi ASCII-
+        Turkcedir, isaret motorun kendi UTF-8 kapisini TETIKLEMEMELI.
+      - Girdi BOSSA (`None`, `""`, yalniz bosluk) "bos"tur: isaret
+        EKLENMEZ, istisna FIRLATILMAZ -- cagiran GIRDIYI OLDUGU GIBI
+        geri alir, kendi dusme zincirini (`or "..."`) BOZULMADAN kosturur.
+        "Bos"un tanimi burada ACIKCA yazilidir, ortuk truthy'ye BIRAKILMAZ."""
+    if mesaj is None or not mesaj.strip():
+        return mesaj
+    satirlar = mesaj.splitlines()
+    while satirlar and not satirlar[-1].strip():
+        satirlar.pop()
+    if len(satirlar) <= 1:
+        return (satirlar[0] if satirlar else mesaj).rstrip()
+    n = len(satirlar) - 1
+    return "%s%s(+%d satir: stderr)" % (satirlar[0].rstrip(), _ILK_SATIR_ISARET_AYRAC, n)
+
+
 def kapi_yalit(O, etiket, fn, *args, **kw):
     """BAGIMSIZ DENETIM: tek bir arsiv dosyasindaki tek bozuk bayt, ILGISIZ 15 kapinin
     da olcumunu iptal ediyordu (oku() -> oldur() -> SystemExit). Aracin kendi ilkesi
@@ -375,7 +420,7 @@ def kapi_yalit(O, etiket, fn, *args, **kw):
     try:
         return True, fn(*args, **kw)
     except SystemExit:
-        ilk = (SON_HATA[0] or "okunamadi").split("\n")[0]
+        ilk = _ilk_satir_isaretli(SON_HATA[0] or "okunamadi")
         O.append("%s: OLCULEMEDI — %s" % (etiket, ilk))
         return False, None
 
