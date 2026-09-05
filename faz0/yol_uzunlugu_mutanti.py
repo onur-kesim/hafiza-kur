@@ -32,10 +32,13 @@ DORT KOL — her biri AYRI bir korumayi olcer
                      sonraki turda biri uzun-yol kolunu kisa `/tmp`'e cevirir
                      ve kapi sessizce kor olur (DURUM.md: "OLCUMU KOSTUM, ONU
                      KORUYAN KAPIYI KOSMADIM").
-  M-Y3 ESIK        : DUZELTILMIS (sabotajsiz) motorla kok TAM 98 VE TAM 99
-                     karakter uzunlugunda tek tek kurulur (H16-KOK-SEBEP-
-                     RAPORU.md §2'nin birebir eşiği); ikisi de KIRPILMAMIS
-                     mesaj basmali — esik artik YOK, cunku kesme kaldirildi.
+  M-Y3 ESIK        : DUZELTILMIS (sabotajsiz) motorla kok TAM kritik_kok VE
+                     TAM kritik_kok+1 karakter uzunlugunda tek tek kurulur
+                     (H16-KOK-SEBEP-RAPORU.md §2'nin TARIHI esigi — degeri
+                     ARTIK SABIT DEGIL, formulden TURETILIR, bkz. asagidaki
+                     ESIK bolumu); ikisi de KIRPILMAMIS mesaj basmali —
+                     kesme kaldirildigindan bu YANA esik YOKTUR, ama TARIHI
+                     sinir NOKTA NOKTA dogrulanmaya devam eder.
   M-Y4 TEMIZ KOL   : DUZELTILMIS motor, KISA `/tmp`, `--uzun-yol` YOK; altin
                      kume BIT-BIT bozulmamis olmali (kabul olcutu (a)'nin bu
                      dosya icindeki tekrari).
@@ -53,6 +56,7 @@ CIKIS KODLARI (proje sozlesmesi)
   3  ARAC KUSURU (sabotaj hedefi bulunamadi, kurulum coktu)
 """
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -164,10 +168,88 @@ def my2_kor_kol(taban, sabotajli_motor):
 
 
 # --------------------------------------------------------------- ESIK (M-Y3)
-# H16-KOK-SEBEP-RAPORU.md §2'nin BIREBIR eşiği: onek 46 + kok + "/PROJE_HAFIZA.md"
-# (16) = kok + 62. kesildi[:160] kok=98'de (uzunluk tam 160) HENUZ kesmez,
-# kok=99'da (uzunluk 161) kesiyordu. Duzeltme sonrasi ikisi de KIRPILMAMIS
-# basmali — esik artik yoktur, ama TARIHI sinir NOKTA NOKTA dogrulanir.
+# 🔴 IS_EMRI_3370_VE_ASIMETRI.md KALEM 2 (Onur kilidi 5 Eylul 2026): eski yorum
+# "onek 46 + kok + '/PROJE_HAFIZA.md' (16) = kok + 62" idi — bu SABIT, hafiza.py:
+# 3370'in B6 isaretine (`_ilk_satir_isaretli`) devredilmesiyle ESKIDI: `kesildi`
+# artik (bu vakada SON_HATA[0] COK SATIRLI oldugu icin) " (+N satir: stderr)"
+# isareti TASIYOR, iliski `len(kesildi) = kok + sabit` hala AFFINE ama SABIT
+# DEGISTI. Sabit BURADA YAZILMAZ — `_kritik_kok_turet()` CANLI olcer (esik
+# `_SABOTAJLI`den okunur, sabit iki FARKLI referans kok'ta olculup AFFINE
+# oldugu DOGRULANIR). `kesildi[:160]` (esik) kritik_kok'ta (uzunluk tam esik)
+# HENUZ kesmez, kritik_kok+1'de (uzunluk esik+1) keserdi — DUZELTME sonrasi
+# ikisi de KIRPILMAMIS basmali (kesme YOK artik), ama TARIHI sinir NOKTA
+# NOKTA dogrulanmaya devam eder; sinir isaretle KAYDIGI icin ESKI 98/99
+# ARTIK sinirda DEGIL — sessizce daha az olcen bir kol olurdu (bkz. dosya
+# basi KALEM 2 gerekcesi).
+
+_KESILDI_ONEK = "[KAPI] OLCUM YARIDA KESILDI: "
+
+
+def _sabotaj_esigi():
+    """`_SABOTAJLI` dizgesinden kesme esigini (bugun 160) OKUR — sabit
+    YAZILMAZ, sabotaj degisirse bu da otomatik degisir (h9_kesme_mutanti.py/
+    olculemedi_kesme_mutanti.py'nin ayni adli fonksiyonuyla AYNI ilke: kod
+    parcaciginin KENDISINDEN oku, ayri bir sabit YAZMA)."""
+    m = re.search(r"\[:(\d+)\]", _SABOTAJLI)
+    if not m:
+        raise AracKusuru("sabotaj esigi _SABOTAJLI dizgesinden okunamadi (desen degisti mi?)")
+    return int(m.group(1))
+
+
+def _kesildi_govdesi(satir):
+    """M-Y3 hukum satirindaki, ISARETIN GERCEKTEN eklendigi parca —
+    `_KESILDI_ONEK`den SONRAKI kisim. `startswith` DEGIL `split`: basili
+    satir baska metinle GIRINTILI olabilir, satir ONEKLE BASLAMAZ — yalniz
+    ICERIR (h9_kesme_mutanti.py'nin `_h9_mesaj_govdesi`siyle AYNI ilke).
+    Ayrac bulunamazsa None doner — cagiran SESSIZCE satira DUSMEZ."""
+    parca = satir.split(_KESILDI_ONEK, 1)
+    return parca[1] if len(parca) == 2 else None
+
+
+def _kesildi_uzunlugu_olc(hedef_kok_uzunlugu, ust_taban):
+    """DUZELTILMIS (gercek, sabotajsiz) motorla TEK bir referans kok icin
+    `kesildi`nin (isaretiyle BIRLIKTE) uzunlugunu CANLI olcer — TAHMIN
+    EDILMEZ. Kum havuzu bu olcum icin AYRI acilir (paylasilmaz)."""
+    alt = os.path.join(ust_taban, "esikolc%d" % hedef_kok_uzunlugu)
+    os.makedirs(alt)
+    kok = _hedef_uzunlukta_kok(alt, hedef_kok_uzunlugu)
+    _kur_ve_dizin_yap(kok)
+    rc, c = _kapi_ham(kok)
+    satir = next((s for s in c.splitlines() if "OLCUM YARIDA KESILDI" in s), None)
+    if satir is None:
+        raise AracKusuru("referans kok=%d icin OLCUM YARIDA KESILDI satiri bulunamadi (exit=%s)"
+                         % (hedef_kok_uzunlugu, rc))
+    govde = _kesildi_govdesi(satir)
+    if govde is None:
+        raise AracKusuru("'%s' ayraci referans satirda bulunamadi: %s"
+                         % (_KESILDI_ONEK, satir.strip()))
+    return len(govde.rstrip())
+
+
+def _kritik_kok_turet(taban):
+    """KALEM 2 (IS_EMRI_3370_VE_ASIMETRI.md, Onur kilidi 5 Eylul 2026): eski
+    sabit 98/99'u SABIT YAZMAK yerine kritik kok'u FORMULDEN turetir.
+    `hafiza.py:3370`nin `_ilk_satir_isaretli`ye devredilmesinden beri
+    `len(kesildi) = kok + sabit` iliskisindeki SABIT degisti (eski deger
+    ~62'ydi — BU FONKSIYON yeni degeri KENDI olcer, hicbir yerden kopyalamaz).
+    Iliskinin GERCEKTEN affine (kok'tan BAGIMSIZ sabit fark) oldugu IKI
+    FARKLI, esikten UZAK referans kok uzunlugunda dogrulanir; degilse
+    AracKusuru (formul varsayimi kirilmis demektir — YANLIS bir sabitle
+    SESSIZCE devam EDILMEZ)."""
+    esik = _sabotaj_esigi()
+    a_kok, b_kok = 150, 200   # herhangi iki FARKLI, guvenli (beklenen kritik
+                              # bolgeden acikca uzak) referans deger
+    len_a = _kesildi_uzunlugu_olc(a_kok, taban)
+    len_b = _kesildi_uzunlugu_olc(b_kok, taban)
+    fark_a = len_a - a_kok
+    fark_b = len_b - b_kok
+    if fark_a != fark_b:
+        raise AracKusuru(
+            "kesildi uzunlugu ile kok uzunlugu arasindaki iliski AFFINE degil "
+            "(kok=%d->fark=%d, kok=%d->fark=%d) — formul varsayimi (mesaj=kok+sabit) "
+            "KIRILDI, kritik kok TURETILEMEDI" % (a_kok, fark_a, b_kok, fark_b))
+    return esik - fark_a, esik, fark_a
+
 
 def _hedef_uzunlukta_kok(taban_dizini, hedef_uzunluk):
     on_ek = os.path.join(taban_dizini, "")   # taban + platform ayiricisi
@@ -205,10 +287,12 @@ def _kapi_ham(kok, saniye=120):
 
 
 def my3_esik(taban):
-    ad = "M-Y3 ESIK: duzeltme sonrasi kok=98 VE kok=99 ikisi de KIRPILMAMIS mesaj basar"
+    ad = ("M-Y3 ESIK: duzeltme sonrasi kritik_kok VE kritik_kok+1 ikisi de "
+          "KIRPILMAMIS mesaj basar")
+    kritik_kok, esik, sabit_fark = _kritik_kok_turet(taban)
     kollar = []
     hepsi_tam = True
-    for hedef in (98, 99):
+    for hedef in (kritik_kok, kritik_kok + 1):
         alt_taban = os.path.join(taban, "y3k%d" % hedef)
         os.makedirs(alt_taban)
         kok = _hedef_uzunlukta_kok(alt_taban, hedef)
@@ -222,7 +306,9 @@ def my3_esik(taban):
         kollar.append("kok_uzunlugu=%d exit=%s kirpilmamis=%s"
                       % (len(kok), rc, "VAR" if tam else "YOK"))
     _kayit(ad, BEKLENDIGI_GIBI if hepsi_tam else BEKLENMEDIK,
-          " | ".join(kollar) + " (beklenen: ikisi de kirpilmamis=VAR)")
+          "kritik_kok=%d (esik=%d - sabit_fark=%d, FORMULDEN TURETILDI, sabit YAZILMADI) | "
+          % (kritik_kok, esik, sabit_fark)
+          + " | ".join(kollar) + " (beklenen: ikisi de kirpilmamis=VAR)")
 
 
 def my4_temiz_kol(taban):

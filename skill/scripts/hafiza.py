@@ -3367,7 +3367,7 @@ def cmd_kapi(a):
     except SystemExit as e:
         if isinstance(e.code, int) and e.code == 0:
             raise
-        kesildi = (SON_HATA[0] or "olcum durdu").split("\n")[0]
+        kesildi = _ilk_satir_isaretli(SON_HATA[0] or "olcum durdu")
         F.append("[KAPI] OLCUM YARIDA KESILDI: %s" % kesildi)
         F.append("      -> Bundan SONRAKI kapilar KOSULMADI; hukumleri 'OLCULMEDI'dir.")
     print("=== HAFIZA KAPISI v%s === kok: %s" % (SURUM, _KAPI_KOK[0] or "?"))

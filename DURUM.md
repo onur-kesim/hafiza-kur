@@ -77,3 +77,7 @@ keşif/eşle/durma + çoklu-`canli` + hüküm ayrımı · **md.2+4+5** README + 
   mutantsız · `derle` sonrası ikinci `isir` ölçülmüyor · `t_y42.py` 1 senaryo root altında ÖLÇÜLEMEDİ ·
   dört ölçümün koşucusu pakette yok (beyandır) · kilit inode yarışı daraltıldı, kapatılmadı · zincir
   anahtarsız (bilinçli) · motorda `push`/`fetch`/`remote`/`origin` SIFIR eşleşme.
+- 🔴 **`rmtree(ignore_errors=True)` 38 dosyada, `onerror` YOK (5 Eyl ISIRDI, kusur DEĞİL çöplenme):**
+  git'in salt-okunur nesneleri `%TEMP%`i biriktirir. md.8 (iki kez ısırmayan kural olamaz) ⇒
+  **KOD DEĞİŞMEZ** — 38 kopyaya yama YENİ bayatlama açardı; ikinci ısırıkta açılır. Tazelik:
+  `dir /b "%TEMP%\h16km_*" | find /c /v ""` (5 Eyl: 39).

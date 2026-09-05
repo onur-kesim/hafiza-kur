@@ -68,6 +68,16 @@ NE OLCER — CIFT KOLLU (--uzun-yol dersinin M-Y2 kalibi)
   bu capanin bir SONRAKI turde yeniden gevsemesi/korlesmesi SESSIZCE
   gecmesin diye.
 
+  🔴 ASIMETRI KAPATILDI (Onur kilidi 5 Eylul 2026, IS_EMRI_3370_VE_ASIMETRI.md
+  KALEM 4, "Acik 2"): `korluk_kontrolu()` yalniz SENTETIK sabit satirlar
+  uzerinde capanin KENDI mantigini sinar — desenin GERCEKTEN motorun urettigi
+  isaretle eslestigini hic OLCMUYORDU (h9_kesme_mutanti.py'de bu canli
+  dogrulama VARDI, burada YOKTU). `_isaret_deseni_canli_dogrula()` bu
+  islevin KENDI KOPYASI olarak buraya taşındi (Onur kilidi: ortak modul YOK,
+  motordan/diger mutanttan IMPORT YOK) — deseni SABIT bir dizgeye degil,
+  CANLI (sabotajsiz) motorun urettigi GERCEK bir H8 OLCULEMEDI satirina
+  karsi sinar; desen eslesmezse ARAC KUSURU (exit 3) verir.
+
 URETIM TARIFI (IS_EMRI_SIK_A.md §4, birebir OLCULDU)
   git init + commit -> `kur` -> `korunan --dosya=NOTLAR.md --bas=BASLA
   --son=BITIS --gerekce=<>=15 karakter>` -> NOTLAR.md UTF-8 DISI bayta
@@ -82,10 +92,12 @@ verir, YANLIS yere yamanmaz.
 
 CIKIS KODLARI (proje sozlesmesi)
   0  UC kolun UCU DE BEKLENDIGI GIBI (KISA icin 'beklenen' KACIStir; 5 Eylul
-     2026'dan itibaren UC kol: UZUN, KISA, K4 KORLUK KONTROLU)
+     2026'dan itibaren UC kol: UZUN, KISA, K4 KORLUK KONTROLU) VE isaret
+     deseni CANLI motorla eslesiyor (KALEM 4, IS_EMRI_3370_VE_ASIMETRI.md)
   1  en az bir kol BEKLENMEDIK cikti verdi
   2  en az bir kol OLCULEMEDI (BEKLENMEDIK yoksa)
-  3  ARAC KUSURU (sabotaj hedefi bulunamadi, kum havuzu kurulamadi)
+  3  ARAC KUSURU (sabotaj hedefi bulunamadi, kum havuzu kurulamadi, isaret
+     deseni CANLI motorun urettigiyle eslesmiyor)
 """
 import os
 import re
@@ -510,6 +522,58 @@ def korluk_kontrolu():
           "\n      ".join(detaylar))
 
 
+# --------------------------------------------------------------- KALEM 4: CANLI DOGRULAMA
+def _isaret_deseni_canli_dogrula(taban):
+    """KALEM 4 (IS_EMRI_3370_VE_ASIMETRI.md, Onur kilidi 5 Eylul 2026 — Acik 2
+    KAPATILDI): h9_kesme_mutanti.py:703'teki `_isaret_deseni_canli_dogrula()`
+    ile AYNI islev, bu dosyaya KENDI KOPYASI olarak taşındı (Onur kilidi: ortak
+    modul YOK, motordan/diger mutanttan IMPORT YOK — kum havuzu izolasyonu
+    ilkesi). `korluk_kontrolu()` yalniz SENTETIK sabit satirlar uzerinde
+    capanin KENDI mantigini sinar — desenin GERCEKTEN motorun urettigi
+    isaretle eslestigini OLCMEZ; isaret bicimi degisirse `korluk_kontrolu()`
+    bunu GOREMEZ (sentetik ornekleri KENDI ELIYLE yazar). Bu fonksiyon deseni
+    SABIT bir dizgeye degil, CANLI (duzeltilmis, sabotajsiz) motorun urettigi
+    GERCEK bir H8 OLCULEMEDI satirina karsi sinar.
+
+    - Kum havuzu kurulamazsa / H8 OLCULEMEDI satiri HIC uretilmezse: SESSIZCE
+      GECER, SONUC'a KAYIT ACMAZ — ayni ortam sinirlamasi zaten my3_uzun_kol/
+      my3_kisa_kol KENDI OLCULEMEDI kayitlarinda raporlar; burada TEKRAR
+      raporlamak SONUC sayimini ANLAMSIZCA sisirir (bu bir KOL DEGIL, KAPIDIR).
+    - H8 OLCULEMEDI satiri URETILDI (NOTLAR.md UTF-8 DISI tek bayt `\\xff\\xfe`
+      vakasi GERCEKTEN tetiklendi) ama isaret YOKSA: bu vakanin `oldur()`
+      mesaji OLCULEN HER ZAMAN COK SATIRLIDIR (Bayt.../UTF-8'e cevir/Not
+      Defteri satirlari — bkz. dosya basi urun tarifi) — duzeltilmis motorda
+      `_ilk_satir_isaretli` govdeye isareti EKLEMIS OLMALIYDI. Eklemediyse
+      desen/motor UYUSMUYOR demektir (kopya BAYATLADI) — `AracKusuru`
+      FIRLATILIR (main()'in ustteki try/except'i yakalar, exit 3): sessizce
+      "isaret yok" SAYILMAZ (K5 kehaneti: deseni kasten boz, kos, ARAC
+      KUSURU gor)."""
+    alt = os.path.join(taban, "k4canli")
+    os.makedirs(alt, exist_ok=True)
+    kok = os.path.join(alt, "proje")
+    try:
+        _kum_havuzu_kur(MOTOR, kok)
+    except AracKusuru:
+        return   # ortam kum havuzu kuramadi — my3_uzun_kol/my3_kisa_kol AYNI
+                 # sinirlamayi KENDI kollarinda OLCULEMEDI olarak raporlar.
+    rc, c = _kos(MOTOR, ["kapi", "--kok=" + kok])
+    satir = _olculemedi_satiri(c)
+    if satir is None:
+        return   # H8 OLCULEMEDI satiri uretilmedi — ayni sinirlama diger
+                 # kollarda AYRICA OLCULUR.
+    govde = _olculemedi_mesaj_govdesi(satir)
+    if govde is None:
+        return   # ayrac bulunamadi — bu da diger kollarda AYRICA OLCULUR.
+    _, isaret_var = _b6_isaretini_ayikla(govde.rstrip())
+    if not isaret_var:
+        raise AracKusuru(
+            "isaret deseni (_B6_ISARET) CANLI motorun urettigi H8 OLCULEMEDI "
+            "satiriyla eslesmedi — UTF-8-disi bayt vakasinin oldur() mesaji bu "
+            "motorde TEK SATIRA mi dustu, yoksa _ilk_satir_isaretli isaretin "
+            "BICIMINI mi degistirdi? Desen (bu dosyada VE h9_kesme_mutanti.py'de "
+            "AYRI yazili) GUNCELLENMELI. Ham satir: %s" % satir.strip())
+
+
 def main():
     print("=" * 82)
     print("OLCULEMEDI KESME MUTANTI (M-Y3) — kapi_yalit() OLCULEMEDI hukmu kirpilmadan mi basiyor?")
@@ -524,6 +588,11 @@ def main():
         return 3
     try:
         try:
+            # KALEM 4 (IS_EMRI_3370_VE_ASIMETRI.md): isaret deseni CANLI
+            # motora karsi ONCE dogrulanir — desen bayatsa asagidaki kollar
+            # da YANLIS sonuc uretebilir; erken ARAC KUSURU bunu SESSIZCE
+            # gecirmez.
+            _isaret_deseni_canli_dogrula(taban)
             my3_uzun_kol(taban)
             my3_kisa_kol()
             korluk_kontrolu()
