@@ -55,6 +55,7 @@ CIKIS KODLARI (proje sozlesmesi)
   2  en az bir kol OLCULEMEDI (BEKLENMEDIK yoksa)
   3  ARAC KUSURU (sabotaj hedefi bulunamadi, kurulum coktu)
 """
+import ctypes
 import os
 import re
 import shutil
@@ -89,6 +90,21 @@ SONUC = []          # (ad, durum, ayrinti)
 
 
 class AracKusuru(Exception):
+    pass
+
+
+class TabanYetersiz(AracKusuru):
+    """IS_EMRI_YOL_UZUNLUGU_KISA_TABAN.md KALEM 2 (Onur kilidi 5 Eylul 2026):
+    taban dizini hedef kok uzunlugu icin YETERSIZ (zaten hedeften uzun) —
+    bu bir ORTAM GERCEGIDIR, arac kusuru DEGIL (CI #92 macos-latest'in
+    kok sebebi: derin runner yolu + `/private/tmp` realpath'i). `_hedef_
+    uzunlukta_kok` bunu firlatir; cagiran (my3_esik, _kritik_kok_turet)
+    bunu YAKALAYIP OLCULEMEDI ilan eder — main()'in genel `except
+    AracKusuru` katmanina (ARAC KUSURU/exit 3) DUSMEDEN. `AracKusuru`'nun
+    ALT SINIFIDIR: izole edilmemis bir cagri yeri kacirirsa bile SESSIZCE
+    yutulmaz, yine de main()'in ustteki try/except'i tarafindan yakalanir
+    (yalniz o zaman ANLAMI yanlis siniflanmis olur — bu yuzden KALEM 2'nin
+    istedigi cagri yerlerinde ACIKCA yakalanir)."""
     pass
 
 
@@ -235,10 +251,38 @@ def _kritik_kok_turet(taban):
     Iliskinin GERCEKTEN affine (kok'tan BAGIMSIZ sabit fark) oldugu IKI
     FARKLI, esikten UZAK referans kok uzunlugunda dogrulanir; degilse
     AracKusuru (formul varsayimi kirilmis demektir — YANLIS bir sabitle
-    SESSIZCE devam EDILMEZ)."""
+    SESSIZCE devam EDILMEZ).
+
+    🔴 DUZELTME (IS_EMRI_YOL_UZUNLUGU_KISA_TABAN.md KALEM 3, 5 Eylul 2026 —
+    CI #92 macos-latest KIRMIZI): referans kokler ESKIDEN sabit 150/200'du.
+    macOS'ta `/tmp` -> `/private/tmp` REALPATH'i (+8) VE runner'in derin
+    yolu tabani uzatinca 150 bile YETMEDI (`_hedef_uzunlukta_kok` "taban
+    zaten uzun" ile patladi) — sabit sayi yazmak TAM BU TURUN KUSURUYDU.
+    Simdi referanslar TABANA GORE turetilir (`taban_uzunlugu + marj`,
+    `taban_uzunlugu + 2*marj`) — taban ne kadar uzun olursa olsun ikisi
+    de ONDAN uzun kurulabilir.
+
+    🔴 `esikten UZAKLIK` OLCULUR ve kayda YAZILIR (asagida) ama HARD GATE
+    DEGILDIR: ilk yazimda `uzaklik < marj` ise `TabanYetersiz` firlatiliyordu
+    — OLCULDU ki bu YANLIS ALARM uretiyor (kisa tabanda bile, ornek: kok=30,
+    b_kok=122, esik=160, uzaklik=38<40 diye OLCULEMEDI basiyordu). Fiziksel
+    gerekce: bu referans olcumleri DUZELTILMIS (sabotajsiz) motoru kullanir,
+    o motor HICBIR kok uzunlugunda kirpmiyor — esige "yakinlik" gercek bir
+    risk TASIMIYOR (eski sabit 150 de esige yalniz 10 uzaktı ve hic sorun
+    CIKARMAMISTI). Mesafe yine de OLCULUP raporlanir (seffaflik), ama
+    kolun BASARISINI ENGELLEMEZ."""
     esik = _sabotaj_esigi()
-    a_kok, b_kok = 150, 200   # herhangi iki FARKLI, guvenli (beklenen kritik
-                              # bolgeden acikca uzak) referans deger
+    # `_kesildi_uzunlugu_olc` olcumu `taban/esikolcNNN/` ALT dizininde yapar
+    # (bkz. asagida) — gercek kisit budur, salt `taban` degil; alt dizin
+    # adinin (rakamlar dahil) uzunlugu da OLCULEREK hesaba katilir.
+    taban_uzunlugu = len(os.path.join(taban, "esikolc999", ""))
+    marj = 40   # TASARIM PARAMETRESI (olculen bir fizik degil): iki referansi
+                # birbirinden VE tabandan ayirmaya yetecek kadar buyuk, MAX_PATH
+                # riskine girmeyecek kadar kucuk.
+    a_kok = taban_uzunlugu + marj
+    b_kok = taban_uzunlugu + 2 * marj
+    uzaklik_a = abs(a_kok - esik)
+    uzaklik_b = abs(b_kok - esik)
     len_a = _kesildi_uzunlugu_olc(a_kok, taban)
     len_b = _kesildi_uzunlugu_olc(b_kok, taban)
     fark_a = len_a - a_kok
@@ -248,15 +292,19 @@ def _kritik_kok_turet(taban):
             "kesildi uzunlugu ile kok uzunlugu arasindaki iliski AFFINE degil "
             "(kok=%d->fark=%d, kok=%d->fark=%d) — formul varsayimi (mesaj=kok+sabit) "
             "KIRILDI, kritik kok TURETILEMEDI" % (a_kok, fark_a, b_kok, fark_b))
-    return esik - fark_a, esik, fark_a
+    return esik - fark_a, esik, fark_a, taban_uzunlugu, a_kok, b_kok, uzaklik_a, uzaklik_b
 
 
 def _hedef_uzunlukta_kok(taban_dizini, hedef_uzunluk):
     on_ek = os.path.join(taban_dizini, "")   # taban + platform ayiricisi
     gerekli = hedef_uzunluk - len(on_ek)
     if gerekli < 1:
-        raise AracKusuru("taban_dizini (%d) hedef uzunluktan (%d) zaten uzun"
-                         % (len(on_ek), hedef_uzunluk))
+        # KALEM 2 (IS_EMRI_YOL_UZUNLUGU_KISA_TABAN.md): bu bir ORTAM SINIRIDIR
+        # (taban zaten hedeften uzun), arac kusuru DEGIL — TabanYetersiz firlatir,
+        # AracKusuru'nun ALT SINIFI (main()'in genel yakalayicisi hala gorur,
+        # ama cagiran kollar bunu ONCE yakalayip OLCULEMEDI ilan eder).
+        raise TabanYetersiz("taban_dizini (%d) hedef uzunluktan (%d) zaten uzun"
+                            % (len(on_ek), hedef_uzunluk))
     dolgu = ("zq" * ((gerekli // 2) + 1))[:gerekli]     # hex olmayan, notr dolgu
     kok = on_ek + dolgu
     if len(kok) != hedef_uzunluk:
@@ -289,13 +337,26 @@ def _kapi_ham(kok, saniye=120):
 def my3_esik(taban):
     ad = ("M-Y3 ESIK: duzeltme sonrasi kritik_kok VE kritik_kok+1 ikisi de "
           "KIRPILMAMIS mesaj basar")
-    kritik_kok, esik, sabit_fark = _kritik_kok_turet(taban)
+    try:
+        (kritik_kok, esik, sabit_fark, taban_uzunlugu, a_kok, b_kok,
+         uzaklik_a, uzaklik_b) = _kritik_kok_turet(taban)
+    except TabanYetersiz as e:
+        # KALEM 2: taban (kisa taban ac() sonrasi bile) bu ortamda referans
+        # olcumu icin YETERSIZ — ORTAM GERCEGI, arac kusuru DEGIL.
+        _kayit(ad, OLCULEMEDI, "kritik kok turetilemedi (taban yetersiz): %s" % e)
+        return
     kollar = []
     hepsi_tam = True
     for hedef in (kritik_kok, kritik_kok + 1):
         alt_taban = os.path.join(taban, "y3k%d" % hedef)
         os.makedirs(alt_taban)
-        kok = _hedef_uzunlukta_kok(alt_taban, hedef)
+        try:
+            kok = _hedef_uzunlukta_kok(alt_taban, hedef)
+        except TabanYetersiz as e:
+            _kayit(ad, OLCULEMEDI,
+                  "kritik_kok=%d icin taban yetersiz (bu ortamda kol OLCULEMEZ "
+                  "— kusur BULGUSU DEGIL): %s" % (hedef, e))
+            return
         _kur_ve_dizin_yap(kok)
         rc, c = _kapi_ham(kok)
         satir = next((s for s in c.splitlines() if "OLCUM YARIDA KESILDI" in s), None)
@@ -307,7 +368,9 @@ def my3_esik(taban):
                       % (len(kok), rc, "VAR" if tam else "YOK"))
     _kayit(ad, BEKLENDIGI_GIBI if hepsi_tam else BEKLENMEDIK,
           "kritik_kok=%d (esik=%d - sabit_fark=%d, FORMULDEN TURETILDI, sabit YAZILMADI) | "
-          % (kritik_kok, esik, sabit_fark)
+          "referanslar: a_kok=%d (esige uzaklik=%d) · b_kok=%d (esige uzaklik=%d), "
+          "taban_uzunlugu=%d'den TURETILDI | "
+          % (kritik_kok, esik, sabit_fark, a_kok, uzaklik_a, b_kok, uzaklik_b, taban_uzunlugu)
           + " | ".join(kollar) + " (beklenen: ikisi de kirpilmamis=VAR)")
 
 
@@ -324,6 +387,152 @@ def my4_temiz_kol(taban):
           % (rc, "VAR" if fark_yok else "yok"))
 
 
+# --------------------------------------------------------------- KISA TABAN (KALEM 1)
+# IS_EMRI_YOL_UZUNLUGU_KISA_TABAN.md (Onur kilidi 5 Eylul 2026, CI #92 macos-latest
+# KIRMIZI): `main()` genel `tempfile.mkdtemp(prefix="h16km_")` kullaniyordu — TMPDIR'e
+# bagimli. macOS'ta `/tmp` -> `/private/tmp` REALPATH'i (+8) VE runner'in derin yolu
+# tabani `_hedef_uzunlukta_kok`'un hedeften (150) UZUN kilinca ARAC KUSURU (exit 3)
+# veriyordu. Asagidaki mekanizma `h9_kesme_mutanti.py`'de OLCULMUS ve CI #91'de UC
+# PLATFORMDA yesil kosmus kalibin KENDI KOPYASIDIR (Onur kilidi: ortak modul YOK,
+# motordan/diger mutanttan IMPORT YOK — kum havuzu izolasyonu ilkesi).
+_SON_KISA_TABAN_KAYNAGI = None
+# `_kisa_taban_ac_win()`nin KAZANDIGI adayin ETIKETINI + kok uzunlugunu buraya yazar.
+# Salt-okunur bir yan-kanal — `_kisa_taban_ac()`nin DAVRANISINI ETKILEMEZ, yalniz
+# KAYIT icin okunur (`_kisa_taban_kaynagi()` araciligiyla). POSIX dalina (dokunulmayan)
+# hicbir YAZMA EKLENMEDI — o durumda kaynak DONEN YOLUN ONEKINDEN cikarilir.
+
+
+def _win_8_3_kisa_ad(yol):
+    """Windows 8.3 kisa ad (`GetShortPathNameW`) — bazi birimlerde/dizinlerde
+    KAPALI olabilir (`fsutil 8dot3name`), yol MEVCUT OLMAYABILIR, ya da bu
+    islev POSIX'te HIC YOK (`ctypes.windll` yalniz Windows'ta bulunur).
+    Hicbir HALDE istisna DISARI SIZMAZ — basarisizlikta None doner, aday
+    SESSIZCE DUSER."""
+    try:
+        buf = ctypes.create_unicode_buffer(260)
+        n = ctypes.windll.kernel32.GetShortPathNameW(yol, buf, len(buf))
+        if n == 0 or n > len(buf):
+            return None
+        return buf.value
+    except Exception:
+        return None
+
+
+def _win_yazilabilir_mi(dizin):
+    """Aday dizinin GERCEKTEN yazilabilir olup olmadigini DENER (yaz-sil) —
+    varligi/dizin olmasi YETMEZ (ornek: sistem gecici dizini yonetici
+    GEREKTIREBILIR). Basarisizlikta istisna FIRLATILMAZ, False doner — aday
+    sessizce DUSER, hata FIRLATILMAZ. Denemenin KENDISI VAR OLAN dizinin
+    icinde bir DOSYADIR — yeni ust duzey dizin ACILMAZ: yeni dizin YOK,
+    VAR OLAN dizinin icinde acilip HEMEN silinen bir dosya var."""
+    try:
+        fd, yol = tempfile.mkstemp(prefix=".h16km_yazilabilir_", dir=dizin)
+        os.close(fd)
+        os.remove(yol)
+        return True
+    except OSError:
+        return False
+
+
+def _kisa_taban_ac_win():
+    """POSIX-disi (esas olarak Windows) dal icin kisa taban ADAYLARI CALISMA
+    ZAMANINDA OLCULUR — hicbir aday/sira SABITLENMEZ:
+      - `RUNNER_TEMP` (GitHub Actions Windows runner'i verir — VAR OLDUGU
+        VARSAYILMAZ, OLCULUR)
+      - `TEMP` / `TMP` — VE bunlarin 8.3 KISA ADI (`_win_8_3_kisa_ad`; cagri
+        basarisiz olabilir, o zaman bu tek aday sessizce DUSER)
+      - zaten VAR OLAN sistem gecici dizini (`%SystemRoot%\\Temp`) — YENI
+        YARATILMAZ, yalniz ZATEN VARSA denenir
+    Her aday icin: var mi -> dizin mi -> GERCEKTEN yazilabilir mi (`_win_
+    yazilabilir_mi`, deneme yaz-sil) -> `tempfile.mkdtemp(dir=aday)` ile
+    OLUSACAK kok KAC KARAKTER — TAHMIN EDILMEZ, GERCEKTEN acilir. Kaybeden
+    adaylarin actigi dizinler HEMEN silinir. Kazanan `_SON_KISA_TABAN_
+    KAYNAGI`ya yazilir (KALEM 1: "kayda yazilsin") ve DONDURULUR.
+
+    🔴 Hicbir aday kurulamazsa GENEL `tempfile.mkdtemp(prefix="h16km_")`e
+    DUSULUR — bu durumda `_hedef_uzunlukta_kok` `TabanYetersiz` ile dogru
+    sekilde ÖLÇÜLEMEDİ olarak raporlar (KALEM 2); burada "basarili gibi"
+    hicbir sey GOSTERILMEZ."""
+    global _SON_KISA_TABAN_KAYNAGI
+    etiketli_adaylar = []
+    v = os.environ.get("RUNNER_TEMP")
+    if v:
+        etiketli_adaylar.append(("RUNNER_TEMP", v))
+    for ad in ("TEMP", "TMP"):
+        v = os.environ.get(ad)
+        if v:
+            etiketli_adaylar.append((ad, v))
+            kisa = _win_8_3_kisa_ad(v)
+            if kisa and os.path.normcase(os.path.normpath(kisa)) != \
+                    os.path.normcase(os.path.normpath(v)):
+                etiketli_adaylar.append(("%s (8.3 kisa ad)" % ad, kisa))
+    sistem_root = os.environ.get("SystemRoot") or os.environ.get("SYSTEMROOT")
+    if sistem_root:
+        etiketli_adaylar.append(("SystemRoot\\Temp", os.path.join(sistem_root, "Temp")))
+
+    gorulen = set()
+    kazanan = None   # (uzunluk, yol, etiket)
+    for etiket, taban in etiketli_adaylar:
+        anahtar = os.path.normcase(os.path.normpath(taban))
+        if anahtar in gorulen:
+            continue
+        gorulen.add(anahtar)
+        if not os.path.isdir(taban) or not _win_yazilabilir_mi(taban):
+            continue
+        try:
+            yol = tempfile.mkdtemp(prefix="h16km_", dir=taban)
+        except OSError:
+            continue
+        if kazanan is None or len(yol) < kazanan[0]:
+            if kazanan is not None:
+                shutil.rmtree(kazanan[1], ignore_errors=True)
+            kazanan = (len(yol), yol, etiket)
+        else:
+            shutil.rmtree(yol, ignore_errors=True)
+
+    if kazanan is not None:
+        _SON_KISA_TABAN_KAYNAGI = "%s (kok=%d)" % (kazanan[2], kazanan[0])
+        return kazanan[1]
+    _SON_KISA_TABAN_KAYNAGI = "genel mkdtemp() varsayilani (hicbir aday kurulamadi)"
+    return tempfile.mkdtemp(prefix="h16km_")
+
+
+def _kisa_taban_ac():
+    """`main()`'in kum havuzu icin GENEL `mkdtemp` yerine KISA bir taban
+    acar. POSIX'te literal `/tmp` altinda (varsa): `tempfile.mkdtemp(dir=...)`
+    acikca `dir` verilince TMPDIR/TMP/TEMP ortam degiskenlerini YOK SAYAR —
+    disaridan enjekte edilmis uzun bir TMPDIR bu araci ARTIK ETKILEMEZ.
+
+    🔴 macOS `/tmp`yi `/private/tmp`e REALPATH'ler (+8 karakter, M-A8/H16-
+    KESME-DUZELTME-BRIEF.md mayini) — CI #92'nin kok sebebinin BIR PARCASI
+    tam buydu (digeri: runner'in derin yolu). Kisa taban bunu TAMAMEN
+    ORTADAN KALDIRMAZ (macOS REALPATH kacinilmaz) ama YARDIMCI OLUR; asil
+    guvence KALEM 2'nin `TabanYetersiz` -> OLCULEMEDI yoludur — taban yine
+    de yetmezse arac COKMEZ, DURUSTCE ÖLÇÜLEMEDİ der.
+
+    POSIX-disi (esas olarak Windows) dal icin `_kisa_taban_ac_win()`e
+    devredilir — o fonksiyon Windows'a ozgu adaylari (RUNNER_TEMP/TEMP/
+    TMP/8.3/sistem gecici dizini) CALISMA ZAMANINDA olcup EN KISASINI
+    secer. Hicbiri kurulamazsa GENEL varsayilana duser."""
+    if os.name == "posix" and os.path.isdir("/tmp"):
+        try:
+            return tempfile.mkdtemp(prefix="h16km_", dir="/tmp")
+        except OSError:
+            pass
+    return _kisa_taban_ac_win()
+
+
+def _kisa_taban_kaynagi(kisa_taban):
+    """KAYIT icin salt-okunur bir ETIKET (KALEM 1: "kazanan aday ve taban
+    uzunlugu KAYDA yazilsin") — `_kisa_taban_ac()`'in DAVRANISINI ETKILEMEZ.
+    POSIX dalina hicbir yazma EKLENMEDIGI icin o durumda kaynak, DONEN
+    YOLUN ONEKINDEN cikarilir (`/tmp` ile basliyorsa); Windows dalinda
+    `_kisa_taban_ac_win()`'in yazdigi `_SON_KISA_TABAN_KAYNAGI` OKUNUR."""
+    if kisa_taban.replace("\\", "/").startswith("/tmp/"):
+        return "/tmp (POSIX)"
+    return _SON_KISA_TABAN_KAYNAGI or "bilinmiyor"
+
+
 def main():
     print("=" * 82)
     print("YOL UZUNLUGU MUTANTI — --uzun-yol kolu KESILME REGRESYONUNU yakaliyor mu?")
@@ -334,10 +543,13 @@ def main():
     print("  referans : %s" % REFERANS)
     print("=" * 82)
     try:
-        taban = tempfile.mkdtemp(prefix="h16km_")
+        taban = _kisa_taban_ac()
     except OSError as e:
         print("\nARAC KUSURU: gecici dizin acilamadi: %s" % e)
         return 3
+    print("  kisa taban kaynagi : %s" % _kisa_taban_kaynagi(taban))
+    print("  taban uzunlugu     : %d (%s)" % (len(taban), taban))
+    print(CIZGI)
     try:
         try:
             motor_sab = my1_kesme_geri(taban)
