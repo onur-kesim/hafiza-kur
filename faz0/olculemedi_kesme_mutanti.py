@@ -52,6 +52,22 @@ NE OLCER — CIFT KOLLU (--uzun-yol dersinin M-Y2 kalibi)
   esikten TUREYEN bir pay M-Y4'un Windows CI #83'unde yalanci-kirmizi
   uretmisti (ayni fizik burada da GECERLI, bkz. `my3_kisa_kol` docstring'i).
 
+  🔴 CAPA DUZELTMESI (Onur kilidi 5 Eylul 2026, ŞIK A —
+  IS_EMRI_MY3_CAPA_DUZELTME.md; dayanak: kalem5-tarama/OLCUM_RAPORU_B6_BETA.md
+  §4, my3-onsart/OLCUM_RAPORU_MY3_TUR.md §4): B6 SIK β (hafiza.py
+  `_ilk_satir_isaretli`) hukum satirinin SONUNA " (+N satir: stderr)"
+  isareti eklemeye baslayinca bu capanin `kirpilmamis = satir.rstrip()
+  .endswith("NOTLAR.md")` sinamasi KIRILDI (CI #89: ubuntu/windows/macos
+  UCUNDE de KIRMIZI) — capa TEK SATIR VARSAYIYORDU, artik dogru degildi.
+  Duzeltme B6'ya DOKUNMAZ (B6'nin olculmus davranisi budur, dogru calisiyor);
+  capa `_b6_isaretini_ayikla()` ile ISARETI AYIRIP govde uzerinde `endswith`
+  olcer hale getirildi. 🔴 `"NOTLAR.md" in satir` YAZILMADI (OLCULDU): hukum
+  satiri "H8 (NOTLAR.md): ..." ile BASLADIGI icin `in` HER ZAMAN True
+  donerdi, kirpilmis uzun kolda BILE — mutant SESSIZCE KOR kalirdi. Kalici
+  bir K4 korluk kontrolu (`korluk_kontrolu()`, uc sentetik satir) eklendi:
+  bu capanin bir SONRAKI turde yeniden gevsemesi/korlesmesi SESSIZCE
+  gecmesin diye.
+
 URETIM TARIFI (IS_EMRI_SIK_A.md §4, birebir OLCULDU)
   git init + commit -> `kur` -> `korunan --dosya=NOTLAR.md --bas=BASLA
   --son=BITIS --gerekce=<>=15 karakter>` -> NOTLAR.md UTF-8 DISI bayta
@@ -65,7 +81,8 @@ atilir, satir NUMARASIYLA DEGIL — motor degisirse `count()!=1` ARAC KUSURU
 verir, YANLIS yere yamanmaz.
 
 CIKIS KODLARI (proje sozlesmesi)
-  0  iki kolun IKISI DE BEKLENDIGI GIBI (KISA icin 'beklenen' KACIStir)
+  0  UC kolun UCU DE BEKLENDIGI GIBI (KISA icin 'beklenen' KACIStir; 5 Eylul
+     2026'dan itibaren UC kol: UZUN, KISA, K4 KORLUK KONTROLU)
   1  en az bir kol BEKLENMEDIK cikti verdi
   2  en az bir kol OLCULEMEDI (BEKLENMEDIK yoksa)
   3  ARAC KUSURU (sabotaj hedefi bulunamadi, kum havuzu kurulamadi)
@@ -220,6 +237,29 @@ def _olculemedi_mesaj_govdesi(satir):
     return parca[1] if len(parca) == 2 else None
 
 
+_B6_ISARET = r"\s*\(\+\d+ satir: stderr\)$"      # tek tanim yeri (kalem5-tarama/
+# IS_EMRI_B6_BETA.md, hafiza.py `_ilk_satir_isaretli`'nin ekledigi son-ek deseni)
+
+
+def _b6_isaretini_ayikla(govde):
+    """IS_EMRI_MY3_CAPA_DUZELTME.md KALEM 1 (5 Eylul 2026, Onur kilidi SIK A):
+    B6'nin hukum satirinin SONUNA ekledigi " (+N satir: stderr)" isaretini
+    AYIKLAR (varsa). Isaret AYRI bir katmandir — kirpilma olcumu ISARETSIZ
+    govde uzerinde yapilir; boylece B6 (satiri UZATAN) ile bu capa (satirin
+    SONUNU olcen) birbirinin KORLUGUNU URETMEZ.
+
+    🔴 `"NOTLAR.md" in govde` YAZILMAZ: hukum satiri "H8 (NOTLAR.md): ..."
+    ile BASLADIGI icin `in` HER ZAMAN True doner (OLCULDU, is emri §2) —
+    boyle bir capa KIRPILMIS satirda da True basar ve SESSIZCE KOR kalir.
+    Yalniz SON, regex ile ayiklanip/olculur.
+
+    Doner: (isaretsiz_govde, isaret_ayiklandi_mi: bool) — ikincisi kayda
+    yazilir (IS_EMRI_MY3_CAPA_DUZELTME.md KALEM 1: "gorunmeyen bir donusum,
+    sonraki turde gorunmez bir varsayim olur")."""
+    yeni, n = re.subn(_B6_ISARET, "", govde, count=1)
+    return yeni, (n > 0)
+
+
 def _sabotaj_esigi():
     """`_SABOTAJLI` dizgesinden kesme esigini (bugun 150) OKUR — sabit
     YAZILMAZ, sabotaj degisirse bu da otomatik degisir (H16-KESME-DUZELTME-
@@ -258,12 +298,15 @@ def _my3_kol(taban, ad, hedef_uzunluk, beklenen_kirpilmamis):
               "H8 OLCULEMEDI satiri bulunamadi (kok uzunlugu=%d, exit=%s) — ham cikti kuyrugu:\n%s"
               % (len(kok), rc, c[-500:]))
         return
-    kirpilmamis = satir.rstrip().endswith("NOTLAR.md")
+    govde, isaret_ayiklandi = _b6_isaretini_ayikla(satir.rstrip())
+    kirpilmamis = govde.endswith("NOTLAR.md")
     dogru = (kirpilmamis == beklenen_kirpilmamis)
     _kayit(ad, BEKLENDIGI_GIBI if dogru else BEKLENMEDIK,
-          "kok uzunlugu=%d | sabotajli motor ([:150] geri) | satir NOTLAR.md ile "
-          "bitiyor (kirpilmamis)=%s (beklenen: %s)\n      satir: %s"
-          % (len(kok), "VAR" if kirpilmamis else "yok",
+          "kok uzunlugu=%d | sabotajli motor ([:150] geri) | B6 isareti "
+          "ayiklandi mi=%s | isaretsiz govde NOTLAR.md ile bitiyor "
+          "(kirpilmamis)=%s (beklenen: %s)\n      satir: %s"
+          % (len(kok), "VAR" if isaret_ayiklandi else "yok",
+             "VAR" if kirpilmamis else "yok",
              "VAR" if beklenen_kirpilmamis else "yok", satir.strip()))
 
 
@@ -407,16 +450,64 @@ def my3_kisa_kol():
                   "VARDI, sabotajli kosumda YOK: tutarsizlik. Ham cikti "
                   "kuyrugu:\n%s" % (len(kok), rc, c[-500:]))
             return
-        kirpilmamis = satir.rstrip().endswith("NOTLAR.md")
+        govde, isaret_ayiklandi = _b6_isaretini_ayikla(satir.rstrip())
+        kirpilmamis = govde.endswith("NOTLAR.md")
         _kayit(ad, BEKLENDIGI_GIBI if kirpilmamis else BEKLENMEDIK,
               "kisa taban=%s | ON SART OLCULDU: kirpilmamis mesaj uzunlugu=%d "
-              "(esik=%d) | sabotajli motor ([:%d] geri) "
-              "| satir NOTLAR.md ile bitiyor (kirpilmamis)=%s "
-              "(beklenen: VAR)\n      kok uzunlugu=%d, kok=%s"
+              "(esik=%d) | sabotajli motor ([:%d] geri) | B6 isareti "
+              "ayiklandi mi=%s | isaretsiz govde NOTLAR.md ile bitiyor "
+              "(kirpilmamis)=%s (beklenen: VAR)\n      kok uzunlugu=%d, kok=%s"
               % (kisa_taban, mesaj_uzunlugu, esik, esik,
+                 "VAR" if isaret_ayiklandi else "yok",
                  "VAR" if kirpilmamis else "yok", len(kok), kok))
     finally:
         shutil.rmtree(kisa_taban, ignore_errors=True)
+
+
+def korluk_kontrolu():
+    """K4 (IS_EMRI_MY3_CAPA_DUZELTME.md KALEM 2, 5 Eylul 2026 — Onur kilidi
+    SIK A): capa GEVSETILDI (B6 isaretini ayiklayacak hale getirildi);
+    gevseyen bir capa SESSIZCE KOR KALABILIR. Bu kol GERCEK bir vaka
+    KOSTURMAZ — UC SENTETIK hukum satiri uzerinde capanin KENDI mantigini
+    (`_b6_isaretini_ayikla` + `endswith`) DOGRUDAN cagirir:
+      (a) kirpilmis (kesme kesti)       -> govde NOTLAR.md ile BITMEMELI
+      (b) kirpilmamis, B6 ISARETSIZ     -> govde NOTLAR.md ile BITMELI
+      (c) kirpilmamis, B6 ISARETLI      -> govde NOTLAR.md ile BITMELI (isaret
+                                            AYIKLANDIKTAN sonra)
+    Bu kol atlanirsa/silinirse capanin yeniden korlestigi bir DAHA
+    OLCULMEZ — mutant dosyasindan YENI bir dosya ACILMADAN (KALEM 2),
+    kalici bir kol olarak buraya eklendi."""
+    ad = "K4 KORLUK KONTROLU: capa (govde+endswith) uc sentetik satirda dogru ayirt ediyor mu"
+    ornekler = [
+        ("(a) kirpilmis (kesme kesti)",
+         "  ? H8 (NOTLAR.md): OLCULEMEDI — DOSYA UTF-8 DEGIL: /tmp/x/u/zqzqzqzqzq",
+         False),
+        ("(b) kirpilmamis, B6-ONCESI/isaretsiz",
+         "  ? H8 (NOTLAR.md): OLCULEMEDI — DOSYA UTF-8 DEGIL: /tmp/x/NOTLAR.md",
+         True),
+        ("(c) kirpilmamis, B6 isaretli",
+         "  ? H8 (NOTLAR.md): OLCULEMEDI — DOSYA UTF-8 DEGIL: /tmp/x/NOTLAR.md (+3 satir: stderr)",
+         True),
+    ]
+    hepsi_dogru = True
+    detaylar = []
+    for isim, satir, beklenen in ornekler:
+        govde0 = _olculemedi_mesaj_govdesi(satir)
+        if govde0 is None:
+            hepsi_dogru = False
+            detaylar.append("%s: '%s' ayraci sentetik satirda bulunamadi (ARAC KUSURU sinifi)"
+                            % (isim, _OLCULEMEDI_AYRAC))
+            continue
+        govde, isaretli = _b6_isaretini_ayikla(govde0.rstrip())
+        sonuc = govde.endswith("NOTLAR.md")
+        dogru = (sonuc == beklenen)
+        hepsi_dogru = hepsi_dogru and dogru
+        detaylar.append(
+            "%s: isaret ayiklandi mi=%s | govde=%r | NOTLAR.md ile bitiyor=%s (beklenen: %s)"
+            % (isim, "VAR" if isaretli else "yok", govde,
+               "VAR" if sonuc else "yok", "VAR" if beklenen else "yok"))
+    _kayit(ad, BEKLENDIGI_GIBI if hepsi_dogru else BEKLENMEDIK,
+          "\n      ".join(detaylar))
 
 
 def main():
@@ -435,6 +526,7 @@ def main():
         try:
             my3_uzun_kol(taban)
             my3_kisa_kol()
+            korluk_kontrolu()
         except AracKusuru as e:
             print("\nARAC KUSURU: %s" % e)
             return 3
