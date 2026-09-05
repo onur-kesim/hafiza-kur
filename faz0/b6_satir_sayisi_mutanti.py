@@ -24,11 +24,17 @@ NEDEN VAR (kalem5-tarama/OLCUM_RAPORU_B6.md, 4 Eylul 2026 — ISIRDI)
   SATIR SAYISINI degistirmez. Bu yuzden bu mutant AYRIDIR, o kola
   BAGLANMAZ, kendi CI adimini tasir.
 
-  🔴 KAPSAM DISI (bilerek, ORTUSEN TESPIT KORLUGU'nden kacinmak icin):
-  `hafiza.py:3325` (`kesildi = (SON_HATA[0] or "olcum durdu").split("\n")[0]`)
-  ve `:3996` (`_sb = (r.stderr or _rg.stderr or "").strip().split("\n")[0]`)
-  AYNI kaliptan ama bu turda BAGLANMADI, gercek vakalari HIC kosulmadi —
-  "ayni sinif" bir olcum degildir. Ayri tur.
+  🔴 GUNCELLEME (5 Eylul 2026, Onur kilidi SIK A —
+  kalem5-tarama/IS_EMRI_H9_STDERR_ISARET.md): `_kapi_h9`nin "git deposu
+  OKUNAMADI" hukmu (o zaman `hafiza.py:3996`, motor buyudukce KAYDI —
+  bugun `hafiza.py:4041`) AYNI kalibin bir uyesiydi: dubious-ownership
+  vakasinda git 4 satirlik stderr yazar (`fatal: ...` + cozum komutu),
+  motor yalniz ILK satiri basardi — cozum SESSIZCE kaybolurdu (OLCULDU:
+  kalem5-tarama/OLCUM_RAPORU_H9_STDERR.md). O satir da `_ilk_satir_
+  isaretli`'ye baglandi; asagidaki 4. ve 5. kollar (H9 POZITIF KONTROL /
+  H9 MUTANT) bunu olcer. `hafiza.py:3370` (eski `:3325`, ayni kaydis) HALA
+  KAPSAM DISIDIR — kardes kusur, AYRI dilim, AYRI kilit bekliyor; gercek
+  vakasi bu dosyada HIC kosulmadi.
 
 NE OLCER
   Sabotaj `_ilk_satir_isaretli`'yi isareti DUSUREN hale getirir (yani
@@ -59,16 +65,35 @@ NE OLCER
   gitfile_korlugu_mutanti.py'nin 9. kolundaki "hukum SARI/SINIRLI, olculen
   TESHIS METNIDIR" ayrimiyla AYNIDIR.
 
+  🔴 3. ve 4. KOL — H9 STDERR VAKASI (5 Eylul 2026 eklendi, ayni SABOTAJ
+  yeniden kullanilir — B6'nin `_ilk_satir_isaretli` govdesi PAYLASILIR,
+  cagri yeri farkli): git'in KENDI sahiplik denetimi
+  `GIT_TEST_ASSUME_DIFFERENT_OWNER=1` ile supheli hale getirilir (dosya
+  sistemine DOKUNULMAZ, chown YOK, root/sudo GEREKMEZ — h9_kesme_
+  mutanti.py'nin AYNI ilkesi). Git 4 satirlik bir `fatal: detected dubious
+  ownership...` + cozum komutu stderr'i yazar; `_kapi_h9` bunu
+  `"H9: git deposu OKUNAMADI%s"` seklinde basar. KEHANET (H8 ile AYNI
+  desen, ama N SABITLENMEZ — `_ISARET_DESENI` ANY basamak sayisini
+  kabul eder, cunku git'in TAM stderr bicimi surume gore degisebilir):
+    H9 POZITIF KONTROL : sabotajsiz motorda hukum satiri `(+N satir:
+                          stderr)` isaretini TASIR (isaret VAR).
+    H9 MUTANT           : sabotajli motorda isaret KAYBOLMALI (kusur
+                          GERI GELDI, ISIRMALI).
+  `hafiza.py:3370`daki KARDES kusur (AYNI kaliptan, `kesildi = ...`)
+  bu kollarin KAPSAMI DISINDADIR — ayri dilim, ayri kilit bekliyor.
+
 CAPA: motora KOD PARCACIGIYLA anchor atilir, satir NUMARASIYLA DEGIL —
 motor degisirse `count()!=1` ARAC KUSURU verir, YANLIS yere yamanmaz.
 
 CIKIS KODLARI (proje sozlesmesi)
-  0  IKI kolun IKISI DE BEKLENDIGI GIBI (pozitif kontrol isaretli, mutant isaretsiz)
+  0  DORT kolun DORDU DE BEKLENDIGI GIBI (pozitif kontrol isaretli, mutant
+     isaretsiz — H8 VE H9 vakalarinin ikisinde de)
   1  en az bir kol BEKLENMEDIK
   2  en az bir kol OLCULEMEDI (BEKLENMEDIK yoksa)
   3  ARAC KUSURU (sabotaj hedefi bulunamadi, kum havuzu kurulamadi)
 """
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -221,6 +246,79 @@ def _sinama(taban, etiket, ad, motor, beklenen_isaretli):
              "VAR" if beklenen_isaretli else "yok", satir.strip()))
 
 
+# --------------------------------------------------------------- H9 STDERR VAKASI
+# (kalem5-tarama/IS_EMRI_H9_STDERR_ISARET.md, Onur kilidi 5 Eylul 2026 — SIK A)
+# AYNI sabotaj (yukarida) yeniden kullanilir: `_ilk_satir_isaretli`nin govdesi
+# H8 (`kapi_yalit`) VE H9 (`_kapi_h9`) cagri yerlerinin IKISI TARAFINDAN da
+# paylasilir. Bu yuzden BURADA AYRI bir `_DUZELTILMIS`/`_SABOTAJLI` cifti YOK
+# — `_sabotajli_motor()` her ikisini de ayni anda sabote eder.
+
+_ISARET_DESENI = re.compile(r"\(\+\d+ satir: stderr\)")   # N sabitlenmez, OLCULUR
+# (H8 vakasinda N hep 3'tur ama H9'un git stderr'i FARKLI sayida satir
+# tasiyabilir — surume gore degisebilir; sabit sayi yazmak KALEM5_KESME_
+# TARAMASI.md'nin "SAYI DEGIL FORMUL YAZ" dersini ihlal ederdi.)
+
+_OLCUM_ORTAMI_SAHIPLIK = {
+    "GIT_TEST_ASSUME_DIFFERENT_OWNER": "1",   # tetikleyici (root/sudo GEREKMEZ)
+    "GIT_CONFIG_NOSYSTEM": "1",               # kuresel/sistem `safe.directory`
+    "GIT_CONFIG_GLOBAL": os.devnull,          # bagisikligi (h9_kesme_mutanti.py
+    "GIT_CONFIG_SYSTEM": os.devnull,          # ile AYNI ilke)
+}
+
+
+def _h9_kum_havuzu_kur(motor, kok):
+    """H9/dubious-ownership vakasi icin kum havuzu: git init -> `kur` (
+    `.hafizarc` olmadan `kapi` YARIDA KESILIR, ISIR OLCULMEZ) -> commit.
+    Git'in KENDI sahiplik denetimi `GIT_TEST_ASSUME_DIFFERENT_OWNER` ile
+    devreye girer (dosya sistemine DOKUNULMAZ, chown YOK, root/sudo
+    GEREKMEZ — h9_kesme_mutanti.py'nin AYNI ilkesi/gerekcesi)."""
+    os.makedirs(kok, exist_ok=True)
+    _git(kok, "init", "-q")
+    rc, c, e = _kos(motor, ["kur", "--ad", "H9", "--kok=" + kok])
+    if rc != 0:
+        raise AracKusuru("kur basarisiz (exit=%s): %s" % (rc, (c + e)[-300:]))
+    _git(kok, "add", "-A")
+    _git(kok, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "taban",
+        env=dict(os.environ, **_GIT_ORTAM))
+
+
+def _h9_satiri(stdout_metni):
+    return next((s for s in stdout_metni.splitlines()
+                 if "H9: git deposu OKUNAMADI" in s), None)
+
+
+def _sinama_h9(taban, etiket, ad, motor, beklenen_isaretli):
+    """AYRI kum havuzu (paylasilmaz). `kapi`, git'in KENDI sahiplik denetimi
+    supheli hale getirilerek (`GIT_TEST_ASSUME_DIFFERENT_OWNER=1`) kosulur.
+    KEHANET: hukum satirinda `_ISARET_DESENI` ("(+N satir: stderr)", N
+    SABITLENMEDEN) gecip gecmedigi. `stdout`/`stderr` AYRI okunur; yalniz
+    stdout'a bakilir (H8 kollarindaki ayni ilke)."""
+    alt = os.path.join(taban, etiket)
+    os.makedirs(alt, exist_ok=True)
+    kok = os.path.join(alt, "proje")
+    try:
+        _h9_kum_havuzu_kur(motor, kok)
+    except AracKusuru as e:
+        _kayit(ad, OLCULEMEDI, "kum havuzu kurulamadi: %s" % e)
+        return
+    rc, cout, cerr = _kos(motor, ["kapi", "--kok=" + kok], env=dict(_OLCUM_ORTAMI_SAHIPLIK))
+    satir = _h9_satiri(cout)
+    if satir is None:
+        _kayit(ad, OLCULEMEDI,
+              "H9 OKUNAMADI satiri stdout'ta bulunamadi (exit=%s) — "
+              "GIT_TEST_ASSUME_DIFFERENT_OWNER bu git yapisinda ETKISIZ "
+              "olabilir (surum/platform). Ham stdout kuyrugu: %s\n"
+              "      ham stderr kuyrugu: %s"
+              % (rc, cout[-500:], cerr[-500:]))
+        return
+    isaretli = _ISARET_DESENI.search(satir) is not None
+    dogru = (isaretli == beklenen_isaretli)
+    _kayit(ad, BEKLENDIGI_GIBI if dogru else BEKLENMEDIK,
+          "exit=%s | '(+N satir: stderr)' gecti mi=%s (beklenen: %s)\n      satir: %s"
+          % (rc, "VAR" if isaretli else "yok",
+             "VAR" if beklenen_isaretli else "yok", satir.strip()))
+
+
 def main():
     print("=" * 82)
     print("B6 SATIR SAYISI MUTANTI — cok satirli oldur() mesaji hukumde isaretleniyor mu?")
@@ -246,11 +344,22 @@ def main():
         except AracKusuru as e:
             _kayit("MUTANT: sabotajli motorda isaret KAYBOLMALI (ISIRMALI)",
                   OLCULEMEDI, "sabotajli motor kurulamadi: %s" % e)
+            _kayit("H9 MUTANT: sabotajli motorda isaret KAYBOLMALI (ISIRMALI, dubious-ownership)",
+                  OLCULEMEDI, "sabotajli motor kurulamadi: %s" % e)
             motor_sab = None
         if motor_sab:
             _sinama(taban, "mut",
                    "MUTANT: sabotajli motorda isaret KAYBOLMALI (ISIRMALI)",
                    motor_sab, False)
+
+        # --- H9 stderr vakasi (kalem5-tarama/IS_EMRI_H9_STDERR_ISARET.md, 5 Eylul 2026) ---
+        _sinama_h9(taban, "h9pk",
+                  "H9 POZITIF KONTROL: sabotajsiz motorda isaret VAR mi (dubious-ownership)",
+                  MOTOR, True)
+        if motor_sab:
+            _sinama_h9(taban, "h9mut",
+                      "H9 MUTANT: sabotajli motorda isaret KAYBOLMALI (ISIRMALI, dubious-ownership)",
+                      motor_sab, False)
 
         print()
         for ad, durum, ayrinti in SONUC:

@@ -4038,7 +4038,7 @@ def _kapi_h9(F, N, O, kok, y):
                 O.append("H9: git deposu var ama HENUZ COMMIT YOK — izlenirlik "
                          "OLCULEMEDI (ilk commit'ten sonra olculur)")
             else:
-                _sb = (r.stderr or _rg.stderr or "").strip().split("\n")[0]
+                _sb = _ilk_satir_isaretli((r.stderr or _rg.stderr or "").strip())
                 O.append("H9: git deposu OKUNAMADI%s" % ((": " + _sb) if _sb else ""))
     else:
         O.append("H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)")

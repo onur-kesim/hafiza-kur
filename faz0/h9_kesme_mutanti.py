@@ -80,6 +80,68 @@ NE OLCER — CIFT KOLLU (M-Y3 ile AYNI kalip; POSIX SARTI YOK, UC PLATFORMDA KAP
   esikten daha KATI bir olcut hicbir seyi korumaz, yalniz yalanci-
   kirmizi uretir — sonraki tur "guvenlik payi ekleyeyim" DEMESIN.
 
+  🔴 DUZELTME 4 (Onur kilidi 5 Eylul 2026, IS_EMRI_H9_KESME_CAPA.md — kaynak
+  capasi KALEM 1'in stderr-isaret duzeltmesiyle ESKIDI, Cowork bulut Linux
+  motor `37908e38` ile OLCTU): `hafiza.py`nin H9 dalindaki
+  `_sb = (r.stderr or _rg.stderr or "").strip().split("\n")[0]` satiri
+  `_sb = _ilk_satir_isaretli((r.stderr or _rg.stderr or "").strip())`e
+  degisti (B6 SIK beta, IS_EMRI_H9_STDERR_ISARET.md) — eski capa metni
+  dosyada ARTIK 0 kez geciyordu, sabotaj kendi muhafazasiyla ARAC KUSURU
+  verirdi (KALEM A: capa TASINDI, davranis AYNI — sabotaj hala kuyruga
+  `[:120]` ekler/cikarir, `_ilk_satir_isaretli(...)`nin KENDISI DOKUNULMAZ).
+
+  🔴 Capa tasimasi TEK BASINA YETMEDI (denendi, Cowork, 1/2 kol beklenmedik):
+  kol capasi `satir.rstrip().endswith("'")` hala satirin TEK SATIRLIK
+  oldugunu VARSAYIYORDU. `_ilk_satir_isaretli` COK SATIRLI govdenin (git'in
+  dubious-ownership stderr'i OLCULEN HER ZAMAN 4 satirdir) SONUNA
+  " (+N satir: stderr)" ekleyince satir ARTIK `'` ile degil `)` ile bitiyor
+  — M-Y3'un (olculemedi_kesme_mutanti.py) BIREBIR AYNI mayini, AYNI sinifin
+  UCUNCU ISIRISI (B6→M-Y3→h9_kesme). DUZELTME (KALEM B): M-Y3'teki
+  `_b6_isaretini_ayikla()` bu dosyaya KENDI KOPYASI olarak eklendi (Onur
+  kilidi: motordan ya da diger mutanttan IMPORT EDILMEZ — kum havuzu
+  izolasyonu ilkesi, mutant dosyalari birbirinden BAGIMSIZ kalir) — `'`
+  sinamasindan ONCE isaret AYIKLANIR, `'` sonu ISARETSIZ govde uzerinde
+  olculur. `in` KULLANILMADI (M-Y3 §2 dersi: govdede baska yerde gecen bir
+  dizgeyi `in` ile aramak mutanti SESSIZCE KOR yapar).
+
+  🔴 KOPYANIN BEDELI (KALEM C): isaret deseni artik IKI mutant dosyasinda
+  (bu dosya ve olculemedi_kesme_mutanti.py) AYRI AYRI yazili — biri
+  guncellenip digeri unutulursa SESSIZ KORLUK dogar (doktrin md.3: engellemek
+  degil GIZLENEMEZ KILMAK). `_isaret_deseni_canli_dogrula()` bu riski
+  gizlemez: deseni SABIT bir dizgeye degil, CANLI (duzeltilmis) motorun
+  urettigi GERCEK bir H9 satirina karsi sinar; desen eslesmezse `AracKusuru`
+  firlatir (main()'in ustteki try/except'i yakalar, exit 3) — sessizce
+  "isaret yok" saymaz. Desen eslesirse/H9 satiri hic uretilmezse (ortam
+  sinirlamasi) SESSIZCE gecer — bir KAPIDIR, SONUC'a kayit ACMAZ, K1'in
+  "2/2 kol" sayimini SISIRMEZ.
+
+  🔴 ESIK KAYMASI (KALEM D, sayi degil FORMUL): isaret govdenin SONUNA
+  eklendigi icin kirpilmamis mesaj uzunlugu 19 karakter (isaretin boyu,
+  " (+N satir: stderr)") UZADI — kritik kok uzunlugu (mesaj=esik donum
+  noktasi) AYNI MIKTARDA ASAGI kaydi (M-Y3'teki 121→102 kaymasinin AYNI
+  fizigi). Kisa kolun ON SART OLCUMU (my4_kisa_kol, DUZELTME 1) zaten
+  DINAMIKTIR (`_h9_mesaj_govdesi` govdeyi, isaretiyle BIRLIKTE, OLCER) —
+  kod bu yuzden DEGISMEDI, yalniz olculen deger KAYDI DEGISTI (kritik kok,
+  kisa kolun marji) — bkz. kalem5-tarama/OLCUM_RAPORU_H9_KESME_CAPA.md.
+
+  🔴 DUZELTME 5 (Onur kilidi 5 Eylul 2026, IS_EMRI_H9_KISA_TABAN_WIN.md, EK-2):
+  DUZELTME 4'un actigi eslik kaymasi (kritik kok 67→48) `_kisa_taban_ac()`'in
+  Windows dalini ISIRIYOR — o dal `/tmp` yoksa (POSIX-disi) DOGRUDAN GENEL
+  `tempfile.mkdtemp()`e duserdi, kisaltma hic DENENMEZDI. Builder'in yerel
+  Windows makinesinde OLCULDU: genel varsayilan kok ~53 karakter, kritik 48'in
+  USTUNDE ⇒ KISA KOL ÖLÇÜLEMEDİ (kusur DEGIL, ama `windows-latest` CI'da da
+  AYNI riski tasiyordu — bkz. OLCUM_RAPORU_H9_KESME_CAPA.md §3). DUZELTME:
+  `_kisa_taban_ac()`'in POSIX dali (`if os.name == "posix" ...`) BAYT-BAYT
+  DOKUNULMADI — yalniz genel-varsayilan SATIRI, CALISMA ZAMANINDA aday
+  OLCEN `_kisa_taban_ac_win()`e yonlendirildi (bkz. asagida). Adaylar
+  (RUNNER_TEMP · TEMP/TMP · bunlarin 8.3 kisa adi · zaten var olan sistem
+  gecici dizini) SABITLENMEZ, HER BIRI var/dizin/yazilabilir/OLUSACAK-kok-
+  uzunlugu icin OLCULUR; EN KISASI kazanir, kaybedenler HEMEN silinir.
+  Hicbir aday kurulamazsa GENEL `mkdtemp()`e duser — ON SART OLCUMU
+  (my4_kisa_kol, DEGISMEDI) o zaman DURUSTCE OLCULEMEDI der; "basarili gibi"
+  hicbir sey GOSTERILMEZ. Kazanan aday + kok uzunlugu kayda YAZILIR (KALEM 2)
+  — bir sonraki tur kodu okumadan CIKTIDAN okuyabilsin diye.
+
 URETIM TARIFI (SIK EPSILON, 19 Agu 2026 Onur kilidi — birebir OLCULDU)
   git init + commit -> `kur` -> defterler commit'lenir -> `kapi`, git'in KENDI
   sahiplik denetimi `GIT_TEST_ASSUME_DIFFERENT_OWNER=1` ile tetiklenmis olarak
@@ -107,11 +169,14 @@ CAPA (H16-KESME-DUZELTME-BRIEF.md §5 dersi): motora KOD PARCACIGIYLA anchor
 atilir, satir NUMARASIYLA DEGIL.
 
 CIKIS KODLARI (proje sozlesmesi)
-  0  iki kolun IKISI DE BEKLENDIGI GIBI (KISA icin 'beklenen' KACIStir)
+  0  iki kolun IKISI DE BEKLENDIGI GIBI (KISA icin 'beklenen' KACIStir) VE
+     isaret deseni CANLI motorla eslesiyor (KALEM C, DUZELTME 4)
   1  en az bir kol BEKLENMEDIK cikti verdi
   2  OLCULEMEDI (BEKLENMEDIK yoksa) — tetikleyici mesaji uretmediyse DAHIL
-  3  ARAC KUSURU (sabotaj hedefi bulunamadi, kum havuzu kurulamadi)
+  3  ARAC KUSURU (sabotaj hedefi bulunamadi, kum havuzu kurulamadi, isaret
+     deseni CANLI motorun urettigiyle eslesmiyor)
 """
+import ctypes
 import os
 import re
 import shutil
@@ -152,11 +217,16 @@ def _kayit(ad, durum, ayrinti):
 
 
 # --------------------------------------------------------------- SABOTAJ (D2)
-# KALEM 1'in TERSİ (D2): duzeltilmis motora `[0][:120]` kesmesini GERI
-# enjekte eder. `.split("\n")[0]`nin KENDISI DOKUNULMAZ (IS_EMRI_SIK_A.md §2)
-# — yalniz kuyruktaki `[:120]` eklenir/cikarilir.
-_DUZELTILMIS = '_sb = (r.stderr or _rg.stderr or "").strip().split("\\n")[0]'
-_SABOTAJLI = '_sb = (r.stderr or _rg.stderr or "").strip().split("\\n")[0][:120]'
+# KALEM 1'in TERSİ (D2): duzeltilmis motora `[:120]` kesmesini GERI enjekte
+# eder. 🔴 CAPA TASINDI (Onur kilidi 5 Eylul 2026, IS_EMRI_H9_KESME_CAPA.md
+# KALEM A): KALEM 1 hafiza.py'nin bu satirini `.split("\n")[0]`den
+# `_ilk_satir_isaretli(...)`e degistirdi (B6 SIK beta) — eski capa metni
+# ARTIK 0 kez geciyordu, sabotaj kendi muhafazasiyla ARAC KUSURU verirdi
+# (Cowork bulut Linux, motor `37908e38`, OLCULDU). `_ilk_satir_isaretli(...)`
+# cagrisinin KENDISI DOKUNULMAZ — yalniz kuyruktaki `[:120]` eklenir/cikarilir
+# (davranis AYNI, hedef metin GUNCEL).
+_DUZELTILMIS = '_sb = _ilk_satir_isaretli((r.stderr or _rg.stderr or "").strip())'
+_SABOTAJLI = '_sb = _ilk_satir_isaretli((r.stderr or _rg.stderr or "").strip())[:120]'
 
 
 def _sabotajli_motor(hedef_dizin):
@@ -274,6 +344,31 @@ def _sabotaj_esigi():
     return int(m.group(1))
 
 
+# --------------------------------------------------------------- B6 ISARETI (KALEM B)
+# (IS_EMRI_H9_KESME_CAPA.md KALEM B, Onur kilidi 5 Eylul 2026): olculemedi_
+# kesme_mutanti.py._b6_isaretini_ayikla ile AYNI mantik — KENDI KOPYASI.
+# Onur kilidi: motordan ya da diger mutanttan IMPORT EDILMEZ, ortak faz0
+# modulu ACILMAZ (kum havuzu izolasyonu ilkesi: mutant dosyalari birbirinden
+# BAGIMSIZ kalir). `_ilk_satir_isaretli` (hafiza.py) COK SATIRLI govdenin
+# SONUNA " (+N satir: stderr)" ekler; bu ayiklanmadan `'` bitis sinamasi
+# YAPILAMAZ (M-Y3 mayininin AYNISI, bkz. DUZELTME 4).
+_B6_ISARET = r"\s*\(\+\d+ satir: stderr\)$"
+
+
+def _b6_isaretini_ayikla(govde):
+    """B6'nin hukum satirinin SONUNA ekledigi " (+N satir: stderr)" isaretini
+    AYIKLAR (varsa). Isaret AYRI bir katmandir — kirpilma olcumu ISARETSIZ
+    govde uzerinde yapilir; boylece B6 (satiri UZATAN) ile bu capa (satirin
+    SONUNU olcen) birbirinin KORLUGUNU URETMEZ. `"'" in govde` YAZILMAZ:
+    kok yolu govdenin ORTASINDA da tek tirnak tasiyabilir (M-Y3 §2 dersiyle
+    AYNI: `in` govdede baska yerde gecen bir diziyi yakalar, mutanti SESSIZCE
+    KOR yapar) — yalniz SON, regex ile ayiklanip/olculur.
+
+    Doner: (isaretsiz_govde, isaret_ayiklandi_mi: bool)."""
+    yeni, n = re.subn(_B6_ISARET, "", govde, count=1)
+    return yeni, (n > 0)
+
+
 def _my4_kol(taban, ad, hedef_uzunluk, beklenen_kirpilmamis):
     try:
         esik = _sabotaj_esigi()
@@ -308,12 +403,15 @@ def _my4_kol(taban, ad, hedef_uzunluk, beklenen_kirpilmamis):
               "(surum/platform). SESSIZ GECIS DEGIL, OLCULEMEDI. Ham cikti kuyrugu:\n%s"
               % (len(kok), rc, c[-500:]))
         return
-    kirpilmamis = satir.rstrip().endswith("'")
+    govde, isaret_ayiklandi = _b6_isaretini_ayikla(satir.rstrip())
+    kirpilmamis = govde.endswith("'")
     dogru = (kirpilmamis == beklenen_kirpilmamis)
     _kayit(ad, BEKLENDIGI_GIBI if dogru else BEKLENMEDIK,
-          "kok uzunlugu=%d | sabotajli motor ([:%d] geri) | satir kapanis tirnagi "
-          "(') ile bitiyor (kirpilmamis)=%s (beklenen: %s)\n      satir: %s"
-          % (len(kok), esik, "VAR" if kirpilmamis else "yok",
+          "kok uzunlugu=%d | sabotajli motor ([:%d] geri) | B6 isareti ayiklandi "
+          "mi=%s | isaretsiz govde kapanis tirnagi (') ile bitiyor "
+          "(kirpilmamis)=%s (beklenen: %s)\n      satir: %s"
+          % (len(kok), esik, "VAR" if isaret_ayiklandi else "yok",
+             "VAR" if kirpilmamis else "yok",
              "VAR" if beklenen_kirpilmamis else "yok", satir.strip()))
 
 
@@ -331,6 +429,116 @@ def my4_uzun_kol(taban):
         _kayit("M-Y4 UZUN KOL", OLCULEMEDI, str(e))
 
 
+_SON_KISA_TABAN_KAYNAGI = None
+# IS_EMRI_H9_KISA_TABAN_WIN.md KALEM 2: `_kisa_taban_ac_win()`nin KAZANDIGI
+# adayin ETIKETINI + kok uzunlugunu buraya yazar. Salt-okunur bir yan-kanal —
+# `_kisa_taban_ac()`nin DAVRANISINI ETKILEMEZ, yalniz KAYIT icin okunur
+# (`_kisa_taban_kaynagi()` araciligiyla). POSIX dalina (dokunulmayan) hicbir
+# YAZMA EKLENMEDI — o durumda kaynak DONEN YOLUN ONEKINDEN cikarilir.
+
+
+def _win_8_3_kisa_ad(yol):
+    """Windows 8.3 kisa ad (`GetShortPathNameW`) — bazi birimlerde/dizinlerde
+    KAPALI olabilir (`fsutil 8dot3name`), yol MEVCUT OLMAYABILIR, ya da bu
+    islev POSIX'te HIC YOK (`ctypes.windll` yalniz Windows'ta bulunur).
+    Hicbir HALDE istisna DISARI SIZMAZ — basarisizlikta None doner, aday
+    SESSIZCE DUSER (IS_EMRI_H9_KISA_TABAN_WIN.md KALEM 1: "cagrinin basarisiz
+    olabilecegini hesaba kat")."""
+    try:
+        buf = ctypes.create_unicode_buffer(260)
+        n = ctypes.windll.kernel32.GetShortPathNameW(yol, buf, len(buf))
+        if n == 0 or n > len(buf):
+            return None
+        return buf.value
+    except Exception:
+        return None
+
+
+def _win_yazilabilir_mi(dizin):
+    """Aday dizinin GERCEKTEN yazilabilir olup olmadigini DENER (yaz-sil) —
+    varligi/dizin olmasi YETMEZ (ornek: sistem gecici dizini yonetici
+    GEREKTIREBILIR). Basarisizlikta istisna FIRLATILMAZ, False doner — aday
+    sessizce DUSER, hata FIRLATILMAZ (IS_EMRI_H9_KISA_TABAN_WIN.md KALEM 1).
+    Denemenin KENDISI VAR OLAN dizinin icinde bir DOSYADIR — KISIT 4 (yeni
+    ust duzey dizin ACILMAZ) burada ihlal EDILMEZ: yeni dizin YOK, VAR OLAN
+    dizinin icinde acilip HEMEN silinen bir dosya var."""
+    try:
+        fd, yol = tempfile.mkstemp(prefix=".h16km_yazilabilir_", dir=dizin)
+        os.close(fd)
+        os.remove(yol)
+        return True
+    except OSError:
+        return False
+
+
+def _kisa_taban_ac_win():
+    """IS_EMRI_H9_KISA_TABAN_WIN.md KALEM 1 (Onur kilidi 5 Eylul 2026):
+    `_kisa_taban_ac()`'in POSIX-disi (esas olarak Windows) dali icin kisa
+    taban ADAYLARI CALISMA ZAMANINDA OLCULUR — hicbir aday/sira SABITLENMEZ:
+      - `RUNNER_TEMP` (GitHub Actions Windows runner'i verir — VAR OLDUGU
+        VARSAYILMAZ, OLCULUR)
+      - `TEMP` / `TMP` — VE bunlarin 8.3 KISA ADI (`_win_8_3_kisa_ad`; cagri
+        basarisiz olabilir, o zaman bu tek aday sessizce DUSER)
+      - zaten VAR OLAN sistem gecici dizini (`%SystemRoot%\\Temp`) — YENI
+        YARATILMAZ, yalniz ZATEN VARSA denenir (KISIT 4)
+    Her aday icin: var mi -> dizin mi -> GERCEKTEN yazilabilir mi (`_win_
+    yazilabilir_mi`, deneme yaz-sil) -> `tempfile.mkdtemp(dir=aday)` ile
+    OLUSACAK kok KAC KARAKTER — TAHMIN EDILMEZ, GERCEKTEN acilir (rastgele
+    son ek uzunlugu CPython surumune gore degisebilecegi VARSAYILMAZ).
+    Kaybeden adaylarin actigi dizinler HEMEN silinir (KALEM 3: kullanicinin
+    makinesinde dizin BIRAKILMAZ). Kazanan `_SON_KISA_TABAN_KAYNAGI`ya
+    yazilir (KALEM 2) ve DONDURULUR.
+
+    🔴 Hicbir aday kurulamazsa (hepsi yok/yazilamiyor/mkdtemp basarisiz)
+    GENEL `tempfile.mkdtemp(prefix="h16km_")`e DUSULUR — bu durumda ON SART
+    OLCUMU (my4_kisa_kol, DEGISMEDI) kok'un esigin USTUNDE oldugunu dogru
+    sekilde ÖLÇÜLEMEDİ olarak raporlar; burada "basarili gibi" hicbir sey
+    GOSTERILMEZ (KISIT, KALEM 1 sonu: "Ön şartı 'sağlanmış gibi' gösterecek
+    hiçbir şey yapılmaz")."""
+    global _SON_KISA_TABAN_KAYNAGI
+    etiketli_adaylar = []
+    v = os.environ.get("RUNNER_TEMP")
+    if v:
+        etiketli_adaylar.append(("RUNNER_TEMP", v))
+    for ad in ("TEMP", "TMP"):
+        v = os.environ.get(ad)
+        if v:
+            etiketli_adaylar.append((ad, v))
+            kisa = _win_8_3_kisa_ad(v)
+            if kisa and os.path.normcase(os.path.normpath(kisa)) != \
+                    os.path.normcase(os.path.normpath(v)):
+                etiketli_adaylar.append(("%s (8.3 kisa ad)" % ad, kisa))
+    sistem_root = os.environ.get("SystemRoot") or os.environ.get("SYSTEMROOT")
+    if sistem_root:
+        etiketli_adaylar.append(("SystemRoot\\Temp", os.path.join(sistem_root, "Temp")))
+
+    gorulen = set()
+    kazanan = None   # (uzunluk, yol, etiket)
+    for etiket, taban in etiketli_adaylar:
+        anahtar = os.path.normcase(os.path.normpath(taban))
+        if anahtar in gorulen:
+            continue
+        gorulen.add(anahtar)
+        if not os.path.isdir(taban) or not _win_yazilabilir_mi(taban):
+            continue
+        try:
+            yol = tempfile.mkdtemp(prefix="h16km_", dir=taban)
+        except OSError:
+            continue
+        if kazanan is None or len(yol) < kazanan[0]:
+            if kazanan is not None:
+                shutil.rmtree(kazanan[1], ignore_errors=True)
+            kazanan = (len(yol), yol, etiket)
+        else:
+            shutil.rmtree(yol, ignore_errors=True)
+
+    if kazanan is not None:
+        _SON_KISA_TABAN_KAYNAGI = "%s (kok=%d)" % (kazanan[2], kazanan[0])
+        return kazanan[1]
+    _SON_KISA_TABAN_KAYNAGI = "genel mkdtemp() varsayilani (hicbir aday kurulamadi)"
+    return tempfile.mkdtemp(prefix="h16km_")
+
+
 def _kisa_taban_ac():
     """KISA KOL icin GENEL `mkdtemp` yerine KISA bir taban acar (20 Agu 2026
     ikinci duzeltme, Onur kilidi SIK (a) — kisa tabani KUR). POSIX'te
@@ -346,14 +554,33 @@ def _kisa_taban_ac():
     macos-latest'te SUCCESS ile DOGRULADI. Bu yuzden kisa taban ON SART
     OLCUMUNU GEREKSIZ KILMAZ — ölçüm hala OTORITEDIR, kisa taban yalnizca
     cogu ortamda on sartin KENDILIGINDEN saglanmasini kolaylastiran bir
-    on-hazirliktir. `/tmp` yoksa (POSIX-disi/Windows) GENEL varsayilana
-    duser."""
+    on-hazirliktir.
+
+    🔴 POSIX-disi (esas olarak Windows) dal 5 Eylul 2026'da (IS_EMRI_H9_
+    KISA_TABAN_WIN.md, EK-2) GENISLETILDI — asagidaki POSIX `if` blogu
+    BAYT-BAYT DOKUNULMADI (K5), yalniz eski "GENEL varsayilana duser" satiri
+    `_kisa_taban_ac_win()`'e yonlendirildi: o fonksiyon Windows'a ozgu
+    adaylari (RUNNER_TEMP/TEMP/TMP/8.3/sistem gecici dizini) CALISMA
+    ZAMANINDA olcup EN KISASINI secer (bkz. `_kisa_taban_ac_win` docstring'i).
+    `/tmp` yoksa (POSIX-disi/Windows) artik KOR bir GENEL varsayilana degil,
+    OLCULEN bu adaylara duser; hicbiri kurulamazsa GENEL varsayilana duser."""
     if os.name == "posix" and os.path.isdir("/tmp"):
         try:
             return tempfile.mkdtemp(prefix="h16km_", dir="/tmp")
         except OSError:
             pass
-    return tempfile.mkdtemp(prefix="h16km_")
+    return _kisa_taban_ac_win()
+
+
+def _kisa_taban_kaynagi(kisa_taban):
+    """KAYIT icin salt-okunur bir ETIKET (IS_EMRI_H9_KISA_TABAN_WIN.md
+    KALEM 2) — `_kisa_taban_ac()`'in DAVRANISINI ETKILEMEZ. POSIX dalina
+    (dokunulmayan) hicbir yazma EKLENMEDIGI icin o durumda kaynak, DONEN
+    YOLUN ONEKINDEN cikarilir (`/tmp` ile basliyorsa); Windows dalinda
+    `_kisa_taban_ac_win()`'in yazdigi `_SON_KISA_TABAN_KAYNAGI` OKUNUR."""
+    if kisa_taban.replace("\\", "/").startswith("/tmp/"):
+        return "/tmp (POSIX)"
+    return _SON_KISA_TABAN_KAYNAGI or "bilinmiyor"
 
 
 def my4_kisa_kol():
@@ -381,13 +608,25 @@ def my4_kisa_kol():
         OLCULEMEDI'ye ceviriyordu — sabotaj GERCEKTE kirpmazdi. On sart
         GURULTUSUZ oldugu icin (sabotajin AYNI kokte AYNI mesaji, tek
         fark kesmenin kendisi) pay hicbir seyi korumuyordu; simdi
-        `mesaj_uzunlugu > esik` FIZIGIN KENDISI."""
+        `mesaj_uzunlugu > esik` FIZIGIN KENDISI.
+    (4) 5 Eylul 2026 (IS_EMRI_H9_KESME_CAPA.md KALEM B/D): `mesaj_uzunlugu`
+        ARTIK B6'nin isaretini (" (+N satir: stderr)", 19 karakter) DE
+        SAYAR — `_h9_mesaj_govdesi(satir0)` govdeyi isaretiyle BIRLIKTE
+        oker, formul (2)'deki gibi DEGISMEDI; yalniz kritik kok uzunlugu bu
+        19 karakter kadar ASAGI kaydi (kalem5-tarama/OLCUM_RAPORU_H9_KESME_
+        CAPA.md'de OLCULDU, buraya SAYI YAZILMAZ). KEHANET sinamasi da
+        ARTIK isareti `_b6_isaretini_ayikla()` ile AYIKLAYIP govde uzerinde
+        `'` bitisine bakar (asagida) — DUZELTME 4/KALEM B, M-Y3 ile AYNI
+        mayinin AYNI dersi."""
     ad = "M-Y4 KISA KOL (KOR KOL): kisa kokte AYNI sabotaj GORUNMEZ KALMALI (KACMASI BEKLENEN)"
     try:
         kisa_taban = _kisa_taban_ac()
     except OSError as e:
         _kayit(ad, OLCULEMEDI, "kisa taban acilamadi: %s" % e)
         return
+    # KALEM 2 (IS_EMRI_H9_KISA_TABAN_WIN.md): hangi adayin kazandigi + kok
+    # uzunlugu — bir sonraki tur bunu KODU OKUMADAN, CIKTIDAN okuyabilsin.
+    kisa_taban_kaynagi = _kisa_taban_kaynagi(kisa_taban)
     try:
         alt = os.path.join(kisa_taban, "k")
         os.makedirs(alt, exist_ok=True)
@@ -397,7 +636,8 @@ def my4_kisa_kol():
             esik = _sabotaj_esigi()
             _kum_havuzu_kur(MOTOR, kok)
         except AracKusuru as e:
-            _kayit(ad, OLCULEMEDI, "on sart hazirlanamadi: %s" % e)
+            _kayit(ad, OLCULEMEDI, "on sart hazirlanamadi (kisa taban kaynagi=%s): %s"
+                  % (kisa_taban_kaynagi, e))
             return
 
         # --- ON SART OLCUMU: duzeltilmis (sabotajsiz) motorla BIR KEZ kos -----
@@ -422,9 +662,9 @@ def my4_kisa_kol():
             _kayit(ad, OLCULEMEDI,
                   "ON SART SAGLANMIYOR (bu ortamda kisa kol OLCULEMEZ — kusur "
                   "BULGUSU DEGIL): kirpilmamis H9 mesaj uzunlugu=%d > esik=%d. "
-                  "kok uzunlugu=%d, kok=%s\n"
+                  "kisa taban kaynagi=%s | kok uzunlugu=%d, kok=%s\n"
                   "      ham (sabotajsiz) satir: %s"
-                  % (mesaj_uzunlugu, esik, len(kok), kok,
+                  % (mesaj_uzunlugu, esik, kisa_taban_kaynagi, len(kok), kok,
                      satir0.strip()))
             return
 
@@ -444,16 +684,70 @@ def my4_kisa_kol():
                   "exit=%s) — on sart olcumunde VARDI, sabotajli kosumda YOK: "
                   "tutarsizlik. Ham cikti kuyrugu:\n%s" % (len(kok), rc, c[-500:]))
             return
-        kirpilmamis = satir.rstrip().endswith("'")
+        govde, isaret_ayiklandi = _b6_isaretini_ayikla(satir.rstrip())
+        kirpilmamis = govde.endswith("'")
         _kayit(ad, BEKLENDIGI_GIBI if kirpilmamis else BEKLENMEDIK,
-              "kisa taban=%s | ON SART OLCULDU: kirpilmamis mesaj uzunlugu=%d "
-              "(esik=%d) | sabotajli motor ([:%d] geri) "
-              "| satir kapanis tirnagi (') ile bitiyor (kirpilmamis)=%s "
+              "kisa taban=%s | kisa taban kaynagi=%s | ON SART OLCULDU: "
+              "kirpilmamis mesaj uzunlugu=%d (esik=%d) | sabotajli motor "
+              "([:%d] geri) | B6 isareti ayiklandi mi=%s | isaretsiz govde "
+              "kapanis tirnagi (') ile bitiyor (kirpilmamis)=%s "
               "(beklenen: VAR)\n      kok uzunlugu=%d, kok=%s"
-              % (kisa_taban, mesaj_uzunlugu, esik, esik,
+              % (kisa_taban, kisa_taban_kaynagi, mesaj_uzunlugu, esik, esik,
+                 "VAR" if isaret_ayiklandi else "yok",
                  "VAR" if kirpilmamis else "yok", len(kok), kok))
     finally:
         shutil.rmtree(kisa_taban, ignore_errors=True)
+
+
+# --------------------------------------------------------------- KALEM C: CANLI DOGRULAMA
+def _isaret_deseni_canli_dogrula(taban):
+    """KALEM C (IS_EMRI_H9_KESME_CAPA.md, Onur kilidi 5 Eylul 2026): isaret
+    deseni (`_B6_ISARET`) artik IKI mutant dosyasinda (bu dosya ve
+    olculemedi_kesme_mutanti.py) AYRI AYRI yazili — biri guncellenip digeri
+    unutulursa SESSIZ KORLUK dogar (biçim degisirse hangi kollar AYNI ANDA
+    duser: KISA KOL, UZUN KOL ve M-Y3'un uc kolunun TAMAMI). Kum havuzu
+    PAYLASILMAZ ilkesine uyup KENDI izole kokunde CANLI, duzeltilmis
+    (sabotajsiz) motoru kosturur ve deseni SABIT bir dizgeye degil, motorun
+    GERCEKTEN urettigi bir H9 satirina karsi sinar.
+
+    - Kum havuzu kurulamazsa / H9 satiri HIC uretilmezse (dubious-ownership
+      bu git yapisinda/platformda tetiklenmedi): SESSIZCE GECER, SONUC'a
+      KAYIT ACMAZ — ayni ortam sinirlamasi zaten my4_uzun_kol/my4_kisa_kol
+      TARAFINDAN KENDI OLCULEMEDI kayitlarinda raporlanir; burada TEKRAR
+      raporlamak K1'in "2/2 kol" sayimini ANLAMSIZCA sisirir (bu fonksiyon
+      bir KOL DEGIL, bir KAPIDIR).
+    - H9 satiri URETILDI (yani dubious-ownership vakasi GERCEKTEN tetiklendi)
+      ama isaret YOKSA: git'in dubious-ownership stderr'i OLCULEN (dosya
+      basi URETIM TARIFI) HER ZAMAN COK SATIRLIDIR (4 satir) — duzeltilmis
+      motorda `_ilk_satir_isaretli` govdeye isareti EKLEMIS OLMALIYDI.
+      Eklemediyse desen/motor UYUSMUYOR demektir (kopya BAYATLADI) —
+      `AracKusuru` FIRLATILIR (main()'in ustteki try/except'i yakalar,
+      exit 3): sessizce "isaret yok" SAYILMAZ (K5 kehaneti: deseni kasten
+      boz, kos, ARAC KUSURU gor)."""
+    alt = os.path.join(taban, "k4")
+    os.makedirs(alt, exist_ok=True)
+    kok = os.path.join(alt, "kk")
+    os.makedirs(kok, exist_ok=True)
+    try:
+        _kum_havuzu_kur(MOTOR, kok)
+    except AracKusuru:
+        return   # ortam kum havuzu kuramadi — my4_uzun_kol/my4_kisa_kol AYNI
+                 # sinirlamayi KENDI kollarinda OLCULEMEDI olarak raporlar.
+    rc, c = _kos(MOTOR, ["kapi", "--kok=" + kok], env=_sahipligi_supheli_kil())
+    satir = _h9_satiri(c)
+    if satir is None:
+        return   # GIT_TEST_ASSUME_DIFFERENT_OWNER ETKISIZ (surum/platform) —
+                 # ayni sinirlama my4_uzun_kol/my4_kisa_kol'da AYRICA OLCULUR.
+    govde = _h9_mesaj_govdesi(satir)
+    _, isaret_var = _b6_isaretini_ayikla(govde.rstrip())
+    if not isaret_var:
+        raise AracKusuru(
+            "isaret deseni (_B6_ISARET) CANLI motorun urettigi H9 satiriyla "
+            "eslesmedi — 'H9: git deposu OKUNAMADI' vakasinin stderr'i bu git "
+            "surumunde/platformda TEK SATIRA mi dustu, yoksa _ilk_satir_isaretli "
+            "isaretin BICIMINI mi degistirdi? Desen (bu dosyada VE olculemedi_"
+            "kesme_mutanti.py'de AYRI yazili) GUNCELLENMELI. Ham satir: %s"
+            % satir.strip())
 
 
 def main():
@@ -469,8 +763,17 @@ def main():
         print("\nARAC KUSURU: gecici dizin acilamadi: %s" % e)
         return 3
     try:
-        my4_uzun_kol(taban)
-        my4_kisa_kol()
+        try:
+            # KALEM C (IS_EMRI_H9_KESME_CAPA.md): isaret deseni CANLI motora
+            # karsi ONCE dogrulanir — desen bayatsa asagidaki iki kol da
+            # YANLIS (BEKLENDIGI-GIBI/BEKLENMEDIK degil, cop) sonuc uretebilir;
+            # erken ARAC KUSURU bunu SESSIZCE gecirmez.
+            _isaret_deseni_canli_dogrula(taban)
+            my4_uzun_kol(taban)
+            my4_kisa_kol()
+        except AracKusuru as e:
+            print("\nARAC KUSURU: %s" % e)
+            return 3
         print()
         for ad, durum, ayrinti in SONUC:
             print("  %-16s %s" % (durum, ad))
