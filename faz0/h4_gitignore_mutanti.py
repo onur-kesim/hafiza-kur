@@ -31,12 +31,28 @@ NE OLCER
           O'ya TASIMAZ (ayni agacta kapi hala FAIL/exit 1).
       (4) IZLENEN DOSYA KORUNUR: `.gitignore`'da OLMAYAN kardes dosya (ayni
           dizinde) havuzda KALIR — dosya suzgeci KOMSU dosyalari silahsizlandirmaz.
+  KAPI-E (besli-paket IS_EMRI_2EK_KOLU.md KALEM 1, 6 Eyl 2026, Onur kilidi
+      22:4x — F/O AYRIMI, AYRI KOL): KAPI-D tek basina IKI ekseni birden
+      tasiyordu (`rapor.log=OLU_ACIKLAMASIZ · gercek.md=YOL_TUTMUYOR`) ve KALEM
+      B'nin mutant olcutu (3) "2-EK KORUNUR" icin AYRI kol YOKTU — ORTUSEN
+      TESPIT KORLUGU (bu paket boyunca IKINCI kez: KALEM 2'nin dosya ekseni ve
+      `gitfile` capasindan sonra). AYNI agacta (`h_ignore_dosya`), KAPI-D'nin
+      iki iddiasini TEKRARLAMADAN, F/O ayrimini olcer:
+      - dosya-tabanli beyan (`belgeler/rapor.log`) F'de KALIR, O'ya KAYMAZ.
+      - dizin-tabanli beyan (`.git/index.lock`) AYNI kosumda O'DA GORUNUR.
+      Ikisi tek agacta yan yana olculur ki kolun NEYI ayirt ettigi gizlenemesin.
+      MUTANT (M-3): 2-EK'in "ilk bilesen" (dizin siniri) ayrimi, DOSYA ADI
+      (basename) uzerinden yapilan bir esleme ile BOZULUR — boyle bir
+      karisiklikta `belgeler/rapor.log`, GERCEKTEN yoksayilan `notlar/
+      rapor.log` ile SADECE ADLARI ORTAK oldugu icin ayirt edilemez olur ve
+      YANLISLIKLA O'ya kayar (gercek bir OLU BAGLANTI GIZLENIR). Pozitif
+      kontrol: bugunku (duzeltmeden onceki) motorda KAPI-E YESIL, M-3 ISIRIR.
 
 NE OLCMEZ
   Performans (`check-ignore` toplu/tek surec) BURADA olculmez — davranissal
   DEGIL, uygulama detayidir; kod incelemesiyle dogrulanir.
 
-CIKIS KODU  0 dort kapi da temiz VE iki mutant da ISIRDI · 1 kapi kirmizi / mutant KACTI
+CIKIS KODU  0 bes kapi da temiz VE uc mutant da ISIRDI · 1 kapi kirmizi / mutant KACTI
             2 OLCULEMEDI (git yok, motor okunamadi, senaryo kurulamadi)
 """
 import io
@@ -153,8 +169,14 @@ def hal_kur(motor, ad, tip, taban):
         _dosya(kok, "notlar/rapor.log", "gizli log\n")
         _dosya(kok, "notlar/gercek.md", "gercek not\n")
         _commit_et(kok)      # rapor.log yoksayili oldugu icin commit'e GIRMEZ
+        # besli-paket IS_EMRI_2EK_KOLU.md KALEM 1 (6 Eyl 2026, Onur kilidi 22:4x):
+        # AYNI agacta DIZIN-tabanli bir beyan da eklenir (`.git/index.lock` —
+        # gercek Tuzak Avcisi vakasinin KUCUK OLCEGI). KAPI-E ikisini YAN YANA
+        # olcer: dosya-tabanli beyan F'de KALMALI, dizin-tabanli beyan O'DA
+        # GORUNMELI — kolun NEYI ayirt ettigi tek agacta gizlenemez.
         _ekle(kok, ["Olu baglanti denemesi: `belgeler/rapor.log`.",
-                    "Izlenen dosya beyani: `belgeler/gercek.md`."])
+                    "Izlenen dosya beyani: `belgeler/gercek.md`.",
+                    "Havuz disi dizin denemesi: `.git/index.lock`."])
     else:
         raise Kurulamadi("bilinmeyen hal tipi: %s" % tip)
     return kok
@@ -317,6 +339,34 @@ def main():
                      "siniflandirmasi %r — havuzdan haric tutulmus olabilir (dosya suzgeci "
                      "komsuyu da siliyor)" % gercek_sinif)
 
+        # ------------------------------------------------------------- KAPI-E
+        # besli-paket IS_EMRI_2EK_KOLU.md KALEM 1 (6 Eyl 2026, Onur kilidi
+        # 22:4x): KAPI-D tek basina IKI ekseni birden tasiyordu (dosya-ekseni
+        # HAVUZA GIRME + izlenen kardes) ve KALEM B'nin mutant olcutu (3)
+        # "2-EK KORUNUR" icin AYRI kol yoktu — ORTUSEN TESPIT KORLUGU. KAPI-E
+        # AYNI agacta (h_ignore_dosya) F/O ayrimini AYRICA, KAPI-D'nin iki
+        # iddiasini TEKRARLAMADAN olcer: dosya-tabanli beyan F'de KALIR (O'ya
+        # KAYMAZ), dizin-tabanli beyan (`.git/index.lock`) AYNI kosumda O'DA
+        # GORUNUR — kolun neyi ayirt ettigi tek agacta GIZLENEMEZ.
+        lock_sinif_F = "[H4] OLU BAGLANTI: belgeler/rapor.log" in cikti
+        rapor_O_da_mi = re.search(r"\?\s*H4:\s*belgeler/rapor\.log\b", cikti) is not None
+        lock_O_da_mi = re.search(r"\?\s*H4:\s*\.git/index\.lock\b.*OLCULEMEDI", cikti) is not None
+        lock_F_de_mi = "[H4] OLU BAGLANTI: .git/index.lock" in cikti
+        print("  KAPI-E F/O ayrimi          : rapor.log F=%s/O=%s · .git/index.lock F=%s/O=%s"
+              % (lock_sinif_F, rapor_O_da_mi, lock_F_de_mi, lock_O_da_mi))
+        if not lock_sinif_F:
+            b.append("KAPI-E: 'belgeler/rapor.log' F listesinde YOK (2-EK yanlislikla "
+                     "dosya-tabanli beyani da O'ya kaydirmis olabilir)")
+        if rapor_O_da_mi:
+            b.append("KAPI-E: 'belgeler/rapor.log' O listesinde DE GORUNUYOR — "
+                     "yoksayilan DOSYA'nin varligi beyani F'den O'ya TASIMIS")
+        if not lock_O_da_mi:
+            b.append("KAPI-E: '.git/index.lock' (dizin tabanli) O'da GORUNMUYOR — "
+                     "AYNI kosumda kontrol grubu olcemedi")
+        if lock_F_de_mi:
+            b.append("KAPI-E: '.git/index.lock' YANLISLIKLA F listesinde — "
+                     "kapi oraya HIC BAKMADIGI halde 'hicbir yerde yok' diyor")
+
         for x in b:
             print("      ! %s" % x)
         if b:
@@ -386,11 +436,60 @@ def main():
                   "siniflandirmasi %r — kapi bunu HIC OLCMUYOR)" % m2sinif)
             kacan.append("M-2")
 
+        # M-3 (besli-paket IS_EMRI_2EK_KOLU.md KALEM 1, MUTANT madde d): 2-EK'in
+        # DIZIN sinirini (ilk bilesen) yok sayip DOSYA ADI (basename) uzerinden
+        # esleyen bir "TAM AD" karsilastirmasina bozulur. Boyle bir karisiklikta
+        # `belgeler/rapor.log` (baska bir dizinde, ama AYNI ADLA anilan) ile
+        # `notlar/rapor.log` (GERCEKTEN yoksayilan) ayirt edilemez olur ve ilki
+        # YANLISLIKLA O'ya kayar — gercek bir OLU BAGLANTI bulgusu GIZLENIR.
+        # `_h4_havuz`in imzasi/cagri yeri DEGISMEZ; motor DEGISMEZ (yalniz bu
+        # dosyada, gecici olarak, bellekte sokulur).
+        ANKOR3 = ('        _haric = _H4_HARIC_SON[0]\n'
+                  '        for _p in [p for p in eksik if p.split("/", 1)[0] in _haric]:\n'
+                  '            O.append("H4: %s havuz disinda (yoksayilan dizin) — OLCULEMEDI" % _p)\n'
+                  '        eksik = [p for p in eksik if p.split("/", 1)[0] not in _haric]\n')
+        YENI3 = ('        _haric = _H4_HARIC_SON[0]\n'
+                  '        _haric_ad = {h.rsplit("/", 1)[-1] for h in _haric}  '
+                  '# MUTANT: ilk bilesen yerine TAM AD (basename)\n'
+                  '        for _p in [p for p in eksik if p.rsplit("/", 1)[-1] in _haric_ad]:\n'
+                  '            O.append("H4: %s havuz disinda (yoksayilan dizin) — OLCULEMEDI" % _p)\n'
+                  '        eksik = [p for p in eksik if p.rsplit("/", 1)[-1] not in _haric_ad]\n')
+        n3 = s.count(ANKOR3)
+        if n3 != 1:
+            print("  M-3 2-EK ayrimi ilk-bilesen->AD    OLCULEMEDI: capa %d yerde gecti "
+                  "(1 olmali)" % n3)
+            print(CIZGI)
+            print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
+            return 2
+        metin3 = s.replace(ANKOR3, YENI3, 1)
+        try:
+            compile(metin3, "<mutant3>", "exec")
+        except SyntaxError as e:
+            print("  M-3 2-EK ayrimi ilk-bilesen->AD    OLCULEMEDI: sabotajli motor "
+                  "derlenmiyor: %s" % e)
+            print(CIZGI)
+            print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
+            return 2
+        mdir3 = tempfile.mkdtemp(prefix="mutant3_", dir=taban)
+        sab3 = os.path.join(mdir3, "hafiza.py")
+        with io.open(sab3, "w", encoding="utf-8", newline="\n") as f:
+            f.write(metin3)
+        mh3 = hukum(sab3, os.path.join(taban, "mutant3"))
+        _, _, _, cikti3 = mh3["h_ignore_dosya"]
+        m3_kayan = re.search(r"\?\s*H4:\s*belgeler/rapor\.log\b.*OLCULEMEDI", cikti3) is not None
+        if m3_kayan:
+            print("  M-3 2-EK ayrimi ilk-bilesen->AD    -> ISIRDI ✓  ('belgeler/rapor.log' "
+                  "F'den O'ya kaydi: basename cakismasi 'notlar/rapor.log' ile gizlendi)")
+        else:
+            print("  M-3 2-EK ayrimi ilk-bilesen->AD    -> KACTI ✗  ('belgeler/rapor.log' hala "
+                  "F'de — kapi bu ayrimi HIC OLCMUYOR)")
+            kacan.append("M-3")
+
         print(CIZGI)
         if kacan:
             print("SONUC: KAPI KOR — %s beklendigi gibi olculmedi." % ", ".join(kacan))
             return 1
-        print("SONUC: YESIL — dort kapi da temiz, iki mutant da AYRI eksende ISIRDI.")
+        print("SONUC: YESIL — bes kapi da temiz, uc mutant da AYRI eksende ISIRDI.")
         return 0
     finally:
         shutil.rmtree(taban, ignore_errors=True)
