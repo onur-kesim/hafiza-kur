@@ -135,17 +135,65 @@ def _sabotajli_motor(hedef_dizin):
     return p
 
 
+_SON_ALT_SUREC_TABANI = None
+# `_altin_cikti_kos()`in alt surece enjekte ettigi kisa TMPDIR/TMP/TEMP'i buraya
+# yazar — salt-okunur bir yan-kanal (KALEM 1: "kayda yazilsin"), `_altin_cikti_
+# kos()`in DAVRANISINI ETKILEMEZ; my1/my2/my4 bunu KENDI kayit satirlarina
+# eklemek icin okur.
+
+
+def _alt_surec_taban_bilgisi():
+    """KAYIT icin salt-okunur bir ETIKET (IS_EMRI_MY2_KISA_TMPDIR.md KALEM 1:
+    "alt surece verilen TMPDIR ve uzunlugu KAYDA yazilsin, sonraki tur
+    CIKTIDAN okuyabilsin")."""
+    if _SON_ALT_SUREC_TABANI is None:
+        return "bilinmiyor"
+    return "%s (%d)" % (_SON_ALT_SUREC_TABANI, len(_SON_ALT_SUREC_TABANI))
+
+
 def _altin_cikti_kos(arglar, saniye=300):
     """`altin_cikti.py`yi verilen ek argumanlarla kosar; ham (returncode, cikti)
     doner. stdout/stderr AYRI okunur, sonra PYTHON icinde birlestirilir —
-    `stderr=STDOUT` YASAK; boru yok, `returncode` DOGRUDAN kullanilir."""
+    `stderr=STDOUT` YASAK; boru yok, `returncode` DOGRUDAN kullanilir.
+
+    🔴 DUZELTME (IS_EMRI_MY2_KISA_TMPDIR.md, Onur kilidi 6 Eylul 2026 — CI #93
+    macos-latest KIRMIZI, log'dan BIREBIR okundu): `altin_cikti.py` AYRI bir
+    SURECTIR ve KENDI kum havuzunu (satir ~623, KAPSAM DISI, dokunulmadi)
+    ORTAMIN TMPDIR'inden (POSIX) / TEMP-TMP'sinden (Windows) acar —
+    `_kisa_taban_ac()` o zamana kadar yalniz BU MUTANTIN KENDI kum havuzunu
+    kisaltiyordu, alt surece HICBIR SEY enjekte etmiyordu. macOS'ta TMPDIR
+    `/var/folders/xx/<uzun>/T/`dir (realpath `/private/var/folders/...`) —
+    "kisa yol" diye bir sey YOKTUR; M-Y2'nin "kisa yolda sabotaj GORUNMEZ
+    kalmali" varsayimi bu yuzden GERCEKTEN kiriliyordu (B6 isaretinin BESINCI
+    isirigi — isaret `kesildi`yi 19 karakter uzatinca M-Y2'nin marji da
+    19 karakter darald i, macOS'un TMPDIR'i esigin ustune cikti).
+
+    DUZELTME: alt surecin ortamini ARTIK BIZ KURUYORUZ, disaridan geleni KABUL
+    ETMIYORUZ — `_kisa_taban_ac()` (POSIX dalina DOKUNULMADI, KENDISI de
+    DEGISMEDI, yalniz BURADAN CAGRILIYOR) ile KENDI kisa tabanimizi aciyoruz
+    ve `TMPDIR`/`TMP`/`TEMP`'i BUNA esitliyoruz — boylece "kisa yol" iddiasi
+    UC PLATFORMDA da GERCEKTEN kisa olur, ortamin TMPDIR'ine BAGIMLI KALMAZ.
+    Kazanan taban `_SON_ALT_SUREC_TABANI`ya yazilir (KALEM 1) ve alt surecin
+    COK islemi bitince HEMEN silinir (kullanicinin makinesinde dizin
+    BIRAKILMAZ)."""
+    global _SON_ALT_SUREC_TABANI
+    alt_surec_tabani = _kisa_taban_ac()
+    _SON_ALT_SUREC_TABANI = alt_surec_tabani
     try:
-        r = subprocess.run([sys.executable, "-X", "utf8", ARAC] + arglar,
-                           capture_output=True, timeout=saniye,
-                           text=True, encoding="utf-8", errors="replace")
-    except subprocess.TimeoutExpired:
-        return None, "ZAMAN ASIMI (%d sn)" % saniye
-    return r.returncode, (r.stdout or "") + (r.stderr or "")
+        env = dict(os.environ)
+        env["TMPDIR"] = alt_surec_tabani   # POSIX (macOS/Linux) — tempfile'in ILK baktigi
+        env["TMP"] = alt_surec_tabani      # Windows
+        env["TEMP"] = alt_surec_tabani     # Windows
+        try:
+            r = subprocess.run([sys.executable, "-X", "utf8", ARAC] + arglar,
+                               capture_output=True, timeout=saniye,
+                               text=True, encoding="utf-8", errors="replace",
+                               env=env)
+        except subprocess.TimeoutExpired:
+            return None, "ZAMAN ASIMI (%d sn)" % saniye
+        return r.returncode, (r.stdout or "") + (r.stderr or "")
+    finally:
+        shutil.rmtree(alt_surec_tabani, ignore_errors=True)
 
 
 def my1_kesme_geri(taban):
@@ -160,8 +208,8 @@ def my1_kesme_geri(taban):
     fark_var = rc == 1 and "davranis DEGISTI" in c
     _kayit(ad, BEKLENDIGI_GIBI if fark_var else BEKLENMEDIK,
           "sabotajli motor (kesme GERI) + --uzun-yol | exit=%s 'davranis DEGISTI'=%s "
-          "(beklenen: 1/VAR -> ISIRDI: kapi kesmeyi YAKALADI)"
-          % (rc, "VAR" if fark_var else "yok"))
+          "(beklenen: 1/VAR -> ISIRDI: kapi kesmeyi YAKALADI) | alt surec TMPDIR=%s"
+          % (rc, "VAR" if fark_var else "yok", _alt_surec_taban_bilgisi()))
     return motor
 
 
@@ -179,8 +227,9 @@ def my2_kor_kol(taban, sabotajli_motor):
     _kayit(ad, BEKLENDIGI_GIBI if fark_yok else BEKLENMEDIK,
           "AYNI sabotajli motor + KISA /tmp, --uzun-yol YOK | exit=%s 'FARK YOK'=%s "
           "(BEKLENEN: 0/VAR -> KACTI: kisa yol bu sinifa YAPISAL OLARAK KORDUR; "
-          "CI #76'yi aylarca gormeyen sey TAM budur, simdi olculuyor)"
-          % (rc, "VAR" if fark_yok else "yok"))
+          "CI #76'yi aylarca gormeyen sey TAM budur, simdi olculuyor) | "
+          "alt surec TMPDIR=%s"
+          % (rc, "VAR" if fark_yok else "yok", _alt_surec_taban_bilgisi()))
 
 
 # --------------------------------------------------------------- ESIK (M-Y3)
@@ -383,8 +432,9 @@ def my4_temiz_kol(taban):
     fark_yok = rc == 0 and "FARK YOK" in c
     _kayit(ad, BEKLENDIGI_GIBI if fark_yok else BEKLENMEDIK,
           "kisa /tmp, --uzun-yol YOK, --motor VARSAYILAN (duzeltilmis) | exit=%s "
-          "'FARK YOK'=%s (beklenen: 0/VAR — kabul olcutu (a)'nin tekrari)"
-          % (rc, "VAR" if fark_yok else "yok"))
+          "'FARK YOK'=%s (beklenen: 0/VAR — kabul olcutu (a)'nin tekrari) | "
+          "alt surec TMPDIR=%s"
+          % (rc, "VAR" if fark_yok else "yok", _alt_surec_taban_bilgisi()))
 
 
 # --------------------------------------------------------------- KISA TABAN (KALEM 1)
