@@ -46,8 +46,23 @@ python3 skill/scripts/hafiza.py isir  --kok=<proje>   # kapıların ısırdığ�
 İlerlemiş bir projede `kur` **değil** `devral` kullan. Ayrıntı: `skill/SKILL.md`.
 
 **Çıkış kodları** — `kapi`: `0` yeşil · `1` kırmızı · `2` kullanım hatası ·
-`3` ölçüm yapılamadı, hüküm yok. `isir`: `0` hepsi ısırdı · `1` **kapı kör** ·
+`3` ölçüm yapılamadı, hüküm yok · `5` **yalnız `--kapsam-zorla` ile**: hüküm
+yeşil ama kapsam eksik (`?` ile işaretli en az bir şey ölçülmedi).
+`isir`: `0` hepsi ısırdı · `1` **kapı kör** ·
 `2` ölçülemeyen mutant · `4` temiz sürüm zaten FAIL.
+
+**Yardımcı komutlar**
+
+```bash
+python3 skill/scripts/hafiza.py surum              # sürüm + motorun KENDİ sha256'sı
+python3 skill/scripts/hafiza.py hook --kur --kok=<proje>   # pre-commit kapısı kurar
+python3 skill/scripts/hafiza.py kapi --kok=<proje> --kapsam-zorla   # CI için
+```
+
+`kur`, ağaçta başka bir aracın defterini tanırsa (`CLAUDE.md`, `AGENTS.md`,
+`DURUM.md`, `memory-bank/` …) **durur** ve `devral` önerir — belge bunu zaten
+söylüyordu, artık kod da zorluyor. Bilerek geçmek için `--yine-de`; geçiş
+zincire düşer.
 
 ## Depo düzeni
 

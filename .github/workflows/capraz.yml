@@ -1880,3 +1880,185 @@ jobs:
           name: b6-satir-sayisi-${{ matrix.os }}
           path: b6-satir-sayisi-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-21) TARIH KISALTMA MUTANTI — `AYLAR` sozlugu Turkce ay KISALTMALARINI
+  #     taniyor mu? (besli-paket/IS_EMRI.md KALEM 1, Onur kilidi 6 Eylul 2026)
+  #     OLCULDU (dogfood turu): hafiza-kur KENDI deposuna `devral` ile kuruldu
+  #     ve kapi iki `?` verdi — H12 "tarih COZULEMEDI", H14 "hafiza tarihi
+  #     cozulemedi". Kok `·` ayraci DEGILDI (matris kosuldu: "6 Eylül 2026 ·
+  #     bu dosya ≤8 KB · **x**" COZULUYOR); kok `AYLAR`in yalniz TAM ay adini
+  #     tanimasiydi. TEK kok IKI kapiyi birden susturuyordu.
+  #     Mutantin 5. kolu SABOTAJ SINAMASIDIR: sabotajli motorda TAM ay adi
+  #     HALA cozulmeli — yoksa kollar bu sinifi degil komsu sinifi olcer.
+  #     UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  tarih_kisaltma_mutanti:
+    name: Tarih kisaltma mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: AYLAR kisaltmalari taniniyor mu (H12+H14, pozitif kontrol + mutant)
+        shell: bash
+        run: python faz0/tarih_kisaltma_mutanti.py 2>&1 | tee tarih-kisaltma-cikti.txt
+      - name: tarih kisaltma mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tarih-kisaltma-${{ matrix.os }}
+          path: tarih-kisaltma-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-22) KUR KORUMA MUTANTI — `kur`, BASKA bir aracin defterini taniyip
+  #     DURUYOR mu? (KALEM 2, 6 Eylul 2026)
+  #     OLCULDU: `SKILL.md` §2 "mevcut hafiza sistemi olan projede `kur` KOSMA"
+  #     diyordu ama eski `_kur_on_kontrol` YALNIZ hafiza-kur'un kendi v1
+  #     izlerini ariyordu. CLAUDE.md + DURUM.md tasiyan taze bir depoda `kur`
+  #     UYARISIZ kostu, exit 0 verdi, ikinci defter dogdu.
+  #     4. kol KACIS + IZ'i olcer: `--yine-de` calismali AMA gecis zincire
+  #     dusmeli (beyanli gevseklik: kullanilabilir, gizlenemez).
+  #     UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  kur_koruma_mutanti:
+    name: Kur koruma mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: yabanci defter varken kur duruyor mu (pozitif kontrol + mutant)
+        shell: bash
+        run: python faz0/kur_koruma_mutanti.py 2>&1 | tee kur-koruma-cikti.txt
+      - name: kur koruma mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kur-koruma-${{ matrix.os }}
+          path: kur-koruma-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-23) KAPSAM ZORLA MUTANTI — `--kapsam-zorla` cikis kodunu gercekten
+  #     degistiriyor mu, VARSAYILANI bozmadan? (KALEM 3, 6 Eylul 2026)
+  #     `SKILL.md` §9 tuzagi kendisi itiraf ediyordu: "`kapi && dagit` diyen bir
+  #     CI, kapsami eksik bir projede dagitim yapar." Kapi KATILASTIRILMADI
+  #     (kacis yolu olmayan kapi kirilan kapidir); kapsam CI'da ZORLANABILIR
+  #     kilindi. 3. kol varsayilanin BIREBIR korundugunu, 5. kol ayni bayragin
+  #     BEYANLI GEVSEKLIGI de kapsadigini olcer (is emri olcut (d)).
+  #     UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  kapsam_zorla_mutanti:
+    name: Kapsam zorla mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: --kapsam-zorla cikis kodunu degistiriyor mu (pozitif kontrol + mutant)
+        shell: bash
+        run: python faz0/kapsam_zorla_mutanti.py 2>&1 | tee kapsam-zorla-cikti.txt
+      - name: kapsam zorla mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kapsam-zorla-${{ matrix.os }}
+          path: kapsam-zorla-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-24) SURUM BAYRAGI MUTANTI — `surum` sayiyi MOTORDAN mi uretiyor?
+  #     (KALEM 4, 6 Eylul 2026)
+  #     `SKILL.md` §8 bu eksigi kendisi yazmisti ("surumu soran bir bayrak
+  #     henuz yok — bu bir eksiktir, olculdu") ve ayni bolum "SHA buraya
+  #     YAZILMAZ — bayatlar, bir kez yazildi ve IKI SURUM boyunca gorulmedi"
+  #     diyordu. Komutun TEK degeri sayiyi BELGEDEN degil ARTEFAKTTAN
+  #     uretmesidir; bu mutant o kopmayi olcer. SHA hesabini olcum araci
+  #     BAGIMSIZ yapar (motorun kendi `sha_dosya`si kullanilmaz — "capa aracin
+  #     kendi ciktisindan guncellenmez" kalibi).
+  #     UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  surum_bayragi_mutanti:
+    name: Surum bayragi mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: surum motordan mi okunuyor (iki eksen, pozitif kontrol + mutant)
+        shell: bash
+        run: python faz0/surum_bayragi_mutanti.py 2>&1 | tee surum-bayragi-cikti.txt
+      - name: surum bayragi mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surum-bayragi-${{ matrix.os }}
+          path: surum-bayragi-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-25) HOOK MUTANTI — kurulan pre-commit, kapi KIRMIZI iken commit'i
+  #     gercekten durduruyor mu? (KALEM 5, 6 Eylul 2026)
+  #     BELGE-KOD CELISKISI olculdu: `SKILL.md` §1 tablosu "Otomatik kapi + git
+  #     hook" diyordu, `sablonlar.md` elle kurulacak sablon veriyordu, ama
+  #     motorda "hook" gecen satir sayisi SIFIRDI.
+  #     5. kol GITFILE kolu: `--separate-git-dir` agacinda hook, git'in
+  #     BILDIRDIGI hooks dizinine yazilmali — `.git`i elle dizin sanmak 4 Eyl
+  #     2026'da ISIRAN korlugun ta kendisiydi.
+  #     🔴 UC PLATFORM, `continue-on-error` YOK — BILINCLI: `sh` hook'larinin
+  #     Windows'ta kosup kosmadigi HENUZ OLCULMEDI. Mutant, hook kosmayan bir
+  #     ortamda BEKLENMEDIK degil OLCULEMEDI doner (exit 2) ve o platformda is
+  #     kirmizi yanar — bu, "olculemeyene temiz denmez" geregi ISTENEN
+  #     davranistir. Ilk kosum bunu SOYLEYECEK; platform sinirlarina gore
+  #     `h9_kesme_mutanti` kalibinda OLCUM sinifina alinmasi GEREKIRSE o karar
+  #     GEREKCESIYLE burada yazilir, ONCEDEN varsayilmaz.
+  # ---------------------------------------------------------------------------
+  hook_mutanti:
+    name: Hook mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: pre-commit kirmizi kapida commit'i durduruyor mu (pozitif kontrol + mutant)
+        shell: bash
+        run: python faz0/hook_mutanti.py 2>&1 | tee hook-cikti.txt
+      - name: hook mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hook-${{ matrix.os }}
+          path: hook-cikti.txt
+          if-no-files-found: warn

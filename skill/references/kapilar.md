@@ -421,6 +421,15 @@ kesilmeden ibaretse 3 döner.
 > der. Yani `kapi && dagit`, kapsamı eksik bir projede dağıtım yapar. Bunu exit 3'e
 > çevirmek her yeni projeyi ilk dakikasında durdururdu; bugünkü seçim bilinçlidir ve
 > dördüncü tur denetçisine soruldu.
+>
+> ✅ **6 Eyl 2026 — bunun aracı eklendi: `--kapsam-zorla`.** Varsayılan davranış
+> BİREBİR aynı kalır (bayraksız yine 0); bayrak verilirse `?` satırı varken çıkış
+> kodu **5** olur. Yani sınır kaldırılmadı, ÇAĞRILABİLİR yapıldı: `kapi` sıradan
+> kullanımda hoşgörülü kalır, CI `kapi --kapsam-zorla && dagit` diyerek kapsamı da
+> şart koşabilir. Aynı bayrak `politika_gerekce` gevşekliğini de kapsar — H15 onu
+> `O` listesine yazdığı için (ölçüldü: `faz0/kapsam_zorla_mutanti.py`, 5. kol).
+> `5` seçildi çünkü `kapi`de 0/1/2/3 dolu, `isir`da 4 kullanılıyor; mevcut hiçbir
+> kodun anlamı DEĞİŞMEDİ, sözleşme yalnız genişledi.
 
 **Kırık boru (SIGPIPE):** `hafiza.py kapi | head` gibi sıradan bir kullanım
 `BrokenPipeError` ham traceback'i üretiyordu — üstelik **çıktı boyutuna bağlı olarak**,

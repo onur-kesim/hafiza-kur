@@ -239,7 +239,15 @@ def ck_fark(a, b):
     return out
 
 AYLAR = {"ocak": 1, "subat": 2, "mart": 3, "nisan": 4, "mayis": 5, "haziran": 6,
-         "temmuz": 7, "agustos": 8, "eylul": 9, "ekim": 10, "kasim": 11, "aralik": 12}
+         "temmuz": 7, "agustos": 8, "eylul": 9, "ekim": 10, "kasim": 11, "aralik": 12,
+         # KISALTMALAR (6 Eyl 2026 — DOGFOOD TURUNUN BULGUSU). hafiza-kur'un KENDI
+         # DURUM.md'si aylarca "Son guncelleme: 4 Eyl 2026 · ..." dedi ve H12 ile H14
+         # BIRLIKTE kor kaldi: tarih_coz sozlukte "eyl" bulamayip None donunce
+         # _h12_tazelik t_son=None uretiyor, H14 de o degeri kullaniyor. Kok `·`
+         # ayraci DEGILDI (olculdu: "6 Eylül 2026 · bu dosya ≤8 KB · **x**" COZULUYOR).
+         # Anahtarlar slug() ciktisidir; slug("Ağu")=="agu", slug("Şub")=="sub" OLCULDU.
+         "oca": 1, "sub": 2, "mar": 3, "nis": 4, "may": 5, "haz": 6,
+         "tem": 7, "agu": 8, "eyl": 9, "eki": 10, "kas": 11, "ara": 12}
 
 def tarih_coz(s):
     """ISO (2026-07-28) VEYA Turkce ('25 Temmuz 2026', '25 Temmuz 2026' kalin/yildizli) okur.
@@ -1666,6 +1674,52 @@ def _kur_on_kontrol(a):
     return kok
 
 
+def _kur_yabanci_defter_kontrolu(a, kok):
+    """BASKA bir aracin defteri varken `kur` DURUR (6 Eyl 2026, DOGFOOD BULGUSU).
+
+    Eski `_kur_on_kontrol` YALNIZ hafiza-kur'un KENDI v1 izlerini ariyordu
+    (`arsiv/hafiza/` altinda `_KAYNAK*.md` · `_ZINCIR.jsonl` · `HAFIZA_*.md` ·
+    `_KOVA.json`). BASKA aracin defterini HIC gormuyordu. OLCULDU: `CLAUDE.md` +
+    `DURUM.md` tasiyan taze bir git deposunda `kur` UYARISIZ kostu, exit 0 verdi
+    ve yeni bir canli hafiza acti — IKINCI DEFTER dogdu. `SKILL.md` §2 "mevcut
+    hafiza sistemi olan projede `kur` KOSMA" diyordu: BELGE uyariyordu, KOD
+    zorlamiyordu. Bu, projenin kendi "talimat bir tavsiyedir, kod deterministiktir"
+    dersinin bir vakasidir.
+
+    KAPSAM BILINCLI OLARAK GENIS: `devir_rolu()`nun tanidigi HER rol durdurur,
+    yalniz `canli`/`kural_evi` degil. Gerekce: `DURUM.md` (gunluk) ya da
+    `memory-bank/` (disarida) tasiyan bir projede de dogru komut `devral`dir —
+    `kur` orada da ikinci defter dogurur. Tanima ve taranan yuzey `devral` ile
+    AYNI iki fonksiyondan gelir (`_devir_adaylari` + `devir_rolu`); ikinci bir
+    tablo YAZILMAZ, yoksa iki tanima birbirinden ayrisir.
+
+    KURULU projede (RC_AD var) kontrol KOSMAZ: orada `kur` idempotent tazelemedir.
+
+    KACIS: `--yine-de`. Beyanli gevseklik doktrini — kapiyi kapatmak degil,
+    GIZLENEMEZ kilmak: gecis `_ZINCIR.jsonl` halkasina gerekcesiyle duser.
+    """
+    if os.path.isfile(os.path.join(kok, RC_AD)):
+        return []
+    taninan = []
+    for rel in _devir_adaylari(kok):
+        rol = devir_rolu(rel)
+        if rol:
+            taninan.append((rel, rol))
+    if not taninan or getattr(a, "yine_de", False):
+        return taninan
+    dokum = "\n".join("    %-36s -> %s" % (r, rol) for r, rol in taninan[:8])
+    if len(taninan) > 8:
+        dokum += "\n    ... (%d dosya daha)" % (len(taninan) - 8)
+    oldur("Bu agacta BASKA bir defter TANINDI (%d):\n%s\n"
+          "  `kur` yeni bir canli hafiza acar => IKINCI DEFTER dogar. Iki defter,\n"
+          "  ayrismayi olcen bir kapi olmadan bir hafta icinde IKI FARKLI GERCEK uretir.\n"
+          "  Dogru sira:\n"
+          "    python hafiza.py devral --kesif --kok=\"%s\"   # kuru prova, TEK BAYT yazmaz\n"
+          "    python hafiza.py devral          --kok=\"%s\"\n"
+          "  Yine de `kur` istiyorsan: --yine-de  (beyanli gevseklik; zincire duser)"
+          % (len(taninan), dokum, kok, kok))
+
+
 def _kur_rc(a, kok):
     ad = a.ad or os.path.basename(kok.rstrip(os.sep)) or "PROJE"
     rc_p = os.path.join(kok, RC_AD)
@@ -1741,20 +1795,30 @@ def _kur_dosyalar(ad, rc, y):
         _beyan_yeni_satirlar(y, _ars, "kurulum: arsiv iskeleti (arac uretti)")
 
 
-def _kur_halka(y):
+def _kur_halka(y, yabanci=None):
 
     # arsiv dizini bolumunu tazele
     _arsiv_dizini_tazele(y)
 
+    # `--yine-de` ile gecilen yabanci defterler GEREKCEYE yazilir: kacis yolu
+    # KAPATILMAZ ama GIZLENEMEZ (SKILL.md §9, beyanli gevseklik).
+    ek = ""
+    if yabanci:
+        ek = " · --yine-de: %d yabanci defter TANINDI ve GECILDI (%s)" % (
+            len(yabanci), ", ".join(r for r, _ in yabanci[:4]))
     if not os.path.isfile(y.zincir):
-        zincir_halka(y, "GENESIS", "kurulum")
+        zincir_halka(y, "GENESIS", "kurulum" + ek)
     else:
-        zincir_halka(y, "KURULUM", "hafiza.py kur (idempotent tazeleme)")
+        zincir_halka(y, "KURULUM", "hafiza.py kur (idempotent tazeleme)" + ek)
 
 
-def _kur_rapor(kok, rc, y):
+def _kur_rapor(kok, rc, y, yabanci=None):
 
     print("KURULDU: " + kok)
+    if yabanci:
+        print("  ! --yine-de : %d YABANCI DEFTER tanindi ve GECILDI — %s"
+              % (len(yabanci), ", ".join(r for r, _ in yabanci[:4])))
+        print("    Ikinci defter riski BEYANLA kabul edildi; gerekce zincire dustu.")
     print("  canli hafiza  : " + rc["canli"])
     print("  cipa SHA      : " + sha_dosya(y.snap)[:16] + "...")
     print("\nSonraki: python %s kapi --kok=\"%s\"" % (os.path.basename(__file__), kok))
@@ -1762,12 +1826,13 @@ def _kur_rapor(kok, rc, y):
 
 def cmd_kur(a):
     kok = _kur_on_kontrol(a)
+    yabanci = _kur_yabanci_defter_kontrolu(a, kok)   # DURUR, ya da gecilenleri doner
     ad, yeni_kurulum, rc, y = _kur_rc(a, kok)
     _kur_kilit(y, rc, yeni_kurulum)
     _kur_dizinler(kok, rc, y)
     _kur_dosyalar(ad, rc, y)
-    _kur_halka(y)
-    _kur_rapor(kok, rc, y)
+    _kur_halka(y, yabanci)
+    _kur_rapor(kok, rc, y, yabanci)
 
 def _arsiv_dizini_tazele(y):
     if not os.path.isfile(y.canli):
@@ -3354,6 +3419,111 @@ def cmd_korunan(a):
 
 # ---------------------------------------------------------------- KAPI
 
+def cmd_surum(a):
+    """SURUM sabiti + motorun KENDI SHA256'si (KALEM 4, 6 Eyl 2026).
+
+    `SKILL.md` §8 sunu yaziyordu: "Surum, satir sayisi ve SHA buraya YAZILMAZ —
+    bayatlar... Kendin olc: sha256sum hafiza.py · surum icin dosyanin basindaki
+    SURUM sabiti. (Motorun surumunu soran bir bayrak henuz yok — bu bir eksiktir,
+    olculdu.)" Bu komut o eksigi kapatir: belge SAYIYI TASIMAZ, arac KENDINI OLCER.
+
+    SHA `__file__`den hesaplanir, kaynak agacindan DEGIL: bir kopyadan (ornegin
+    mutantin kum havuzundan) kosuluyorsa O KOPYANIN SHA'sini basar. Dogru olan
+    budur — kullanicinin elindeki dosya hangisiyse hukum onun hakkindadir.
+
+    Kok GEREKTIRMEZ: proje disinda da kosar."""
+    print("hafiza.py %s" % SURUM)
+    print("sha256    %s" % sha_dosya(os.path.abspath(__file__)).upper())
+    return 0
+
+
+HOOK_ADI = "pre-commit"
+
+HOOK_GOVDESI = """#!/bin/sh
+# hafiza-kur %s — `hafiza.py hook --kur` tarafindan yazildi.
+# Davranis, skill/references/sablonlar.md'deki sablonla AYNIDIR.
+PY="${HAFIZA_PYTHON:-}"
+if [ -z "$PY" ]; then
+  if command -v python3 >/dev/null 2>&1; then PY=python3; else PY=python; fi
+fi
+"$PY" "%s" kapi --kok="$(git rev-parse --show-toplevel)" || {
+  echo "HAFIZA KAPISI KIRMIZI — commit durduruldu."
+  exit 1
+}
+"""
+
+
+def _git_hooks_dizini(kok):
+    """hooks dizinini GIT'IN KENDISINE sordurur: `git rev-parse --git-path hooks`.
+
+    `.git`i elle DIZIN sanmak, 4 Eyl 2026'da ISIRAN gitfile korlugunun ta
+    kendisiydi: worktree / `--separate-git-dir` / submodule calisma agacinda
+    `.git` bir METIN DOSYASIDIR. Ayrica `core.hooksPath` ayari yalniz bu yolla
+    dogru cozulur — elle `.git/hooks` kuran bir arac, o ayari kullanan projede
+    hook'u HIC CALISMAYAN bir yere yazar ve bunu FARK ETMEZ."""
+    if not shutil.which("git"):
+        return None
+    r = subprocess.run(["git", "-C", kok, "rev-parse", "--git-path", "hooks"],
+                       capture_output=True, text=True, encoding="utf-8",
+                       errors="replace")
+    if r.returncode != 0:
+        return None
+    yol = (r.stdout or "").strip()
+    if not yol:
+        return None
+    return yol if os.path.isabs(yol) else os.path.join(kok, yol)
+
+
+def cmd_hook(a):
+    """`.git/hooks/pre-commit` yazar — kapi kirmiziysa commit DURUR (KALEM 5).
+
+    NEDEN VAR: `SKILL.md` §1 tablosu KAPILI kademe icin "Otomatik kapi + git hook"
+    diyordu ve §9 "Git hook bunu kismen zorlar" diye ekliyordu; ama motorda hook
+    ureten HICBIR kod yoktu (olculdu: `grep -c hook hafiza.py` = 0). `sablonlar.md`
+    elle kurulacak bir sablon veriyordu. Yani BELGE bir otomatiklestirme vaat
+    ediyor, KOD vermiyordu — belge-kod celiskisi, bu deponun kendi kapaginda
+    bir kez daha.
+
+    VAR OLAN HOOK UZERINE YAZILMAZ: baskasinin hook'unu sessizce ezmek, aracin
+    "hicbir satir silinmez, tasinir" ilkesiyle carpisir. Durur, icerigin ilk
+    satirlarini gosterir ve `--zorla` ister."""
+    kok = kok_bul(a.kok)
+    if not _git_kokte_mi(kok):
+        oldur("git deposu yok (ya da `%s` bir calisma agacinin KOKU degil).\n"
+              "  hook yalniz git deposunda kurulur." % kok)
+    hd = _git_hooks_dizini(kok)
+    if not hd:
+        oldur("hooks dizini COZULEMEDI (`git rev-parse --git-path hooks` basarisiz).\n"
+              "  git kurulu mu, depo saglam mi?")
+    hedef = os.path.join(hd, HOOK_ADI)
+    motor = os.path.abspath(__file__)
+    try:
+        rel = os.path.relpath(motor, kok)
+        yol = motor if rel.startswith("..") else rel.replace(os.sep, "/")
+    except ValueError:
+        yol = motor
+    if os.path.exists(hedef) and not getattr(a, "zorla", False):
+        try:
+            bas = "".join(open(hedef, encoding="utf-8", errors="replace").readlines()[:3])
+        except OSError:
+            bas = "(okunamadi)"
+        oldur("hook ZATEN VAR: %s\n  ilk satirlari:\n%s\n"
+              "  Uzerine YAZILMADI. Bilerek degistirmek istiyorsan: --zorla"
+              % (hedef, "".join("    " + x for x in bas.splitlines(True))))
+    try:
+        os.makedirs(hd, exist_ok=True)
+        with open(hedef, "w", encoding="utf-8", newline="\n") as f:
+            f.write(HOOK_GOVDESI % (SURUM, yol))
+        os.chmod(hedef, 0o755)
+    except OSError as ex:
+        oldur("hook yazilamadi: %s" % ex)
+    print("HOOK KURULDU: %s" % hedef)
+    print("  motor      : %s" % yol)
+    print("  davranis   : `kapi` KIRMIZI ise commit DURUR (exit 1)")
+    print("  gecici pas : git commit --no-verify   (kacis yolu; hook kaldirilmaz)")
+    return 0
+
+
 def cmd_kapi(a):
     """BAGIMSIZ DENETIM (ORTA-YUKSEK): rapor SONDA basildigi icin, olcumun herhangi
     bir yerindeki tek bir SystemExit (ornegin bozuk baytli TEK bir arsiv dosyasi)
@@ -3395,6 +3565,17 @@ def cmd_kapi(a):
     if O:
         print("\nSONUC: YESIL (SINIRLI) — olculen her sey gecti, ama %d SEY OLCULMEDI "
               "(yukarida '?' ile isaretli). Kapsam TAM DEGILDIR." % len(O))
+        # KALEM 3 (6 Eyl 2026): `YESIL (SINIRLI)` cikis kodu 0 veriyordu ve bu
+        # BILINCLIYDI — beyanli gevseklik kapiyi kirmizi yakmaz. Ama sonucu
+        # olculdu: `kapi && dagit` yazan bir CI, git'i olmayan / commit'siz /
+        # `politika_gerekce` ile gevsetilmis bir projede DAGITIM YAPAR. Kapiyi
+        # katilastirmak yanlis cevapti (kacis yolu olmayan kapi kirilan kapidir);
+        # dogru cevap KAPSAMI CI'da ZORLANABILIR kilmaktir. Varsayilan davranis
+        # BIREBIR korunur: bayrak verilmedikce yine 0 doner.
+        if getattr(a, "kapsam_zorla", False):
+            print("  -> --kapsam-zorla: KAPSAM EKSIK. Hukum YESIL ama TAM DEGIL; "
+                  "cikis kodu 5.")
+            return 5
     else:
         print("\nSONUC: YESIL — olculen her sey gecti.")
     return 0
@@ -5521,6 +5702,8 @@ def main():
 
     p = alt.add_parser("kur", help="duzeni kurar (idempotent)")
     p.add_argument("--kok"); p.add_argument("--ad")
+    p.add_argument("--yine-de", dest="yine_de", action="store_true",
+                   help="baska aracin defteri taninsa bile kur (zincire duser)")
     p.set_defaults(fn=cmd_kur)
 
     p = alt.add_parser("devral", help="ilerlemis/mevcut sistemi olan projeyi v2'ye devralir")
@@ -5569,10 +5752,21 @@ def main():
 
     p = alt.add_parser("kapi", help="H0..H16 kapilarini kosar")
     p.add_argument("--kok"); p.add_argument("--siki", action="store_true")
+    p.add_argument("--kapsam-zorla", dest="kapsam_zorla", action="store_true",
+                   help="OLCULEMEDI varsa exit 5 (CI icin; hukum yine YESIL SINIRLI)")
     p.set_defaults(fn=cmd_kapi)
 
     p = alt.add_parser("isir", help="kapilarin isirdigini mutantla kanitlar")
     p.add_argument("--kok"); p.set_defaults(fn=cmd_isir)
+
+    p = alt.add_parser("surum", help="motorun surumunu ve KENDI SHA256'sini basar")
+    p.set_defaults(fn=cmd_surum)
+
+    p = alt.add_parser("hook", help="git pre-commit kapisini kurar")
+    p.add_argument("--kok")
+    p.add_argument("--kur", action="store_true", help="(varsayilan davranis)")
+    p.add_argument("--zorla", action="store_true", help="var olan hook'un uzerine yaz")
+    p.set_defaults(fn=cmd_hook)
 
     a = ap.parse_args()
     # Y-3: hukum ONCE hesaplanir ve KAYDEDILIR, sonra cikis guvenceye alinir,

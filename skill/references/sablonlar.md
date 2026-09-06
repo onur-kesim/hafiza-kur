@@ -192,6 +192,13 @@ scratch/
 
 ## Git hook (isteğe bağlı ama önerilir)
 
+> 💡 **Bunu elle yazmana gerek yok:** `python hafiza.py hook --kur --kok=<proje>`
+> aynı hook'u kurar ve hooks dizinini `git rev-parse --git-path hooks` ile GİT'E
+> sordurur — worktree / `--separate-git-dir` / submodule ağacında `.git` bir metin
+> dosyasıdır ve elle `.git/hooks` kuran bir araç orada hiç çalışmayan bir yere
+> yazar. Var olan bir hook'un üzerine yazmaz. Aşağıdaki şablon, betiksiz kullanım
+> ve hook'un ne yaptığını görmek içindir.
+
 `.git/hooks/pre-commit`:
 
 ```sh

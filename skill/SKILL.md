@@ -60,6 +60,13 @@ Kararsızsan: **kod varsa KAPILI, yoksa HAFİF.** Hafif'ten Kapılı'ya sonradan
 
 > ⛔ **Mevcut hafıza sistemi olan bir projede `kur` KOŞMA.** Ölçüldü: zinciri kırar,
 > ikinci çıpa doğurur ve eski sistemin dizin kapısını kırmızıya düşürür.
+>
+> ✅ **6 Eyl 2026'dan beri bunu KOD zorluyor.** Daha önce yalnız bu satır uyarıyordu;
+> ölçüldü: `CLAUDE.md` + `DURUM.md` taşıyan taze bir depoda `kur` **uyarısız, exit 0**
+> koşup ikinci defter açıyordu. Artık `kur`, `devral`ın kendi tanıma yüzeyinden
+> geçirir ve tanınan bir defter bulursa **DURUR**. Bilerek geçmek için `--yine-de`:
+> çalışır, ama geçiş `_ZINCIR.jsonl` halkasının gerekçesine düşer — kullanılabilir,
+> gizlenemez. Kapı: `faz0/kur_koruma_mutanti.py`.
 > `devral` yapılandırmayı diskteki gerçekten türetir ve canlı dosyayı önce yedekler.
 >
 > **ŞERH — bu cümle 15 Ağu 2026'da DARALTILDI (ölçüldü, fazla söz veriyordu):**
@@ -124,6 +131,14 @@ hafiza.py not    --konu <konu> --tur durum|sonraki|karar|bulgu|ders|devir --meti
 hafiza.py derle
 hafiza.py karar  --baslik "..." [--yerine <no>]
 hafiza.py emekli <bas>-<son> --not "neden"
+```
+
+Yardımcılar (günlük akışın parçası değil, ama işe yarar):
+
+```
+hafiza.py surum                       # sürüm + motorun KENDİ sha256'sı
+hafiza.py hook --kur --kok=<proje>    # .git/hooks/pre-commit kurar
+hafiza.py kapi --kok=<proje> --kapsam-zorla   # CI: kapsam eksikse exit 5
 ```
 
 **Yeni bilgi doğrudan `PROJE_HAFIZA.md`'ye YAZILMAZ.** Canlı hafıza bir *snapshot*'tır.
@@ -263,7 +278,9 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   **Sürüm, satır sayısı ve SHA buraya YAZILMAZ — bayatlar.** Bir kez yazıldı ve
   bayatladı; kimse ölçmediği için iki sürüm boyunca görülmedi. Kendin ölç:
   `sha256sum hafiza.py` · sürüm için dosyanın başındaki `SURUM` sabiti.
-  *(Motorun sürümünü soran bir bayrak henüz yok — bu bir eksiktir, ölçüldü.)*
+  *(6 Eyl 2026: bu eksik KAPATILDI — `python hafiza.py surum` sürümü **ve**
+  motorun kendi sha256'sını basar; sayı belgeden değil artefakttan gelir.
+  `faz0/surum_bayragi_mutanti.py` çıktının motordan koptuğu anı ölçer.)*
 - `scripts/t_y3.py` — temiz-hata kanıtları (bozuk girdide ham traceback yok): 20 senaryo
 - `scripts/t_y42.py` — davranış kanıtları (kapı mutantıyla ölçülemeyenler): 58 senaryo
 
@@ -278,7 +295,10 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   garanti kurulamaz. Onun yerine **sapma tespiti** vardır (H12): bir konuda canlı bloktan
   daha yeni bir kayıt varsa kapı uyarır. Garanti değil, alarm.
 - **Disiplin nihayetinde insana/ajana bağlıdır.** Fragman yazılmazsa sistem boş döner.
-  Git hook bunu kısmen zorlar, tamamen değil.
+  Git hook bunu kısmen zorlar, tamamen değil. (6 Eyl 2026'a kadar bu cümle bir
+  BELGE-KOD ÇELİŞKİSİYDİ: motorda hook üreten kod YOKTU, yalnız `sablonlar.md`'de
+  elle kurulacak bir şablon vardı. Artık `hafiza.py hook --kur` var; var olan bir
+  hook'un üzerine YAZMAZ, `--zorla` ister. Kapı: `faz0/hook_mutanti.py`.)
 - **Uzun hafıza her zaman iyi değildir.** Ölçümler, girdi uzadıkça model başarımının
   düştüğünü gösteriyor. Bu yüzden tavan vardır ve ayrıntı canlıda değil `kararlar/` ile
   `arsiv/` içinde yaşar: canlı dosya **yol taşır, metin taşımaz**.
@@ -320,9 +340,13 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   **Ama dikkat — beyanlı/yapısal kapsam boşluğu exit 3 DEĞİLDİR:** git yok, henüz commit
   yok, `politika_gerekce` ile gevşetilmiş bir kapı → hüküm `YEŞİL (SINIRLI)` ve çıkış
   kodu **0**'dır. Bu bilinçli: beyanlı gevşeklik kapıyı kırmızı yakmaz. Sonucu şudur:
-  `kapi && dagit` diyen bir CI, kapsamı eksik bir projede dağıtım yapar. Kapsamı da
-  zorlamak istiyorsan çıktıdaki `?` satırlarını ayrıca kontrol etmelisin. Bu ayrımın
-  doğru yerde çizilip çizilmediği dördüncü tur denetçisine açıkça soruldu.
+  `kapi && dagit` diyen bir CI, kapsamı eksik bir projede dağıtım yapar.
+  ✅ **6 Eyl 2026: bunun aracı eklendi — `--kapsam-zorla`.** Kapı KATILAŞTIRILMADI
+  (kaçış yolu olmayan kapı kırılan kapıdır); varsayılan davranış birebir aynı kalır,
+  yalnız bu bayrak verilirse `?` satırı varken çıkış kodu **5** olur. Aynı bayrak
+  `politika_gerekce` ile beyan edilmiş gevşekliği de kapsar — çünkü H15 onu da `O`
+  listesine yazar (ölçüldü: `faz0/kapsam_zorla_mutanti.py` 5. kol). Bu ayrımın doğru
+  yerde çizilip çizilmediği dördüncü tur denetçisine açıkça soruldu.
 - **Büyük hafızada kapı maliyeti doğrusaldır.** 300 000 satırda `kapi` ASCII içerikte
   ~3,5 sn, **Türkçe içerikte ~6 sn** sürer (v2.3.0'da sırasıyla ~10 ve ~12 sn idi).
   İki kolun ayrı ölçülmesinin sebebi şu: hızlandırma ASCII hızlı yoluna dayanıyor, yani

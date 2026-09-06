@@ -70,14 +70,14 @@ EKLENEN uc yeni kol)
      helper'in ikinci cagri yerinden [`_h14_git_durumu`] de cagrildigini
      OLCMUYORDU): `hafiza.py` metninde eski desen
      `os.path.isdir(os.path.join(kok, ".git"))` KAC KEZ geciyor (KEHANET:
-     0), `_git_kokte_mi(` KAC KEZ geciyor (KEHANET: TAM 3 — 1 tanim + 2
-     cagri) ve helper'in KENDI icindeki
+     0), `_git_kokte_mi(` KAC KEZ geciyor (KEHANET: TAM 4 — 1 tanim + 3
+     cagri; ucuncusu 6 Eyl 2026'da `cmd_hook` ile geldi) ve helper'in KENDI icindeki
      `os.path.exists(os.path.join(kok, ".git"))` KAC KEZ geciyor (KEHANET:
      TAM 1). OLCULDU (Onur denetimi, 19 Agu 2026): eski motorda eski desen
      2, yarim duzeltmede (yalniz `_kapi_h9`) 1, tam duzeltmede 0 — desen
      ucunu de AYIRT EDIYOR; UC SAYAC birlikte, "helper tanimli ama ikinci
      cagri yerine hic baglanmamis" gibi YARIM bir duzeltmeyi de yakalar (o
-     durumda `_git_kokte_mi(` 2 kalirdi, 3 degil). Yanlis-pozitif riski
+     durumda `_git_kokte_mi(` 3 kalirdi, 4 degil). Yanlis-pozitif riski
      OLCULDU: motorda toplam `os.path.isdir(` cagrisi 30 (Onur denetimi
      tekrar sayidi; is emrindeki ilk beyan 20'ydi — TUTMADI, duzeltildi
      burada beyan edilir), ama TAM desene uyan YALNIZ bu 2'si; digerlerinin
@@ -371,7 +371,7 @@ def sinama_kaynak_kapisi():
         + 2 cagri: `_kapi_h9` VE `_h14_git_durumu`)
       · `_EXISTS_DESEN` (helper'in KENDI icinde) -> KEHANET: TAM 1
     UCU BIRDEN dogru olmadan kol BEKLENDIGI GIBI SAYILMAZ — `_HELPER_CAGRI_
-    DESEN` sayaci 3'ten AZSA (ornegin 2) helper tanimli ama iki cagri
+    DESEN` sayaci 4'ten AZSA (ornegin 3) helper tanimli ama bir cagri
     yerinden biri hala baglanmamis demektir; bu YARIM duzeltmeyi eski TEK
     sayac YAKALAYAMAZDI (eski desen orada da 0'a duserdi), yeni UC sayac
     YAKALAR."""
@@ -385,13 +385,25 @@ def sinama_kaynak_kapisi():
     n_eski = src.count(_ISDIR_DESEN)
     n_helper = src.count(_HELPER_CAGRI_DESEN)
     n_exists = src.count(_EXISTS_DESEN)
-    dogru = (n_eski == 0 and n_helper == 3 and n_exists == 1)
+    # 🔴 KEHANET 3 -> 4 (6 Eyl 2026, besli-paket KALEM 5). 20 Agu 2026'da 3'tu:
+    # 1 tanim + 2 cagri (`_kapi_h9`, `_h14_git_durumu`). `cmd_hook` UCUNCU
+    # MESRU cagri yerini ekledi — hook'un yazilacagi hooks dizinini bulmadan
+    # once `kok`un gercekten bir calisma agacinin KOKU oldugunu sinar; elle
+    # `.git` dizini sanmak tam da bu kolun engellemek icin var oldugu korluk
+    # olurdu. Sayi BAGIMSIZ olculdu (aracin kendi ciktisindan DEGIL):
+    #   grep -c '_git_kokte_mi(' hafiza.py -> 4
+    #   cagri yerleri: cmd_hook · _kapi_h9 · _h14_git_durumu (+1 tanim)
+    # "TAM" karsilastirmasi BILEREK korundu (">= 3"e gevsetilmedi): sayacin
+    # AMACI yalniz "en az bagli" degil, cagri yuzeyinin BILINIYOR olmasidir —
+    # yeni bir cagri sessizce eklenirse bu kol KIRMIZI yanar ve gerekcesi
+    # buraya YAZILIR. Kapi gevsetilmedi, capa tazelendi.
+    dogru = (n_eski == 0 and n_helper == 4 and n_exists == 1)
     _kayit(ad, BEKLENDIGI_GIBI if dogru else BEKLENMEDIK,
           "eski desen %r: %d kez (beklenen 0) · %r: %d kez (beklenen 3) · "
           "%r: %d kez (beklenen 1). %s"
           % (_ISDIR_DESEN, n_eski, _HELPER_CAGRI_DESEN, n_helper,
              _EXISTS_DESEN, n_exists,
-             "TAM DUZELTILMIS VE HER IKI CAGRI YERI DE (_kapi_h9, "
+             "TAM DUZELTILMIS VE UC CAGRI YERI DE (cmd_hook, _kapi_h9, "
              "_h14_git_durumu) HELPER'A BAGLANMIS."
              if dogru else
              "_kapi_h9 VE/veya _h14_git_durumu hala eski deseni tasiyor, "

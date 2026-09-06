@@ -211,9 +211,9 @@ MUTANTLAR = [
     ("M-5 CAGRI kilit", "kilit alinmaz, yol on kontrolu kosmaz",
      [("    _kur_kilit(y, rc, yeni_kurulum)", "    pass")]),
     ("M-6 CAGRI halka", "zincire halka YAZILMAZ — stdout ayni, denetim izi yok",
-     [("    _kur_halka(y)", "    pass")]),
+     [("    _kur_halka(y, yabanci)", "    pass")]),
     ("M-7 KENAR kok -> rapor", "rapor yanlis kok basar",
-     [('    _kur_rapor(kok, rc, y)', '    _kur_rapor(".", rc, y)')]),
+     [('    _kur_rapor(kok, rc, y, yabanci)', '    _kur_rapor(".", rc, y, yabanci)')]),
     # M-8 yalnizca GORELI --kok halinde isirir: mutlak yolda `abspath` bir islem
     # yapmadigi icin ESDEGER MUTANT olur. Dokuz halle kaciyordu; onuncu hal
     # (h_goreli_kok) onu gercek mutanta cevirdi.
