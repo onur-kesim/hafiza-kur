@@ -4031,7 +4031,19 @@ def _h4_havuz(kok):
         d0[:] = [d for d in d0 if d not in haric_sabit
                  and _rel(os.path.join(r0, d), kok) not in haric_git]
         for f in f0:
-            havuz.setdefault(f, []).append(_rel(os.path.join(r0, f), kok))
+            # besli-paket KALEM B (6 Eyl 2026, Onur kilidi 20:30): KALEM 2
+            # yalniz DIZIN ekseninde suzuyordu — `_h4_git_yoksayilanlar`in
+            # dondurdugu bir DOSYA (izlenen bir dizinin icindeki tek bir
+            # `.gitignore`'lu dosya, ornegin `notlar/rapor.log`) `d0` filtresine
+            # hic UGRAMADIGI icin havuza girmeye DEVAM ediyordu — duzeltme bu
+            # ekseni HIC ACMAMISTI (BIREBIR ayni "yol tutmuyor" hukmu). Simdi
+            # dosya dongusu de ayni `haric_git` kumesine karsi suzulur. `_rel`
+            # zaten '/' ayracli kanonik bicim uretir (satir ~677) ve
+            # `git ls-files` de '/' basar — ELLE ayrac cevirisi YAPILMAZ.
+            _rel_f = _rel(os.path.join(r0, f), kok)
+            if _rel_f in haric_git:
+                continue
+            havuz.setdefault(f, []).append(_rel_f)
     return havuz
 
 

@@ -70,14 +70,18 @@ EKLENEN uc yeni kol)
      helper'in ikinci cagri yerinden [`_h14_git_durumu`] de cagrildigini
      OLCMUYORDU): `hafiza.py` metninde eski desen
      `os.path.isdir(os.path.join(kok, ".git"))` KAC KEZ geciyor (KEHANET:
-     0), `_git_kokte_mi(` KAC KEZ geciyor (KEHANET: TAM 4 — 1 tanim + 3
-     cagri; ucuncusu 6 Eyl 2026'da `cmd_hook` ile geldi) ve helper'in KENDI icindeki
+     0), `_git_kokte_mi(` KAC KEZ geciyor (KEHANET: TAM 6 — 1 tanim + 5
+     cagri; ucuncusu 6 Eyl 2026'da `cmd_hook` ile geldi, dorduncusu VE
+     besincisi AYNI GUN besli-paket KALEM 2/KALEM 3 ile: `_h4_git_
+     yoksayilanlar` [H4 havuzu git'e sordurulur] ve `_h12_hafiza_git_
+     tarihi` [H12/H14 hafiza defterlerine dokunan son commit'i sorar]) ve
+     helper'in KENDI icindeki
      `os.path.exists(os.path.join(kok, ".git"))` KAC KEZ geciyor (KEHANET:
      TAM 1). OLCULDU (Onur denetimi, 19 Agu 2026): eski motorda eski desen
      2, yarim duzeltmede (yalniz `_kapi_h9`) 1, tam duzeltmede 0 — desen
      ucunu de AYIRT EDIYOR; UC SAYAC birlikte, "helper tanimli ama ikinci
      cagri yerine hic baglanmamis" gibi YARIM bir duzeltmeyi de yakalar (o
-     durumda `_git_kokte_mi(` 3 kalirdi, 4 degil). Yanlis-pozitif riski
+     durumda `_git_kokte_mi(` 5 kalirdi, 6 degil). Yanlis-pozitif riski
      OLCULDU: motorda toplam `os.path.isdir(` cagrisi 30 (Onur denetimi
      tekrar sayidi; is emrindeki ilk beyan 20'ydi — TUTMADI, duzeltildi
      burada beyan edilir), ama TAM desene uyan YALNIZ bu 2'si; digerlerinin
@@ -163,7 +167,9 @@ CIKIS KODLARI (proje sozlesmesi)
      GIBI ⇒ 2/7. Motor DUZELTILDIKTEN sonra herhangi bir kolun BEKLENMEDIK
      kalmasi REGRESYONDUR — Onur'a donulur)
   2  en az bir kol OLCULEMEDI (BEKLENMEDIK yoksa)
-  3  ARAC KUSURU (kum havuzu kurulamadi)
+  3  ARAC KUSURU (kum havuzu kurulamadi, YA DA 6. kolun kendi pozitif
+     kontrolu KACTI — bkz. `pozitif_kontrol_kaynak_kapisi`, besli-paket
+     KALEM A (d), 6 Eyl 2026)
 """
 import datetime as _dt
 import os
@@ -355,26 +361,54 @@ _ISDIR_DESEN = 'os.path.isdir(os.path.join(kok, ".git"))'
 _HELPER_CAGRI_DESEN = '_git_kokte_mi('
 _EXISTS_DESEN = 'os.path.exists(os.path.join(kok, ".git"))'
 
+# TEK KAYNAK (besli-paket KALEM A, 6 Eyl 2026 — Onur kilidi 20:30): mesaj metni
+# ve karsilastirma kosulu AYNI degiskeni okur; boylece bir daha ayrisamazlar
+# (ONCEKI hali "(beklenen 3)" YAZIYORDU ama kod `== 4` siniyordu — bagimsiz
+# olcumde YAKALANDI). Sayi BAGIMSIZ dogrulandi (aracin kendi ciktisindan
+# DEGIL): `grep -c '_git_kokte_mi(' skill/scripts/hafiza.py` -> 6.
+#   1 tanim + 5 cagri: cmd_hook (6 Eyl, KALEM 5) · _kapi_h9 · _h14_git_durumu ·
+#   _h4_git_yoksayilanlar (6 Eyl, besli-paket KALEM 2 — H4 havuzu git'e
+#   sordurulur) · _h12_hafiza_git_tarihi (6 Eyl, besli-paket KALEM 3 — H12/H14
+#   hafiza defterlerine dokunan son commit'i sorar).
+BEKLENEN_HELPER = 6
+
+
+def _kaynak_kapisi_olc(src):
+    """UC sayaci birden hesaplar VE hukmu/mesaji AYNI degerden (BEKLENEN_HELPER)
+    uretir — (d): metin ile kosul TEK KAYNAKTAN gelir, bir daha ayrisamaz."""
+    n_eski = src.count(_ISDIR_DESEN)
+    n_helper = src.count(_HELPER_CAGRI_DESEN)
+    n_exists = src.count(_EXISTS_DESEN)
+    dogru = (n_eski == 0 and n_helper == BEKLENEN_HELPER and n_exists == 1)
+    mesaj = ("eski desen %r: %d kez (beklenen 0) · %r: %d kez (beklenen %d) · "
+             "%r: %d kez (beklenen 1)."
+             % (_ISDIR_DESEN, n_eski, _HELPER_CAGRI_DESEN, n_helper,
+                BEKLENEN_HELPER, _EXISTS_DESEN, n_exists))
+    return n_eski, n_helper, n_exists, dogru, mesaj
+
 
 def sinama_kaynak_kapisi():
     """6. kol (Onur denetimi 19 Agu 2026; GUNCELLEME 20 Agu 2026 — gitfile
-    korlugu turu KALEM 2): DAVRANIS DEGIL KAYNAK olcer. Eski hali TEK sayac
-    olcuyordu (yalniz `_ISDIR_DESEN`in 0'a indigini) — bu, helper'in
-    `_h14_git_durumu`den de (ikinci cagri yeri) cagrildigini OLCMUYORDU: bir
-    duzeltme `_kapi_h9`'u guncelleyip `_h14_git_durumu`yu unutsa bile eski
-    desen YINE 0 olurdu (unutulan cagri eski desen DEGIL, hala eski
-    ISDIR/exists kombinasyonuysa farkli hikaye; ama helper'a hic
-    BAGLANMAMIS bir cagri yeri de TEK sayacta gorunmez). GUNCEL hali UC
-    sayacin UCUNU BIRDEN olcer:
+    korlugu turu KALEM 2; GUNCELLEME 6 Eyl 2026 — besli-paket KALEM A):
+    DAVRANIS DEGIL KAYNAK olcer. Eski hali TEK sayac olcuyordu (yalniz
+    `_ISDIR_DESEN`in 0'a indigini) — bu, helper'in `_h14_git_durumu`den de
+    (ikinci cagri yeri) cagrildigini OLCMUYORDU: bir duzeltme `_kapi_h9`'u
+    guncelleyip `_h14_git_durumu`yu unutsa bile eski desen YINE 0 olurdu
+    (unutulan cagri eski desen DEGIL, hala eski ISDIR/exists kombinasyonuysa
+    farkli hikaye; ama helper'a hic BAGLANMAMIS bir cagri yeri de TEK sayacta
+    gorunmez). GUNCEL hali UC sayacin UCUNU BIRDEN olcer:
       · eski desen `_ISDIR_DESEN`               -> KEHANET: 0
-      · `_HELPER_CAGRI_DESEN`                    -> KEHANET: TAM 3 (1 tanim
-        + 2 cagri: `_kapi_h9` VE `_h14_git_durumu`)
+      · `_HELPER_CAGRI_DESEN`                    -> KEHANET: TAM BEKLENEN_HELPER
+        (1 tanim + 5 cagri: cmd_hook · _kapi_h9 · _h14_git_durumu ·
+        _h4_git_yoksayilanlar · _h12_hafiza_git_tarihi)
       · `_EXISTS_DESEN` (helper'in KENDI icinde) -> KEHANET: TAM 1
     UCU BIRDEN dogru olmadan kol BEKLENDIGI GIBI SAYILMAZ — `_HELPER_CAGRI_
-    DESEN` sayaci 4'ten AZSA (ornegin 3) helper tanimli ama bir cagri
+    DESEN` sayaci BEKLENEN_HELPER'DAN AZSA helper tanimli ama bir cagri
     yerinden biri hala baglanmamis demektir; bu YARIM duzeltmeyi eski TEK
     sayac YAKALAYAMAZDI (eski desen orada da 0'a duserdi), yeni UC sayac
-    YAKALAR."""
+    YAKALAR. "TAM" karsilastirmasi BILEREK korunur (">="e GEVSETILMEZ):
+    sayacin AMACI yalniz "en az bagli" degil, cagri yuzeyinin BILINIYOR
+    olmasidir — yeni bir cagri sessizce eklenirse bu kol KIRMIZI yanar."""
     ad = ("6. KAYNAK KAPISI (uc sayac: eski desen · _git_kokte_mi( · "
           "exists(kok/.git))")
     try:
@@ -382,32 +416,45 @@ def sinama_kaynak_kapisi():
     except OSError as e:
         _kayit(ad, OLCULEMEDI, "motor okunamadi: %s" % e)
         return
-    n_eski = src.count(_ISDIR_DESEN)
-    n_helper = src.count(_HELPER_CAGRI_DESEN)
-    n_exists = src.count(_EXISTS_DESEN)
-    # 🔴 KEHANET 3 -> 4 (6 Eyl 2026, besli-paket KALEM 5). 20 Agu 2026'da 3'tu:
-    # 1 tanim + 2 cagri (`_kapi_h9`, `_h14_git_durumu`). `cmd_hook` UCUNCU
-    # MESRU cagri yerini ekledi — hook'un yazilacagi hooks dizinini bulmadan
-    # once `kok`un gercekten bir calisma agacinin KOKU oldugunu sinar; elle
-    # `.git` dizini sanmak tam da bu kolun engellemek icin var oldugu korluk
-    # olurdu. Sayi BAGIMSIZ olculdu (aracin kendi ciktisindan DEGIL):
-    #   grep -c '_git_kokte_mi(' hafiza.py -> 4
-    #   cagri yerleri: cmd_hook · _kapi_h9 · _h14_git_durumu (+1 tanim)
-    # "TAM" karsilastirmasi BILEREK korundu (">= 3"e gevsetilmedi): sayacin
-    # AMACI yalniz "en az bagli" degil, cagri yuzeyinin BILINIYOR olmasidir —
-    # yeni bir cagri sessizce eklenirse bu kol KIRMIZI yanar ve gerekcesi
-    # buraya YAZILIR. Kapi gevsetilmedi, capa tazelendi.
-    dogru = (n_eski == 0 and n_helper == 4 and n_exists == 1)
+    n_eski, n_helper, n_exists, dogru, mesaj = _kaynak_kapisi_olc(src)
     _kayit(ad, BEKLENDIGI_GIBI if dogru else BEKLENMEDIK,
-          "eski desen %r: %d kez (beklenen 0) · %r: %d kez (beklenen 3) · "
-          "%r: %d kez (beklenen 1). %s"
-          % (_ISDIR_DESEN, n_eski, _HELPER_CAGRI_DESEN, n_helper,
-             _EXISTS_DESEN, n_exists,
-             "TAM DUZELTILMIS VE UC CAGRI YERI DE (cmd_hook, _kapi_h9, "
-             "_h14_git_durumu) HELPER'A BAGLANMIS."
+          "%s %s"
+          % (mesaj,
+             "TAM DUZELTILMIS VE BES CAGRI YERI DE (cmd_hook, _kapi_h9, "
+             "_h14_git_durumu, _h4_git_yoksayilanlar, _h12_hafiza_git_tarihi) "
+             "HELPER'A BAGLANMIS."
              if dogru else
              "_kapi_h9 VE/veya _h14_git_durumu hala eski deseni tasiyor, "
              "ya da helper'a baglanan cagri sayisi beklenenden farkli."))
+
+
+def pozitif_kontrol_kaynak_kapisi():
+    """besli-paket KALEM A (d), Onur kilidi 6 Eyl 2026: "Ek mutant ISTENMIYOR;
+    (d) icin kolun kendi pozitif kontrolu: sayaci bilerek 1 kaydir -> kol
+    BEKLENMEDIK yanmali ve mesajdaki sayi kosuldaki sayiyla ayni olmali."
+
+    Bu, resmi ON KOL tablosuna (SONUC) GIRMEZ — 6. kolun KENDI dogrulugunu
+    sinayan AYRI bir ic testtir; "10/10" hukmunu 11'e SISIRMEZ. Gercek motor
+    metnine sahte bir `_git_kokte_mi(` cagrisi EKLENIR (dosyaya YAZILMAZ,
+    yalniz bellekte), sayac BEKLENEN_HELPER+1'e kayar; kolun KENDISI (`_kaynak_
+    kapisi_olc`) bu kaydirilmis metne karsi tekrar kosulur ve iki sey sinanir:
+      (1) `dogru` False olmali (kol BEKLENMEDIK yanmali),
+      (2) basilacak mesajdaki "(beklenen N)" ile kosulun kullandigi N (BEKLENEN_
+          HELPER) AYNI kalmali — mesaj/kod TEK KAYNAKTAN geldigi icin bu ARTIK
+          yapisal olarak garanti, ama bu test onu CALISTIRARAK KANITLAR."""
+    try:
+        src = open(MOTOR, encoding="utf-8").read()
+    except OSError as e:
+        print("  POZITIF KONTROL (6. kol) OLCULEMEDI: motor okunamadi: %s" % e)
+        return False
+    kaydirilmis = src + "\n# test: fazladan _git_kokte_mi( cagrisi (kaynakta DEGIL, bellekte)\n"
+    _, n_helper2, _, dogru2, mesaj2 = _kaynak_kapisi_olc(kaydirilmis)
+    mesaj_dogru = ("beklenen %d" % BEKLENEN_HELPER) in mesaj2
+    ok = (not dogru2) and mesaj_dogru and n_helper2 == BEKLENEN_HELPER + 1
+    print("  POZITIF KONTROL (6. kol, sayac 1 kaydirilinca): %s — %s"
+          % ("GECTI (BEKLENMEDIK yandi, mesaj/kod ayni N kullaniyor)" if ok
+             else "KACTI (sayac tek kaynaktan uretilmiyor olabilir)", mesaj2))
+    return ok
 
 
 # --------------------------------------------------------------- 7. KOL: DAVRANIS
@@ -744,6 +791,9 @@ def main():
         gibi = len(SONUC) - beklenmedik - olculemedi
         print("SONUC: %d/%d kol BEKLENDIGI GIBI - %d beklenmedik - %d olculemedi"
               % (gibi, len(SONUC), beklenmedik, olculemedi))
+        # besli-paket KALEM A (d): 6. kolun KENDI pozitif kontrolu — SONUC/"10
+        # kol" tablosuna GIRMEZ, ayri basilir (bkz. fonksiyonun docstring'i).
+        pk = pozitif_kontrol_kaynak_kapisi()
         if beklenmedik:
             print("  (BEKLENEN SONUC 20 Agu 2026'dan sonra ON kolun ONU DA "
                   "BEKLENDIGI GIBI'dir — bir kol BEKLENMEDIK ise REGRESYON "
@@ -751,6 +801,10 @@ def main():
             return 1
         if olculemedi:
             return 2
+        if not pk:
+            print("  ARAC KUSURU: 6. kolun pozitif kontrolu KACTI — mesaj/kod "
+                  "artik TEK kaynaktan uretilmiyor olabilir.")
+            return 3
         return 0
     finally:
         shutil.rmtree(taban, ignore_errors=True)

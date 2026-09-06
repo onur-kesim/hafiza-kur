@@ -20,17 +20,23 @@ NE OLCER
       liste) davranisini AYNEN uretir: kopya bulunur (TASINMIS/yol tutmuyor).
   KAPI-C (IZLENEN DOSYA KORUNUR) — `.gitignore`'da OLMAYAN, GERCEKTEN izlenen
       (commit'li) bir dosya havuzdan haric TUTULMAZ — kapi kor edilmiyor.
+  KAPI-D (besli-paket KALEM B, 6 Eyl 2026, Onur kilidi 20:30 — DOSYA EKSENI,
+      AYRI KOL): KAPI-A/B/C UCU DE yoksayilan DIZIN ekseninde kurulmustu; bu
+      "ORTUSEN TESPIT KORLUGU" KALEM 2'nin yarim kaldigini (dosya dongusu
+      `haric_git`'e karsi suzulmuyordu) GORMEDI. KAPI-D izlenen bir dizinin
+      ICINDEKI TEK bir `.gitignore`'lu DOSYAYI (dizin degil) sinar:
+      (1) POZITIF KONTROL: o dosya havuza GIRMEZ, hukum "hicbir yerde yok".
+      (2) MUTANT: dosya suzgeci sokulur -> eski cumle geri gelir (ISIRIR).
+      (3) 2-EK KORUNUR: yoksayilan DOSYA'nin varligi, beyan edilen yolu F'den
+          O'ya TASIMAZ (ayni agacta kapi hala FAIL/exit 1).
+      (4) IZLENEN DOSYA KORUNUR: `.gitignore`'da OLMAYAN kardes dosya (ayni
+          dizinde) havuzda KALIR — dosya suzgeci KOMSU dosyalari silahsizlandirmaz.
 
 NE OLCMEZ
-  KALEM 2-EK (beyan edilen yolun kendisi haric bir dizinde -> O/OLCULEMEDI)
-  BURADA degil, `faz0/h4_bolme_mutanti.py`nin kapsadigi genel H4 kenarlarinin
-  disinda AYRI bir eksen oldugu icin BU dosyada test EDILMEZ; o olcut kod
-  incelemesiyle dogrulanir (bkz. IS_EMRI_DEVRAL.md KALEM 2-EK) ve mevcut H4
-  bataryasindaki hicbir hali BOZMAZ (KALEM 0: additive).
   Performans (`check-ignore` toplu/tek surec) BURADA olculmez — davranissal
   DEGIL, uygulama detayidir; kod incelemesiyle dogrulanir.
 
-CIKIS KODU  0 uc kapi da temiz VE mutant ISIRDI · 1 kapi kirmizi / mutant KACTI
+CIKIS KODU  0 dort kapi da temiz VE iki mutant da ISIRDI · 1 kapi kirmizi / mutant KACTI
             2 OLCULEMEDI (git yok, motor okunamadi, senaryo kurulamadi)
 """
 import io
@@ -136,6 +142,19 @@ def hal_kur(motor, ad, tip, taban):
         _dosya(kok, "arsiv/belgeler/rapor.md", "# eski rapor\n")
         _commit_et(kok)
         _ekle(kok, ["Rapor burada: `belgeler/rapor.md`."])
+    elif tip == "ignore_dosya":
+        # besli-paket KALEM B (6 Eyl 2026, Onur kilidi 20:30) — is emrinden
+        # BIREBIR minimal vaka: izlenen bir DIZIN (`notlar/`) icinde TEK bir
+        # dosya git-ignore'lu (`*.log`), kardes dosya izleniyor. KALEM 2
+        # yalniz `d0` (alt DIZIN) listesini `haric_git`e karsi suzuyordu; bu
+        # tek dosya (`notlar/rapor.log`) hicbir dizin filtresine UGRAMADAN
+        # havuza girmeye devam ediyordu.
+        _dosya(kok, ".gitignore", "*.log\n")
+        _dosya(kok, "notlar/rapor.log", "gizli log\n")
+        _dosya(kok, "notlar/gercek.md", "gercek not\n")
+        _commit_et(kok)      # rapor.log yoksayili oldugu icin commit'e GIRMEZ
+        _ekle(kok, ["Olu baglanti denemesi: `belgeler/rapor.log`.",
+                    "Izlenen dosya beyani: `belgeler/gercek.md`."])
     else:
         raise Kurulamadi("bilinmeyen hal tipi: %s" % tip)
     return kok
@@ -145,6 +164,7 @@ HALLER = [
     ("h_ignore_olu", "ignore_olu"),
     ("h_git_yok", "git_yok"),
     ("h_izlenen", "izlenen"),
+    ("h_ignore_dosya", "ignore_dosya"),
 ]
 
 
@@ -181,8 +201,23 @@ def _siniflandirma(satir):
     return "DIGER"
 
 
+def _yol_siniflandir(cikti, yol):
+    """KAPI-D/M-2 icin: `_h4_satiri` yalniz ILK H4 satirini yakalar — bir
+    agacta BIRDEN FAZLA H4 bulgusu varsa (KAPI-D'de oldugu gibi) YANLIS yolun
+    siniflandirmasini donebilir (alfabetik sirada `belgeler/gercek.md`,
+    `belgeler/rapor.log`den ONCE gelir). Bu yuzden BELIRLI bir yolu tasiyan
+    H4 satirini arar."""
+    for satir in [s.strip() for s in cikti.split("\n")]:
+        if yol in satir and (satir.startswith("[H4]") or satir[:12].find("H4:") >= 0):
+            return _siniflandirma(satir)
+    return "YOK"
+
+
 def hukum(motor, taban):
-    """Uc hal icin (kod, H4 satiri, siniflandirma) doner. `taban` HER cagriya
+    """Her hal icin (kod, H4 satiri, siniflandirma, HAM cikti) doner. Sonuncu
+    alan (ham cikti) KAPI-D'nin AYNI agacta IKI ayri H4 bulgusunu (dosya
+    ekseni + 2-EK'in F kaldigi) birlikte dogrulamasi icin gerekli — tek
+    satirlik `_h4_satiri` yalniz ILK H4 satirini yakalar. `taban` HER cagriya
     OZEL (mkdtemp) olmalidir — iki ayri motor (temiz/mutant) ayni dizin
     agacini PAYLASMAZ."""
     kokler = haller_kur(motor, os.path.join(taban, "kaynak"))
@@ -191,7 +226,7 @@ def hukum(motor, taban):
     for ad, tip in HALLER:
         kod, cikti = olcum[ad]
         satir = _h4_satiri(cikti)
-        out[ad] = (kod, satir, _siniflandirma(satir))
+        out[ad] = (kod, satir, _siniflandirma(satir), cikti)
     return out
 
 
@@ -244,24 +279,43 @@ def main():
             return 2
 
         b = []
-        kod, satir, sinif = h["h_ignore_olu"]
+        kod, satir, sinif, _ = h["h_ignore_olu"]
         print("  KAPI-A .gitignore'lu kopya : kod=%s · %s" % (kod, satir or "(H4 satiri YOK)"))
         if kod == 0:
             b.append("KAPI-A: kapi YESIL — beklenen [H4] OLU bulgusu YOK")
         elif sinif != "OLU_ACIKLAMASIZ":
             b.append("KAPI-A: siniflandirma %r (beklenen OLU_ACIKLAMASIZ — 'hicbir yerde yok')" % sinif)
 
-        kod, satir, sinif = h["h_git_yok"]
+        kod, satir, sinif, _ = h["h_git_yok"]
         print("  KAPI-B git yok             : kod=%s · %s" % (kod, satir or "(H4 satiri YOK)"))
         if sinif == "OLU_ACIKLAMASIZ":
             b.append("KAPI-B: git YOKKEN de 'hicbir yerde yok' — sabit liste davranisi BOZULDU")
         elif sinif not in ("TASINMIS", "YOL_TUTMUYOR"):
             b.append("KAPI-B: siniflandirma %r (beklenen TASINMIS/YOL_TUTMUYOR — eski davranis)" % sinif)
 
-        kod, satir, sinif = h["h_izlenen"]
+        kod, satir, sinif, _ = h["h_izlenen"]
         print("  KAPI-C izlenen dosya       : kod=%s · %s" % (kod, satir or "(H4 satiri YOK)"))
         if sinif != "TASINMIS":
             b.append("KAPI-C: izlenen dosya TASINMIS bulunmadi (%r) — kapi KOR edilmis olabilir" % sinif)
+
+        kod, satir, sinif, cikti = h["h_ignore_dosya"]
+        rapor_sinif = _yol_siniflandir(cikti, "belgeler/rapor.log")
+        gercek_sinif = _yol_siniflandir(cikti, "belgeler/gercek.md")
+        print("  KAPI-D yoksayilan DOSYA    : kod=%s · rapor.log=%s · gercek.md=%s"
+              % (kod, rapor_sinif, gercek_sinif))
+        if kod != 1:
+            b.append("KAPI-D: kapi exit %s (1/FAIL bekleniyordu — 2-EK'in O'ya kaydirmasi DEGIL)" % kod)
+        if rapor_sinif != "OLU_ACIKLAMASIZ":
+            b.append("KAPI-D: 'belgeler/rapor.log' siniflandirmasi %r (beklenen "
+                     "OLU_ACIKLAMASIZ — 'hicbir yerde yok'; dosya suzgeci calismiyor olabilir)"
+                     % rapor_sinif)
+        if "[H4] OLU BAGLANTI: belgeler/rapor.log" not in cikti:
+            b.append("KAPI-D (2-EK): 'belgeler/rapor.log' F listesinde DEGIL — "
+                     "yoksayilan dosyanin varligi beyani yanlislikla O'ya tasimis olabilir")
+        if gercek_sinif not in ("TASINMIS", "YOL_TUTMUYOR"):
+            b.append("KAPI-D: izlenen kardes dosya ('belgeler/gercek.md' -> notlar/gercek.md) "
+                     "siniflandirmasi %r — havuzdan haric tutulmus olabilir (dosya suzgeci "
+                     "komsuyu da siliyor)" % gercek_sinif)
 
         for x in b:
             print("      ! %s" % x)
@@ -270,26 +324,74 @@ def main():
             return 1
 
         print("\n--- MUTANT SINAMASI (kapinin var olmasi ISIRDIGI anlamina gelmez) ---")
-        mdir = tempfile.mkdtemp(prefix="mutant_", dir=taban)
+        kacan = []
+
+        mdir = tempfile.mkdtemp(prefix="mutant1_", dir=taban)
         sab, hata = sokulmus_motor(s, mdir)
         if sab is None:
             print("  M-1 git sorgusu sokulur           OLCULEMEDI: %s" % hata)
             print(CIZGI)
             print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
             return 2
-        mh = hukum(sab, os.path.join(taban, "mutant"))
-        mkod, msatir, msinif = mh["h_ignore_olu"]
+        mh = hukum(sab, os.path.join(taban, "mutant1"))
+        mkod, msatir, msinif, _ = mh["h_ignore_olu"]
         if msinif != "OLU_ACIKLAMASIZ":
             print("  M-1 git sorgusu sokulur           -> ISIRDI ✓  (kopya geri geldi: %s)"
                   % (msatir or "(H4 satiri YOK)"))
+        else:
+            print("  M-1 git sorgusu sokulur           -> KACTI ✗  (sorgu sokulunce de ayni "
+                  "hukum cikti — kapi bunu HIC OLCMUYOR)")
+            kacan.append("M-1")
+
+        # M-2 (besli-paket KALEM B, MUTANT madde 2): DOSYA suzgeci sokulur ->
+        # eski cumle ("yol tutmuyor") geri gelmeli. `_h4_havuz`in imzasi/tek
+        # cagri yeri DEGISMEZ; mutant yalniz govdedeki YENI dosya-suzme
+        # bloğunu hedefler.
+        ANKOR2 = ('            _rel_f = _rel(os.path.join(r0, f), kok)\n'
+                  '            if _rel_f in haric_git:\n'
+                  '                continue\n'
+                  '            havuz.setdefault(f, []).append(_rel_f)\n')
+        YENI2 = '            havuz.setdefault(f, []).append(_rel(os.path.join(r0, f), kok))\n'
+        n2 = s.count(ANKOR2)
+        if n2 != 1:
+            print("  M-2 dosya suzgeci sokulur         OLCULEMEDI: capa %d yerde gecti "
+                  "(1 olmali)" % n2)
             print(CIZGI)
-            print("SONUC: YESIL — kapilar temiz, mutant AYRI eksende ISIRDI.")
-            return 0
-        print("  M-1 git sorgusu sokulur           -> KACTI ✗  (sorgu sokulunce de ayni "
-              "hukum cikti — kapi bunu HIC OLCMUYOR)")
+            print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
+            return 2
+        metin2 = s.replace(ANKOR2, YENI2, 1)
+        try:
+            compile(metin2, "<mutant2>", "exec")
+        except SyntaxError as e:
+            print("  M-2 dosya suzgeci sokulur         OLCULEMEDI: sabotajli motor "
+                  "derlenmiyor: %s" % e)
+            print(CIZGI)
+            print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
+            return 2
+        mdir2 = tempfile.mkdtemp(prefix="mutant2_", dir=taban)
+        sab2 = os.path.join(mdir2, "hafiza.py")
+        with io.open(sab2, "w", encoding="utf-8", newline="\n") as f:
+            f.write(metin2)
+        mh2 = hukum(sab2, os.path.join(taban, "mutant2"))
+        _, _, _, cikti2 = mh2["h_ignore_dosya"]
+        # 🔴 `_h4_satiri` DEGIL: agacta IKI H4 bulgusu var, alfabetik sirada
+        # 'belgeler/gercek.md' 'belgeler/rapor.log'dan ONCE gelir — yanlis
+        # yolun siniflandirmasini KAYDIRIRDI. `belgeler/rapor.log`u ACIKCA ara.
+        m2sinif = _yol_siniflandir(cikti2, "belgeler/rapor.log")
+        if m2sinif == "YOL_TUTMUYOR":
+            print("  M-2 dosya suzgeci sokulur         -> ISIRDI ✓  (eski cumle geri geldi: "
+                  "'belgeler/rapor.log' artik YOL_TUTMUYOR)")
+        else:
+            print("  M-2 dosya suzgeci sokulur         -> KACTI ✗  ('belgeler/rapor.log' "
+                  "siniflandirmasi %r — kapi bunu HIC OLCMUYOR)" % m2sinif)
+            kacan.append("M-2")
+
         print(CIZGI)
-        print("SONUC: KAPI KOR — mutant beklendigi gibi olculmedi.")
-        return 1
+        if kacan:
+            print("SONUC: KAPI KOR — %s beklendigi gibi olculmedi." % ", ".join(kacan))
+            return 1
+        print("SONUC: YESIL — dort kapi da temiz, iki mutant da AYRI eksende ISIRDI.")
+        return 0
     finally:
         shutil.rmtree(taban, ignore_errors=True)
 
