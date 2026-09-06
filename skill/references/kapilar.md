@@ -108,6 +108,31 @@ yakaladı — yazılmadan referans verilmişti.)
 **Yanlış-pozitif önlemi:** yalnız *tamamı yol olan* backtick içerikleri sayılır;
 `` `hafiza.py kapi` `` bir komuttur, yol değil.
 
+**Çıplak ad kolu (6 Eylül 2026, gerçek projede ölçüldü):** hafıza-kur ilk kez gerçek bir
+projede koşturulduğunda H4, 13 bulgunun 11'ini (%85) gürültü çıkardı. Sekiz vakanın
+sekizi de ağaçta TAM BİR yerde duruyordu (örnek: `` `QA_STRATEGI.md` `` →
+`belgeler/QA_STRATEGI.md`), ama canlı hafıza dosyayı yalnız **adıyla** anmıştı — dizin
+beyan etmeden. "Yol tutmuyor" hükmü vermek için tutulacak bir yolun **beyan edilmiş**
+olması gerekir; hiç beyan edilmemiş bir yol için bu hüküm anlamsızdır. Düzeltme:
+beyan hiçbir dizin bileşeni taşımıyorsa **ve** ağaçta tam bir aday varsa, dosya bulunmuş
+sayılır (ölü değil).
+
+**Fable Bulgu 7 hâlâ geçerli — çıplak ad kolu onu GEVŞETMEZ:** o bulgu ("yalnız basename
+eşleşmesini taşınmış saymak `README.md`/`config.json` gibi yaygın adlarda kapıyı
+silahsızlandırır") haklıydı ve **korunur**. "Yaygın" = birden çok yerde bulunan; çıplak
+ad kolu yalnız **tam bir eşleşmede** açılır — 0 eşleşme ölü kalır, 2+ eşleşme ölü kalır,
+dizinli bir beyanın başka bir dizinde bulunması da ölü kalır (gerçek projeden birebir
+alınan vaka: `www/index.html` beyanı, dosya `magaza_rafi/site/index.html`'de).
+
+**İki kelime, iki farklı hâl:** hüküm kanalında "TAŞINMIŞ" ve çıplak-ad bulgusu AYNI
+kelimeyle raporlanmaz — dosya taşınmadı, yalnız adıyla anıldı. Motor bu ikinci hâli
+"CIPLAK ADLA ANILDI" diye işaretler; iki hâlin aynı kelimeyle gizlenmesi, bir sonraki
+turda hangi kolun hangi mantıkla geçtiğini ayırt edilemez kılardı.
+
+**Ayrı mutant:** `faz0/h4_ciplak_ad_mutanti.py` (5 kol — pozitif kontrol, mutant, ve
+Fable Bulgu 7'nin üç korunma vakası); `faz0/h4_bolme_mutanti.py`'nin kenar/kanal
+mutantlarından BAĞIMSIZDIR, `_h4_siniflandir`/`_h4_hukum`'un çağrı imzalarına dokunmaz.
+
 ---
 
 ## H5 — SÜRÜM TEKİLLİĞİ

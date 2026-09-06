@@ -3986,18 +3986,33 @@ def _h4_siniflandir(eksik, havuz):
             if c_dizin & {"arsiv", "archive"} or (beyan_dizin and beyan_dizin & c_dizin):
                 iyi = c0; break
         if iyi:
-            tasinmis.append((p0, iyi))
-        elif adaylar:
-            olu.append((p0, "ayni adli baska dosya var ama yol tutmuyor: " + adaylar[0]))
+            tasinmis.append((p0, iyi, "TASINMIS"))
         else:
-            olu.append((p0, None))
+            # IS_EMRI_H4.md (Onur kilidi 6 Eylul 2026) KALEM (a): CIPLAK AD KOLU.
+            # Canli hafiza dosyayi bazen SADECE ADIYLA anar, dizin BEYAN ETMEDEN
+            # (ornek: "Dokuman: `QA_STRATEGI.md`"). Boyle bir beyan icin "yol
+            # tutmuyor" hukmu VERILEMEZ — tutulacak bir yol hic BEYAN EDILMEMISTIR.
+            # Agacta TAM BIR aday varsa dosya BULUNMUS sayilir. Fable Bulgu 7 (c)
+            # burada da GECERLI: 0 ya da 2+ eslesme (asagidaki `len(adaylar) == 1`
+            # sarti) ve dizinli-ama-baska-yerde beyanlar (`not beyan_dizin` sarti)
+            # bu kola hic GIRMEZ, ikisi de OLU olarak KALIR.
+            ciplak_tek = (not beyan_dizin and len(adaylar) == 1)
+            if ciplak_tek:
+                tasinmis.append((p0, adaylar[0], "CIPLAK_AD"))
+            elif adaylar:
+                olu.append((p0, "ayni adli baska dosya var ama yol tutmuyor: " + adaylar[0]))
+            else:
+                olu.append((p0, None))
     return olu, tasinmis
 
 
 def _h4_hukum(F, N, olu, tasinmis):
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
-    for p0, yer in tasinmis[:5]:
-        N.append("H4: TASINMIS (olu degil): '%s' -> %s" % (p0, yer))
+    for p0, yer, tur in tasinmis[:5]:
+        # IS_EMRI_H4.md KALEM (b): CIPLAK_AD, TASINMIS ile AYNI kelimeyle
+        # RAPORLANMAZ — dosya taşınmadı, yalniz adiyla anildi (bkz. yukarida).
+        soz = "CIPLAK ADLA ANILDI" if tur == "CIPLAK_AD" else "TASINMIS"
+        N.append("H4: %s (olu degil): '%s' -> %s" % (soz, p0, yer))
     if len(tasinmis) > 5:
         N.append("H4: … +%d tasinmis dosya daha (bulgu degil)" % (len(tasinmis) - 5))
     for p0, aciklama in olu[:10]:

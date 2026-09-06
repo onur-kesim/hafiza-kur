@@ -2062,3 +2062,42 @@ jobs:
           name: hook-${{ matrix.os }}
           path: hook-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-27) H4 CIPLAK AD MUTANTI — besli-paket/IS_EMRI_H4.md (Onur kilidi 6 Eylul
+  #     2026): hafiza-kur ilk kez GERCEK bir projede (Uygulama - Tuzak Avcisi
+  #     kopyasi) kosturuldu, H4 kapisi 13 bulgudan 11'ini GURULTU cikardi
+  #     (%85 gurultu). Kok: canli hafiza bir dosyayi SADECE ADIYLA anmis
+  #     (dizin BEYAN ETMEDEN); `_h4_siniflandir` boyle bir beyan icin "yol
+  #     tutmuyor" hukmu VEREMEZ olmasi gerekirken OLU sayiyordu — tutulacak
+  #     bir yol hic BEYAN EDILMEMISTIR.
+  #     Duzeltme CIPLAK AD KOLU ekler: beyan dizinsiz VE agacta TAM BIR aday
+  #     varsa dosya BULUNMUS sayilir; hukum kanalinda "TASINMIS" ile AYNI
+  #     kelime KULLANILMAZ. Fable Bulgu 7 (0/2+ eslesme, dizinli-ama-baska-
+  #     yerde beyan) DEGISMEDEN korunur — bes koldan uçu bunu KANITLAR.
+  #     🔴 UC PLATFORM, `continue-on-error` YOK (KALEM 0: gevseyen bir kapi
+  #     kanitsiz sokulmez, additive kalir).
+  # ---------------------------------------------------------------------------
+  h4_ciplak_ad_mutanti:
+    name: H4 ciplak ad mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: canli hafizanin SADECE ADIYLA andigi dosya haksiz OLU mu sayiliyor (5 kol)
+        shell: bash
+        run: python faz0/h4_ciplak_ad_mutanti.py 2>&1 | tee h4-ciplak-ad-cikti.txt
+      - name: h4 ciplak ad mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h4-ciplak-ad-${{ matrix.os }}
+          path: h4-ciplak-ad-cikti.txt
+          if-no-files-found: warn

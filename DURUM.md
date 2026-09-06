@@ -9,9 +9,12 @@ BAYAT) · README_EN kapısı. **25 Ağu yazısı KAPSAM DIŞI** — İş Portfö
 hook'ları **üç platformda da koşuyor** — beş yeni mutantın 15 kolu 15/15 yeşil.
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
+**H4 çıplak ad** (6 Eyl, gerçek projede ölçüldü) — dosya SADECE adıyla anınca `_h4_siniflandir`
+haksız OLU basıyordu (13 bulgunun 11'i GÜRÜLTÜ). Çıplak ad kolu: beyan dizinsiz + TAM BİR
+aday → bulundu, "TAŞINMIŞ" ile AYNI kelime KULLANILMAZ. Fable Bulgu 7 korunur. Yeni mutant 5/5 ·
 **BEŞLİ PAKET** (6 Eyl, dogfood — 5 düzeltme, 5 AYRI mutant, pozitif kontrollü; CI #96 15/15)
-— ① `AYLAR` ay KISALTMASINI tanımıyordu ⇒ H12 **ve** H14 tek kökten kördü (ilk hipotez `·`
-ayracıydı, ÖLÇÜMLE YANLIŞLANDI) ② `kur` yalnız KENDİ v1 izlerini tarıyordu ⇒ `devir_rolu()`
+— ① `AYLAR` ay KISALTMASINI tanımıyordu ⇒ H12 **ve** H14 tek kökten kördü ② `kur` yalnız
+KENDİ v1 izlerini tarıyordu ⇒ `devir_rolu()`
 yeniden kullanıldı, kaçış `--yine-de` zincire düşer ③ `--kapsam-zorla` → exit 5 (varsayılan
 BİREBİR korundu; beyanlı gevşekliği de kapsar) ④ `surum` ⑤ `hook --kur`. 🔴 ÜÇ REGRESYON AÇILDI
 VE KAPANDI: `cmd_kur_bolme` iki çapası · `gitfile_korlugu` 6. kol sayacı (3→4, bağımsız sayımla) ·
@@ -72,20 +75,17 @@ tutarlılığı · **md.9** görünürlük · **md.6-8** keşif/eşle/durma + ç
 - 🔴 **Defter COMMIT'lenmeden `kapi` KIRMIZI** ([H9]) ⇒ "defteri `.gitignore`'a al" md.6(c)'yi
   ULAŞILMAZ kılar. **Derleme artefaktı H14'ün DELİLİNİ bozar**.
 - 🔴 **BAĞLI KLASÖRDE KOŞMAYANLAR:** `hafiza.py` (H9 `git status` → kalıcı `.git/index.lock`) ·
-  `paketle.sh` (mount `zip` vermiyor) · **UZUN BATARYA (6 Eyl):** `t_y42.py` mount VM'inde 150 sn'de
-  bitmedi, arka plan süreci de çağrılar arası ÖLÜYOR ⇒ depo PUBLIC olduğundan **bulut konteynerde
-  klonlanıp** koşulur (aynı batarya 67 sn; SHA ile çaprazla; orası **root**tur, `t_y42` Y-1 senaryosu
-  orada ÖLÇÜLEMEDİ döner). Mount `unlink` vermiyor — silmek yerine `fable dosyalama/_to_delete/`
-  altına TAŞI. ✏️ `.github/workflows/*` köprüden `device_bash` ile YAZILABİLİYOR (BOM'suz UTF-8/LF);
-  `device_commit_files` o yolu REDDEDİYOR.
+  `paketle.sh` (mount `zip` yok) · `t_y42.py` mount VM'inde 150 sn'de bitmiyor ⇒ **bulut
+  konteynerde klonlanıp** koşulur (67 sn, SHA çapraz; orası **root**, Y-1 senaryosu ÖLÇÜLEMEDİ
+  döner). Mount `unlink` vermiyor — silmek yerine `_to_delete/`ye TAŞI. ✏️ `.github/workflows/*`
+  `device_bash` ile YAZILIR; `device_commit_files` REDDEDER.
 - 🟡 Beyan/mtime çelişkisini ölçen kapı YOK · `ruff/mypy/bandit` YALNIZ `hafiza.py`'yi tarar ·
   `ci_kapsam_kapisi.py` deseni `faz0/*_mutanti.py` · `readme_mutanti` README'nin ANLATIMINI ölçmez ·
   `paketten_kos` belgenin ANLAMINI değil GEÇTİĞİNİ ölçer · `devral`ın YAZIM ayağı mutantsız ·
   `derle` sonrası ikinci `isir` ölçülmüyor · `t_y42.py` 1 senaryo root altında ÖLÇÜLEMEDİ ·
   `isir`da **M-H9 (git izlenirliği) mutantı YOK** · dört ölçümün koşucusu pakette yok (beyandır) ·
   kilit inode yarışı daraltıldı, kapatılmadı · zincir anahtarsız (bilinçli) · motorda
-  `push`/`fetch`/`remote`/`origin` SIFIR eşleşme · `PROJE_RADAR.jsonl` YOK ⇒ kısır döngü radarı
-  bu projede HÜKÜM VEREMİYOR.
+  `push`/`fetch`/`remote`/`origin` SIFIR eşleşme · `PROJE_RADAR.jsonl` YOK ⇒ radar HÜKÜM VEREMİYOR.
 - 🔴 **`rmtree(ignore_errors=True)` 38 dosyada / 124 yerde, `onerror` YOK (5 Eyl, kusur DEĞİL
   çöplenme):** md.8 ⇒ **KOD DEĞİŞMEZ**, ikinci ısırıkta açılır. Tazelik:
   `dir /b "%TEMP%\h16km_*" | find /c /v ""`.
