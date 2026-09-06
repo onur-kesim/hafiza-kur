@@ -1345,9 +1345,13 @@ def t_h5c():
                            ("_KOVA.json", '{"satirlar":{"1":"CANLI"}}\n'),
                            ("_KAYNAK.md", "# v1 kaynak\n")):
             yazd(os.path.join(kok, "arsiv", "hafiza", ad), icerik)
+        # '## ARSIV DIZINI' BILEREK var: KALEM 1'den beri (IS_EMRI_DEVRAL.md, 6 Eyl
+        # 2026) `devral`, canlida BASKA basliklar VARKEN bu bolumu ARTIK force
+        # EKLEMIYOR; yoksa H6 "ARSIV DIZINI bolumu yok" basar ve bu senaryo KENDI
+        # kapisi yuzunden kirmizi yanar — burada olculmek istenen eksen DEGIL.
         yazd(os.path.join(kok, "PROJE_HAFIZA.md"),
-             "# Eski\n> Son guncelleme: %s\n\n## GUNCEL DURUM\n- eski icerik\n"
-             % _dt.date.today().isoformat())
+             "# Eski\n> Son guncelleme: %s\n\n## GUNCEL DURUM\n- eski icerik\n\n"
+             "## ARSIV DIZINI\n" % _dt.date.today().isoformat())
         k, c = kos(["devral"], kok)
         k2, c2 = kos(["kapi"], kok)
         # v1 dosyalarina DOKUNULMAMIS olmali

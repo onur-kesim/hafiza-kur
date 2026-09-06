@@ -126,9 +126,15 @@ def kapi_a1(motor, taban):
 
 
 # ------------------------------------------------------------------ KAPI-A2
+# '## ARSIV DIZINI' basligi BILEREK var: KALEM 1'den beri (IS_EMRI_DEVRAL.md,
+# 6 Eyl 2026) `devral` bu basligi, canlida BASKA basliklar VARKEN, ARTIK force
+# EKLEMIYOR ("diskteki gercek, varsayilana yeglenir" — basliklar varsa ARSIV
+# DIZINI DAHIL hicbir sey dayatilmaz). O bolum burada YOKSA H6 "ARSIV DIZINI
+# bolumu yok" diye FAIL verir ve bu senaryo KENDI kapisi yuzunden kirmizi
+# yanar — A2'nin olcmek istedigi eksen (H10-SAHIP gorunurlugu) DEGIL.
 ESKI_DEFTER = ("# Eski Proje\n> Son guncelleme: 2026-08-15\n\n## GUNCEL DURUM\n"
                '<!-- blok konu="genel-durum" guncel="2026-08-15" kaynak="-" -->\n'
-               "- eski defterden gelen satir\n<!-- /blok -->\n")
+               "- eski defterden gelen satir\n<!-- /blok -->\n\n## ARSIV DIZINI\n")
 
 
 def kapi_a2(motor, taban):

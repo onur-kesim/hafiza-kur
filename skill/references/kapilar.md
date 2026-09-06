@@ -133,6 +133,19 @@ turda hangi kolun hangi mantıkla geçtiğini ayırt edilemez kılardı.
 Fable Bulgu 7'nin üç korunma vakası); `faz0/h4_bolme_mutanti.py`'nin kenar/kanal
 mutantlarından BAĞIMSIZDIR, `_h4_siniflandir`/`_h4_hukum`'un çağrı imzalarına dokunmaz.
 
+**Git'in yoksaydığını havuz da yoksayar (6 Eylül 2026, Momentum kopyasında ölçüldü):**
+`_h4_havuz` eskiden `.git/node_modules/__pycache__/.venv`'i ELLE taklit ediyordu;
+`.gitignore`'a giren dizinler (`.dart_tool/`, derleme `wwwroot`'u) havuza giriyor ve
+oradaki bir kopya "TAŞINMIŞ"/"yol tutmuyor" sayılıyordu — hiçbiri git tarafından
+izlenmiyorken. Artık git'e SORDURULUR (`git ls-files --others --ignored
+--exclude-standard --directory`, tek toplu süreç); git yoksa/sorgu düşerse sabit liste
+davranışı BİREBİR korunur. Bu bir GEVŞETME değil TERSİNE DARALTMADIR: hüküm kaybolmaz,
+gerekçesi doğrulur ("yol tutmuyor" → "hiçbir yerde yok"). **KALEM 2-EK:** beyan edilen
+yolun kendisi hariç-tutulan bir dizindeyse (ör. `.git/index.lock`) kapı oraya hiç
+BAKMAMIŞTIR — hüküm `F` değil `O` (ÖLÇÜLEMEDİ) listesine gider. Ayrı mutant:
+`faz0/h4_gitignore_mutanti.py` (3 kol — pozitif kontrol, git yok korunur, izlenen dosya
+korunur); `_h4_havuz`'un imzasına/çağrı yerine dokunmaz.
+
 ---
 
 ## H5 — SÜRÜM TEKİLLİĞİ

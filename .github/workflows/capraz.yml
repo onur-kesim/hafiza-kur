@@ -2101,3 +2101,115 @@ jobs:
           name: h4-ciplak-ad-${{ matrix.os }}
           path: h4-ciplak-ad-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-28) DEVIR BOLUM TURETIMI MUTANTI — besli-paket/IS_EMRI_DEVRAL.md KALEM 1
+  #     (Onur kilidi 6 Eylul 2026): `devral` Momentum kopyasinda kendi basliklari
+  #     olan bir canliya kosulunca SABIT VARSAYILANIN YEDI bolumunu de (ARSIV
+  #     DIZINI DAHIL) BOS ICERIK olarak yaziyordu — kok: eksik-bolum dongusu
+  #     turetilmis `rc["zorunlu_bolumler"]`i degil sabit `VARSAYILAN_RC`yi
+  #     kullaniyordu (GERCEKTEN olculdu: DURUM.md 8186->8537 B). Duzeltme
+  #     sonrasi canlida ZATEN var olan basliklar TEK KAYNAK olur; basliklar
+  #     VARSA HICBIR SEY (ARSIV DIZINI dahil) force EKLENMEZ — dosya YALNIZ
+  #     cipa satiri kadar buyur. Basliksiz (taze) canlida eski davranis BIREBIR
+  #     korunur (ARSIV DIZINI'nin gerekcesi o kolda rapor satirinda gorunur).
+  #     🔴 UC PLATFORM, `continue-on-error` YOK (KALEM 0: gevseyen bir kapi
+  #     kanitsiz sokulmez, additive kalir).
+  # ---------------------------------------------------------------------------
+  devral_bolum_turetimi_mutanti:
+    name: Devir bolum turetimi mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: devral diskteki basliklari mi turetiyor yoksa varsayilani mi dayatiyor (3 kol)
+        shell: bash
+        run: python faz0/devral_bolum_turetimi_mutanti.py 2>&1 | tee devral-bolum-turetimi-cikti.txt
+      - name: devir bolum turetimi mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: devral-bolum-turetimi-${{ matrix.os }}
+          path: devral-bolum-turetimi-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-29) H4 GITIGNORE MUTANTI — besli-paket/IS_EMRI_DEVRAL.md KALEM 2 (Onur
+  #     kilidi 6 Eylul 2026): `_h4_havuz` git'in gorduğunu ELLE TAKLIT EDIYORDU
+  #     (sabit `.git/node_modules/__pycache__/.venv` listesi). Momentum kopyasinda
+  #     `main.dart.js` agacta 7 yerde vardi ve H4 "yol tutmuyor" dedi; ama YEDISI
+  #     de `.gitignore` tarafindan yok sayiliyordu (`.dart_tool/`, derleme
+  #     wwwroot'u) — hicbiri izlenmiyordu. Duzeltme git'e SORDURUR (`git ls-files
+  #     --others --ignored --exclude-standard --directory`, TEK toplu surec);
+  #     git yoksa/sorgu duserse sabit liste davranisi BIREBIR korunur.
+  #     Bu bir GEVSETME DEGIL, TERSINE DARALTMADIR: bulgu kaybolmuyor, gerekcesi
+  #     dogruluyor ("yol tutmuyor" -> "hicbir yerde yok").
+  #     🔴 UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  h4_gitignore_mutanti:
+    name: H4 gitignore mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: git'in yoksaydigi yollar H4 havuzuna GIRIYOR mu (3 kol)
+        shell: bash
+        run: python faz0/h4_gitignore_mutanti.py 2>&1 | tee h4-gitignore-cikti.txt
+      - name: h4 gitignore mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h4-gitignore-${{ matrix.os }}
+          path: h4-gitignore-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-30) H14 DAMGA DONMUS MUTANTI — besli-paket/IS_EMRI_DEVRAL.md KALEM 3
+  #     (Onur kilidi 6 Eylul 2026, bu is emrinin EN PAHALI bulgusu): Uygulama -
+  #     Tuzak Avcisi kopyasinda H12/H14 "kayit birakilmadi" diyordu ama git AYNI
+  #     GUN IKI KEZ hafiza defterine commit oldugunu gosteriyordu — cumle
+  #     YANLISTI. Kok: `_kapi_h14` proje tarafini git'e sorar, hafiza tarafini
+  #     yalniz BEYAN edilen damgadan (`t_son`) okur; git elinin altindayken
+  #     hafiza defterlerine dokunan SON COMMIT'e (`t_git`) HIC bakmiyordu.
+  #     🔴 HUKUM GEVSEMEDI: duzeltme sonrasi da iki halde (gercek gerileme /
+  #     damga donmus) kapi FAIL verir, exit hala 1 — degisen yalniz HANGI
+  #     CUMLENIN basildigidir. Git yoksa/sorgu duserse davranis BIREBIR eskisi.
+  #     🔴 UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  h14_damga_donmus_mutanti:
+    name: H14 damga donmus mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: git hafiza defterlerine H14'ten ONCE mi sorduruluyor (3 kol, hukum gevsemez)
+        shell: bash
+        run: python faz0/h14_damga_donmus_mutanti.py 2>&1 | tee h14-damga-donmus-cikti.txt
+      - name: h14 damga donmus mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h14-damga-donmus-${{ matrix.os }}
+          path: h14-damga-donmus-cikti.txt
+          if-no-files-found: warn

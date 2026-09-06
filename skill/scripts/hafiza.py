@@ -3269,11 +3269,31 @@ def cmd_devral(a):
         _i0 = 1 if (L and L[0].startswith("# ")) else 0
         L = L[:_i0] + [_ek] + L[_i0:]
         print("  'Son guncelleme' satiri EKLENDI (H12/H14 cipasi)")
+    # KALEM 1 (Onur kilidi 6 Eyl 2026, IS_EMRI_DEVRAL.md): OLCULDU — bu dongu
+    # rc["zorunlu_bolumler"]i (basliklar or [] ile YUKARIDA turetilmisti) DEGIL,
+    # VARSAYILAN_RC'yi kullaniyordu. Sonuc: canlida ZATEN '## ' basligi olan bir
+    # projede bile SABIT 7 bolum (ARSIV DIZINI DAHIL) BOS ICERIK olarak
+    # yaziliyordu (Momentum: DURUM.md 8186->8537 B, gercekte olculdu) —
+    # devral'in KENDI sozu ("diskteki gercek, varsayilana yeglenir") ihlal
+    # ediliyordu.
+    # DUZELTME: canlida baslik ZATEN VARSA (basliklar dolu) o basliklar rc'ye
+    # ZATEN gectigi icin L'de TANIM GEREGI mevcuttur; BASKA HICBIR SEY force
+    # EKLENMEZ (b) — '## ARSIV DIZINI' ISTISNASI (c) da bu kola GIRMEZ: motor
+    # ONU BILE dayatmiyor, cunku o da kullanicinin GERCEK dosyasina eklenen bir
+    # BOLUMDUR ve (a) ilkesi ("diskteki gercek, varsayilana yeglenir") ondan da
+    # UST GELIR. Basliksiz (taze) canlida (basliklar bos) eski davranis
+    # BIREBIR korunur (d): VARSAYILAN_RC'nin 7 bolumu de eklenir — burada
+    # '## ARSIV DIZINI'nin (motorun URETTIGI blok, kullanici icerigi DEGIL)
+    # gerekcesi ayrica GORULUR olur (c).
+    _bolum_adaylari = [] if basliklar else list(VARSAYILAN_RC["zorunlu_bolumler"])
     _eklenen_bolum = []
-    for _b in VARSAYILAN_RC["zorunlu_bolumler"]:
+    for _b in _bolum_adaylari:
         if _bolum_araligi(L, _b)[0] is None:
             L += ["", _b, ""]
             _eklenen_bolum.append(_b)
+            if _b == "## ARSIV DIZINI":
+                print("  ISTISNA: '## ARSIV DIZINI' eklendi — bu bolum KULLANICI icerigi "
+                      "DEGIL, motorun uretip _arsiv_dizini_tazele ile doldurdugu bloktur.")
     if _eklenen_bolum or not os.path.isfile(canli_p) or "\n".join(L) != oku(canli_p):
         yaz(canli_p, "\n".join(L))
         rc["zorunlu_bolumler"] = rc["zorunlu_bolumler"] + _eklenen_bolum
@@ -3351,6 +3371,9 @@ def cmd_devral(a):
     print("      SABIT CERCEVE'ye tasi, ya o bolumu .hafizarc'ta kural_evi_bolumleri'ne ekle.")
     print("   3. [H10] KONULAR.md tanimsiz: bloklara konu etiketi eklenirken sozluge de ekle.")
     print("   4. [H13] plansiz seri: SAKLAMA_PLANI.md'ye satir ekle.")
+    print("   5. [H6] 'ARSIV DIZINI bolumu yok': KALEM 1'den beri devral bunu artik KENDI"
+          " icin diskte var olan basliklar VARKEN force EKLEMEZ (diskteki gercek ustundur) —")
+    print("      canliya '## ARSIV DIZINI' basligini kendin ekle, `hafiza.py derle` icerigini doldurur.")
     print("  Mevcut sisteme (v1) DOKUNULMADI: eski cipa, zincir ve defterler oldugu gibi duruyor.")
     print("\n  Kapi yesillenince: python hafiza.py isir --kok=\"%s\"" % kok)
     return 0
@@ -3960,10 +3983,53 @@ def _h4_adaylar(metin):
     return aday
 
 
+# KALEM 2 (Onur kilidi 6 Eyl 2026, IS_EMRI_DEVRAL.md): _h4_havuz'un o kosumda
+# gercekten HARIC tuttugu dizin kumesi (sabit liste + git'in yoksaydiklari).
+# _h4_havuz'un IMZASI (`(kok)`) ve tek cagri yeri (`havuz = _h4_havuz(kok)`)
+# FAZ C bolme mutantlarinin (h4_bolme_mutanti.py, fazC_bolucu_h4.py) capasidir
+# ve DEGISTIRILMEZ; bu yan-kanal _kapi_h4'un KALEM 2-EK'i olcmesini saglar
+# (bkz. _KAPI_KOK icin ayni desen).
+_H4_HARIC_SON = [set()]
+
+
+def _h4_git_yoksayilanlar(kok):
+    """git'in gorduğunu ELLE TAKLIT ETMEK yerine git'e SORDURULUR (KALEM 2).
+
+    TEK COMMAND (toplu; dosya basina ayri surec YOK): `git ls-files --others
+    --ignored --exclude-standard --directory` yoksayilan dizinleri TEK satirda
+    (icine inmeden) ve yoksayilan KOK dosyalarini doner. `.gitignore` glob'u,
+    `!` negasyonu, ic ice `.gitignore`'lar — hepsi GIT'IN KENDI mantigidir,
+    burada ELLE ayristirilmaz.
+
+    Git yoksa ya da sorgu basarisiz olursa BOS kume doner -> cagiran taraf
+    (`_h4_havuz`) mevcut SABIT liste davranisina BIREBIR duser (b)."""
+    if not _git_kokte_mi(kok):
+        return set()
+    try:
+        r = subprocess.run(
+            ["git", "-C", kok, "ls-files", "-z", "--others", "--ignored",
+             "--exclude-standard", "--directory"],
+            capture_output=True, timeout=120)
+    except Exception:                                  # noqa: BLE001 — git YOK korunur
+        return set()
+    if r.returncode != 0:
+        return set()
+    yol = set()
+    for oge in (r.stdout or b"").split(b"\0"):
+        if not oge:
+            continue
+        yol.add(oge.decode("utf-8", "replace").rstrip("/"))
+    return yol
+
+
 def _h4_havuz(kok):
+    haric_sabit = {".git", "node_modules", "__pycache__", ".venv"}
+    haric_git = _h4_git_yoksayilanlar(kok)
+    _H4_HARIC_SON[0] = haric_sabit | haric_git
     havuz = {}
     for r0, d0, f0 in os.walk(kok):
-        d0[:] = [d for d in d0 if d not in (".git", "node_modules", "__pycache__", ".venv")]
+        d0[:] = [d for d in d0 if d not in haric_sabit
+                 and _rel(os.path.join(r0, d), kok) not in haric_git]
         for f in f0:
             havuz.setdefault(f, []).append(_rel(os.path.join(r0, f), kok))
     return havuz
@@ -4030,6 +4096,15 @@ def _kapi_h4(F, N, O, kok, y):
     if eksik:
         # Tasinmis mi, yok mu? Ayni ADLA baska bir yerde duruyorsa bu OLU DEGIL, TASINMISTIR.
         havuz = _h4_havuz(kok)
+        # KALEM 2-EK (Onur kilidi 6 Eyl 2026, IS_EMRI_DEVRAL.md): beyan edilen
+        # yolun ILK BILESENI havuzdan HARIC tutulan bir dizinse (sabit liste +
+        # git'e sorulan yoksayma) kapi ORAYA HIC BAKMADI -> "hicbir yerde yok"
+        # HUKMU verilemez (olcume, olcemedigi bir yer icin hukum vermek dogru
+        # degildir). Boyle bir yol F'ye degil O'ya gider.
+        _haric = _H4_HARIC_SON[0]
+        for _p in [p for p in eksik if p.split("/", 1)[0] in _haric]:
+            O.append("H4: %s havuz disinda (yoksayilan dizin) — OLCULEMEDI" % _p)
+        eksik = [p for p in eksik if p.split("/", 1)[0] not in _haric]
         olu, tasinmis = _h4_siniflandir(eksik, havuz)
         _h4_hukum(F, N, olu, tasinmis)
 
@@ -4499,6 +4574,35 @@ def _kapi_h11(F, N, O, y):
 #     en_yeni  SAPMA HARITASI -> SAPMA HUKMU
 
 
+# KALEM 3 (Onur kilidi 6 Eyl 2026, IS_EMRI_DEVRAL.md): hafiza defterlerine
+# dokunan SON COMMIT'in tarihi (t_git) BURADA (H12) bir kez hesaplanir; H14
+# (asagida, _h14_hukum icinde) AYNI degeri bu yan-kanaldan okur — ayni sorgu
+# iki kez kosturulmaz. Desen `_H4_HARIC_SON`/`_KAPI_KOK` ile aynidir.
+_H14_T_GIT_SON = [None]
+
+
+def _h12_hafiza_git_tarihi(y, rc):
+    """Hafiza defterlerine (canli + hafiza_dizini + ek_arsiv_dosyalari) DOKUNAN
+    SON COMMIT'in tarihi. `_h14_git_durumu`nun PROJE tarafiyla KARISTIRILMAZ —
+    bu sorgu yalniz HAFIZA defterlerinedir, TEK toplu `git log` yeter.
+
+    Git yoksa/sorgu duserse None doner -> H12/H14 davranisi BIREBIR eskisi
+    gibi kalir (KALEM 3 (e)). Yeni yapilandirma anahtari YOK, sifir bagimlilik."""
+    kok = y.kok
+    if not _git_kokte_mi(kok):
+        return None
+    yollar = [_rel(y.canli, kok), _rel(y.h, kok)] + list(rc.get("ek_arsiv_dosyalari") or [])
+    try:
+        r = subprocess.run(["git", "-C", kok, "log", "-1", "--format=%ct", "--"] + yollar,
+                           capture_output=True, text=True, encoding="utf-8", errors="replace",
+                           timeout=120)
+    except Exception:                                  # noqa: BLE001 — git YOK/bozuk korunur
+        return None
+    if r.returncode != 0 or not (r.stdout or "").strip().isdigit():
+        return None
+    return _dt.date.fromtimestamp(int(r.stdout.strip()))
+
+
 def _h12_tazelik(F, N, O, rc, y):
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
     gun = rc["bayatlik_gun"]
@@ -4508,10 +4612,22 @@ def _h12_tazelik(F, N, O, rc, y):
         fail("H12", "'Son guncelleme' GELECEKTE (%s) — gecersiz. Saat kaymasi ya da yazim hatasi; "
                     "bu hal iki tazelik kapisini birden susturur." % t_son.isoformat())
         t_son = None
+    _H14_T_GIT_SON[0] = _h12_hafiza_git_tarihi(y, rc) if t_son else None
     if t_son:
         d = (_dt.date.today() - t_son).days
         if d > gun:
-            fail("H12", "canli hafiza %d gundur guncellenmemis (tavan %d gun)" % (d, gun))
+            # KALEM 3 (d): git, damgadan SONRA hafiza defterlerine dokunan bir
+            # commit biliyorsa (t_git > t_son) "guncellenmemis" hukmu YANLIS
+            # TESHISTIR — kayit BIRAKILMIS, yalniz damga DONMUS. Boyle degilse
+            # (git yok/sorgu dustu/t_git<=t_son) eski cumle BIREBIR korunur (e);
+            # gercek "kayit birakilmadi" hali yumusatilmaz.
+            t_git = _H14_T_GIT_SON[0]
+            if t_git and t_git > t_son:
+                fail("H12", "beyan edilen tarih %d gundur yenilenmemis (tavan %d gun) — "
+                            "defterler git'te %s tarihinde commit'lenmis, damga %s diyor"
+                     % (d, gun, t_git.isoformat(), t_son.isoformat()))
+            else:
+                fail("H12", "canli hafiza %d gundur guncellenmemis (tavan %d gun)" % (d, gun))
         else:
             N.append("H12: son guncelleme %d gun once (%s)" % (d, t_son.isoformat()))
     elif m:
@@ -4769,10 +4885,24 @@ def _h14_hukum(F, N, gecikme, t_son, en_yeni_t, en_yeni_f):
         if fark < -gecikme:
             fail("H14", "hafiza tarihi proje dosyalarindan %d gun ILERIDE — tutarsiz." % (-fark))
         if fark > gecikme:
-            fail("H14", "PROJE ILERLEDI, HAFIZA ILERLEMEDI: en yeni degisiklik %s (%s), "
-                        "hafiza %s -> %d gun geride (tavan %d)."
-                 % (d_proje.isoformat(), en_yeni_f, t_son.isoformat(), fark, gecikme))
-            F.append("      -> Calisildi ama kayit birakilmadi. hafiza.py not ... sonra hafiza.py derle")
+            # KALEM 3 (Onur kilidi 6 Eyl 2026, IS_EMRI_DEVRAL.md): OLCULDU — bu
+            # kol "hafiza tarafi"ni t_son'dan (BEYAN) okuyordu, "proje tarafi"ni
+            # git'ten (KANIT) okuyordu; git elinin altindayken hafiza defterlerine
+            # dokunan SON COMMIT'e (t_git, H12'de hesaplanip yan-kanaldan okunur)
+            # HIC bakilmiyordu. t_git > t_son ise kayit ASLINDA BIRAKILMISTIR,
+            # yalniz damga DONMUSTUR — "kayit birakilmadi" burada YANLIS
+            # TESHISTIR. HUKUM GEVSEMEZ: iki halde de FAIL, exit hala 1.
+            t_git = _H14_T_GIT_SON[0]
+            if t_git and t_git > t_son:
+                fail("H14", "HAFIZA YAZILDI, TARIH DAMGASI DONMUS: defterler %s tarihinde "
+                            "commit'lendi ama '> Son guncelleme:' %s diyor"
+                     % (t_git.isoformat(), t_son.isoformat()))
+                F.append("      -> Damgayi yenile: hafiza.py not ... sonra hafiza.py derle")
+            else:
+                fail("H14", "PROJE ILERLEDI, HAFIZA ILERLEMEDI: en yeni degisiklik %s (%s), "
+                            "hafiza %s -> %d gun geride (tavan %d)."
+                     % (d_proje.isoformat(), en_yeni_f, t_son.isoformat(), fark, gecikme))
+                F.append("      -> Calisildi ama kayit birakilmadi. hafiza.py not ... sonra hafiza.py derle")
         else:
             N.append("H14: hafiza projeyle es (en yeni degisiklik %s, hafiza %s)"
                      % (d_proje.isoformat(), t_son.isoformat()))

@@ -177,7 +177,18 @@ BEKLENEN = {
 #     Ikili (arac, radon) 97'de de anlasiyor. Capa ARACIN KENDI CIKTISINDAN
 #     guncellenmedi: once radon'la BAGIMSIZ caprazlandi, ikisi anlastigi icin
 #     capa o degere kuruldu.
-CIPA = {"cmd_isir": 17, "cmd_devral": 97}
+#   6 Eyl 2026: cmd_devral 97 -> 99. Sebep BILINEN ve BEYANLI — besli-paket/
+#     IS_EMRI_DEVRAL.md KALEM 1: eksik-zorunlu-bolum dongusune diskten turetilmis
+#     basliklari mi (ozel/ ) yoksa sabit VARSAYILAN_RC'yi mi kullanacagini secen
+#     bir dallanma (`_bolum_adaylari = [] if basliklar else ...`) + ARSIV DIZINI
+#     gerekcesini basan bir `if` eklendi. CC>20 kumesi BUYUMEDI (hala 5),
+#     birlesik `ihlal` 9'da KALDI. BAGIMSIZ caprazlama (ayni oturum, ayni kap):
+#       python -m radon cc -s <KALEM 1 ONCESI motor>  -> `cmd_devral - F (97)`
+#       python -m radon cc -s skill/scripts/hafiza.py -> `cmd_devral - F (99)`
+#     Ikili (arac, radon) 99'da da anlasiyor. Capa ARACIN KENDI CIKTISINDAN
+#     guncellenmedi: once radon'la BAGIMSIZ caprazlandi, ikisi anlastigi icin
+#     capa o degere kuruldu.
+CIPA = {"cmd_isir": 17, "cmd_devral": 99}
 
 # ------------------------------------------------------------------ MUTANTLAR
 # (ad, aciklama, [(eski, yeni)], ayirt eden ornek)
