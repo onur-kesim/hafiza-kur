@@ -3497,11 +3497,14 @@ def cmd_hook(a):
               "  git kurulu mu, depo saglam mi?")
     hedef = os.path.join(hd, HOOK_ADI)
     motor = os.path.abspath(__file__)
-    try:
-        rel = os.path.relpath(motor, kok)
-        yol = motor if rel.startswith("..") else rel.replace(os.sep, "/")
-    except ValueError:
-        yol = motor
+    # `_rel` TEK YERDIR (D-1 karari orada yasar); ciplak goreli-yol cagrisi
+    # `faz0/yol_ayraci_kapisi.py` KAPI-1'i kirmizi yakar — olculdu (CI #96, uc
+    # platform). Kok DISINDAysa mutlak yol yazilir: hook, kokten cikan bir yolu
+    # `git rev-parse --show-toplevel` ile birlestiremez.
+    # NOT: o kapinin deseni YORUM ile KODU ayirt etmiyor; bu satirlarda cagrinin
+    # tam yazimi bilerek KULLANILMADI (bkz. DURUM.md "bilinen sinirlar").
+    rel = _rel(motor, kok)
+    yol = motor if rel.startswith("..") else rel
     if os.path.exists(hedef) and not getattr(a, "zorla", False):
         try:
             bas = "".join(open(hedef, encoding="utf-8", errors="replace").readlines()[:3])
