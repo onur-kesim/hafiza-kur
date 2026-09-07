@@ -70,12 +70,17 @@ EKLENEN uc yeni kol)
      helper'in ikinci cagri yerinden [`_h14_git_durumu`] de cagrildigini
      OLCMUYORDU): `hafiza.py` metninde eski desen
      `os.path.isdir(os.path.join(kok, ".git"))` KAC KEZ geciyor (KEHANET:
-     0), `_git_kokte_mi(` KAC KEZ geciyor (KEHANET: TAM 6 — 1 tanim + 5
+     0), `_git_kokte_mi(` KAC KEZ geciyor (KEHANET: TAM 7 — 1 tanim + 6
      cagri; ucuncusu 6 Eyl 2026'da `cmd_hook` ile geldi, dorduncusu VE
      besincisi AYNI GUN besli-paket KALEM 2/KALEM 3 ile: `_h4_git_
      yoksayilanlar` [H4 havuzu git'e sordurulur] ve `_h12_hafiza_git_
-     tarihi` [H12/H14 hafiza defterlerine dokunan son commit'i sorar]) ve
-     helper'in KENDI icindeki
+     tarihi` [H12/H14 hafiza defterlerine dokunan son commit'i sorar];
+     altincisi 7 Eyl 2026'da besli-paket IS_EMRI_UYGULANMAZ.md KALEM 1 ile:
+     `mutant_git` icinde PROJENIN (kok) git'i var mi diye sorar — git YOKSA
+     `MutantUygulanmaz` firlatir (SINANMADI DEGIL, olcum ekseni yok). Ciplak
+     `os.path.exists` yerine bilerek helper KULLANILDI: worktree/gitfile/
+     submodule'lu SAGLIKLI bir projeyi de "git var" dogru tanimasi gerekir —
+     bu dosyanin sinadigi AYNI sinif) ve helper'in KENDI icindeki
      `os.path.exists(os.path.join(kok, ".git"))` KAC KEZ geciyor (KEHANET:
      TAM 1). OLCULDU (Onur denetimi, 19 Agu 2026): eski motorda eski desen
      2, yarim duzeltmede (yalniz `_kapi_h9`) 1, tam duzeltmede 0 — desen
@@ -365,12 +370,14 @@ _EXISTS_DESEN = 'os.path.exists(os.path.join(kok, ".git"))'
 # ve karsilastirma kosulu AYNI degiskeni okur; boylece bir daha ayrisamazlar
 # (ONCEKI hali "(beklenen 3)" YAZIYORDU ama kod `== 4` siniyordu — bagimsiz
 # olcumde YAKALANDI). Sayi BAGIMSIZ dogrulandi (aracin kendi ciktisindan
-# DEGIL): `grep -c '_git_kokte_mi(' skill/scripts/hafiza.py` -> 6.
-#   1 tanim + 5 cagri: cmd_hook (6 Eyl, KALEM 5) · _kapi_h9 · _h14_git_durumu ·
+# DEGIL): `grep -c '_git_kokte_mi(' skill/scripts/hafiza.py` -> 7 (7 Eyl 2026,
+# besli-paket IS_EMRI_UYGULANMAZ.md KALEM 1 ile 6 -> 7; ONCEKI: 6).
+#   1 tanim + 6 cagri: cmd_hook (6 Eyl, KALEM 5) · _kapi_h9 · _h14_git_durumu ·
 #   _h4_git_yoksayilanlar (6 Eyl, besli-paket KALEM 2 — H4 havuzu git'e
 #   sordurulur) · _h12_hafiza_git_tarihi (6 Eyl, besli-paket KALEM 3 — H12/H14
-#   hafiza defterlerine dokunan son commit'i sorar).
-BEKLENEN_HELPER = 6
+#   hafiza defterlerine dokunan son commit'i sorar) · `mutant_git` (7 Eyl,
+#   IS_EMRI_UYGULANMAZ.md KALEM 1 — projede git yoksa MutantUygulanmaz firlatir).
+BEKLENEN_HELPER = 7
 
 
 def _kaynak_kapisi_olc(src):

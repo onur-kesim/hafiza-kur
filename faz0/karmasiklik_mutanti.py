@@ -203,7 +203,20 @@ BEKLENEN = {
 #     Ikili (arac, radon) 22'de de anlasiyor. Capa ARACIN KENDI CIKTISINDAN
 #     guncellenmedi: once radon'la BAGIMSIZ caprazlandi, ikisi anlastigi icin
 #     capa o degere kuruldu.
-CIPA = {"cmd_isir": 22, "cmd_devral": 99}
+#   7 Eyl 2026 (ayni gun, IS_EMRI_UYGULANMAZ.md): cmd_isir 22 -> 26. Sebep
+#     BILINEN ve BEYANLI — bir onceki turun REGRESYONUNU (git'siz projede
+#     `isir` exit 0 donduremiyordu) kapatmak icin YENI bir sinif (`MutantUygulanmaz`)
+#     eklendi, `mutant_git`e projede-git-var-mi on-kontrolu kondu ve cagiran
+#     dongude UYGULANMAZ/SINANMADI ayrimi (SONUC satirinin METNI korunacak
+#     sekilde AYRI bir satirda) eklendi. `cmd_isir` zaten CC>20 kumesindeydi
+#     (bu turda kume BUYUMEDI, hala 6), satir sayisi zaten >80 oldugu icin
+#     birlesik `ihlal` 9'da KALDI. BAGIMSIZ caprazlama (ayni oturum, ayni kap):
+#       python -m radon cc -s <KALEM ONCESI motor>    -> `cmd_isir - D (22)`
+#       python -m radon cc -s skill/scripts/hafiza.py -> `cmd_isir - D (26)`
+#     Ikili (arac, radon) 26'da da anlasiyor. Capa ARACIN KENDI CIKTISINDAN
+#     guncellenmedi: once radon'la BAGIMSIZ caprazlandi, ikisi anlastigi icin
+#     capa o degere kuruldu.
+CIPA = {"cmd_isir": 26, "cmd_devral": 99}
 
 # ------------------------------------------------------------------ MUTANTLAR
 # (ad, aciklama, [(eski, yeni)], ayirt eden ornek)

@@ -2229,3 +2229,39 @@ jobs:
           name: h14-damga-donmus-${{ matrix.os }}
           path: h14-damga-donmus-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-31) ISIR UYGULANMAZ MUTANTI — besli-paket/IS_EMRI_UYGULANMAZ.md KALEM 1
+  #     (Onur kilidi 7 Eylul 2026): `isir`e git'li `mutant_git` kolu eklenince
+  #     (M-H12g/M-H14g), git'SIZ projede (`t_y42`'nin `yeni()` fabrikasi gibi)
+  #     bu iki kol KURULAMIYOR ve SINANMADI'ya dusuyordu — `isir` exit 0
+  #     donduremez oldu (58/58 -> 56 gecti, 2 kaldi REGRESYONU, A/B ile olculdu).
+  #     Duzeltme: YENI bir sinif — UYGULANMAZ (git YOK oldugu icin kurulamadi;
+  #     kapi korlugu DEGIL, cikis kodunu ETKILEMEZ, "kosulan"a GIRMEZ). Git
+  #     VARKEN kurulum yine de bozulursa SINANMADI + exit 2 BIREBIR korunur —
+  #     UYGULANMAZ bir KACIS KAPISI DEGILDIR (bu betigin 3. kolu bunu olcer).
+  #     🔴 UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  isir_uygulanmaz_mutanti:
+    name: isir uygulanmaz mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: git'siz projede isir exit 0 mi donuyor (dort kol, hukum gevsemez)
+        shell: bash
+        run: python faz0/isir_uygulanmaz_mutanti.py 2>&1 | tee isir-uygulanmaz-cikti.txt
+      - name: isir uygulanmaz mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isir-uygulanmaz-${{ matrix.os }}
+          path: isir-uygulanmaz-cikti.txt
+          if-no-files-found: warn

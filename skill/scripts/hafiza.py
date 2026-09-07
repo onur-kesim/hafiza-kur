@@ -4999,6 +4999,15 @@ class MutantKurulamadi(Exception):
     (Fable Bulgu 3: eskiden StopIteration yutulup 'KACTI' -> sahte 'KAPI KOR' oluyordu.)"""
 
 
+class MutantUygulanmaz(Exception):
+    """KALEM 1 (IS_EMRI_UYGULANMAZ.md, 7 Eyl 2026): mutant projede OLMAYAN bir
+    ONKOSULA (burada: git) bagli oldugu icin HIC KURULAMAZ — bu `MutantKurulamadi`
+    (SINANMADI, exit 2 uretir) ile AYNI SEY DEGILDIR. UYGULANMAZ ne kapi korlugudur
+    ne de test kurulum hatasi; olcum EKSENI bu projede yok. Cikis kodunu ETKILEMEZ
+    ve 'kosulan mutant' sayisina GIRMEZ — SINANMADI'nin exit 2 uretme davranisi
+    (git VAR ama kurulum yine de bozuksa) BIREBIR korunur, iki hal KARISTIRILMAZ."""
+
+
 def cmd_isir(a):
     """KOR KAPI PROTOKOLU: her kapi icin bilerek bir mutant kur, kapinin ISIRDIGINI kanitla.
     Kirli kopyada YAKALAMALI, temiz surumde YAKALAMAMALI. Isirmayan kapi = OLCUM YOK."""
@@ -5015,6 +5024,8 @@ def cmd_isir(a):
         return 4
 
     kurulamayan = []
+    uygulanmaz = []   # KALEM 1 (IS_EMRI_UYGULANMAZ.md): projede git yok -> AYRI eksen,
+                      # SINANMADI DEGIL; cikis kodunu etkilemez, "kosulan" sayisina girmez.
 
     def mutant(ad, kapi, degistir):
         tmp = tempfile.mkdtemp(prefix="hafiza_isir_")
@@ -5042,16 +5053,29 @@ def cmd_isir(a):
         icin AYRI bir cerceve: kopya `.git` DAHIL alinir, boylece kopyanin icinde
         git kok kontrolu True doner ve H12/H14'un git kolu ERISILEBILIR olur.
 
-        POZITIF KONTROL (Olcut b, ISTENEN): kopya gercekten `.git` tasimiyorsa
-        (git yok/kurulamadi) bu SESSIZCE YESIL KALMAZ — MutantKurulamadi firlatilir,
-        cagiran yer bunu SINANMADI listesine yazar (asagidaki dongu, mevcut
-        `kurulamayan` mekanizmasiyla; M-H9 icin de kullanilan AYNI yol).
+        UYGULANMAZ vs SINANMADI (IS_EMRI_UYGULANMAZ.md, 7 Eyl 2026 — OLCULEN
+        REGRESYON): git BINARY yoksa (arac/makine eksigi) BU HALA SINANMADI'dir
+        — degismedi. Ama PROJENIN KENDISINDE (`kok`) git yoksa bu KAPI KORLUGU
+        DEGIL, olcum ekseni bu projede yoktur -> MutantUygulanmaz firlatilir;
+        cagiran yer bunu AYRI bir 'UYGULANMAZ' listesine yazar, cikis kodunu
+        ETKILEMEZ ve 'kosulan mutant' sayisina GIRMEZ. `_git_kokte_mi` KULLANILIR
+        (worktree/gitfile/submodule saglikli 'git VAR' der; ciplak `os.path.exists`
+        bunlari kaçırırdı — gitfile_korlugu_mutanti'nin sinadigi AYNI sinif).
+
+        POZITIF KONTROL (Olcut b/(3), ISTENEN): git VAR ama kopya yine de `.git`
+        tasimiyorsa (kurulum/kopya hatasi) bu SESSIZCE YESIL KALMAZ —
+        MutantKurulamadi firlatilir, cagiran yer bunu SINANMADI listesine yazar
+        (asagidaki dongu, mevcut `kurulamayan` mekanizmasiyla; M-H9 icin de
+        kullanilan AYNI yol). UYGULANMAZ bir KACIS KAPISI DEGILDIR: git VARKEN
+        kurulum bozulursa SINANMADI + exit 2 BIREBIR korunur.
 
         `icerik_parcasi` verilirse (ör. H12'nin/H14'un YENI cumlesinden bir parca),
         yalniz `[kapi]` etiketi degil o METIN de cikista GECMELI — yoksa kapi eski
         (genel) cumleye duserek 'ISIRDI' gorunup asil YENI dali SINAMAMIS olurdu."""
         if not shutil.which("git"):
             raise MutantKurulamadi("git yok — mutant_git git'e bagli, SINANMADI")
+        if not _git_kokte_mi(kok):
+            raise MutantUygulanmaz("projede git yok")
         tmp = tempfile.mkdtemp(prefix="hafiza_isir_g_")
         hedef = os.path.join(tmp, "p")
         shutil.copytree(kok, hedef, ignore=shutil.ignore_patterns("node_modules"))
@@ -5770,6 +5794,10 @@ def cmd_isir(a):
     for ad, kapi, fn, parca in sinamalar_git:
         try:
             ok, k, c = mutant_git(ad, kapi, fn, parca)
+        except MutantUygulanmaz as e:
+            uygulanmaz.append((ad, kapi, str(e)))
+            print("  %-42s -> UYGULANMAZ (projede git yok)" % ad)
+            continue
         except MutantKurulamadi as e:
             kurulamayan.append((ad, kapi, str(e)))
             print("  %-42s -> KURULAMADI (test hatasi, kapi hukmu degil)" % ad)
@@ -5782,6 +5810,14 @@ def cmd_isir(a):
         if not ok:
             kacan.append((ad, kapi, c[:400]))
 
+    if uygulanmaz:
+        # KALEM 1 (IS_EMRI_UYGULANMAZ.md): bu KAPI KORLUGU degil, SINANMADI da
+        # degil — projede git YOK, olcum ekseni bu projede yok. Cikis kodunu
+        # ETKILEMEZ, "kosulan mutant" sayisina GIRMEZ (asagida ayri sayilir).
+        print("\nUYGULANMAZ (%d) — projede git YOK, kapi korlugu DEGIL:" % len(uygulanmaz))
+        for ad, kapi, sebep in uygulanmaz:
+            print("  %-42s [%s] %s" % (ad, kapi, sebep))
+        print("  -> Bu kollar 'kosulan mutant'a GIRMEZ, SINANMADI DEGILDIR, cikis kodunu ETKILEMEZ.")
     if kurulamayan:
         print("\nKURULAMAYAN MUTANT (%d) — bunlar KAPI KORLUGU DEGIL, testin kendi eksigi:" % len(kurulamayan))
         for ad, kapi, sebep in kurulamayan:
@@ -5793,7 +5829,17 @@ def cmd_isir(a):
             print("\n--- %s (%s) ---\n%s" % (ad, kapi, c))
         return 1
     print("\n  %-42s -> SINANMADI (mutant kopyasina .git alinmiyor)" % "M-H9  git izlenirligi")
-    kosulan = len(sinamalar) + len(komut_sinamalari) + len(sinamalar_git) - len(kurulamayan)
+    kosulan = (len(sinamalar) + len(komut_sinamalari) + len(sinamalar_git)
+               - len(kurulamayan) - len(uygulanmaz))
+    # KALEM 1 (IS_EMRI_UYGULANMAZ.md, 7 Eyl 2026): SONUC satirinin METNI
+    # BIREBIR korunur — `t_y42.py` sat. 1099 (B-7 kolu) tam da bu satirdaki
+    # "SINANMADI · H9" alt dizesini ARAR (`skill/scripts/t_y42.py`'ye
+    # DOKUNULMAZ). UYGULANMAZ sayisi bu yuzden AYRI bir satirda basilir,
+    # SONUC satirinin icine KARISTIRILMAZ (readme_mutanti'nin `_SONUC` regex'i
+    # de aynen "ISIRIYOR · N SINANMADI" dizisini ARDISIK bekler).
+    if uygulanmaz:
+        print("  (%d kol UYGULANMAZ — git yok; yukarida ayrica listelendi, bu sayiya GIRMEZ)"
+              % len(uygulanmaz))
     print("\nSONUC: %d/%d kosulan mutant ISIRIYOR · %d SINANMADI · H9 icin mutant YOK."
           % (kosulan, kosulan, len(kurulamayan)))
     # FABLE 3. TUR · B-7: "kurulamayan mutant" ile "kacan mutant" ayni cikis koduna
