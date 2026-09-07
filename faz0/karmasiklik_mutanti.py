@@ -21,7 +21,9 @@ Ornek modulun beklenen degerleri ELLE hesaplanmistir ve KONTROL kolu once
 onlari dogrular; tutmuyorsa mutant hukmu ANLAMSIZDIR ve betik durur.
 
 Ayrica CIPA olarak gercek motordan iki deger sinanir, HER GUNCELLEMEDE radon ile
-CAPRAZLANARAK: cmd_isir 17 (13 Agu'dan beri sabit) · cmd_devral 88 -> 97 (15 Agu).
+CAPRAZLANARAK: cmd_isir 17 -> 22 (7 Eyl 2026, IS_EMRI_ISIR_GIT_VE_ORTAM_KAPISI.md
+KALEM 1: `mutant_git` + M-H12g/M-H14g eklendi — govde BUYUDU, ADDITIVE) ·
+cmd_devral 88 -> 97 (15 Agu).
 
 KULLANIM     python3 faz0/karmasiklik_mutanti.py
 CIKIS KODU   0 hepsi isirdi · 1 en az biri kacti · 2 OLCULEMEDI
@@ -188,7 +190,20 @@ BEKLENEN = {
 #     Ikili (arac, radon) 99'da da anlasiyor. Capa ARACIN KENDI CIKTISINDAN
 #     guncellenmedi: once radon'la BAGIMSIZ caprazlandi, ikisi anlastigi icin
 #     capa o degere kuruldu.
-CIPA = {"cmd_isir": 17, "cmd_devral": 99}
+#   7 Eyl 2026: cmd_isir 17 -> 22. Sebep BILINEN ve BEYANLI —
+#     IS_EMRI_ISIR_GIT_VE_ORTAM_KAPISI.md KALEM 1: `mutant_git` cercevesi
+#     (.git DAHIL kopya + pozitif kontrol) ve iki yeni mutant (M-H12g/M-H14g,
+#     + yardimci `_git_kimlik_kur`/`_h12g_damgayi_eskit_ve_commitle`) `cmd_isir`
+#     govdesine EKLENDI (mevcut `mutant()`/`komut_sinamasi()` cercevelerine
+#     DOKUNULMADI). `cmd_isir` CC>20 kumesine YENI GIRDI (kume 5 -> 6); satir
+#     sayisi zaten >80 oldugu icin birlesik `ihlal` 9'da KALDI (fonksiyon
+#     zaten ihlal kumesindeydi). BAGIMSIZ caprazlama (ayni oturum, ayni kap):
+#       python -m radon cc -s <KALEM 1 ONCESI motor>  -> `cmd_isir - C (17)`
+#       python -m radon cc -s skill/scripts/hafiza.py -> `cmd_isir - D (22)`
+#     Ikili (arac, radon) 22'de de anlasiyor. Capa ARACIN KENDI CIKTISINDAN
+#     guncellenmedi: once radon'la BAGIMSIZ caprazlandi, ikisi anlastigi icin
+#     capa o degere kuruldu.
+CIPA = {"cmd_isir": 22, "cmd_devral": 99}
 
 # ------------------------------------------------------------------ MUTANTLAR
 # (ad, aciklama, [(eski, yeni)], ayirt eden ornek)

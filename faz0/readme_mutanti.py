@@ -6,8 +6,8 @@ NEDEN VAR (olculdu 14 Agu 2026)
   Madde 5: "25 Agu yazisinin okuru, depoya gelip README ile sistemi kendi basina
   deneyebilir." Okurun yapacagi sey README'nin "Kanitini kendin kos" blogudur ve
   o blok SAYISAL BEYANLAR tasiyor:
-      python3 hafiza.py isir --kok=deneme   # taze projede: 34/34 + 2 SINANMADI, exit 2
-      python3 hafiza.py isir --kok=deneme   # derle sonrasi: 36/36, exit 0
+      python3 hafiza.py isir --kok=deneme   # taze projede: 36/36 + 2 SINANMADI, exit 2
+      python3 hafiza.py isir --kok=deneme   # derle sonrasi: 38/38, exit 0
   Bu beyanlari HICBIR kapi olcmuyordu. Ustelik ikincisi (`derle` sonrasi isir=0)
   `DURUM.md`in "olculmuyor" diye yazdigi bosluğun ta kendisiydi: README onu IDDIA
   ediyor, hicbir sey dogrulamiyordu. Bir okur yanlis sayiyla karsilassa projenin
@@ -117,14 +117,25 @@ def blok_bul(metin):
 def satirlari_coz(blok):
     """Blogun her satirini (tur, komut, beyan) olarak cozer.
 
+    KALEM 1 (IS_EMRI_ISIR_GIT_VE_ORTAM_KAPISI.md, 7 Eyl 2026): README'deki
+    `mkdir -p deneme && git init -q deneme` TEK ham satirda IKI komut tasir;
+    gercek bir shell bunlari SIRAYLA kosar. Eskiden bu satir bastan `mkdir `
+    ile basladigi icin TUMU tek bir MKDIR adimi sayiliyordu ve `&&`den
+    SONRAKI `git init` HIC calismadan kayboluyordu -> simule edilen `deneme`
+    dizininde gercek `.git` OLUSMUYORDU. Sonucu OLCEN bir mutant olmadigi
+    surece bu sessizdi; git'e bagli M-H12g/M-H14g eklenince (KALEM 1)
+    `mutant_git`in POZITIF KONTROLU bunu yakaladi ve iki mutant burada
+    SESSIZCE SINANMADI'ya dustu — kapi KIRMIZI yandi. Duzeltme: `#` yorumu
+    TAM HAM SATIRDAN bir kez ayiklanir, KALAN komut `&&` ile bolunur ve HER
+    parca AYRI adim olarak siniflandirilir (gercek shell semantigi budur).
+
     Taninmayan satir -> ('BILINMEYEN', ham, None). Cagiran yer DURUR."""
     out = []
     for ham in blok.split("\n"):
         s = ham.strip()
         if not s:
             continue
-        komut, _, yorum = s.partition("#")
-        komut = komut.strip()
+        komut_tam, _, yorum = s.partition("#")
         beyan = None
         if yorum.strip():
             e = _EXIT.search(yorum)
@@ -138,18 +149,20 @@ def satirlari_coz(blok):
             sy = _SENARYO.search(yorum)
             if sy:
                 beyan["senaryo"] = int(sy.group(1))
-        if komut.startswith("cd "):
-            out.append(("CD", komut, beyan))
-        elif komut.startswith("mkdir "):
-            out.append(("MKDIR", komut, beyan))
-        elif "git init" in komut:
-            out.append(("GIT", komut, beyan))
-        elif re.match(r"python3?\s+hafiza\.py\s", komut):
-            out.append(("MOTOR", komut, beyan))
-        elif re.match(r"python3?\s+t_y\d+\.py", komut):
-            out.append(("KANIT", komut, beyan))
-        else:
-            out.append(("BILINMEYEN", komut, beyan))
+        parcalar = [p.strip() for p in re.split(r"\s*&&\s*", komut_tam.strip()) if p.strip()]
+        for komut in parcalar:
+            if komut.startswith("cd "):
+                out.append(("CD", komut, beyan))
+            elif komut.startswith("mkdir "):
+                out.append(("MKDIR", komut, beyan))
+            elif "git init" in komut:
+                out.append(("GIT", komut, beyan))
+            elif re.match(r"python3?\s+hafiza\.py\s", komut):
+                out.append(("MOTOR", komut, beyan))
+            elif re.match(r"python3?\s+t_y\d+\.py", komut):
+                out.append(("KANIT", komut, beyan))
+            else:
+                out.append(("BILINMEYEN", komut, beyan))
     return out
 
 
@@ -276,20 +289,20 @@ def kapi2_gercek(adimlar, kaynak_scripts, kanit_onbellek=None):
 # --------------------------------------------------------------- MUTANTLAR
 def m1_beyan_silinir(s):
     """`exit 2` beyani yorumdan silinir -> KAPI-1 isirmali (KAPI-2 o beyani olcmez)."""
-    yeni = s.replace("# taze projede: 34/34 + 2 SINANMADI, exit 2",
+    yeni = s.replace("# taze projede: 36/36 + 2 SINANMADI, exit 2",
                      "# taze projede", 1)
     return yeni if yeni != s else None
 
 
 def m2_oran_bozulur(s):
     """README yanlis mutant orani yazar -> KAPI-2 isirmali."""
-    yeni = s.replace("34/34 + 2 SINANMADI", "33/33 + 2 SINANMADI", 1)
+    yeni = s.replace("36/36 + 2 SINANMADI", "35/35 + 2 SINANMADI", 1)
     return yeni if yeni != s else None
 
 
 def m3_cikis_kodu_bozulur(s):
     """README yanlis cikis kodu yazar -> KAPI-2 isirmali (oranlar dogru kalir)."""
-    yeni = s.replace("# derle sonrası: 36/36, exit 0", "# derle sonrası: 36/36, exit 3", 1)
+    yeni = s.replace("# derle sonrası: 38/38, exit 0", "# derle sonrası: 38/38, exit 3", 1)
     return yeni if yeni != s else None
 
 

@@ -5036,6 +5036,89 @@ def cmd_isir(a):
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
+    def mutant_git(ad, kapi, degistir, icerik_parcasi=None):
+        """KALEM 1 (IS_EMRI_ISIR_GIT_VE_ORTAM_KAPISI.md, 7 Eyl 2026): `mutant()`e
+        DOKUNULMADI — o hala `.git`i atar. Bu, YALNIZ git'e bagli hukumleri sinamak
+        icin AYRI bir cerceve: kopya `.git` DAHIL alinir, boylece kopyanin icinde
+        git kok kontrolu True doner ve H12/H14'un git kolu ERISILEBILIR olur.
+
+        POZITIF KONTROL (Olcut b, ISTENEN): kopya gercekten `.git` tasimiyorsa
+        (git yok/kurulamadi) bu SESSIZCE YESIL KALMAZ — MutantKurulamadi firlatilir,
+        cagiran yer bunu SINANMADI listesine yazar (asagidaki dongu, mevcut
+        `kurulamayan` mekanizmasiyla; M-H9 icin de kullanilan AYNI yol).
+
+        `icerik_parcasi` verilirse (ör. H12'nin/H14'un YENI cumlesinden bir parca),
+        yalniz `[kapi]` etiketi degil o METIN de cikista GECMELI — yoksa kapi eski
+        (genel) cumleye duserek 'ISIRDI' gorunup asil YENI dali SINAMAMIS olurdu."""
+        if not shutil.which("git"):
+            raise MutantKurulamadi("git yok — mutant_git git'e bagli, SINANMADI")
+        tmp = tempfile.mkdtemp(prefix="hafiza_isir_g_")
+        hedef = os.path.join(tmp, "p")
+        shutil.copytree(kok, hedef, ignore=shutil.ignore_patterns("node_modules"))
+        try:
+            if not os.path.exists(os.path.join(hedef, ".git")):
+                raise MutantKurulamadi(".git kopyalanmadi (mutant_git pozitif kontrolu basarisiz)")
+            try:
+                degistir(hedef)
+            except (MutantKurulamadi, StopIteration, KeyError, FileNotFoundError,
+                    ValueError, IndexError) as e:
+                raise MutantKurulamadi("%s: %s" % (type(e).__name__, e))
+            k, c = _kapi_metni(hedef)
+            etiketli = (k != 0) and (("[%s]" % kapi) in c or ("[%s-" % kapi) in c)
+            parca_ok = (icerik_parcasi is None) or (icerik_parcasi in c)
+            return (etiketli and parca_ok), k, c
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def _git_kimlik_kur(h):
+        """mutant_git kopyalarinda commit atabilmek icin YEREL git kimligi — KURULU
+        makine ayarina DOKUNMADAN, yalniz bu tek kullanimlik tmp kopyada."""
+        subprocess.run(["git", "-C", h, "config", "user.email", "t@t"], capture_output=True)
+        subprocess.run(["git", "-C", h, "config", "user.name", "t"], capture_output=True)
+        return dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t",
+                    GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+
+    def _h12g_damgayi_eskit_ve_commitle(h, gun_once):
+        """M-H12g/M-H14g ORTAK KURULUM: canli hafizanin '> Son guncelleme:' damgasini
+        GUN_ONCE gun geriye ceker, SONRA bu degisikligi COMMIT'LER. Sonuc: git'e gore
+        defter TAM SIMDI degisti (t_git = simdi), ama damganin KENDI METNI eski
+        (t_son = gun_once gun once) -> t_git > t_son. Bu, H12 satir 4638 / H14 satir
+        4909'un sinadigi TAM senaryodur: 'kayit birakildi, damga donmus'."""
+        ort = _git_kimlik_kur(h)
+        cp = _canli(h)
+        eski = (_dt.date.today() - _dt.timedelta(days=gun_once)).isoformat()
+        L = satirlar(cp)
+        degisti = False
+        for k, s in enumerate(L):
+            if "Son g" in s and "ncelleme" in s:
+                L[k] = tarih_damgasini_guncelle(s, eski); degisti = True; break
+        if not degisti:
+            raise MutantKurulamadi("'Son guncelleme' satiri yok")
+        yaz(cp, "\n".join(L))
+        subprocess.run(["git", "-C", h, "add", "-A"], capture_output=True)
+        rc_commit = subprocess.run(
+            ["git", "-C", h, "commit", "-q", "-m", "damga eskitildi, defter commit'lendi (mutant_git)"],
+            capture_output=True, env=ort)
+        if rc_commit.returncode != 0:
+            raise MutantKurulamadi("git commit basarisiz: %s"
+                                    % rc_commit.stderr.decode("utf-8", "replace")[:150])
+
+    def m_h12g(h):
+        """M-H12g (mutant_git, .git DAHIL): hafiza defteri COMMIT'LENDI ama icindeki
+        damga eski birakildi -> t_git > t_son. Kapi YENI H12 cumlesini basmali
+        ('... defterler git'te ... commit'lenmis ...'); satir 4638 sabote edilirse
+        (git kolu silinirse/atlanirsa) bu mutant eski cumleye duser ve KACAR."""
+        _h12g_damgayi_eskit_ve_commitle(h, rc["bayatlik_gun"] + rc["hafiza_gecikme_gun"] + 10)
+
+    def m_h14g(h):
+        """M-H14g (mutant_git, .git DAHIL, AYNI agac): M-H12g ile AYNI kurulumun
+        USTUNE proje tarafinda (hafiza DISI) kayitsiz bir dosyaya dokunulur ki
+        H14'un 'proje ilerledi' farki da esigi assin. Kapi YENI H14 cumlesini
+        basmali ('HAFIZA YAZILDI, TARIH DAMGASI DONMUS'); satir 4909 sabote
+        edilirse bu mutant eski 'PROJE ILERLEDI' cumlesine duser ve KACAR."""
+        _h12g_damgayi_eskit_ve_commitle(h, rc["bayatlik_gun"] + rc["hafiza_gecikme_gun"] + 10)
+        yaz(os.path.join(h, "_h14g_calisma_izi.md"), "bugun calisildi, commitlenmedi\n")
+
     def _komut(hedef, *argv):
         """Mutant kopyasinda gercek bir komut kosar; (cikis_kodu, cikti) doner."""
         r = subprocess.run([sys.executable, "-X", "utf8", os.path.abspath(__file__)]
@@ -5674,6 +5757,31 @@ def cmd_isir(a):
         if not ok:
             kacan.append((ad, etiket, c[:400]))
 
+    # ---- GIT'E BAGLI MUTANTLAR (mutant_git; kopyaya .git DAHIL alinir) ----
+    # KALEM 1 (IS_EMRI_ISIR_GIT_VE_ORTAM_KAPISI.md, 7 Eyl 2026): yukaridaki
+    # `sinamalar`/`komut_sinamalari` cercevelerine DOKUNULMADI. Bu YALNIZ H12'nin
+    # ve H14'un git kolunu (t_git > t_son -> 'kayit birakildi, damga donmus')
+    # sinar. M-H9 (git izlenirligi) BU TURDA ACILMAZ; asagidaki SINANMADI satiri
+    # AYNEN kaliyor.
+    sinamalar_git = [
+        ("M-H12g git kolu: damga eski, defter COMMIT'LENDI", "H12", m_h12g, "commit'lenmis"),
+        ("M-H14g git kolu: defter commit'lendi, damga DONDU", "H14", m_h14g, "TARIH DAMGASI DONMUS"),
+    ]
+    for ad, kapi, fn, parca in sinamalar_git:
+        try:
+            ok, k, c = mutant_git(ad, kapi, fn, parca)
+        except MutantKurulamadi as e:
+            kurulamayan.append((ad, kapi, str(e)))
+            print("  %-42s -> KURULAMADI (test hatasi, kapi hukmu degil)" % ad)
+            continue
+        except Exception as e:
+            kurulamayan.append((ad, kapi, "beklenmeyen: %r" % (e,)))
+            print("  %-42s -> KURULAMADI (beklenmeyen: %s)" % (ad, type(e).__name__))
+            continue
+        print("  %-42s -> %s" % (ad, "ISIRDI ✓" if ok else "KACTI ✗"))
+        if not ok:
+            kacan.append((ad, kapi, c[:400]))
+
     if kurulamayan:
         print("\nKURULAMAYAN MUTANT (%d) — bunlar KAPI KORLUGU DEGIL, testin kendi eksigi:" % len(kurulamayan))
         for ad, kapi, sebep in kurulamayan:
@@ -5685,7 +5793,7 @@ def cmd_isir(a):
             print("\n--- %s (%s) ---\n%s" % (ad, kapi, c))
         return 1
     print("\n  %-42s -> SINANMADI (mutant kopyasina .git alinmiyor)" % "M-H9  git izlenirligi")
-    kosulan = len(sinamalar) + len(komut_sinamalari) - len(kurulamayan)
+    kosulan = len(sinamalar) + len(komut_sinamalari) + len(sinamalar_git) - len(kurulamayan)
     print("\nSONUC: %d/%d kosulan mutant ISIRIYOR · %d SINANMADI · H9 icin mutant YOK."
           % (kosulan, kosulan, len(kurulamayan)))
     # FABLE 3. TUR · B-7: "kurulamayan mutant" ile "kacan mutant" ayni cikis koduna

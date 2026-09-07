@@ -18,7 +18,7 @@ birakir ve her seferinde `isir` kosar:
 
   * Devre disi birakinca EN AZ BIR mutant "KACTI" diyorsa
         -> o fail() KAPSAMLI: onu olcen bir mutant var.            [KAPSAMLI]
-  * Devre disi birakinca HICBIR SEY degismiyorsa (isir yine 36/36)
+  * Devre disi birakinca HICBIR SEY degismiyorsa (isir yine 38/38)
         -> o fail() KAPSAMSIZ: hicbir mutant onu olcmuyor.         [KAPSAMSIZ]
            Yarin o satir silinse `isir` FARK ETMEZ. Kapsam envanteri budur.
   * Sabotajli surum cokuyorsa                                      [OLCULEMEDI]

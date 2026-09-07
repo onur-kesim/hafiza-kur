@@ -929,6 +929,23 @@ jobs:
   # 3) ORTAM SINIFI — root olmayan kullanici · dolu disk · salt-okunur
   #     Fable 4. tur §9: "Kor noktan bir dusunce hatasi degil, bir ORTAM eksigi."
   #     Uc YUKSEK bulgunun ucu de (B4-1, B4-3, B4-4) yalniz burada gorunuyor.
+  #
+  #     KALEM 2 (IS_EMRI_ISIR_GIT_VE_ORTAM_KAPISI.md, Onur kilidi 7 Eyl 2026):
+  #     `continue-on-error: true` SILINDI. Olculdu (7 Eyl, bulut konteynerde
+  #     root olarak `bash faz0/ortam_olcum.sh`, bkz OLCUM_RAPORU_6EYL_2EK.md):
+  #       B4-3  Yarida kesilen derle -> kalici yanlis-kirmizi -> URETILDI (2 bulgu KALICI)
+  #       B4-4  Izin hatasi "ARAC KUSURU" diye mi teshis      -> URETILDI (4/4 yanlis)
+  #     Betigin kendi sozlesmesi "exit 0 = v2.5.0 sonrasi beklenen" diyor;
+  #     surum 2.5.0-dev ve olcum exit 1. Bayrak actikca bu iki YUKSEK bulgu
+  #     KAPANDI SANILIYORDU — `continue-on-error` onu yutuyor, is her koşumda
+  #     bulguyu URETIYOR ama CI YESIL kaliyordu (gitfile_korlugu_mutanti'deki
+  #     AYNI korluk sinifi: bir is her koşumda kirmizi veriyor, `conclusion`
+  #     yine de "success" donuyordu).
+  #     BU IS BILEREK KIRMIZI YANAR — kaza degil, Onur kilidi: bulgu artik
+  #     gizlenemez. B4-3/B4-4'un DUZELTMESI bu turun KAPSAMI DISINDA (ayri
+  #     turlarda, her biri AYRI mutant + pozitif kontrolle acilir); `ortam_olcum.sh`
+  #     de bu turda DEGISMEDI — olcen taraf sabit tutuldu. Bu is YESIL'e ancak
+  #     B4-3 VE B4-4 gercekten kapandiginda doner.
   # ---------------------------------------------------------------------------
   ortam:
     name: ortam sinifi (linux)
@@ -940,7 +957,6 @@ jobs:
         with:
           python-version: "3.11"
       - name: B4-1 / B4-3 / B4-4 yeniden uretimi
-        continue-on-error: true
         run: sudo bash faz0/ortam_olcum.sh
 
   # ---------------------------------------------------------------------------
@@ -1356,7 +1372,7 @@ jobs:
   # ---------------------------------------------------------------------------
   # README KANIT BLOGU KAPISI — BITTI maddesi 5.
   #     Okurun yapacagi sey README'nin "Kanitini kendin kos" blogudur ve o blok
-  #     SAYISAL BEYAN tasir (34/34 + 2 SINANMADI exit 2 · 36/36 exit 0). Bu
+  #     SAYISAL BEYAN tasir (36/36 + 2 SINANMADI exit 2 · 38/38 exit 0). Bu
   #     beyanlari hicbir kapi olcmuyordu; ikincisi (`derle` sonrasi isir=0)
   #     DURUM.md'nin "olculmuyor" dedigi boslugun ta kendisiydi.
   #
