@@ -4022,6 +4022,62 @@ def _h4_git_yoksayilanlar(kok):
     return yol
 
 
+# KALEM 1 (besli-paket/IS_EMRI_H4_YOKSAYILAN.md, 7 Eyl 2026, Onur kilidi
+# "Bulgu olmaktan ciksin"): OLCULDU (Momentum kopyasi) — `main.dart.js` git'in
+# YOKSAYDIGI (.gitignore) bir agacta 8 kopya halinde GERCEKTEN VARDI, ama
+# `_h4_git_yoksayilanlar` (--directory ile DIZIN seviyesinde durur, ucuz) onu
+# havuzdan cikardigi icin H4 "hicbir yerde yok" diyordu — olculmemis bir hukum
+# (motor "git'in izledigi yerde yok"u olcuyor, "hicbir yerde yok" DIYOR).
+# Bu yan-kanal, YALNIZ gercekten ihtiyac duyulunca (asagida `_kapi_h4`'ta hala
+# 'olu' sayilan aday VARSA, ya da `_kapi_h9` bir soruya cevap ARIYORSA) TEK
+# SEFERLIK, DOSYA seviyesinde (--directory YOK) tam yoksayilan dosya listesini
+# ceker ve KALEM 1 (H4) ile KALEM 2 (H9) ARASINDA PAYLASILIR — aday/soru
+# yoksa bu cagri HIC yapilmaz (maliyet sifir); ihtiyac varsa bu `kapi`
+# kosumunda EN FAZLA BIR kez hesaplanir.
+_H4_YOKSAYILAN_DOSYALAR = [None]
+
+
+def _h4_git_yoksayilan_dosyalar(kok):
+    """`_h4_git_yoksayilanlar`den AYRIDIR: o `--directory` ile yoksayilan
+    DIZINLERI tek satirda dondurur (havuz insasi icin ucuz); bu fonksiyon
+    `--directory` OLMADAN TAM DOSYA yollarini doner (300.000 dosyada 0,85 sn,
+    tek subprocess — olculdu, onceki turda). Git yoksa/sorgu duserse BOS kume
+    doner -> cagiran taraf (asagida) hicbir sey BULAMAZ, davranis BIREBIR
+    eskisi gibi kalir."""
+    if _H4_YOKSAYILAN_DOSYALAR[0] is not None:
+        return _H4_YOKSAYILAN_DOSYALAR[0]
+    sonuc = set()
+    if _git_kokte_mi(kok):
+        try:
+            r = subprocess.run(
+                ["git", "-C", kok, "ls-files", "-z", "--others", "--ignored", "--exclude-standard"],
+                capture_output=True, timeout=120)
+        except Exception:                                  # noqa: BLE001 — git YOK korunur
+            r = None
+        if r is not None and r.returncode == 0:
+            for oge in (r.stdout or b"").split(b"\0"):
+                if oge:
+                    sonuc.add(oge.decode("utf-8", "replace"))
+    _H4_YOKSAYILAN_DOSYALAR[0] = sonuc
+    return sonuc
+
+
+def _h4_kural_kaynagi(kok, rel):
+    """`_h4_git_yoksayilan_dosyalar` bir dosyanin yoksayildigini SOYLER ama
+    HANGI `.gitignore` satirinin yakaladigini SOYLEMEZ — bunun icin (yalniz
+    zaten YOKSAYILI dendigi dogrulanmis, en fazla ucuncul birkac dosya icin)
+    TEK bir `git check-ignore -v` cagrisi yeter (H9'un `izlenmeli` kumesi
+    sabit 3 dosyadir; bu maliyet KALEM 1'in toplu sorgusuyla KARISTIRILMAZ)."""
+    try:
+        r = subprocess.run(["git", "-C", kok, "check-ignore", "-v", rel],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+    except Exception:                                       # noqa: BLE001 — git YOK korunur
+        return "kural kaynagi OLCULEMEDI"
+    if r.returncode != 0 or not (r.stdout or "").strip():
+        return "kural kaynagi OLCULEMEDI"
+    return (r.stdout.split("\t", 1)[0] or "").strip()
+
+
 def _h4_havuz(kok):
     haric_sabit = {".git", "node_modules", "__pycache__", ".venv"}
     haric_git = _h4_git_yoksayilanlar(kok)
@@ -4084,13 +4140,49 @@ def _h4_siniflandir(eksik, havuz):
     return olu, tasinmis
 
 
+def _h4_yoksayili_kontrol(olu, kok):
+    """KALEM 1 (besli-paket/IS_EMRI_H4_YOKSAYILAN.md, 7 Eyl 2026): `_h4_siniflandir`
+    HALA DEGISTIRILMEDI (imzasi/govdesi FAZ C capasidir, KAPI-A..E onu BIREBIR
+    sinar) — bu AYRI, IKINCI bir gecistir ve YALNIZ hala 'olu' sayilan adaylara,
+    YALNIZ aday listesi BOS DEGILKEN uygulanir (maliyet sifir tipik durumda).
+
+    KAPSAM BILEREK DAR: yalniz CIPLAK beyan (dizin bileseni YOK) + TAM BIR
+    eslesme — `_h4_siniflandir`in TRACKED-havuzdaki CIPLAK_AD kolunun AYNISI
+    (Fable Bulgu 7: 0 ya da 2+ eslesme, ya da dizinli beyan bu kola HIC girmez,
+    OLU olarak KALIR). DIZIN BEYANLI vakalar (KAPI-A'nin `web/main.dart.js`
+    ornegi gibi) bu kola BILEREK GIRMEZ — o senaryo ZATEN 'git'in izledigi
+    yerde yok' hukmunu KORUR (KALEM 2, IS_EMRI_DEVRAL.md), sadece ÇIPLAK ad
+    (`main.dart.js` gibi hicbir dizin beyan etmeyen bir referans) olculmemis
+    'hicbir yerde yok' iddiasindan cikar."""
+    disk = _h4_git_yoksayilan_dosyalar(kok)
+    if not disk:
+        return olu, []
+    havuz_disk = {}
+    for yol in disk:
+        havuz_disk.setdefault(yol.rsplit("/", 1)[-1], []).append(yol)
+    kalan_olu, yoksayili = [], []
+    for p0, aciklama in olu:
+        adaylar = havuz_disk.get(os.path.basename(p0)) or []
+        if not os.path.dirname(p0) and len(adaylar) == 1:
+            yoksayili.append((p0, adaylar[0], "CIPLAK_AD_YOKSAYILI"))
+        else:
+            kalan_olu.append((p0, aciklama))
+    return kalan_olu, yoksayili
+
+
+_H4_SOZ = {"CIPLAK_AD": "CIPLAK ADLA ANILDI (olu degil)",
+           "CIPLAK_AD_YOKSAYILI": "CIPLAK ADLA ANILDI (git'te yoksayili, diskte VAR)"}
+
+
 def _h4_hukum(F, N, olu, tasinmis):
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
     for p0, yer, tur in tasinmis[:5]:
         # IS_EMRI_H4.md KALEM (b): CIPLAK_AD, TASINMIS ile AYNI kelimeyle
         # RAPORLANMAZ — dosya taşınmadı, yalniz adiyla anildi (bkz. yukarida).
-        soz = "CIPLAK ADLA ANILDI" if tur == "CIPLAK_AD" else "TASINMIS"
-        N.append("H4: %s (olu degil): '%s' -> %s" % (soz, p0, yer))
+        # IS_EMRI_H4_YOKSAYILAN.md KALEM 1: CIPLAK_AD_YOKSAYILI de AYRI sozle
+        # raporlanir — git'e yoksayili ama diskte VAR, bu da TASINMIS DEGILDIR.
+        soz = _H4_SOZ.get(tur, "TASINMIS (olu degil)")
+        N.append("H4: %s: '%s' -> %s" % (soz, p0, yer))
     if len(tasinmis) > 5:
         N.append("H4: … +%d tasinmis dosya daha (bulgu degil)" % (len(tasinmis) - 5))
     for p0, aciklama in olu[:10]:
@@ -4118,6 +4210,12 @@ def _kapi_h4(F, N, O, kok, y):
             O.append("H4: %s havuz disinda (yoksayilan dizin) — OLCULEMEDI" % _p)
         eksik = [p for p in eksik if p.split("/", 1)[0] not in _haric]
         olu, tasinmis = _h4_siniflandir(eksik, havuz)
+        if olu:
+            # KALEM 1 (besli-paket/IS_EMRI_H4_YOKSAYILAN.md): hala 'olu' sayilan
+            # adaylara IKINCI bir sans — git'in yoksaydigi ama diskte GERCEKTEN
+            # VAR olan bir dosya olabilirler (bkz. `_h4_yoksayili_kontrol`).
+            olu, yoksayili = _h4_yoksayili_kontrol(olu, kok)
+            tasinmis = tasinmis + yoksayili
         _h4_hukum(F, N, olu, tasinmis)
 
 
@@ -4306,8 +4404,18 @@ def _kapi_h9(F, N, O, kok, y):
                 r3 = subprocess.run(["git", "-C", kok, "ls-files", "--error-unmatch", rel],
                                     capture_output=True, text=True)
                 if r3.returncode != 0:
-                    fail("H9", "git'te IZLENMIYOR: %s — icerik-adresli tarih yok "
-                               "(.gitignore'a mi takildi?)" % rel)
+                    # KALEM 2 (besli-paket/IS_EMRI_H4_YOKSAYILAN.md, 7 Eyl 2026):
+                    # soru isareti KALKAR — KALEM 1'in AYNI (paylasilan, en fazla
+                    # bir kez hesaplanan) yoksayilan-dosya kumesiyle OLCULEBILIR.
+                    # TEK `fail()` CAGRISI KORUNUR (sabotaj.py'nin fail() sayacini
+                    # BOZMAMAK icin — iki ayri cagriya bolmek KAPSAMSIZ bir kor
+                    # nokta daha acardi, olculdu): mesaj bir DEGISKENDE kurulur.
+                    # M-5 bu ayrimi TEK bir kaliba indiren mutani sinar.
+                    if rel in _h4_git_yoksayilan_dosyalar(kok):
+                        _h9_sebep = ".gitignore yakaliyor (%s)" % _h4_kural_kaynagi(kok, rel)
+                    else:
+                        _h9_sebep = "henuz commit edilmemis (.gitignore'a takilmiyor)"
+                    fail("H9", "git'te IZLENMIYOR: %s — %s" % (rel, _h9_sebep))
             N.append("H9: git var · son commit %s · calisma agacinda %d degisiklik"
                      % ((r.stdout or "").strip()[:40], kirli))
         else:

@@ -47,12 +47,35 @@ NE OLCER
       rapor.log` ile SADECE ADLARI ORTAK oldugu icin ayirt edilemez olur ve
       YANLISLIKLA O'ya kayar (gercek bir OLU BAGLANTI GIZLENIR). Pozitif
       kontrol: bugunku (duzeltmeden onceki) motorda KAPI-E YESIL, M-3 ISIRIR.
+  KAPI-F (besli-paket IS_EMRI_H4_YOKSAYILAN.md KALEM 1, 7 Eyl 2026, Onur
+      kilidi "Bulgu olmaktan ciksin" — Momentum'da GERCEKTEN OLCULDU): KAPI-A
+      "gitignore'lu -> OLU" hukmunu DOGRU kurdu (git'in izledigi yerde yok),
+      ama motor bunu "hicbir yerde yok" diye SOYLUYORDU — olculmemis bir
+      cumle. KAPI-F, CIPLAK adla (dizin BEYAN ETMEDEN) anilan ve git'in
+      yoksaydigi bir dizinde GERCEKTEN VAR olan bir dosyanin artik BULGU
+      URETMEDIGINI, gercek yoluyla bir BILGI SATIRI verdigini sinar. AYNI
+      agacta KONTROL KOLU: hic var olmayan ikinci bir ciplak ad -> HALA OLU
+      BAGLANTI (iki hukum ayni kapida ayrilir, ortusen tespit korlugune
+      dusulmez). KAPI-A'nin DIZINLI beyan senaryosuna (`web/main.dart.js`)
+      BILEREK DOKUNMAZ — o KALEM 2'nin (IS_EMRI_DEVRAL.md) dogru kurdugu
+      hukmu AYNEN korur; yalniz CIPLAK ad olculmemis "hicbir yerde yok"
+      iddiasindan cikar.
+      MUTANT (M-4): ayrimi kaldirir (yoksayili-kontrol sokulur) -> kopya
+      yine OLU sayilir (kusur GERI GELIR, ISIRIR).
+  KAPI-G (KALEM 2, ayni is emri): H9'un iki hali de "IZLENMIYOR" diyordu ama
+      biri .gitignore'a takildigi icin, digeri HENUZ COMMIT EDILMEDIGI icin —
+      motor ikisini de SORU ISARETIYLE ("...mi takildi?") ayni kaliba
+      SIKISTIRIYORDU. KAPI-G AYNI agacta iki defter dosyasini (`_ZINCIR.jsonl`
+      .gitignore'lu, `_KAYNAK.md` yalniz commit'siz) sinar; iki H9 mesaji
+      FARKLI olmali.
+      MUTANT (M-5): iki mesaji TEK kaliba indiren mutant, mesajlari AYNI
+      yapar (ISIRIR).
 
 NE OLCMEZ
   Performans (`check-ignore` toplu/tek surec) BURADA olculmez — davranissal
   DEGIL, uygulama detayidir; kod incelemesiyle dogrulanir.
 
-CIKIS KODU  0 bes kapi da temiz VE uc mutant da ISIRDI · 1 kapi kirmizi / mutant KACTI
+CIKIS KODU  0 yedi kapi da temiz VE bes mutant da ISIRDI · 1 kapi kirmizi / mutant KACTI
             2 OLCULEMEDI (git yok, motor okunamadi, senaryo kurulamadi)
 """
 import io
@@ -177,6 +200,30 @@ def hal_kur(motor, ad, tip, taban):
         _ekle(kok, ["Olu baglanti denemesi: `belgeler/rapor.log`.",
                     "Izlenen dosya beyani: `belgeler/gercek.md`.",
                     "Havuz disi dizin denemesi: `.git/index.lock`."])
+    elif tip == "ciplak_yoksayili":
+        # besli-paket IS_EMRI_H4_YOKSAYILAN.md KALEM 1, KAPI-F: Momentum
+        # vakasinin KUCUK OLCEGI — `main.dart.js` git'in yoksaydigi `build/`
+        # altinda GERCEKTEN VAR, canli hafiza CIPLAK ADIYLA anar (dizin
+        # BEYAN ETMEDEN — KAPI-A'nin `web/main.dart.js` beyanindan FARKLI).
+        # AYNI agacta KONTROL KOLU: hic var olmayan ikinci bir ciplak ad da
+        # anilir -> o HALA OLU BAGLANTI olmali (bu kapi bilerek exit 1 KALIR,
+        # main.dart.js O FAIL'e KATKI VERMEZ — iki hukum ayni kapida ayrilir).
+        _dosya(kok, ".gitignore", "build/\n")
+        _dosya(kok, "build/web/main.dart.js", "// derleme artefakti\n")
+        _ekle(kok, ["Dosya: `main.dart.js`.",
+                    "Hic yok kontrolu: `YOK_HICBIRYERDE_KF.md`."])
+    elif tip == "h9_karisik":
+        # KALEM 2, KAPI-G: iki hafiza-defteri dosyasi (`kur`in kendi yarattigi
+        # `_ZINCIR.jsonl`/`_KAYNAK.md`) izlenmiyor — biri CUNKU .gitignore
+        # yakaliyor, digeri CUNKU henuz commit edilmedi (ikisi de HAZIRLIK'tan
+        # sonra dogal olarak boyle baslar). H9 iki AYRI mesaj basmali.
+        # 🔴 En az BIR commit SART: commit'siz depoda `_kapi_h9` "HENUZ COMMIT
+        # YOK" dalina duser, dosya-bazli IZLENMIYOR sinamasi HIC kosmaz. Bu
+        # commit YALNIZ `.gitignore`yi alir — `_ZINCIR.jsonl`/`_KAYNAK.md`
+        # BILEREK disarida (aksi halde `add -A` ikisini de izlenen yapardi).
+        _dosya(kok, ".gitignore", "arsiv/hafiza/_ZINCIR.jsonl\n")
+        _git(kok, "add", ".gitignore")
+        _git(kok, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "ilk (yalniz .gitignore)")
     else:
         raise Kurulamadi("bilinmeyen hal tipi: %s" % tip)
     return kok
@@ -187,6 +234,8 @@ HALLER = [
     ("h_git_yok", "git_yok"),
     ("h_izlenen", "izlenen"),
     ("h_ignore_dosya", "ignore_dosya"),
+    ("h_ciplak_yoksayili", "ciplak_yoksayili"),
+    ("h_h9_karisik", "h9_karisik"),
 ]
 
 
@@ -216,6 +265,12 @@ def _siniflandirma(satir):
         return "YOK"
     if "hicbir yerde yok" in satir:
         return "OLU_ACIKLAMASIZ"
+    # KAPI-F (besli-paket IS_EMRI_H4_YOKSAYILAN.md KALEM 1): "TASINMIS"/
+    # "CIPLAK ADLA ANILDI" kontrolunden ONCE gelir — YOKSAYILI cumlesi de
+    # "CIPLAK ADLA ANILDI" ICERIR, ayirt edilmezse yanlislikla DIGER kolun
+    # sinifina duserdi.
+    if "git'te yoksayili, diskte VAR" in satir:
+        return "YOKSAYILI_VAR"
     if "TASINMIS" in satir:
         return "TASINMIS"
     if "yol tutmuyor" in satir:
@@ -367,6 +422,58 @@ def main():
             b.append("KAPI-E: '.git/index.lock' YANLISLIKLA F listesinde — "
                      "kapi oraya HIC BAKMADIGI halde 'hicbir yerde yok' diyor")
 
+        # ------------------------------------------------------------- KAPI-F
+        # besli-paket IS_EMRI_H4_YOKSAYILAN.md KALEM 1 (7 Eyl 2026, Onur kilidi
+        # "Bulgu olmaktan ciksin" — Momentum'da GERCEKTEN OLCULDU): CIPLAK adla
+        # anilan, git'in yoksaydigi bir dizinde GERCEKTEN VAR olan bir dosya
+        # artik BULGU URETMEMELI — bilgi satirinda GERCEK yoluyla gorunmeli.
+        # AYNI agacta kontrol kolu: hic var olmayan ikinci bir ciplak ad HALA
+        # OLU BAGLANTI olmali (bu FAIL main.dart.js'e AIT DEGILDIR).
+        kod, satir, sinif, cikti = h["h_ciplak_yoksayili"]
+        mdj_sinif = _yol_siniflandir(cikti, "main.dart.js")
+        kf_sinif = _yol_siniflandir(cikti, "YOK_HICBIRYERDE_KF.md")
+        print("  KAPI-F ciplak+yoksayili    : kod=%s · main.dart.js=%s · YOK_HICBIRYERDE_KF.md=%s"
+              % (kod, mdj_sinif, kf_sinif))
+        if kod != 1:
+            b.append("KAPI-F: kapi exit %s (1 bekleniyordu — kontrol kolunun OLU BAGLANTISI "
+                     "FAIL uretmeli, main.dart.js'in KENDISI degil)" % kod)
+        if mdj_sinif != "YOKSAYILI_VAR":
+            b.append("KAPI-F: 'main.dart.js' siniflandirmasi %r (beklenen YOKSAYILI_VAR — "
+                     "'git'te yoksayili, diskte VAR')" % mdj_sinif)
+        if "build/web/main.dart.js" not in cikti:
+            b.append("KAPI-F: cikti GERCEK yolu ('build/web/main.dart.js') tasimiyor")
+        if "[H4] OLU BAGLANTI: main.dart.js" in cikti:
+            b.append("KAPI-F: 'main.dart.js' HALA '[H4] OLU BAGLANTI' basiyor — olculmemis "
+                     "'hicbir yerde yok' iddiasi surdu")
+        if kf_sinif != "OLU_ACIKLAMASIZ":
+            b.append("KAPI-F (kontrol kolu): 'YOK_HICBIRYERDE_KF.md' hic yokken "
+                     "OLU_ACIKLAMASIZ DEGIL (%r) — ayni kapida iki hukum karisiyor "
+                     "olabilir (ortusen tespit korlugu)" % kf_sinif)
+
+        # ------------------------------------------------------------- KAPI-G
+        # besli-paket IS_EMRI_H4_YOKSAYILAN.md KALEM 2: H9'un "IZLENMIYOR"
+        # mesaji SORU ISARETIYLE ikiyi ayni kaliba sikistiriyordu; artik
+        # .gitignore'lu ile SADECE commit'siz ayri cumleler basmali.
+        kod, _, _, cikti = h["h_h9_karisik"]
+        h9_satirlari = [s.strip() for s in cikti.split("\n") if ("H9:" in s or "[H9]" in s)]
+        zincir_satir = next((s for s in h9_satirlari if "_ZINCIR.jsonl" in s), None)
+        kaynak_satir = next((s for s in h9_satirlari if "_KAYNAK.md" in s), None)
+        print("  KAPI-G H9 iki mesaj        : zincir=%s | kaynak=%s"
+              % (zincir_satir or "(YOK)", kaynak_satir or "(YOK)"))
+        if not zincir_satir or ".gitignore yakaliyor" not in zincir_satir:
+            b.append("KAPI-G: '_ZINCIR.jsonl' mesaji '.gitignore yakaliyor' icermiyor "
+                     "(%r)" % zincir_satir)
+        if not kaynak_satir or "henuz commit edilmemis" not in kaynak_satir:
+            b.append("KAPI-G: '_KAYNAK.md' mesaji 'henuz commit edilmemis' icermiyor "
+                     "(%r)" % kaynak_satir)
+        if zincir_satir and kaynak_satir and "mi takildi" in (zincir_satir + kaynak_satir):
+            b.append("KAPI-G: eski soru-isaretli kalip HALA cikiyor")
+        if zincir_satir and kaynak_satir:
+            z_kuyruk = zincir_satir.split("—", 1)[-1].strip()
+            k_kuyruk = kaynak_satir.split("—", 1)[-1].strip()
+            if z_kuyruk == k_kuyruk:
+                b.append("KAPI-G: iki H9 mesaji AYNI kaliba dusmus (ayrim yok)")
+
         for x in b:
             print("      ! %s" % x)
         if b:
@@ -485,11 +592,86 @@ def main():
                   "F'de — kapi bu ayrimi HIC OLCMUYOR)")
             kacan.append("M-3")
 
+        # M-4 (besli-paket IS_EMRI_H4_YOKSAYILAN.md KALEM 1): CIPLAK-yoksayili
+        # ikinci-sans ayrimi SOKULUR -> `main.dart.js` yine OLU sayilmali
+        # (kusur GERI GELIR).
+        ANKOR4 = "            olu, yoksayili = _h4_yoksayili_kontrol(olu, kok)\n"
+        n4 = s.count(ANKOR4)
+        if n4 != 1:
+            print("  M-4 yoksayili-kontrol sokulur      OLCULEMEDI: capa %d yerde gecti "
+                  "(1 olmali)" % n4)
+            print(CIZGI)
+            print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
+            return 2
+        metin4 = s.replace(ANKOR4, "            olu, yoksayili = olu, []      "
+                                    "# MUTANT: ayrim sokuldu\n", 1)
+        try:
+            compile(metin4, "<mutant4>", "exec")
+        except SyntaxError as e:
+            print("  M-4 yoksayili-kontrol sokulur      OLCULEMEDI: sabotajli motor "
+                  "derlenmiyor: %s" % e)
+            print(CIZGI)
+            print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
+            return 2
+        mdir4 = tempfile.mkdtemp(prefix="mutant4_", dir=taban)
+        sab4 = os.path.join(mdir4, "hafiza.py")
+        with io.open(sab4, "w", encoding="utf-8", newline="\n") as f:
+            f.write(metin4)
+        mh4 = hukum(sab4, os.path.join(taban, "mutant4"))
+        _, _, _, cikti4 = mh4["h_ciplak_yoksayili"]
+        m4sinif = _yol_siniflandir(cikti4, "main.dart.js")
+        if m4sinif == "OLU_ACIKLAMASIZ":
+            print("  M-4 yoksayili-kontrol sokulur      -> ISIRDI ✓  (eski kusur geri geldi: "
+                  "'main.dart.js' artik OLU_ACIKLAMASIZ)")
+        else:
+            print("  M-4 yoksayili-kontrol sokulur      -> KACTI ✗  ('main.dart.js' "
+                  "siniflandirmasi %r — kapi bunu HIC OLCMUYOR)" % m4sinif)
+            kacan.append("M-4")
+
+        # M-5 (KALEM 2): H9'un .gitignore/commit'siz ayrimi SOKULUR -> iki
+        # mesaj TEK kaliba ("henuz commit edilmemis") DUSMELI.
+        ANKOR5 = "                    if rel in _h4_git_yoksayilan_dosyalar(kok):\n"
+        n5 = s.count(ANKOR5)
+        if n5 != 1:
+            print("  M-5 H9 ayrimi sokulur              OLCULEMEDI: capa %d yerde gecti "
+                  "(1 olmali)" % n5)
+            print(CIZGI)
+            print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
+            return 2
+        metin5 = s.replace(ANKOR5, "                    if False:      "
+                                    "# MUTANT: ayrim sokuldu\n", 1)
+        try:
+            compile(metin5, "<mutant5>", "exec")
+        except SyntaxError as e:
+            print("  M-5 H9 ayrimi sokulur              OLCULEMEDI: sabotajli motor "
+                  "derlenmiyor: %s" % e)
+            print(CIZGI)
+            print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
+            return 2
+        mdir5 = tempfile.mkdtemp(prefix="mutant5_", dir=taban)
+        sab5 = os.path.join(mdir5, "hafiza.py")
+        with io.open(sab5, "w", encoding="utf-8", newline="\n") as f:
+            f.write(metin5)
+        mh5 = hukum(sab5, os.path.join(taban, "mutant5"))
+        _, _, _, cikti5 = mh5["h_h9_karisik"]
+        h9_satirlari5 = [s2.strip() for s2 in cikti5.split("\n") if ("H9:" in s2 or "[H9]" in s2)]
+        zincir5 = next((s2 for s2 in h9_satirlari5 if "_ZINCIR.jsonl" in s2), None)
+        kaynak5 = next((s2 for s2 in h9_satirlari5 if "_KAYNAK.md" in s2), None)
+        ayni_kalip = (zincir5 and kaynak5
+                     and zincir5.split("—", 1)[-1].strip() == kaynak5.split("—", 1)[-1].strip())
+        if ayni_kalip:
+            print("  M-5 H9 ayrimi sokulur              -> ISIRDI ✓  (iki mesaj tek "
+                  "kaliba dustu: %s)" % kaynak5.split("—", 1)[-1].strip())
+        else:
+            print("  M-5 H9 ayrimi sokulur              -> KACTI ✗  (mesajlar hala "
+                  "farkli — kapi bu ayrimi HIC OLCMUYOR)")
+            kacan.append("M-5")
+
         print(CIZGI)
         if kacan:
             print("SONUC: KAPI KOR — %s beklendigi gibi olculmedi." % ", ".join(kacan))
             return 1
-        print("SONUC: YESIL — bes kapi da temiz, uc mutant da AYRI eksende ISIRDI.")
+        print("SONUC: YESIL — yedi kapi da temiz, bes mutant da AYRI eksende ISIRDI.")
         return 0
     finally:
         shutil.rmtree(taban, ignore_errors=True)
