@@ -70,12 +70,29 @@ NE OLCER
       FARKLI olmali.
       MUTANT (M-5): iki mesaji TEK kaliba indiren mutant, mesajlari AYNI
       yapar (ISIRIR).
+  KAPI-H (besli-paket IS_EMRI_H4_COKLU_KOPYA.md KALEM 1, 8 Eyl 2026, Onur
+      kilidi "Yol + kopya sayisi" — Momentum'da GERCEKTEN OLCULDU, KAPI-F
+      YETERSIZ KALDI): KAPI-F'in fixture'i TEK kopya kuruyordu; Momentum'da
+      `main.dart.js` GERCEKTE 8 kopya (Flutter build hash'leri) ve KAPI-F'in
+      `len(adaylar)==1` sarti (TRACKED-havuzun CIPLAK_AD kolundan miras) bu
+      vakayi HALA OLU sayiyordu — kor kapi (M-4 ISIRDI ama gercek proje
+      kirmizi kaldi). KAPI-H, AYNI ciplak ad git'in yoksaydigi UC AYRI
+      dizinde kurulur; beklenen `sorted` ILK yol + '(+2 kopya daha)' — bulgu
+      URETILMEZ. AYNI agacta KONTROL KOLU: hic var olmayan bir ad HALA OLU
+      BAGLANTI (iki hukum ayni kapida ayrilir).
+      MUTANT (M-6): cokluk sarti GERI KONUR (`len(adaylar)==1`) -> kopyalar
+      yeniden OLU sayilir (ISIRIR).
+      MUTANT (M-7) DETERMINIZM: secim `sorted` yerine sirasiz `adaylar[0]`e
+      dondurulur -> `_H4_YOKSAYILAN_DOSYALAR` bir `set` oldugu icin ayni
+      agacin TEKRARLANAN kosumlari FARKLI yol basabilir (ayni kosum, ayni
+      girdi — hash tohumu surece gore degisir). Sabotajli motor AYNI agacta
+      birkac kez kosulur; ciktilar FARKLILASMALI (ISIRIR).
 
 NE OLCMEZ
   Performans (`check-ignore` toplu/tek surec) BURADA olculmez — davranissal
   DEGIL, uygulama detayidir; kod incelemesiyle dogrulanir.
 
-CIKIS KODU  0 yedi kapi da temiz VE bes mutant da ISIRDI · 1 kapi kirmizi / mutant KACTI
+CIKIS KODU  0 sekiz kapi da temiz VE yedi mutant da ISIRDI · 1 kapi kirmizi / mutant KACTI
             2 OLCULEMEDI (git yok, motor okunamadi, senaryo kurulamadi)
 """
 import io
@@ -224,6 +241,19 @@ def hal_kur(motor, ad, tip, taban):
         _dosya(kok, ".gitignore", "arsiv/hafiza/_ZINCIR.jsonl\n")
         _git(kok, "add", ".gitignore")
         _git(kok, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "ilk (yalniz .gitignore)")
+    elif tip == "ciplak_coklu":
+        # besli-paket IS_EMRI_H4_COKLU_KOPYA.md KALEM 1, KAPI-H: Momentum
+        # vakasinin TAM OLCEGI — build ciktilari DOGALARI GEREGI COK
+        # KOPYALIDIR (Flutter hash'li build dizinleri, webpack/vite
+        # dist+.cache, .NET bin/obj). AYNI ciplak ad, git'in yoksaydigi UC
+        # AYRI dizinde. Beklenen: sorted ILK yol + '(+2 kopya daha)'. AYNI
+        # agacta kontrol kolu: hic var olmayan bir ad HALA OLU BAGLANTI.
+        _dosya(kok, ".gitignore", "build/\n.dart_tool/\n")
+        _dosya(kok, "build/web/main.dart.js", "// derleme artefakti (1)\n")
+        _dosya(kok, ".dart_tool/x/main.dart.js", "// derleme artefakti (2)\n")
+        _dosya(kok, ".dart_tool/y/main.dart.js", "// derleme artefakti (3)\n")
+        _ekle(kok, ["Dosya: `main.dart.js`.",
+                    "Hic yok kontrolu: `YOK_HICBIRYERDE_KH.md`."])
     else:
         raise Kurulamadi("bilinmeyen hal tipi: %s" % tip)
     return kok
@@ -236,6 +266,7 @@ HALLER = [
     ("h_ignore_dosya", "ignore_dosya"),
     ("h_ciplak_yoksayili", "ciplak_yoksayili"),
     ("h_h9_karisik", "h9_karisik"),
+    ("h_ciplak_coklu", "ciplak_coklu"),
 ]
 
 
@@ -474,6 +505,33 @@ def main():
             if z_kuyruk == k_kuyruk:
                 b.append("KAPI-G: iki H9 mesaji AYNI kaliba dusmus (ayrim yok)")
 
+        # ------------------------------------------------------------- KAPI-H
+        # besli-paket IS_EMRI_H4_COKLU_KOPYA.md KALEM 1 (8 Eyl 2026, Onur
+        # kilidi "Yol + kopya sayisi" — Momentum'da GERCEKTEN OLCULDU, KAPI-F
+        # YETERSIZDI): AYNI ciplak ad UC AYRI yoksayilan dizinde. Beklenen:
+        # `sorted` ILK yol + '(+2 kopya daha)', bulgu URETILMEZ. AYNI agacta
+        # kontrol kolu: hic var olmayan bir ad HALA OLU BAGLANTI.
+        kod, satir, sinif, cikti = h["h_ciplak_coklu"]
+        mdj_sinif = _yol_siniflandir(cikti, "main.dart.js")
+        kh_sinif = _yol_siniflandir(cikti, "YOK_HICBIRYERDE_KH.md")
+        print("  KAPI-H ciplak+coklu-kopya  : kod=%s · main.dart.js=%s · YOK_HICBIRYERDE_KH.md=%s"
+              % (kod, mdj_sinif, kh_sinif))
+        if kod != 1:
+            b.append("KAPI-H: kapi exit %s (1 bekleniyordu — kontrol kolunun OLU BAGLANTISI "
+                     "FAIL uretmeli, main.dart.js'in KENDISI degil)" % kod)
+        if mdj_sinif != "YOKSAYILI_VAR":
+            b.append("KAPI-H: 'main.dart.js' siniflandirmasi %r (beklenen YOKSAYILI_VAR)" % mdj_sinif)
+        if ".dart_tool/x/main.dart.js" not in cikti:
+            b.append("KAPI-H: cikti SIRALI ILK yolu (.dart_tool/x/main.dart.js) tasimiyor")
+        if "(+2 kopya daha)" not in cikti:
+            b.append("KAPI-H: cikti kopya sayisini ('(+2 kopya daha)') tasimiyor")
+        if "[H4] OLU BAGLANTI: main.dart.js" in cikti:
+            b.append("KAPI-H: 'main.dart.js' HALA '[H4] OLU BAGLANTI' basiyor — coklu kopya "
+                     "hala OLU sayiliyor")
+        if kh_sinif != "OLU_ACIKLAMASIZ":
+            b.append("KAPI-H (kontrol kolu): 'YOK_HICBIRYERDE_KH.md' hic yokken "
+                     "OLU_ACIKLAMASIZ DEGIL (%r)" % kh_sinif)
+
         for x in b:
             print("      ! %s" % x)
         if b:
@@ -667,11 +725,93 @@ def main():
                   "farkli — kapi bu ayrimi HIC OLCMUYOR)")
             kacan.append("M-5")
 
+        # M-6 (besli-paket IS_EMRI_H4_COKLU_KOPYA.md KALEM 1): cokluk sarti
+        # GERI KONUR (`len(adaylar)==1`) -> coklu kopyalar yeniden OLU
+        # sayilmali (kusur GERI GELIR).
+        ANKOR6 = "        if not os.path.dirname(p0) and adaylar:\n"
+        n6 = s.count(ANKOR6)
+        if n6 != 1:
+            print("  M-6 cokluk sarti geri konur         OLCULEMEDI: capa %d yerde gecti "
+                  "(1 olmali)" % n6)
+            print(CIZGI)
+            print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
+            return 2
+        metin6 = s.replace(ANKOR6, "        if not os.path.dirname(p0) and len(adaylar) == 1:  "
+                                    "# MUTANT: cokluk sarti geri kondu\n", 1)
+        try:
+            compile(metin6, "<mutant6>", "exec")
+        except SyntaxError as e:
+            print("  M-6 cokluk sarti geri konur         OLCULEMEDI: sabotajli motor "
+                  "derlenmiyor: %s" % e)
+            print(CIZGI)
+            print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
+            return 2
+        mdir6 = tempfile.mkdtemp(prefix="mutant6_", dir=taban)
+        sab6 = os.path.join(mdir6, "hafiza.py")
+        with io.open(sab6, "w", encoding="utf-8", newline="\n") as f:
+            f.write(metin6)
+        mh6 = hukum(sab6, os.path.join(taban, "mutant6"))
+        _, _, _, cikti6 = mh6["h_ciplak_coklu"]
+        m6sinif = _yol_siniflandir(cikti6, "main.dart.js")
+        if m6sinif == "OLU_ACIKLAMASIZ":
+            print("  M-6 cokluk sarti geri konur         -> ISIRDI ✓  (eski kusur geri geldi: "
+                  "'main.dart.js' artik OLU_ACIKLAMASIZ)")
+        else:
+            print("  M-6 cokluk sarti geri konur         -> KACTI ✗  ('main.dart.js' "
+                  "siniflandirmasi %r — kapi bunu HIC OLCMUYOR)" % m6sinif)
+            kacan.append("M-6")
+
+        # M-7 (besli-paket IS_EMRI_H4_COKLU_KOPYA.md KALEM 1) DETERMINIZM:
+        # secim `sorted` yerine sirasiz `adaylar[0]`e dondurulur -> `disk`
+        # bir `set` oldugu icin (hash tohumu SURECE gore degisir) AYNI agacin
+        # TEKRARLANAN kosumlari FARKLI yol basabilir. Sabotajli motor AYNI
+        # agacta birkac kez (ayri subprocess'lerle, ayri hash tohumuyla)
+        # kosulur; ciktilar FARKLILASMALI.
+        ANKOR7 = "            secili = sorted(adaylar)\n"
+        n7 = s.count(ANKOR7)
+        if n7 != 1:
+            print("  M-7 determinizm (sorted->adaylar[0]) OLCULEMEDI: capa %d yerde gecti "
+                  "(1 olmali)" % n7)
+            print(CIZGI)
+            print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
+            return 2
+        metin7 = s.replace(ANKOR7, "            secili = adaylar      "
+                                    "# MUTANT: siralama sokuldu\n", 1)
+        try:
+            compile(metin7, "<mutant7>", "exec")
+        except SyntaxError as e:
+            print("  M-7 determinizm (sorted->adaylar[0]) OLCULEMEDI: sabotajli motor "
+                  "derlenmiyor: %s" % e)
+            print(CIZGI)
+            print("SONUC: OLCULEMEDI — mutant kurulamadi (arac kusuru, kapi kor DEGIL).")
+            return 2
+        mdir7 = tempfile.mkdtemp(prefix="mutant7_", dir=taban)
+        sab7 = os.path.join(mdir7, "hafiza.py")
+        with io.open(sab7, "w", encoding="utf-8", newline="\n") as f:
+            f.write(metin7)
+        kok7 = hal_kur(sab7, "h_ciplak_coklu_7", "ciplak_coklu", os.path.join(taban, "kaynak7"))
+        gorulen = set()
+        for tekrar in range(8):
+            kok7_kopya = os.path.join(taban, "olc7_%d" % tekrar)
+            shutil.copytree(kok7, kok7_kopya)
+            _, cikti7 = kos(sab7, ["kapi"], kok7_kopya)
+            m = re.search(r"CIPLAK ADLA ANILDI[^\n]*'main\.dart\.js'\s*->\s*([^\s(]+)", cikti7)
+            if m:
+                gorulen.add(m.group(1))
+        if len(gorulen) > 1:
+            print("  M-7 determinizm (sorted->adaylar[0]) -> ISIRDI ✓  (%d kosumda %d FARKLI "
+                  "yol gorundu: %s)" % (8, len(gorulen), ", ".join(sorted(gorulen))))
+        else:
+            print("  M-7 determinizm (sorted->adaylar[0]) -> KACTI ✗  (8 kosumda tek yol "
+                  "gorundu (%s) — sart zaten sirali olabilir ya da olcum aleti hash "
+                  "tohumunu degistirmiyor)" % (next(iter(gorulen), "(YOK)")))
+            kacan.append("M-7")
+
         print(CIZGI)
         if kacan:
             print("SONUC: KAPI KOR — %s beklendigi gibi olculmedi." % ", ".join(kacan))
             return 1
-        print("SONUC: YESIL — yedi kapi da temiz, bes mutant da AYRI eksende ISIRDI.")
+        print("SONUC: YESIL — sekiz kapi da temiz, yedi mutant da AYRI eksende ISIRDI.")
         return 0
     finally:
         shutil.rmtree(taban, ignore_errors=True)

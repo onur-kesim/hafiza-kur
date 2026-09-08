@@ -4146,14 +4146,29 @@ def _h4_yoksayili_kontrol(olu, kok):
     sinar) — bu AYRI, IKINCI bir gecistir ve YALNIZ hala 'olu' sayilan adaylara,
     YALNIZ aday listesi BOS DEGILKEN uygulanir (maliyet sifir tipik durumda).
 
-    KAPSAM BILEREK DAR: yalniz CIPLAK beyan (dizin bileseni YOK) + TAM BIR
-    eslesme — `_h4_siniflandir`in TRACKED-havuzdaki CIPLAK_AD kolunun AYNISI
-    (Fable Bulgu 7: 0 ya da 2+ eslesme, ya da dizinli beyan bu kola HIC girmez,
-    OLU olarak KALIR). DIZIN BEYANLI vakalar (KAPI-A'nin `web/main.dart.js`
-    ornegi gibi) bu kola BILEREK GIRMEZ — o senaryo ZATEN 'git'in izledigi
-    yerde yok' hukmunu KORUR (KALEM 2, IS_EMRI_DEVRAL.md), sadece ÇIPLAK ad
-    (`main.dart.js` gibi hicbir dizin beyan etmeyen bir referans) olculmemis
-    'hicbir yerde yok' iddiasindan cikar."""
+    KAPSAM BILEREK DAR: yalniz CIPLAK beyan (dizin bileseni YOK) — DIZIN
+    BEYANLI vakalar (KAPI-A'nin `web/main.dart.js` ornegi gibi) bu kola
+    BILEREK GIRMEZ, ZATEN 'git'in izledigi yerde yok' hukmunu KORUR (KALEM 2,
+    IS_EMRI_DEVRAL.md); sadece ÇIPLAK ad (`main.dart.js` gibi hicbir dizin
+    beyan etmeyen bir referans) olculmemis 'hicbir yerde yok' iddiasindan
+    cikar.
+
+    besli-paket/IS_EMRI_H4_COKLU_KOPYA.md (8 Eyl 2026, OLCULEN KOR KAPI):
+    `_h4_siniflandir`in TRACKED-havuzdaki CIPLAK_AD kolu `len(adaylar)==1`
+    sartini tasir (Fable Bulgu 7: "nereye tasindi?" sorusu 2+ eslesmede
+    BELIRSIZDIR) — ama YOKSAYILAN havuzda soru FARKLIDIR: "bu ad diskte VAR
+    mi?". Coklu eslesme burada belirsizlik DEGIL, DAHA GUCLU kanittir; ustelik
+    build ciktilari DOGALARI GEREGI cok kopyalidir (Flutter hash'li build
+    dizinleri, webpack/vite `dist`+`.cache`, .NET `bin`/`obj`) — AYNI sart
+    burada kopyalaninca duzeltmenin hedefledigi vakalarin COGUNU disarida
+    birakiyordu (Momentum'da OLCULDU: `main.dart.js` 8 kopya, `8 != 1` ->
+    hala OLU). Simdi: 0 eslesme HALA disarida (OLU kalir), 1+ eslesme
+    kabul edilir; 2+ ise mesaja '(+N kopya daha)' EKLENIR — kanit gizlenmez.
+
+    DETERMINIZM (ayni is emri, KENDI tuzagi): `disk` bir `set`tir, `havuz_disk`
+    listelerinin sirasi GARANTI DEGILDIR. Gosterilecek yol `sorted(adaylar)[0]`
+    ile secilir — SIRALI, TEKRARLANABILIR. `adaylar[0]` (sirasiz) YAZILMAZ;
+    ayni depoda ayni kosum FARKLI yol basmasi bu projede kabul edilemez."""
     disk = _h4_git_yoksayilan_dosyalar(kok)
     if not disk:
         return olu, []
@@ -4163,8 +4178,11 @@ def _h4_yoksayili_kontrol(olu, kok):
     kalan_olu, yoksayili = [], []
     for p0, aciklama in olu:
         adaylar = havuz_disk.get(os.path.basename(p0)) or []
-        if not os.path.dirname(p0) and len(adaylar) == 1:
-            yoksayili.append((p0, adaylar[0], "CIPLAK_AD_YOKSAYILI"))
+        if not os.path.dirname(p0) and adaylar:
+            secili = sorted(adaylar)
+            yer = (secili[0] if len(secili) == 1
+                   else "%s (+%d kopya daha)" % (secili[0], len(secili) - 1))
+            yoksayili.append((p0, yer, "CIPLAK_AD_YOKSAYILI"))
         else:
             kalan_olu.append((p0, aciklama))
     return kalan_olu, yoksayili
