@@ -2103,10 +2103,25 @@ def cmd_derle(a):
               "— once onlari geri al.\n"
               "  Sonra olc: python hafiza.py kapi" % (y.gunluk, kok))
     frg = sorted(f for f in os.listdir(y.gunluk) if f.endswith(".md"))
+    # KALEM 2 (besli-paket/IS_EMRI_GUNCEL_DURUM_KAPISI.md, 8 Eyl 2026, Onur
+    # kilidi "derle exit 2 = OLCULEMEDI"): hedef bolum (`## GUNCEL DURUM`)
+    # YOKSA `not`/`derle` dongusu CALISAMAZ — fragman olsun olmasin. `isir`in
+    # "2 = OLCULEMEDI" sozlesmesiyle AYNI dil: bu bir kayip DEGIL (fragmanlar
+    # gunluk/ altinda DURUYOR), ama basari da DEGIL — eskiden exit 0 + "0
+    # fragman islendi" basiliyordu, bu YALANDI (Momentum'da OLCULDU: 4 not
+    # yazildi, hicbiri canli deftere girmedi, derle YINE DE exit 0 dedi).
+    # `--bos-serbest` bu dali ETKILEMEZ — o bayrak fragman YOKLUGU icindir,
+    # bolum YOKLUGU icin degil (asagida AYRI sinanir).
+    _bolum_var = any(bas_eslesir(s, "## GUNCEL DURUM")
+                     for s in satirlar(y.canli) if s.startswith("#"))
     if not frg:
         print("HATA: bu turda HIC FRAGMAN YAZILMAMIS.")
         print("  Calisildiysa kayit birakilmalidir: hafiza.py not --konu <konu> --tur durum --metin \"...\"")
         print("  Gercekten kaydedilecek bir sey yoksa: hafiza.py derle --bos-serbest")
+        if not _bolum_var:
+            print("  AYRICA: '## GUNCEL DURUM' bolumu YOK — derle bu haliyle CALISAMAZ; "
+                  "canliya bu basligi ekle.")
+            return 2
         return 0 if a.bos_serbest else 1
     L = satirlar(y.canli)
     # BAGIMSIZ DENETIM (YUKSEK): `derle` canli dosyayi YENIDEN YAZAR. Blok yapisi bozuk
@@ -2294,6 +2309,13 @@ def cmd_derle(a):
     print("DERLENDI: %d fragman islendi ve arsive tasindi." % len(islenen))
     kod, cikti = _kapi_kos(kok)
     print(cikti.strip())
+    if not _bolum_var:
+        # KALEM 2: bolum yoksa (fragman VAR bu dalda) hicbir fragman ISLENEMEZ
+        # (ATLANDI satirlari yukarida basildi, degismedi) — exit 2, kapinin
+        # kendi hukmunden (exit 1 de olabilirdi) BAGIMSIZ.
+        print("\n! '## GUNCEL DURUM' bolumu YOK — derle OLCULEMEDI (bu kosumda hicbir "
+              "sey islenemedi); canliya bu basligi ekle.")
+        return 2
     if kod != 0:
         print("\n! Kapi FAIL — derleme geri ALINMADI (derleme yikici degil). Bulguyu duzelt.")
     return 0 if kod == 0 else 1
@@ -3374,6 +3396,9 @@ def cmd_devral(a):
     print("   5. [H6] 'ARSIV DIZINI bolumu yok': KALEM 1'den beri devral bunu artik KENDI"
           " icin diskte var olan basliklar VARKEN force EKLEMEZ (diskteki gercek ustundur) —")
     print("      canliya '## ARSIV DIZINI' basligini kendin ekle, `hafiza.py derle` icerigini doldurur.")
+    print("   6. [H17] '## GUNCEL DURUM bolumu YOK': bu bolum olmadan `not`/`derle` dongusu")
+    print("      CALISAMAZ (yazilan fragmanlar canliya hic girmez) — canliya '## GUNCEL DURUM'")
+    print("      basligini kendin ekle, `hafiza.py derle` bekleyen fragmanlari hemen isler.")
     print("  Mevcut sisteme (v1) DOKUNULMADI: eski cipa, zincir ve defterler oldugu gibi duruyor.")
     print("\n  Kapi yesillenince: python hafiza.py isir --kok=\"%s\"" % kok)
     return 0
@@ -3683,6 +3708,7 @@ def _kapi_govde(a, F, N, O):
     _kapi_h13(F, N, O, kok, rc, y)
     _kapi_h15(F, N, O, rc, y)
     _kapi_h14(F, N, O, kok, rc, y, t_son)
+    _kapi_h17(F, N, O, y)
 
     return
 
@@ -5107,6 +5133,35 @@ def _kapi_h16(F, N, O, y):
             fail("H16", "%s DIZIN DEGIL: %s" % (ad, d))
         elif kok_disina_mi(y.kok, d):
             fail("H16", "%s PROJE DISINA BAGLI: %s -> %s" % (ad, d, os.path.realpath(d)))
+
+
+def _kapi_h17(F, N, O, y):
+    """H17 DERLEME HEDEFI (besli-paket/IS_EMRI_GUNCEL_DURUM_KAPISI.md, 8 Eyl
+    2026, Onur kilidi "Kapi her zaman bulgu versin").
+
+    OLCULDU (Momentum kopyasi, DENEME KAPANIS OLCUMU): dort gercek `not`
+    exit 0 verdi, `derle` de exit 0 verip "DERLENDI: 0 fragman islendi"
+    dedi — hicbiri canli deftere GIRMEDI (`## GUNCEL DURUM` bolumu YOKTU,
+    `derle` hedef bulamayinca fragmani sessizce ATLAR). Ardindan `kapi`
+    "SONUC: YESIL — olculen her sey gecti" dedi. Aracin var olma sebebi
+    kayit tutmak; bu kosumda kayit tutulmadi ve HICBIR kapi bunu gormedi.
+
+    `devral` DEGISTIRILMEDI (KALEM 1, 6 Eyl 2026 kilidi: "diskteki gercek
+    ustundur" — devral canliya kendi basligini zorla YAZMAZ; Momentum'un
+    `zorunlu_bolumler`i devral aninda MEVCUT basliklardan turetildigi icin
+    `## GUNCEL DURUM`u icermiyordu, H3 de bu yuzden onu HIC anmiyordu). Bu
+    kapi H3'ten BAGIMSIZDIR ve KOSULSUZDUR: rc'nin zorunlu_bolumler listesine
+    BAKMAZ — `## GUNCEL DURUM`, `not`/`derle` dongusunun CALISMA ONKOSULUDUR,
+    ic karar (H3 gibi) degil yapisal bir GEREKSINIMDIR.
+
+    HER KOSUMDA calisir — fragman olsun olmasin, henuz hic not yazilmamis
+    taze bir kurulumda BILE (KABUL OLCUTU 3): o bolum olmadan dongu hic
+    BASLAYAMAZ, kullanicinin ilk notu yazmasini beklemeye gerek yok.
+    Bolum VARKEN hicbir sey basmaz (yanlis pozitif yok)."""
+    fail = lambda k, m: F.append("[%s] %s" % (k, m))
+    if not any(bas_eslesir(s, "## GUNCEL DURUM") for s in satirlar(y.canli) if s.startswith("#")):
+        fail("H17", "`## GUNCEL DURUM` bolumu YOK — `not`/`derle` dongusu "
+                    "calisamaz; yazilan fragmanlar canliya GIRMEZ. Canliya bu basligi ekle.")
 
 
 # ---------------------------------------------------------------- ISIRMA KANITI

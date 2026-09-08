@@ -2265,3 +2265,39 @@ jobs:
           name: isir-uygulanmaz-${{ matrix.os }}
           path: isir-uygulanmaz-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-32) GUNCEL DURUM KAPISI MUTANTI — besli-paket/IS_EMRI_GUNCEL_DURUM_
+  #     KAPISI.md (Onur kilidi 8 Eylul 2026 "kapi her zaman bulgu versin" +
+  #     "derle exit 2 = OLCULEMEDI"): Momentum kopyasinda dort gercek `not`
+  #     yazildi, `derle` exit 0 + "0 fragman islendi" dedi (hicbiri canli
+  #     deftere GIRMEDI, `## GUNCEL DURUM` bolumu yoktu), `kapi` "her sey
+  #     gecti" dedi — aracin var olma sebebi kayit tutmak, bu kosumda kayit
+  #     tutulmadi ve HICBIR kapi bunu gormedi. Yeni H17: bolum yoksa kapi HER
+  #     KOSUMDA bulgu uretir (fragman sarti yok); `derle` bolum yoksa artik
+  #     exit 2 doner (`isir`in "2 = OLCULEMEDI" diliyle AYNI). `devral`a
+  #     DOKUNULMADI. 🔴 UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  guncel_durum_kapisi_mutanti:
+    name: guncel durum kapisi mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: bolum yoksa kapi her kosumda bulgu veriyor mu, derle exit 2 mi (uc kol, hukum gevsemez)
+        shell: bash
+        run: python faz0/guncel_durum_kapisi_mutanti.py 2>&1 | tee guncel-durum-kapisi-cikti.txt
+      - name: guncel durum kapisi mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guncel-durum-kapisi-${{ matrix.os }}
+          path: guncel-durum-kapisi-cikti.txt
+          if-no-files-found: warn
