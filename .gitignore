@@ -16,6 +16,11 @@ hafiza_hata_izi.txt
 # --- deneme/kanıt koşumlarının bıraktığı projeler ---
 deneme/
 skill/scripts/deneme/
+# besli-paket/IS_EMRI_CI_OLU_KOD.md KALEM C (13 Eyl 2026): `skill/scripts/
+# deneme_b4e/` yukarıdaki iki satırla EŞLEŞMİYORDU (altındaki adlar tam eşleşme
+# ister), çalışma ağacında kaldı ve `git status` kirli kalıyordu. Gelecekteki
+# `deneme_*` fixture'larını da kapsasın diye TEK satır:
+skill/scripts/deneme*/
 /t2/
 /b4/
 /h1test/

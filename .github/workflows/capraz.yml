@@ -941,11 +941,14 @@ jobs:
   #     bulguyu URETIYOR ama CI YESIL kaliyordu (gitfile_korlugu_mutanti'deki
   #     AYNI korluk sinifi: bir is her koşumda kirmizi veriyor, `conclusion`
   #     yine de "success" donuyordu).
-  #     BU IS BILEREK KIRMIZI YANAR — kaza degil, Onur kilidi: bulgu artik
-  #     gizlenemez. B4-3/B4-4'un DUZELTMESI bu turun KAPSAMI DISINDA (ayri
-  #     turlarda, her biri AYRI mutant + pozitif kontrolle acilir); `ortam_olcum.sh`
-  #     de bu turda DEGISMEDI — olcen taraf sabit tutuldu. Bu is YESIL'e ancak
-  #     B4-3 VE B4-4 gercekten kapandiginda doner.
+  #     GUNCELLEME (besli-paket/IS_EMRI_CI_OLU_KOD.md, KALEM B, 13 Eyl 2026):
+  #     yukaridaki uc cumle BAYATLAMISTI — B4-3 VE B4-4 CI #105'te KAPANDI
+  #     (bu is o koşumda `success` dondu, alti turdur kirmizi olan is). Bu is
+  #     artik YESIL BEKLENIR; kirmizi yanarsa bu GERCEK bir bulgudur, "bilerek"
+  #     diye GECISTIRILMEZ (alarm yorgunlugu riski — olculdu). `ortam_olcum.sh`
+  #     de "bu turda DEGISMEDI" degildi: KALEM 3 (9 Eyl, grep deseni) ve
+  #     KALEM A (12 Eyl, B4-4 siniflandirmasi DORT kurala cikti) ile IKI KEZ
+  #     degisti; olcen taraf artik SABIT degil.
   # ---------------------------------------------------------------------------
   ortam:
     name: ortam sinifi (linux)
@@ -2356,9 +2359,20 @@ jobs:
       - name: B4-3 erteleme + B4-4 izin dali + grep tuzagi (dort kapi, hukum gevsemez)
         shell: bash
         run: |
+          # KALEM A (besli-paket/IS_EMRI_CI_OLU_KOD.md, 13 Eyl 2026): GitHub
+          # Actions'ta `shell: bash` varsayilani `bash --noprofile --norc -eo
+          # pipefail {0}`dir -- `-e` ZATEN ACIK. Asagidaki `set -o pipefail`
+          # boruya exit=2 dondurunce, `ec=` satirina HIC ULASILMADAN `-e`
+          # betigi ORACIKTA olduruyordu (olculdu: CI #104/#105, Windows kolu,
+          # "NOT:" satiri LOG'da HIC YOK). Muafiyet ILK GUNDEN BERI OLU KODDU.
+          # `set +e` ile boru SIRASINDA `-e` gecici olarak KAPATILIR, $ec
+          # guvenle okunur, sonra `set -e` GERI ACILIR -- adimin kalan
+          # kismindaki diger hatalar hala YUTULMAZ.
           set -o pipefail
+          set +e
           python faz0/ortam_sinifi_mutanti.py 2>&1 | tee ortam-sinifi-cikti.txt
           ec="${PIPESTATUS[0]}"
+          set -e
           if [ "$ec" = "2" ]; then
             echo "NOT: exit 2 = OLCULEMEDI (bu platformda/kullanicida POSIX dizin izni" \
                  "zorlanamiyor — KAPI-B GERCEK kolu icin beklenen; KIRMIZI/KACAN DEGIL)." \
@@ -2372,4 +2386,63 @@ jobs:
         with:
           name: ortam-sinifi-${{ matrix.os }}
           path: ortam-sinifi-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-34) CI ADIM MUAFIYETI MUTANTI — besli-paket/IS_EMRI_CI_OLU_KOD.md (13
+  #     Eylul 2026, Onur kilidi "A + B + C tek kucuk commit"): yukaridaki
+  #     `ortam_sinifi_mutanti` isinin exit-2 muafiyeti ILK GUNDEN BERI OLU
+  #     KODDU — GitHub'in `shell: bash` varsayilani `bash --noprofile --norc
+  #     -eo pipefail {0}`dir, `-e` ZATEN ACIK; boru exit=2 dondurunce betik
+  #     `ec=` satirina HIC ULASMADAN oracikta oluyordu (olculdu: CI #104/#105,
+  #     "NOT:" satiri log'da HIC YOK). `faz0/ci_kapsam_kapisi.py` MUAFIYETSIZ
+  #     her `faz0/*_mutanti.py`nin bir CI isi olmasini istedigi icin bu is
+  #     ZORUNLU (yeni betik o ada uyuyor).
+  #
+  #     Adim metni capraz.yml'den CIKARILIR ve GERCEK GitHub bayraklariyla
+  #     (`bash --noprofile --norc -eo pipefail`) kosulur — duz `bash` ile
+  #     DEGIL (hatanin kokü tam olarak o bayraktir; duz `bash` kapiyi SAHTE
+  #     YESIL yapar). UC KAPI: stub exit=0->adim 0 · stub exit=2->adim 0 +
+  #     "NOT:" satiri · stub exit=1->adim 1 (muafiyet GERCEK kirmiziyi
+  #     YUTMAMALI). UC MUTANT: M-1 `set +e` sokulur (bugunku kusurun ta
+  #     kendisi) · M-2 muafiyet blogu sokulur · M-3 GERCEK kirmizi da yutulur.
+  #
+  #     UC PLATFORM (kusur kabuk bayragindan kaynaklandigi icin Windows'taki
+  #     Git Bash farki da olculsun), `continue-on-error` YOK. Bu isin KENDI
+  #     exit-2'si icin AYNI duzeltilmis kalip kullanilir (yeni is, duzelttigi
+  #     hatayi TEKRARLAMAZ).
+  # ---------------------------------------------------------------------------
+  ci_adim_muafiyeti_mutanti:
+    name: ci adim muafiyeti mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: exit-2 muafiyetinin GERCEK GitHub bayraklariyla sinanmasi (uc kapi, hukum gevsemez)
+        shell: bash
+        run: |
+          set -o pipefail
+          set +e
+          python faz0/ci_adim_muafiyeti_mutanti.py 2>&1 | tee ci-adim-muafiyeti-cikti.txt
+          ec="${PIPESTATUS[0]}"
+          set -e
+          if [ "$ec" = "2" ]; then
+            echo "NOT: exit 2 = OLCULEMEDI (workflow okunamadi/bash yok — bu platformda" \
+                 "beklenmez ama sessiz PASS verilmez)."
+            exit 0
+          fi
+          exit "$ec"
+      - name: ci adim muafiyeti mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-adim-muafiyeti-${{ matrix.os }}
+          path: ci-adim-muafiyeti-cikti.txt
           if-no-files-found: warn

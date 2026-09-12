@@ -1,6 +1,6 @@
 # DURUM — hafiza-kur
 **BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #99 `b6a3dda3`: 151 iş, 0 başarısız — 6 Eyl ölçüldü**)
-Son güncelleme: 12 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+Son güncelleme: 13 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 ŞIK B kilit ailesi (B2+B3) · md.11 eşitlik körlüğü yönü · kapsam envanteri α/β (motor `401a3f71`
@@ -10,11 +10,12 @@ birlikte taşıyor). **25 Ağu yazısı KAPSAM DIŞI** — İş Portföyü'nde k
 🔴 **Deneme**: BEŞLİ PAKET kapandı; başlaması Onur kilidi bekler.
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**B4-3+B4-4+grep tuzağı + ÖLÇEN TARAFIN körlüğü** (12 Eyl, IS_EMRI_B4.md + IS_EMRI_B4E_
-OLCEN_TARAF.md) — `derle` arsivi `yaz(y.canli)` dönene kadar ERTELER · `kilit_al` dizinini
-on-kontrolden geçirir + son ağda EACCES/EPERM/EROFS dalı · 🔴 elle sabotaj `ortam_olcum.sh`
-yanlış-YEŞİL verdiğini buldu (desen pozitif ama ayırt edici DEĞİLDİ) ⇒ `_b44_sinifla` DÖRT
-kuralla sertleşti. Momentum regresyon YOK. Rapor:`OLCUM_RAPORU_12EYL_B4*`·
+**CI ölü kod+bayat yorum+izlenmeyen artık** (13 Eyl) — `shell: bash`'in `-e`'si exit-2
+muafiyetini `ec=`ye ULAŞTIRMIYORDU (CI #104/#105) ⇒ `set +e`/`set -e` + YENİ
+`ci_adim_muafiyeti_mutanti.py`; yorum+gitignore düzeldi.·
+**B4-3+B4-4+grep tuzağı+ÖLÇEN TARAFIN körlüğü** (12 Eyl) — `derle` `yaz(y.canli)` dönene kadar
+ERTELER · `kilit_al` on-kontrolden geçer + son ağ EACCES/EPERM/EROFS · `_b44_sinifla` DÖRT
+kuralla sertleşti. ·
 **devral türetimi + H4 git havuzu + H12/H14 git delili + çapa/dosya ekseni** (6 Eyl, CI #99) —
 ① `devral` `zorunlu_bolumler`i DİSKTEN türetir, boş bölüm YAZMAZ (Momentum: +29 B, yalnız çıpa;
 `[H6] ARSIV DIZINI yok` bulgusu bilinçli AÇIK) ② `_h4_havuz` git'e SORAR (`ls-files`, TEK süreç):
