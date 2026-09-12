@@ -1,6 +1,6 @@
 # DURUM — hafiza-kur
 **BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #99 `b6a3dda3`: 151 iş, 0 başarısız — 6 Eyl ölçüldü**)
-Son güncelleme: 6 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+Son güncelleme: 12 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 ŞIK B kilit ailesi (B2+B3) · md.11 eşitlik körlüğü yönü · kapsam envanteri α/β (motor `401a3f71`
@@ -10,6 +10,11 @@ birlikte taşıyor). **25 Ağu yazısı KAPSAM DIŞI** — İş Portföyü'nde k
 🔴 **Deneme**: BEŞLİ PAKET kapandı; başlaması Onur kilidi bekler.
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
+**B4-3 + B4-4 + grep tuzağı** (12 Eyl, besli-paket/IS_EMRI_B4.md) — `derle` arsiv/beyan
+yazılarını `yaz(y.canli)` dönene kadar ERTELER (`[H1]` KALICI kapandı) · `kilit_al` kendi
+dizinini on-kontrolden geçirir + son ağda EACCES/EPERM/EROFS dalı · `ortam_olcum.sh` deseni
+düzeltildi · YENİ `faz0/ortam_sinifi_mutanti.py` (CI 3 platform; KAPI-B GERÇEK Windows'ta
+OLÇÜLEMEDİ). Momentum ÖLÇÜLEMEDİ (kopya yok), AÇIK: `OLCUM_RAPORU_12EYL_B4.md`. ·
 **devral türetimi + H4 git havuzu + H12/H14 git delili + çapa/dosya ekseni** (6 Eyl, CI #99) —
 ① `devral` `zorunlu_bolumler`i DİSKTEN türetir, boş bölüm YAZMAZ (Momentum: +29 B, yalnız çıpa;
 `[H6] ARSIV DIZINI yok` bulgusu bilinçli AÇIK) ② `_h4_havuz` git'e SORAR (`ls-files`, TEK süreç):
@@ -53,11 +58,6 @@ v1 izleri · `--kapsam-zorla` exit 5 · `surum` · `hook --kur`; ÜÇ REGRESYON 
   OKUNUR:** Chrome + `get_page_text`, `runs/<RUN_ID>/job/<JOB_ID>` (`check_suite_id` ≠ `run_id`).
 - 🔴 **CI kırmızısı KAPI kırmızısı olmayabilir** (#66: `upload-artifact` 403).
 - 🔴 **KAPININ SENARYOSU KAPIYI KIRMIZI YAKABİLİR** (md.7/A2) ⇒ gerçek vakaya çevir.
-- 🔴 **B4-3 ve B4-4 HÂLÂ ÜRETİLEBİLİYOR — 7 Eyl'de root'la ÖLÇÜLDÜ:** `faz0/ortam_olcum.sh`
-  exit 1 — yarıda kesilen `derle` sonrası `[H1]` KALICI · izin hatası 4/4 "ARAÇ KUSURU".
-  Görülmedi: batarya `.py` tarıyor (o `.sh`), CI işi de `continue-on-error` taşıyordu; o satır
-  KALDIRILDI (Onur kilidi) ⇒ `ortam` düzeltilene kadar **BİLEREK KIRMIZI**, başkası kırmızıysa
-  AYRI bulgudur. Düzeltme ayrı turlarda, AYRI mutantla.
 - 🔴 **ÖLÇÜT CÜMLESİ SOMUT VAKAYA KOŞULUR — DÖRT KEZ ısırdı, hepsi kod yazılmadan:** md.6(c) ·
   md.7 lafzi D · md.7(b) · "çapa en son koşumdan eskiyse kırmızı" (sonsuz kırmızı verirdi).
 - 🔴 **ÇAPALARA BAKILMADAN KAPI GÖVDESİNE SATIR EKLENMEZ — DÖRDÜNCÜ ısırık 6 Eyl** (`gitfile`

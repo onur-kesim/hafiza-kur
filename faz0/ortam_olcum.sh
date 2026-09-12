@@ -136,7 +136,13 @@ for s in "muhur:arsiv/hafiza" "not:gunluk" "karar:kararlar" "kur:."; do
   esac
   e=$?
   chmod 755 "z/$d" 2>/dev/null
-  if printf '%s' "$out" | grep -q "ARAC KUSURU"; then t="ARAC-KUSURU(yanlis)"; else t="ortam-teshisi(dogru)"; fi
+  # KALEM 3 (besli-paket/IS_EMRI_B4.md, Onur kilidi 9 Eyl 2026 "Betigin deseni
+  # duzeltilsin"): eski desen ("ARAC KUSURU") DOGRU mesajin icindeki
+  # "... ARAC KUSURU DEGIL" alt-dizesini de yakaliyordu -- ucu DOGRU davranan
+  # kol (not/karar/kur) "yanlis" sayiliyordu (B4-4'un GERCEK kapsami 4/4 degil
+  # 1/4'tu). Motorun YANLIS (son ag) mesaji TEK BASINA "ARAC KUSURUDUR" der;
+  # hicbir DOGRU mesaj bu tam diziyi tasimaz. Pozitif, ayirt edici desen:
+  if printf '%s' "$out" | grep -q "ARAC KUSURUDUR"; then t="ARAC-KUSURU(yanlis)"; else t="ortam-teshisi(dogru)"; fi
   printf '    %-6s %-14s exit=%s  %s\n' "$c" "$d" "$e" "$t"
 done
 ICBETIK

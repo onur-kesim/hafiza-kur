@@ -101,12 +101,18 @@ os.umask(_UMASK)            # ...ve hemen geri konur
 _YENI_DOSYA_MODU = 0o666 & ~_UMASK
 
 
-def _yazma_on_kontrol(p):
+def _yazma_on_kontrol(p, kod=2):
     """Hedef ve dizini yazilabilir mi? Degilse TEMIZ teshis; ham traceback YOK.
 
     ROOT NOTU: root icin os.access 0444'te de True doner (POSIX). Bu dal ancak
     root OLMAYAN kullanicida olculebilir — fazB_senaryolari bunu OLCULEMEDI diye
-    yazar, "temiz" demez."""
+    yazar, "temiz" demez.
+
+    `kod` (besli-paket/IS_EMRI_B4.md, KALEM 2): varsayilan 2 -- yaz()'in HEDEF
+    dosya/dizin icin kullandigi "kullanim hatasi" sinifi, DEGISMEDI. `kilit_al`
+    kilit DIZININI ayni fonksiyonla sinarken kod=3 verir: kilit ALINAMAMASI
+    "arac ise hic BASLAYAMADI" sinifidir (ENOSPC/son-ag ile AYNI sinif), hedef
+    dosyaya yazamamaktan (2) AYRIDIR."""
     d = os.path.dirname(p) or "."
     if os.path.lexists(p) and not os.access(p, os.W_OK):
         try:
@@ -118,12 +124,12 @@ def _yazma_on_kontrol(p):
               "  arac hicbir seye DOKUNMADI (dosyan oldugu gibi duruyor).\n"
               "  CIKIS YOLU:  chmod u+w %s        (Windows:  attrib -r %s)\n"
               "  Sonra komutu YINELE. Izni zorla asan bir bayrak YOKTUR."
-              % (p, mod, p, p))
+              % (p, mod, p, p), kod)
     if not os.access(d, os.W_OK | os.X_OK):
         oldur("DIZIN YAZILAMAZ: %s\n"
               "  Atomik yazim ayni dizinde gecici bir dosya kurar; bu dizin yazmaya kapali.\n"
               "  Bu bir ARAC KUSURU DEGIL.\n"
-              "  CIKIS YOLU:  chmod u+w %s" % (d, d))
+              "  CIKIS YOLU:  chmod u+w %s" % (d, d), kod)
 
 
 def _atomik_yaz(p, s):
@@ -815,6 +821,15 @@ def kilit_al(y):
     os.makedirs(y.h, exist_ok=True)
     p = os.path.join(y.h, ".kilit")
     rel = _rel(p, y.kok)
+    # KALEM 2 (besli-paket/IS_EMRI_B4.md, B4-4, "Ek (kok)"): `.kilit` acilisi
+    # hicbir on-kontrolden GECMIYORDU; os.open'in ham PermissionError'i hicbir
+    # dala girmeden SON AGA dusuyor, "ARAC KUSURUDUR" yanlis teshisi basiliyordu
+    # (olculdu: `arsiv/hafiza` salt-okunurken `muhur`, `not`/`karar`/`kur`'un
+    # aksine TEMIZ teshis vermiyordu — B4-4'un GERCEK kapsami 4/4 degil 1/4'tu).
+    # `_yazma_on_kontrol` AYNI izin sinifini once yakalar; os.open'a hic ulasilmaz.
+    # Son ag yine de son savunma olarak KALIR (asagidaki `_guvenli_calistir`daki
+    # EACCES/EPERM/EROFS dali) — bu on-kontrol yaris penceresini KAPATMAZ.
+    _yazma_on_kontrol(p, kod=3)
     # FABLE 3. TUR · B-9: `.kilit` bir DIZIN ise once alakasiz "DUZENLI DOSYA
     # BEKLENIYORDU" sonra "BASKA YAZMA ISLEMI SURUYOR" basiliyordu; os.remove bir
     # dizini silemedigi icin kilit KALICI oluyor ve tani YANLIS yonlendiriyordu.
@@ -2089,6 +2104,11 @@ def _bolum_araligi(L, baslik):
 def cmd_derle(a):
     kok = kok_bul(a.kok); rc = rc_oku(kok); y = Y(kok, rc)
     zincir_on_kontrol(y, rc)  # yarim is birakma: bozuk zincirde ISE BASLAMA
+    # KALEM 1 (besli-paket/IS_EMRI_B4.md, B4-3): UCUZ EK GUVENCE -- kilit ALINMADAN
+    # ONCE canli dosyanin yazilabilirligi sinanir. Yaris durumunu KAPATMAZ (kilit
+    # alindiktan SONRA izin degisebilir) -- asil koruma ERTELEME SIRASIDIR (asagida,
+    # `yaz(y.canli, ...)` sonrasi). Amac burada sadece erken ve TEMIZ durmak.
+    _yazma_on_kontrol(y.canli)
     kilit_al(y)               # tek yazar: es zamanli derle KAYIP GUNCELLEME uretiyordu
     if not os.path.isdir(y.gunluk):
         # FABLE 3. TUR · B-10: dizin YOKLUGU "fragman yok" ile ayni sayilip exit 0
@@ -2157,7 +2177,17 @@ def cmd_derle(a):
             "            python hafiza.py emekli <bas>-<son> --not \"eski blok arsive tasindi\"\n"
             "          (kapi yesillenince derle yeniden kosulur)\n")
         return 1
-    islenen, eklenen_satirlar = [], []
+    # KALEM 1 (besli-paket/IS_EMRI_B4.md, B4-3, Onur kilidi 9 Eyl 2026 "Sira + cikis
+    # kodu"): `_arsive_tasi`/`_canli_ekle_beyan`/`_beyan_duzeltme` eskiden `yaz(y.canli,
+    # ...)`dan ONCE diske yaziyordu -- defterler "canliya eklendi/tasindi" diyordu,
+    # ama canliya yazma YARIDA kesilirse (ornek: canli salt-okunur -> `yaz` `oldur()`
+    # ile exit 2 verir) bu beyan GERCEKLESMEMIS bir islemi anlatmis oluyordu: izin
+    # duzeltilip yeniden derlense BILE beyan defteri geri alinmadigi icin H1/H1-KOVA
+    # KALICI kirmizi yaniyordu (olculdu). Artik hicbiri HEMEN calismaz; `ertele`ye
+    # KAYDEDILIR, `yaz()` BASARIYLA dondukten SONRA sirayla UYGULANIR. `yaz()`
+    # `oldur()` ile cikarsa (SystemExit) `ertele` hic uygulanmaz -- fragmanlar
+    # gunluk/ altinda kalir (bugun de kaliyor), defterler YALAN SOYLEMEZ.
+    islenen, eklenen_satirlar, ertele = [], [], []
     for f in frg:
         p = os.path.join(y.gunluk, f)
         meta, govde = fragman_coz(p)
@@ -2270,17 +2300,20 @@ def cmd_derle(a):
                       % (konu, _kural[0], _kural[1]))
                 continue
             # ANAHTAR BAZLI SIKISTIRMA: eski blok SILINMEZ, arsive TASINIR + BEYAN EDILIR.
-            # (Yoksa H1 "KAYIP" derdi — ve hakli olurdu.)
-            _arsive_tasi(y, L[eski[0]:eski[1] + 1],
-                         "konu '%s' guncellendi — onceki blok emekli (log-compaction)" % konu)
+            # (Yoksa H1 "KAYIP" derdi — ve hakli olurdu.) KALEM 1: bu cagri artik
+            # ERTELENIR (bkz. yukaridaki not) -- diske DOKUNMAZ, yalniz ne yapilacagini
+            # kaydeder; gercek yazma `yaz(y.canli)` basarili olduktan SONRADIR.
+            ertele.append((_arsive_tasi, (L[eski[0]:eski[1] + 1],
+                          "konu '%s' guncellendi — onceki blok emekli (log-compaction)" % konu)))
             L = L[:eski[0]] + blok + L[eski[1] + 1:]
         else:
             L = L[:i + 1] + [""] + blok + L[i + 1:]
         eklenen_satirlar.extend(blok)
         islenen.append(f)
     if eklenen_satirlar:
-        _canli_ekle_beyan(y, eklenen_satirlar,
-                          "derleme: canliya eklenen bloklar (baseline-sonrasi kapsam)")
+        # KALEM 1: ERTELENIR (bkz. yukarisi).
+        ertele.append((_canli_ekle_beyan, (eklenen_satirlar,
+                      "derleme: canliya eklenen bloklar (baseline-sonrasi kapsam)")))
     # son guncelleme damgasi — snapshot'ta DONMUS satir oldugu icin BEYAN EDILIR
     # Fable Y-9: eskiden yalniz ilk 14 satira bakiliyordu. Damga asagi kayarsa `derle`
     # sessizce guncellemeyi birakiyor, H12/H14 zamanla YANLIS-KIRMIZI yaniyordu.
@@ -2291,12 +2324,19 @@ def cmd_derle(a):
             if norm(yeni_s) != norm(s) and os.path.isfile(y.snap):
                 for si, ss in enumerate(satirlar(y.snap), 1):
                     if ss.startswith("> Son g"):
-                        _beyan_duzeltme(y, si, norm(ss), norm(yeni_s),
-                                        "derleme: son guncelleme damgasi (yapisal, her turda zorunlu)")
+                        # KALEM 1: ERTELENIR (bkz. yukarisi).
+                        ertele.append((_beyan_duzeltme, (si, norm(ss), norm(yeni_s),
+                                      "derleme: son guncelleme damgasi (yapisal, her turda zorunlu)")))
                         break
             L[k] = yeni_s
             break
     yaz(y.canli, "\n".join(L))
+    # KALEM 1: yaz() BURAYA KADAR BASARILI dondu -- canli dosya GERCEKTEN
+    # guncellendi. Ertelenen arsiv/beyan islemleri ancak SIMDI, KAYDEDILME
+    # SIRASIYLA uygulanir (yaz() basarisiz olsaydi `oldur()` -> SystemExit ile
+    # buraya hic ulasilmazdi, `ertele` ise BOS kalirdi).
+    for _fn, _args in ertele:
+        _fn(y, *_args)
     os.makedirs(y.gunluk_ars, exist_ok=True)
     for f in islenen:
         # Fable Y-7: `not` cakismayi yalniz gunluk/'te kontrol ediyordu; ayni-dakika+ayni-konu
@@ -6329,6 +6369,31 @@ def _guvenli_calistir():
                     "  DIKKAT: yazma YARIDA kalmis olabilir; bu mesaj hicbir sey "
                     "vaat ETMEZ.\n"
                     "  Yer acip once durumu OLC: python hafiza.py kapi\n")
+            except BaseException:
+                pass
+            sys.exit(3)
+        # KALEM 2 (besli-paket/IS_EMRI_B4.md, B4-4, Onur kilidi 9 Eyl 2026
+        # "Son agda izin sinifi dali"): ENOSPC'nin YANINA izin/dosya-sistemi
+        # sinifi (EACCES/EPERM/EROFS) -- olculdu: bu sinif buraya hic dalsiz
+        # dusuyor, asagidaki genel "BEKLENMEYEN DURUM — ARAC KUSURUDUR" metni ile
+        # ham PermissionError'i kullaniciya gosteriyordu. Dogru dil motorda ZATEN
+        # VAR (_yazma_on_kontrol: "Bu bir ARAC KUSURU DEGIL, dosya sisteminin
+        # hukmudur") -- o dil buraya TASINIR. `_yazma_on_kontrol`/`kilit_al`
+        # on-kontrolleri BU sinifi cogunlukla ONCEDEN yakalar; buraya dusen,
+        # o on-kontrollerin KAPSAMADIGI bir yoldur (son savunma).
+        if isinstance(_hata, OSError) and getattr(_hata, "errno", None) in (
+                _errno.EACCES, _errno.EPERM, _errno.EROFS):
+            try:
+                _yol = getattr(_hata, "filename", None) or "?"
+                sys.stderr.write(
+                    "HATA: IZIN/DOSYA SISTEMI HATASI — islem tamamlanamadi.\n"
+                    "  Yol: %s\n"
+                    "  Bu bir ARAC kusuru degil; dosya sisteminin hukmudur.\n"
+                    "  DIKKAT: yazma YARIDA kalmis olabilir; bu mesaj hicbir sey "
+                    "vaat ETMEZ.\n"
+                    "  CIKIS YOLU:  chmod u+w %s        (Windows:  attrib -r %s)\n"
+                    "  Once durumu OLC: python hafiza.py kapi\n"
+                    % (_yol, _yol, _yol))
             except BaseException:
                 pass
             sys.exit(3)

@@ -2301,3 +2301,67 @@ jobs:
           name: guncel-durum-kapisi-${{ matrix.os }}
           path: guncel-durum-kapisi-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-33) ORTAM SINIFI MUTANTI — besli-paket/IS_EMRI_B4.md (Onur kilidi 9 Eylul
+  #     2026 "Sira + cikis kodu" / "Son agda izin sinifi dali" / "Betigin deseni
+  #     duzeltilsin"): UC KALEM, DORT KAPI:
+  #       KAPI-A (B4-3) : `derle`nin arsiv/beyan yazilari artik `yaz(y.canli)`
+  #                       BASARIYLA donene kadar ERTELENIR; yaz basarisiz olursa
+  #                       defterler GERCEKLESMEMIS bir islemi anlatmaz.
+  #       KAPI-B (B4-4) : `kilit_al` kendi dizinini on-kontrolden gecirir (muhur
+  #                       digerleri gibi TEMIZ teshis verir) + son agda YENI bir
+  #                       EACCES/EPERM/EROFS dali (ENOSPC'nin yaninda) — ikisi de
+  #                       ayri FAULT-INJECTION koluyla (GERCEK + IZOLASYON)
+  #                       sinanir; GERCEK kol POSIX + root-olmayan kullanici
+  #                       gerektirir (Windows'ta beklenen OLCULEMEDI, "temiz"
+  #                       DENMEZ — asagidaki adim bu cikis kodunu AYRICA isler).
+  #       KAPI-C        : pozitif kontrol — duzeltme normal `not`+`derle`+`kapi`
+  #                       yolunu BOZMADI.
+  #       KAPI-D        : `ortam_olcum.sh`'nin B4-4 siniflandirma deseni artik
+  #                       DOGRU mesajlari ("... ARAC KUSURU DEGIL") yanlis
+  #                       saymiyor (7 Eylul kilidi GUNCELLENDI: olcen betik
+  #                       DOGRU olcmuyordu).
+  #     BES MUTANT (M-A, M-B-kilit, M-B-sonag, M-B-ikisi, M-C) `hafiza.py`
+  #     kaynaginda `str.replace` ile, ALTINCI (M-D) `ortam_olcum.sh` kaynaginda —
+  #     hepsi capa sayisi 1 degilse OLCULEMEDI der, sessiz PASS vermez.
+  #     `faz0/ortam_sinifi_mutanti.py`nin KENDI cikis kodu: 0 temiz · 1 kirmizi/
+  #     kacan mutant (GERCEK regresyon) · 2 OLCULEMEDI (bu platformda/kullanicida
+  #     POSIX dizin izni zorlanamiyor — ubuntu/macos'ta non-root calisir, asil
+  #     B4-4 kolu Windows'ta HER ZAMAN OLCULEMEDI doner; bu TEK satir asagida
+  #     AYRICA basarili sayilir, KIRMIZI/KACAN ile KARISTIRILMAZ).
+  #     🔴 UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  ortam_sinifi_mutanti:
+    name: ortam sinifi mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: B4-3 erteleme + B4-4 izin dali + grep tuzagi (dort kapi, hukum gevsemez)
+        shell: bash
+        run: |
+          set -o pipefail
+          python faz0/ortam_sinifi_mutanti.py 2>&1 | tee ortam-sinifi-cikti.txt
+          ec="${PIPESTATUS[0]}"
+          if [ "$ec" = "2" ]; then
+            echo "NOT: exit 2 = OLCULEMEDI (bu platformda/kullanicida POSIX dizin izni" \
+                 "zorlanamiyor — KAPI-B GERCEK kolu icin beklenen; KIRMIZI/KACAN DEGIL)." \
+                 "Adim BASARILI sayilir."
+            exit 0
+          fi
+          exit "$ec"
+      - name: ortam sinifi mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ortam-sinifi-${{ matrix.os }}
+          path: ortam-sinifi-cikti.txt
+          if-no-files-found: warn
