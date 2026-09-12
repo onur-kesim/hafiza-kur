@@ -1,14 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""FAZ 0 — ORTAM SINIFI MUTANTI (besli-paket/IS_EMRI_B4.md, B4-3 + B4-4 + grep tuzagi).
+"""FAZ 0 — ORTAM SINIFI MUTANTI.
+besli-paket/IS_EMRI_B4.md (B4-3 + B4-4 + grep tuzagi) +
+besli-paket/IS_EMRI_B4E_OLCEN_TARAF.md (OLCEN TARAFIN korlugu — KALEM A + C).
 
 NEDEN VAR
   `faz0/ortam_olcum.sh` (root + mount + useradd gerektirir) UC bulguyu olcer ama
   KENDI KODA DOKUNMAZ — yalniz olcer. Bu dosya tam tersidir: KOR KAPI PROTOKOLU
   (her bulguya AYRI mutant + pozitif kontrol) ile `hafiza.py`nin KENDI duzeltmesini
-  sinar. Kosum icin root/useradd/mount GEREKMEZ — KAPI-B'nin POSIX dizin-izni
-  kolu haric, hepsi normal kullanici ile kosar (KAPI-B-IZOLASYON fault-injection
-  ile root/izin gerektirmeden AYNI son-ag dalini platformdan BAGIMSIZ sinar).
+  VE `ortam_olcum.sh`nin KENDI siniflandirmasini sinar. Kosum icin root/useradd/
+  mount GEREKMEZ — KAPI-B'nin POSIX dizin-izni kolu haric, hepsi normal kullanici
+  ile kosar (KAPI-B-IZOLASYON fault-injection ile root/izin gerektirmeden AYNI
+  son-ag dalini platformdan BAGIMSIZ sinar; KAPI-D, `ortam_olcum.sh`'nin
+  `_b44_sinifla` fonksiyonunu GERCEK bash ile, `--sinifla` kancasi uzerinden,
+  sentetik senaryolarla sinar).
+
+  12 Eyl 2026 (IS_EMRI_B4E_OLCEN_TARAF.md): Cowork'un bagimsiz olcumu UC capali
+  elle sabotajla (kilit_al on-kontrolu + son ag dali + "ARAC KUSURUDUR" ibaresi
+  BIRLIKTE sokulunce) `ortam_olcum.sh`nin kendisinin YANLIS-YESIL verdigini
+  buldu: eski grep deseni POZITIF ama AYIRT EDICI degildi, ekrandaki `exit=`
+  degeri hic hukme girmiyordu. KALEM A bu siniflandirmayi DORT ayri kuralla
+  (A1 son-care-izi · A2 ibare · A3 pozitif kanit · A4 cikis kodu) sertlestirdi;
+  KALEM C (M-E) `hafiza.py` tarafinda AYNI korlugu kapatan bir mutant ekledi.
 
 NE OLCER — DORT KAPI
   KAPI-A (B4-3)    : salt-okunur canli + bekleyen fragman -> `derle` sonrasi
@@ -22,16 +35,21 @@ NE OLCER — DORT KAPI
                      kalibi — "temiz" DENMEZ).
   KAPI-B IZOLASYON : `kilit_al` fault-injection ile PermissionError(EACCES)
                      ATAR (gercek dosya izni YOK, platformdan BAGIMSIZ); son
-                     agin EACCES/EPERM/EROFS dali TEMIZ teshis vermeli, cikis 3.
-                     KAPI-B GERCEK'in olculemedigi platformlarda (Windows) bile
-                     son ag dalini dogrudan sinar.
+                     agin EACCES/EPERM/EROFS dali TEMIZ teshis vermeli, cikis 3,
+                     VE son carenin KENDI izini ("Tam iz:"/"(iz dosyasi
+                     yazilamadi)", ibareden BAGIMSIZ) BASMAMALI. KAPI-B
+                     GERCEK'in olculemedigi platformlarda (Windows) bile son
+                     ag dalini dogrudan sinar.
   KAPI-C (pozitif) : izinli normal ortamda `not`+`derle`+`kapi` -> `derle`
                      exit 0, fragman islenir, kapi YESIL. Duzeltmenin normal
                      yolu BOZMADIGININ kanitidir.
-  KAPI-D (grep)    : `ortam_olcum.sh`'nin B4-4 siniflandirma deseni, DOGRU
-                     mesajlari ("... ARAC KUSURU DEGIL") yanlis saymamali;
-                     YALNIZ gercek yanlis-teshis metnini ("ARAC KUSURUDUR")
-                     yakalamali.
+  KAPI-D (grep)    : `ortam_olcum.sh`'nin B4-4 siniflandirmasi (`_b44_sinifla`,
+                     A1-A4) DOGRU mesajlari yanlis saymamali, ibaresiz ham izi/
+                     sessiz basariyi/yanlis cikis kodunu KACIRMAMALI — VE
+                     hangi KURALIN yakaladigi da dogru olmali (bir kuralin
+                     baska bir kural tarafindan BACKSTOP edilmesi, o kuralin
+                     SOKULDUGUNU gizleyebilir; `beklenen_kural` kontrolu bunu
+                     yakalar).
 
 NE OLCMEZ (hukum degil, SINIR — gizlenmez)
   1. B4-1 (ENOSPC/tmpfs) bu dosyanin kapsami DISINDA — `ortam_olcum.sh`
@@ -116,6 +134,16 @@ _HAM_IZLER = ("Traceback (most recent", "PermissionError", "OSError:")
 
 def _ham_iz_var_mi(c):
     return [x for x in _HAM_IZLER if x in c]
+
+
+# besli-paket/IS_EMRI_B4E_OLCEN_TARAF.md §1c: son agin KENDI izi, IBAREDEN
+# BAGIMSIZ imza. `_yaz_hata` HER ZAMAN bu iki satirdan birini basar; "ARAC
+# KUSURUDUR" ibaresi yeniden yazilsa/kaldirilsa (bkz. M-E) BILE bu iz kalir.
+_SON_CARE_IZ_IMZALARI = ("Tam iz:", "(iz dosyasi yazilamadi)")
+
+
+def _son_care_izi_var_mi(c):
+    return [x for x in _SON_CARE_IZ_IMZALARI if x in c]
 
 
 # ============================================================ KAPI-A (B4-3)
@@ -217,6 +245,10 @@ def kapi_b_gercek(motor, taban):
     if "ARAC KUSURUDUR" in c:
         bulgular.append("YANLIS TESHIS: cikti 'ARAC KUSURUDUR' tasiyor (son ag/genel "
                          "catch-all'a dusmus)")
+    iz_sc = _son_care_izi_var_mi(c)
+    if iz_sc:
+        bulgular.append("SON CARE IZI goruldu (%s) -- ibareden BAGIMSIZ imza, on-kontrol/"
+                         "son-ag-dali devrede degil (KALEM C/M-E sinifi): %s" % (iz_sc, c[:200]))
     iz = _ham_iz_var_mi(c)
     if iz:
         bulgular.append("HAM IZ/ISTISNA goruldu: %s :: %s" % (iz, c[:200]))
@@ -264,6 +296,12 @@ def kapi_b_izolasyon(motor, taban):
     kod_ = int(m.group(1))
     if "ARAC KUSURUDUR" in c:
         bulgular.append("YANLIS TESHIS: izole senaryoda 'ARAC KUSURUDUR' basildi")
+    # KALEM C (IS_EMRI_B4E_OLCEN_TARAF.md): ibare SOKULSE BILE (M-E) son
+    # agin KENDI izi kalir -- ibareden BAGIMSIZ, ikinci bir sinyal.
+    iz_sc = _son_care_izi_var_mi(c)
+    if iz_sc:
+        bulgular.append("SON CARE IZI goruldu (%s) -- genel catch-all'a dusmus (M-E sinifi)"
+                         % (iz_sc,))
     iz = [x for x in _HAM_IZLER if x in c and x != "PermissionError"]
     # NOT: "PermissionError" kelimesi BURADA beklenir (biz atiyoruz); ham iz
     # arama listesi bu fonksiyonda o kelimeyi HARIC tutar, Traceback/OSError kalir.
@@ -313,50 +351,129 @@ def kapi_c(motor, taban):
 
 # ============================================================ KAPI-D (grep tuzagi)
 
-_ORNEK_METINLER = {
-    # Motorun SON AGININ (duzeltme ONCESI hali / genel catch-all) ciktisi —
-    # YAKALANMALI (bu GERCEK yanlis-teshistir).
-    "yanlis_son_ag": (
+# besli-paket/IS_EMRI_B4E_OLCEN_TARAF.md KALEM 4: (metin, cikis_kodu, beklenen)
+# ucluleri + `komut` (A4'un esigi muhur=3/digerleri=2 komuta baglidir) +
+# `beklenen_kural` (beklenen=True ise HANGI kural YAKALAMALI -- bir mutant
+# baska bir kural tarafindan "tesadufen" BACKSTOP edilirse overall sonuc
+# degismez ama KURAL ETIKETI degisir; bu ikincil kontrol M-F/M-G/M-H'nin
+# birbirinin USTUNU ORTMESINI YAKALAR). beklenen=False icin beklenen_kural=None.
+_ORNEK_METINLER = [
+    # Motorun SON AGININ (duzeltme ONCESI hali / genel catch-all, ibare+iz
+    # BIRLIKTE) ciktisi — YAKALANMALI, A1 A2'den ONCE kosar -> kural=A1.
+    ("yanlis_son_ag", (
         "HATA: BEKLENMEYEN DURUM — bu bir ARAC KUSURUDUR, senin dosyalarinin hukmu degil.\n"
         "  PermissionError: [Errno 13] Permission denied: '.../.kilit'\n"
-        "  DIKKAT: islem YARIDA kesildi. Dosyalarin DEGISMIS OLABILIR."),
+        "  DIKKAT: islem YARIDA kesildi. Dosyalarin DEGISMIS OLABILIR — bu mesaj\n"
+        "  hicbir sey vaat ETMEZ. Ilk is: python hafiza.py kapi\n"
+        "  Tam iz: .../hafiza_hata_izi.txt"),
+     3, "muhur", True, "A1"),
     # `_yazma_on_kontrol` (DOSYA kolu) — YAKALANMAMALI (DOGRU teshis).
-    "dogru_dosya": (
+    ("dogru_dosya", (
         "HATA: DOSYA SALT-OKUNUR, YAZILAMAZ: x\n"
         "  Izin: 0o444. Bu bir ARAC KUSURU DEGIL, dosya sisteminin hukmudur;\n"
         "  arac hicbir seye DOKUNMADI (dosyan oldugu gibi duruyor)."),
+     2, "not", False, None),
     # `_yazma_on_kontrol` (DIZIN kolu, `kilit_al`in kullandigi AYNI yol) —
-    # YAKALANMAMALI (DOGRU teshis; B4-4'un asil duzeltme hedefi).
-    "dogru_dizin": (
+    # YAKALANMAMALI (DOGRU teshis; B4-4'un asil duzeltme hedefi). `muhur`
+    # baglaminda (exit=3) sinanir -- A4'un dogru tarafini da sinar.
+    ("dogru_dizin", (
         "HATA: DIZIN YAZILAMAZ: x\n"
         "  Atomik yazim ayni dizinde gecici bir dosya kurar; bu dizin yazmaya kapali.\n"
         "  Bu bir ARAC KUSURU DEGIL."),
+     3, "muhur", False, None),
     # Son agin YENI EACCES/EPERM/EROFS dali (KALEM 2) — YAKALANMAMALI.
-    "dogru_sonag_izin": (
+    ("dogru_sonag_izin", (
         "HATA: IZIN/DOSYA SISTEMI HATASI — islem tamamlanamadi.\n"
         "  Yol: x\n"
         "  Bu bir ARAC kusuru degil; dosya sisteminin hukmudur."),
-}
+     3, "muhur", False, None),
+    # §1a'daki ciktinin BIREBIR kendisi (ibaresiz ham iz) — YALNIZ A1 yakalar
+    # (A2'nin ibaresi YOK, A3'un pozitif kaniti YOK) -> kural=A1.
+    ("yanlis_ibaresiz_ham_iz", (
+        "HATA: BEKLENMEYEN DURUM.\n"
+        "  PermissionError: [Errno 13] Permission denied: '.../arsiv/hafiza/.kilit'\n"
+        "  DIKKAT: islem YARIDA kesildi. Dosyalarin DEGISMIS OLABILIR\n"
+        "  Tam iz: .../hafiza_hata_izi.txt"),
+     3, "muhur", True, "A1"),
+    # Bos cikti (sessiz basari) — YALNIZ A3 yakalar (A1/A2 sessiz kalir).
+    ("yanlis_sessiz_basari", "", 0, "muhur", True, "A3"),
+    # §1b'nin TEMIZ metni ama YANLIS kolda (muhur beklenen=3, burada exit=2) —
+    # YALNIZ A4 yakalar (A1/A2/A3 sessiz kalir, metin zaten temiz).
+    ("yanlis_cikis_kodu", (
+        "HATA: DIZIN YAZILAMAZ: x\n"
+        "  Atomik yazim ayni dizinde gecici bir dosya kurar; bu dizin yazmaya kapali.\n"
+        "  Bu bir ARAC KUSURU DEGIL."),
+     2, "muhur", True, "A4"),
+]
 
 
 def _grep_desenini_oku(sh_metni):
+    # ZORUNLU (capa carpismasi, IS_EMRI_B4E_OLCEN_TARAF.md sat. 1d):
+    # DEGISMEDEN calismaya devam etmelidir -- M-D bu fonksiyona baglidir.
     m = re.search(r'grep -q "([^"]+)"; then t="ARAC-KUSURU\(yanlis\)"', sh_metni)
     return m.group(1) if m else None
 
 
+def _b44_betik_govdesini_cikar(sh_metni):
+    """`b44.sh` HEREDOC govdesini (ICBETIK..ICBETIK arasi) cikarir -- boylece
+    GERCEK kodu calistiririz, Python tarafinda bir TAKLIT'ini DEGIL. Betigin
+    kendisi `--sinifla <out> <exit> <komut>` sentetik sinama kancasini
+    destekler (ortam_olcum.sh'nin kendi ozelligi, bu dosyanin DEGIL)."""
+    m = re.search(r"cat > \"\$ALAN/b44\.sh\" <<'ICBETIK'\n(.*?)\nICBETIK\n", sh_metni, re.S)
+    return m.group(1) if m else None
+
+
+def _b44_calistir(sh_metni, out_metni, exit_kodu, komut):
+    """`_b44_sinifla`yi GERCEK bash ile kosar (senaryo kurmadan, sentetik
+    $out/$e/$c ile) -- `--sinifla` kancasi uzerinden. bash yoksa ya da kanca
+    bulunamazsa Kurulamadi (OLCULEMEDI, sessiz PASS YOK)."""
+    govde = _b44_betik_govdesini_cikar(sh_metni)
+    if govde is None:
+        raise Kurulamadi("b44.sh govdesi (--sinifla kancasi) ortam_olcum.sh icinde BULUNAMADI")
+    # OLCULDU (Windows): bare "bash" PATH'te BASKA bir bash'e (ornegin WSL'in
+    # kendi launcher'i, AYRI bir dosya sistemi goruyor) cozulebiliyor ve ayni
+    # C:/... yolunu "No such file or directory" diye reddediyor. `shutil.which`
+    # ile BULUNAN TAM yol kullanilir -- hangi bash'in GERCEKTEN calistigi
+    # ORTUK BIRAKILMAZ.
+    bash_yolu = shutil.which("bash")
+    if not bash_yolu:
+        raise Kurulamadi("bash yok -- _b44_sinifla GERCEK bash'le sinanamadi")
+    d = tempfile.mkdtemp(prefix="b44_test_")
+    try:
+        p = os.path.join(d, "b44_test.sh")
+        with io.open(p, "w", encoding="utf-8", newline="\n") as f:
+            f.write(govde + "\n")
+        # Windows/Git-Bash: '\' argumanlarda kacis karakteri gibi yutulabiliyor
+        # (olculdu) -- bash'e VERILEN yol her zaman '/' ile yazilir.
+        p_bash = p.replace("\\", "/")
+        r = subprocess.run([bash_yolu, p_bash, "--sinifla", out_metni, str(exit_kodu), komut],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if r.returncode != 0:
+            raise Kurulamadi("_b44_sinifla calisamadi (exit %d): %s"
+                              % (r.returncode, ((r.stdout or "") + (r.stderr or ""))[:300]))
+        return r.stdout
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
 def kapi_d(sh_metni):
+    # A2'nin TEKIL deseni hala okunabiliyor mu -- degismeden (sat. 1d).
     desen = _grep_desenini_oku(sh_metni)
     if desen is None:
-        raise Kurulamadi("B4-4 siniflandirma deseni ortam_olcum.sh icinde BULUNAMADI")
+        raise Kurulamadi("B4-4 siniflandirma deseni (A2) ortam_olcum.sh icinde BULUNAMADI")
     bulgular = []
-    for ad, metin in _ORNEK_METINLER.items():
-        eslesti = desen in metin
-        beklenen = (ad == "yanlis_son_ag")
-        if eslesti != beklenen:
+    for ad, metin, exit_kodu, komut, beklenen, beklenen_kural in _ORNEK_METINLER:
+        cikti = _b44_calistir(sh_metni, metin, exit_kodu, komut)
+        yakalandi = "ARAC-KUSURU" in cikti
+        if yakalandi != beklenen:
             bulgular.append(
-                "desen %r, '%s' metnini %s (beklenen: %s)"
-                % (desen, ad, "YAKALADI" if eslesti else "YAKALAMADI",
-                   "YAKALAMALI" if beklenen else "YAKALAMAMALI"))
+                "'%s' (exit=%s, komut=%s): %s (beklenen: %s) -- cikti: %r"
+                % (ad, exit_kodu, komut, "YAKALADI" if yakalandi else "YAKALAMADI",
+                   "YAKALAMALI" if beklenen else "YAKALAMAMALI", cikti[:160]))
+        elif beklenen and beklenen_kural and ("[" + beklenen_kural) not in cikti:
+            bulgular.append(
+                "'%s': YANLIS KURAL tarafindan yakalandi (beklenen %s) -- cikti: %r"
+                % (ad, beklenen_kural, cikti[:160]))
     return bulgular
 
 
@@ -482,6 +599,28 @@ def m_b_ikisi_de_sokulur(s):
     return m_b_sonag_sokulur(s)
 
 
+# ---- M-E: son ag ibaresiz ham iz (KALEM C, IS_EMRI_B4E_OLCEN_TARAF.md) ----
+
+_ME_YAZ_HATA_ESKI = (
+    "            \"HATA: BEKLENMEYEN DURUM — bu bir ARAC KUSURUDUR, senin dosyalarinin "
+    "hukmu degil.\\n\"\n"
+)
+_ME_YAZ_HATA_YENI = "            \"HATA: BEKLENMEYEN DURUM.\\n\"\n"
+
+
+def m_e_son_ag_ibaresiz_ham_iz(s):
+    """KALEM C (Onur'un C sikki, 12 Eyl 2026): bugun KAPI-B'nin ham izi
+    yakalamasi Cowork'un ELLE sabotajiyla dogrulandi; kapiya YAZILI degildi.
+    M-B-ikisi'nin USTUNE, `_yaz_hata` basligindaki 'ARAC KUSURUDUR' ibaresi de
+    CIKARILIR -- yalniz HAM IZ/istisna kontrolu ayakta kalir, ibare-tabanli
+    kontrol bu mutanti GOREMEZ (ikisi AYRI mutant, biri digerinin yerine
+    GECMEZ)."""
+    s = m_b_ikisi_de_sokulur(s)
+    if s is None:
+        return None
+    return _degistir(s, _ME_YAZ_HATA_ESKI, _ME_YAZ_HATA_YENI, "M-E/ibare")
+
+
 # ---- M-C: erteleme dali 'hic yazma'ya cevrilir -----------------------------
 
 _MC_ESKI = (
@@ -504,13 +643,76 @@ MUTANTLAR_HAFIZA = [
     ("M-B-sonag  son ag EACCES/EPERM/EROFS dali sokulur", m_b_sonag_sokulur, "KAPI-B"),
     ("M-B-ikisi  KALEM 2'nin tamami geri alinir", m_b_ikisi_de_sokulur, "KAPI-B"),
     ("M-C  erteleme dali 'hic yazma'ya cevrilir", m_c_erteleme_hic_yazmaya_cevrilir, "KAPI-C"),
+    ("M-E  son ag ibaresiz ham iz", m_e_son_ag_ibaresiz_ham_iz, "KAPI-B"),
 ]
 
 
 # ---- M-D: ortam_olcum.sh deseni ESKI HALINE dondurulur ---------------------
+# ZORUNLU (capa carpismasi, sat. 1d): bu mutant DEGISMEDEN ISIRMAYA devam
+# etmelidir -- A2 satiri KALEM A'da BIREBIR korundu.
 
 def m_d_desen_eskiye_donduru(s):
     return _degistir(s, 'grep -q "ARAC KUSURUDUR"', 'grep -q "ARAC KUSURU"', "M-D")
+
+
+# ---- M-F/M-G/M-H: KALEM A'nin kendi kurallari SOKULUR ----------------------
+# (besli-paket/IS_EMRI_B4E_OLCEN_TARAF.md §4 — "her duzeltmeye AYRI mutant")
+
+_MF_A1_ESKI = (
+    "  if printf '%s' \"$out\" | grep -qE 'Tam iz:|\\(iz dosyasi yazilamadi\\)'; then\n"
+    "    ihlal=\"A1(son-care-izi)\"\n"
+    "  fi\n"
+)
+_MF_A1_YENI = "  :  # MUTANT: A1 (son care izi) kontrolu SOKULDU\n"
+
+
+def m_f_a1_sokulur(s):
+    """A1 (son care izi) SOKULUR -> KAPI-D `yanlis_ibaresiz_ham_iz` uzerinden
+    ISIRMALI: A3 o ornegi overall YANLIS olarak BACKSTOP eder (kacmaz) ama
+    KURAL ETIKETI A1'den A3'e kayar -- `kapi_d`nin `beklenen_kural` kontrolu
+    bu kaymayi yakalar."""
+    return _degistir(s, _MF_A1_ESKI, _MF_A1_YENI, "M-F/A1")
+
+
+_MG_A3_ESKI = (
+    "  if printf '%s' \"$out\" | grep -q \"ARAC KUSURU DEGIL\"; then pozitif=1; fi\n"
+    "  if printf '%s' \"$out\" | grep -q \"ARAC kusuru degil\"; then pozitif=1; fi\n"
+    "  if [ \"$pozitif\" = \"0\" ] && [ -z \"$ihlal\" ]; then\n"
+    "    ihlal=\"A3(pozitif-kanit-yok)\"\n"
+    "  fi\n"
+)
+_MG_A3_YENI = "  :  # MUTANT: A3 (pozitif kanit) kontrolu SOKULDU\n"
+
+
+def m_g_a3_sokulur(s):
+    """A3 (pozitif kanit) SOKULUR -> KAPI-D `yanlis_sessiz_basari` uzerinden
+    ISIRMALI: A4 o ornegi overall YANLIS olarak BACKSTOP eder (muhur beklenen
+    exit=3, ornekte exit=0) ama KURAL ETIKETI A3'den A4'e kayar."""
+    return _degistir(s, _MG_A3_ESKI, _MG_A3_YENI, "M-G/A3")
+
+
+_MH_A4_ESKI = (
+    "  [ \"$c\" = \"muhur\" ] && beklenen=\"3\"\n"
+    "  if [ \"$e\" != \"$beklenen\" ] && [ -z \"$ihlal\" ]; then\n"
+    "    ihlal=\"A4(cikis-kodu:beklenen=$beklenen,gercek=$e)\"\n"
+    "  fi\n"
+)
+_MH_A4_YENI = "  :  # MUTANT: A4 (cikis kodu) kontrolu SOKULDU\n"
+
+
+def m_h_a4_sokulur(s):
+    """A4 (cikis kodu) SOKULUR -> KAPI-D `yanlis_cikis_kodu` uzerinden
+    ISIRMALI: metin zaten TEMIZ oldugu icin A1/A2/A3 hicbiri yakalamaz,
+    HICBIR kural backstop etmez -- overall sonuc dogrudan YAKALANAMADI olur."""
+    return _degistir(s, _MH_A4_ESKI, _MH_A4_YENI, "M-H/A4")
+
+
+MUTANTLAR_BETIK = [
+    ("M-D  grep deseni eskiye dondurulur", m_d_desen_eskiye_donduru),
+    ("M-F  A1 (son care izi) sokulur", m_f_a1_sokulur),
+    ("M-G  A3 (pozitif kanit) sokulur", m_g_a3_sokulur),
+    ("M-H  A4 (cikis kodu) sokulur", m_h_a4_sokulur),
+]
 
 
 # ===================================================================== main
@@ -679,22 +881,23 @@ def main():
             kacan += 1
 
     print("\n--- MUTANT SINAMASI (ortam_olcum.sh kaynagina textual sabotaj) ---")
-    bozuk_sh = m_d_desen_eskiye_donduru(sh_metni)
-    if bozuk_sh is None or bozuk_sh == sh_metni:
-        print("  %-46s -> OLCULEMEDI (mutant KURULAMADI)" % "M-D  desen eskiye dondurulur")
-        olculemeyen += 1
-    else:
-        try:
-            b_d_mut = kapi_d(bozuk_sh)
-        except Kurulamadi as e:
-            print("  %-46s -> OLCULEMEDI (%s)" % ("M-D  desen eskiye dondurulur", e))
+    for ad, fn in MUTANTLAR_BETIK:
+        bozuk_sh = fn(sh_metni)
+        if bozuk_sh is None or bozuk_sh == sh_metni:
+            print("  %-46s -> OLCULEMEDI (mutant KURULAMADI)" % ad)
             olculemeyen += 1
+            continue
+        try:
+            b_mut = kapi_d(bozuk_sh)
+        except Kurulamadi as e:
+            print("  %-46s -> OLCULEMEDI (%s)" % (ad, e))
+            olculemeyen += 1
+            continue
+        if b_mut:
+            print("  %-46s -> ISIRDI (KAPI-D)" % ad)
         else:
-            if b_d_mut:
-                print("  %-46s -> ISIRDI (KAPI-D)" % "M-D  desen eskiye dondurulur")
-            else:
-                print("  %-46s -> KACTI (KAPI-D KOR)" % "M-D  desen eskiye dondurulur")
-                kacan += 1
+            print("  %-46s -> KACTI (KAPI-D KOR)" % ad)
+            kacan += 1
 
     print()
     if kacan:

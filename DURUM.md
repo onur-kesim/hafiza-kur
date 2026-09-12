@@ -10,11 +10,11 @@ birlikte taşıyor). **25 Ağu yazısı KAPSAM DIŞI** — İş Portföyü'nde k
 🔴 **Deneme**: BEŞLİ PAKET kapandı; başlaması Onur kilidi bekler.
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**B4-3 + B4-4 + grep tuzağı** (12 Eyl, besli-paket/IS_EMRI_B4.md) — `derle` arsiv/beyan
-yazılarını `yaz(y.canli)` dönene kadar ERTELER (`[H1]` KALICI kapandı) · `kilit_al` kendi
-dizinini on-kontrolden geçirir + son ağda EACCES/EPERM/EROFS dalı · `ortam_olcum.sh` deseni
-düzeltildi · YENİ `faz0/ortam_sinifi_mutanti.py` (CI 3 platform; KAPI-B GERÇEK Windows'ta
-OLÇÜLEMEDİ). Momentum ÖLÇÜLEMEDİ (kopya yok), AÇIK: `OLCUM_RAPORU_12EYL_B4.md`. ·
+**B4-3+B4-4+grep tuzağı + ÖLÇEN TARAFIN körlüğü** (12 Eyl, IS_EMRI_B4.md + IS_EMRI_B4E_
+OLCEN_TARAF.md) — `derle` arsivi `yaz(y.canli)` dönene kadar ERTELER · `kilit_al` dizinini
+on-kontrolden geçirir + son ağda EACCES/EPERM/EROFS dalı · 🔴 elle sabotaj `ortam_olcum.sh`
+yanlış-YEŞİL verdiğini buldu (desen pozitif ama ayırt edici DEĞİLDİ) ⇒ `_b44_sinifla` DÖRT
+kuralla sertleşti. Momentum regresyon YOK. Rapor:`OLCUM_RAPORU_12EYL_B4*`·
 **devral türetimi + H4 git havuzu + H12/H14 git delili + çapa/dosya ekseni** (6 Eyl, CI #99) —
 ① `devral` `zorunlu_bolumler`i DİSKTEN türetir, boş bölüm YAZMAZ (Momentum: +29 B, yalnız çıpa;
 `[H6] ARSIV DIZINI yok` bulgusu bilinçli AÇIK) ② `_h4_havuz` git'e SORAR (`ls-files`, TEK süreç):

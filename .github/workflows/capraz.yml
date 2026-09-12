@@ -2303,9 +2303,9 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
-  # 2b-33) ORTAM SINIFI MUTANTI — besli-paket/IS_EMRI_B4.md (Onur kilidi 9 Eylul
-  #     2026 "Sira + cikis kodu" / "Son agda izin sinifi dali" / "Betigin deseni
-  #     duzeltilsin"): UC KALEM, DORT KAPI:
+  # 2b-33) ORTAM SINIFI MUTANTI — besli-paket/IS_EMRI_B4.md (9 Eylul, B4-3/B4-4/
+  #     grep-tuzagi) + besli-paket/IS_EMRI_B4E_OLCEN_TARAF.md (12 Eylul, Onur
+  #     kilidi "SIK D = A + C" — OLCEN TARAFIN korlugu): DORT KAPI:
   #       KAPI-A (B4-3) : `derle`nin arsiv/beyan yazilari artik `yaz(y.canli)`
   #                       BASARIYLA donene kadar ERTELENIR; yaz basarisiz olursa
   #                       defterler GERCEKLESMEMIS bir islemi anlatmaz.
@@ -2316,15 +2316,23 @@ jobs:
   #                       sinanir; GERCEK kol POSIX + root-olmayan kullanici
   #                       gerektirir (Windows'ta beklenen OLCULEMEDI, "temiz"
   #                       DENMEZ — asagidaki adim bu cikis kodunu AYRICA isler).
+  #                       IZOLASYON kolu ARTIK son care izini ("Tam iz:"/"(iz
+  #                       dosyasi yazilamadi)") de, ibareden BAGIMSIZ, sinar
+  #                       (KALEM C — Cowork'un elle sabotajiyla bulunan, kapiya
+  #                       YAZILI OLMAYAN korlugun kapatilmasi; M-E mutanti).
   #       KAPI-C        : pozitif kontrol — duzeltme normal `not`+`derle`+`kapi`
   #                       yolunu BOZMADI.
-  #       KAPI-D        : `ortam_olcum.sh`'nin B4-4 siniflandirma deseni artik
-  #                       DOGRU mesajlari ("... ARAC KUSURU DEGIL") yanlis
-  #                       saymiyor (7 Eylul kilidi GUNCELLENDI: olcen betik
-  #                       DOGRU olcmuyordu).
-  #     BES MUTANT (M-A, M-B-kilit, M-B-sonag, M-B-ikisi, M-C) `hafiza.py`
-  #     kaynaginda `str.replace` ile, ALTINCI (M-D) `ortam_olcum.sh` kaynaginda —
-  #     hepsi capa sayisi 1 degilse OLCULEMEDI der, sessiz PASS vermez.
+  #       KAPI-D        : `ortam_olcum.sh`'nin B4-4 siniflandirmasi artik DORT
+  #                       AYRI kuralla (A1 son-care-izi · A2 ibare, MEVCUT/
+  #                       BIREBIR KORUNUR · A3 pozitif kanit zorunlu · A4 cikis
+  #                       kodu) sertlesti (KALEM A) — eskisi "exit=3 + ibaresiz
+  #                       ham iz" sahte-YESILINI gorMUYORDU (12 Eylul olcumu,
+  #                       Cowork bagimsiz denetimi).
+  #     ON MUTANT (M-A, M-B-kilit, M-B-sonag, M-B-ikisi, M-C, M-E) `hafiza.py`
+  #     kaynaginda, (M-D, M-F, M-G, M-H) `ortam_olcum.sh` kaynaginda — hepsi
+  #     `str.replace` ile, capa sayisi 1 degilse OLCULEMEDI der, sessiz PASS
+  #     vermez. A2/M-D CAPA CARPISMASI riski altindadir (IS_EMRI_B4E_OLCEN_
+  #     TARAF.md sat. 1d) — o satir BIREBIR KORUNUR, A1/A3/A4 AYRI satirlardir.
   #     `faz0/ortam_sinifi_mutanti.py`nin KENDI cikis kodu: 0 temiz · 1 kirmizi/
   #     kacan mutant (GERCEK regresyon) · 2 OLCULEMEDI (bu platformda/kullanicida
   #     POSIX dizin izni zorlanamiyor — ubuntu/macos'ta non-root calisir, asil

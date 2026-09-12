@@ -123,6 +123,67 @@ ICBETIK
   # ===========================================================================
   cat > "$ALAN/b44.sh" <<'ICBETIK'
 cd /tmp/faz0_alan
+
+# KALEM A (besli-paket/IS_EMRI_B4E_OLCEN_TARAF.md, Onur kilidi 12 Eyl 2026
+# "SIK D = A + C"): B4-4 siniflandirmasi artik TEK fonksiyonda yasar -- hem
+# bu betik icinden hem DISARIDAN (faz0/ortam_sinifi_mutanti.py'nin kendi bash
+# alt-surecinden, sentetik $out/$e/$c ile) cagrilabilir; boylece sinif GERCEK
+# koddan dogrulanir, Python tarafinda bir TAKLIT'ten degil.
+#
+# CAPA CARPISMASI UYARISI (12 Eyl kilidi, sat. 1d): A2 satirindaki grep
+# cagrisi ve ardindan gelen t= atamasi BIREBIR KORUNUR --
+# `faz0/ortam_sinifi_mutanti.py`nin `_grep_desenini_oku` fonksiyonu ve M-D
+# mutanti TAM BU SEKLE baglidir (kendi capasini burada, YORUMDA, TEKRARLAMA --
+# ayni dizeyi ikinci yerde geciren bu YORUMUN KENDISI olur, tam da bu uyarinin
+# soyledigi hatayi isler; olculdu). A1/A3/A4 AYRI, additive satirlardir; asagidaki
+# A2 satirinin SEKLI degisirse ikisi de (KAPI-D + M-D) KIRILIR.
+_b44_sinifla() {
+  local out="$1" e="$2" c="$3"
+  local ihlal="" t="" pozitif=0 beklenen="2"
+  # A1 -- SON CARE IZI YASAK: ibareden BAGIMSIZ imza (sat. 1c). `_yaz_hata`
+  # (hafiza.py'nin genel son-care dali) HER ZAMAN "Tam iz:" ya da "(iz dosyasi
+  # yazilamadi)" satirlarindan birini basar -- baslik cumlesi yeniden yazilsa
+  # ya da ibare kaldirilsa BILE bu iz kalir.
+  if printf '%s' "$out" | grep -qE 'Tam iz:|\(iz dosyasi yazilamadi\)'; then
+    ihlal="A1(son-care-izi)"
+  fi
+  # A2 -- IBARE YASAK (MEVCUT, KORUNUR -- satir BIREBIR; yukaridaki uyariyi oku).
+  if printf '%s' "$out" | grep -q "ARAC KUSURUDUR"; then t="ARAC-KUSURU(yanlis)"; else t="ortam-teshisi(dogru)"; fi
+  if [ "$t" = "ARAC-KUSURU(yanlis)" ] && [ -z "$ihlal" ]; then
+    ihlal="A2(ibare)"
+  fi
+  # A3 -- POZITIF KANIT ZORUNLU: motor SESSIZCE basarili olursa (izin hatasi
+  # hic uretilmezse) A1 ve A2 sessiz kalir; en az bir TEMIZ kalibin GORULMESI
+  # zorunludur. Ucu da motorun "Bu bir ARAC KUSURU DEGIL"/"ARAC kusuru degil"
+  # soylemini tasir (DOSYA/DIZIN/son-ag-EACCES kaliplarinin UCUNDE de bu
+  # kapanis cumlesi var); lead-in ifadeye (DIZIN YAZILAMAZ / DOSYA SALT-OKUNUR/
+  # IZIN-DOSYA SISTEMI HATASI) BAGLANMAZ -- bu, lead-in METNI degisirse A3'un
+  # KIRILMAMASI icin bilincli bir genisletmedir (ayni capa-carpismasi riski).
+  if printf '%s' "$out" | grep -q "ARAC KUSURU DEGIL"; then pozitif=1; fi
+  if printf '%s' "$out" | grep -q "ARAC kusuru degil"; then pozitif=1; fi
+  if [ "$pozitif" = "0" ] && [ -z "$ihlal" ]; then
+    ihlal="A3(pozitif-kanit-yok)"
+  fi
+  # A4 -- CIKIS KODU: muhur=3 (kilit_al on-kontrolu kod=3 doner), digerleri=2.
+  [ "$c" = "muhur" ] && beklenen="3"
+  if [ "$e" != "$beklenen" ] && [ -z "$ihlal" ]; then
+    ihlal="A4(cikis-kodu:beklenen=$beklenen,gercek=$e)"
+  fi
+  if [ -n "$ihlal" ]; then
+    printf 'ARAC-KUSURU(yanlis) [%s]' "$ihlal"
+  else
+    printf '%s' "$t"
+  fi
+}
+
+# Sentetik sinama modu: `bash b44.sh --sinifla <out> <exit> <komut>` fonksiyonu
+# GERCEK senaryo kurmadan dogrudan cagirir (faz0/ortam_sinifi_mutanti.py bunu
+# kullanir). Argumansiz cagri NORMAL dort-kollu olcumu kosar (degismedi).
+if [ "${1:-}" = "--sinifla" ]; then
+  _b44_sinifla "$2" "$3" "$4"
+  exit 0
+fi
+
 for s in "muhur:arsiv/hafiza" "not:gunluk" "karar:kararlar" "kur:."; do
   c="${s%%:*}"; d="${s##*:}"
   rm -rf z && mkdir z && git init -q z
@@ -136,13 +197,7 @@ for s in "muhur:arsiv/hafiza" "not:gunluk" "karar:kararlar" "kur:."; do
   esac
   e=$?
   chmod 755 "z/$d" 2>/dev/null
-  # KALEM 3 (besli-paket/IS_EMRI_B4.md, Onur kilidi 9 Eyl 2026 "Betigin deseni
-  # duzeltilsin"): eski desen ("ARAC KUSURU") DOGRU mesajin icindeki
-  # "... ARAC KUSURU DEGIL" alt-dizesini de yakaliyordu -- ucu DOGRU davranan
-  # kol (not/karar/kur) "yanlis" sayiliyordu (B4-4'un GERCEK kapsami 4/4 degil
-  # 1/4'tu). Motorun YANLIS (son ag) mesaji TEK BASINA "ARAC KUSURUDUR" der;
-  # hicbir DOGRU mesaj bu tam diziyi tasimaz. Pozitif, ayirt edici desen:
-  if printf '%s' "$out" | grep -q "ARAC KUSURUDUR"; then t="ARAC-KUSURU(yanlis)"; else t="ortam-teshisi(dogru)"; fi
+  t="$(_b44_sinifla "$out" "$e" "$c")"
   printf '    %-6s %-14s exit=%s  %s\n' "$c" "$d" "$e" "$t"
 done
 ICBETIK
