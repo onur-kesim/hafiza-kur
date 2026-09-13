@@ -3435,12 +3435,70 @@ def cmd_devral(a):
     print("   4. [H13] plansiz seri: SAKLAMA_PLANI.md'ye satir ekle.")
     print("   5. [H6] 'ARSIV DIZINI bolumu yok': KALEM 1'den beri devral bunu artik KENDI"
           " icin diskte var olan basliklar VARKEN force EKLEMEZ (diskteki gercek ustundur) —")
-    print("      canliya '## ARSIV DIZINI' basligini kendin ekle, `hafiza.py derle` icerigini doldurur.")
+    print("      CIKIS YOLU: python hafiza.py bolum-kur --kok=\"%s\"" % kok)
     print("   6. [H17] '## GUNCEL DURUM bolumu YOK': bu bolum olmadan `not`/`derle` dongusu")
-    print("      CALISAMAZ (yazilan fragmanlar canliya hic girmez) — canliya '## GUNCEL DURUM'")
-    print("      basligini kendin ekle, `hafiza.py derle` bekleyen fragmanlari hemen isler.")
+    print("      CALISAMAZ (yazilan fragmanlar canliya hic girmez) —")
+    print("      CIKIS YOLU: python hafiza.py bolum-kur --kok=\"%s\"" % kok)
     print("  Mevcut sisteme (v1) DOKUNULMADI: eski cipa, zincir ve defterler oldugu gibi duruyor.")
     print("\n  Kapi yesillenince: python hafiza.py isir --kok=\"%s\"" % kok)
+    return 0
+
+# ---------------------------------------------------------------- bolum-kur
+
+# KALEM 1 (besli-paket/IS_EMRI_BOLUM_KUR.md, 13 Eyl 2026): `devral`, diskteki
+# basliklar VARKEN `zorunlu_bolumler`i force EKLEMEZ (6 Eyl kilidi "diskteki
+# gercek ustundur" — bkz. yukarida `cmd_devral`). Bir proje `## GUNCEL DURUM`
+# HIC tasimadan devralinirsa bu dongu HIC BASLAYAMAZ: `derle` hedef bulamayip
+# fragmani sessizce ATLAR, H17/H6 kosulsuz kirmizi kalir. `devral` KENDISI
+# degismez (dokunulmazlar listesi); cozum bu AYRI, ACIK komuttur.
+#
+# Aday listesi BILEREK `rc["zorunlu_bolumler"]`den TURETILMEZ: o liste
+# `devral` aninda MEVCUT basliklardan turetilir ve bir Momentum sinifi
+# projede `## GUNCEL DURUM` HIC icermez (OLCULDU: besli-paket/
+# IS_EMRI_BOLUM_KUR.md dogrulanmasi — gercek bir `devral --esle` sonrasi
+# `.hafizarc`'ta bu liste 3 oge tasiyordu, hicbiri GUNCEL DURUM degildi).
+# O listeden turetilen bir komut, tam da duzeltmesi gereken projede HICBIR
+# SEY EKLEMEZ (REDDEDILEN alternatif — bkz. M-3). Bunun yerine `derle`nin
+# GERCEKTEN yazdigi hedefler (`BOLUM_HEDEF` degerleri) + H6'nin istedigi
+# '## ARSIV DIZINI' kullanilir -- ikisi de motorun SABIT KODLU ihtiyaclaridir,
+# proje basina DEGISMEZ.
+_BOLUM_KUR_ADAYLARI = list(dict.fromkeys(list(BOLUM_HEDEF.values()) + ["## ARSIV DIZINI"]))
+
+
+def cmd_bolum_kur(a):
+    """Eksik ZORUNLU bolumleri canliya ekler — `derle`nin (`BOLUM_HEDEF`) ve
+    H6'nin (`## ARSIV DIZINI`) ihtiyac duyduklari basliklar. Var olan bolume
+    DOKUNMAZ: icerigini tasimaz, siralamaz, yeniden yazmaz -- yalniz EKSIK
+    olani, ilk `# ` basligindan SONRA, dosyanin USTUNE ekler (olculdu: elle
+    bu konuma eklendiginde `derle` calisiyor). Idempotent: ikinci kosumda
+    `0 bolum eklendi` der, hicbir bayt degismez."""
+    kok = kok_bul(a.kok); rc = rc_oku(kok); y = Y(kok, rc)
+    zincir_on_kontrol(y, rc)  # yarim is birakma: bozuk zincirde ISE BASLAMA
+    L = satirlar(y.canli)
+    eksik = [b for b in _BOLUM_KUR_ADAYLARI if _bolum_araligi(L, b)[0] is None]
+    if not eksik:
+        print("0 bolum eklendi (zorunlu bolumlerin hepsi zaten var).")
+        return 0
+    if a.dene:
+        print("KURU KOSUM (--dene) — %d bolum EKLENECEK, hicbir sey YAZILMADI:" % len(eksik))
+        for b in eksik:
+            print("  + %s" % b)
+        return 0
+    kilit_al(y)               # tek yazar: es zamanli yazma KAYIP GUNCELLEME uretir
+    # Yer: ilk '# ' basligindan SONRA, dosyanin USTUNE (olculdu: derle'nin
+    # calismasi icin yeterli ve tek konum; SONA eklemek de calisirdi ama
+    # kullanicinin gozden kacirma riskini artirirdi).
+    i0 = 1 if (L and L[0].startswith("# ")) else 0
+    ek = []
+    for b in eksik:
+        ek += ["", b, ""]
+    L = L[:i0] + ek + L[i0:]
+    yaz(y.canli, "\n".join(L))
+    print("%d bolum EKLENDI:" % len(eksik))
+    for b in eksik:
+        print("  + %s" % b)
+    zincir_halka(y, "BOLUM_KUR", "eksik zorunlu bolum kuruldu: %s" % ", ".join(eksik))
+    print("\n  Sonraki: python hafiza.py derle --kok=\"%s\"" % kok)
     return 0
 
 # ---------------------------------------------------------------- korunan
@@ -4344,7 +4402,11 @@ def _kapi_h6(F, N, O, y):
     L6 = satirlar(y.canli)
     i, j = _bolum_araligi(L6, "## ARSIV DIZINI")
     if i is None:
-        fail("H6", "ARSIV DIZINI bolumu yok")
+        # KALEM 2 (besli-paket/IS_EMRI_BOLUM_KUR.md, 13 Eyl 2026): motorun her
+        # temiz teshisinde oldugu gibi, CIKIS YOLU ADIYLA gosterilir (elle
+        # "basligi ekle" DEGIL — komut VAR artik).
+        fail("H6", "ARSIV DIZINI bolumu yok — CIKIS YOLU: python hafiza.py "
+                   "bolum-kur --kok=\"%s\"" % y.kok)
     else:
         try:
             b6 = next(k for k in range(i, j) if L6[k].strip() == V2BAS)
@@ -5200,8 +5262,11 @@ def _kapi_h17(F, N, O, y):
     Bolum VARKEN hicbir sey basmaz (yanlis pozitif yok)."""
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
     if not any(bas_eslesir(s, "## GUNCEL DURUM") for s in satirlar(y.canli) if s.startswith("#")):
+        # KALEM 2 (besli-paket/IS_EMRI_BOLUM_KUR.md, 13 Eyl 2026): CIKIS YOLU
+        # ADIYLA gosterilir (elle "basligi ekle" DEGIL — komut VAR artik).
         fail("H17", "`## GUNCEL DURUM` bolumu YOK — `not`/`derle` dongusu "
-                    "calisamaz; yazilan fragmanlar canliya GIRMEZ. Canliya bu basligi ekle.")
+                    "calisamaz; yazilan fragmanlar canliya GIRMEZ. "
+                    "CIKIS YOLU: python hafiza.py bolum-kur --kok=\"%s\"" % y.kok)
 
 
 # ---------------------------------------------------------------- ISIRMA KANITI
@@ -6250,6 +6315,11 @@ def main():
     p = alt.add_parser("bloklastir", help="devralinan bolumleri geriye donuk blok isaretine alir")
     p.add_argument("--kok"); p.add_argument("--uygula", action="store_true")
     p.set_defaults(fn=cmd_bloklastir)
+
+    p = alt.add_parser("bolum-kur", help="devral sonrasi eksik zorunlu bolumleri (derle+H6 icin) canliya ekler")
+    p.add_argument("--kok")
+    p.add_argument("--dene", action="store_true", help="KURU PROVA: ne ekleyecegini basar, TEK BAYT yazmaz")
+    p.set_defaults(fn=cmd_bolum_kur)
 
     p = alt.add_parser("not", help="gunluk/ altina fragman yazar")
     p.add_argument("--kok"); p.add_argument("--konu", required=True)

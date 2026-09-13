@@ -3,35 +3,33 @@
 Son güncelleme: 13 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
-ŞIK B kilit ailesi (B2+B3) · md.11 eşitlik körlüğü yönü · kapsam envanteri α/β (motor `401a3f71`
-BAYAT) · README_EN kapısı · `h4_gitignore_mutanti`ye **2-EK için AYRI kol** (KAPI-D iki ekseni
-birlikte taşıyor). **25 Ağu yazısı KAPSAM DIŞI** — İş Portföyü'nde kapanır (5 Eyl kilidi).
+**Radar R8 sert durağı bu turla AÇILDI** (13 Eyl kilidi: sıkkı DEVRET, sıradaki tur MOTOR KODU) —
+Bitiş Ölçütü Ayak 2 KARŞILANDI (CI 163/163), Ayak 3 bu turla İLERLEDİ. Ayak 1 (16/18) ÜST SINIR
+kabul edildi (13 Eyl kilidi) — H2/H5 mutant kapsamı ölçüm turu AÇILMAZ. **K4 — H6 İÇERİK körlüğü
+(kilit ALINDI, sıradaki iş).** ŞIK B kilit ailesi (B2+B3) · md.11 eşitlik körlüğü yönü ·
+README_EN kapısı · `h4_gitignore_mutanti`ye **2-EK için AYRI kol**. **25 Ağu yazısı KAPSAM DIŞI**
+(İş Portföyü'nde kapanır) · **Deneme**: BEŞLİ PAKET kapandı, başlaması Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
-🔴 **Deneme**: BEŞLİ PAKET kapandı; başlaması Onur kilidi bekler.
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
+**`bolum-kur` komutu — Ayak 3'ten İLK ÜRÜN KODU** (13 Eyl, IS_EMRI_BOLUM_KUR.md, R8 sert durak) —
+`devral` diskte `## ` başlığı VARKEN zorunlu bölümü force EKLEMEZ (kasıtlı); `## GÜNCEL DURUM`
+hiç taşımayan bir proje devralınınca döngü HİÇ BAŞLAYAMIYORDU (GERÇEK Momentum kopyasında
+ÖLÇÜLDÜ: `devral`→`bolum-kur`→`not`→`derle`→`kapi`, [H17]+[H6] KAYBOLDU, derle 1 fragman işledi).
+REDDEDİLEN türetim (`rc["zorunlu_bolumler"]`) kod ÖNCESİ ölçüldü: o liste GÜNCEL DURUM hiç
+içermiyordu ⇒ `BOLUM_HEDEF`+ARŞİV DİZİNİ kullanıldı. YENİ `faz0/bolum_kur_mutanti.py` (3 kapı/
+3 mutant). `devral` DEĞİŞMEDİ. ·
 **CI ölü kod+bayat yorum+izlenmeyen artık** (13 Eyl) — `shell: bash`'in `-e`'si exit-2
 muafiyetini `ec=`ye ULAŞTIRMIYORDU (CI #104/#105) ⇒ `set +e`/`set -e` + YENİ
 `ci_adim_muafiyeti_mutanti.py`; yorum+gitignore düzeldi.·
 **B4-3+B4-4+grep tuzağı+ÖLÇEN TARAFIN körlüğü** (12 Eyl) — `derle` `yaz(y.canli)` dönene kadar
 ERTELER · `kilit_al` on-kontrolden geçer + son ağ EACCES/EPERM/EROFS · `_b44_sinifla` DÖRT
 kuralla sertleşti. ·
-**devral türetimi + H4 git havuzu + H12/H14 git delili + çapa/dosya ekseni** (6 Eyl, CI #99) —
-① `devral` `zorunlu_bolumler`i DİSKTEN türetir, boş bölüm YAZMAZ (Momentum: +29 B, yalnız çıpa;
-`[H6] ARSIV DIZINI yok` bulgusu bilinçli AÇIK) ② `_h4_havuz` git'e SORAR (`ls-files`, TEK süreç):
-yoksayılan DİZİN **ve DOSYA** havuza girmez — 300k dosyada **0,85 sn, doğrusal** (eski 1,55)
-③ havuz dışı yol `F` değil `O` ④ H12/H14 hafıza tarafını GİT'E sorar; "damga donmuş" ayrı cümle,
-hüküm GEVŞEMEZ. 🔴 Bağımsız ölçüm İKİ KIRMIZI buldu ve kapattı: `gitfile` 6. kol çapası (4→6,
-`continue-on-error`SIZ iş ⇒ CI kırmızı yanardı) · KALEM 2 YARIM (dizin ekseni açık, DOSYA ekseni
-kapalı; mutantın ÜÇ kolu da dizindeydi ⇒ kabul kriteri geçti, ölçüt yarım kaldı) ·
-**H4 çıplak ad** (6 Eyl) — dosya SADECE adıyla anınca haksız OLU basıyordu (13→5 bulgu);
-dizinsiz beyan + TAM BİR aday → "TAŞINMIŞ" kelimesi KULLANILMAZ ·
-**BEŞLİ PAKET** (6 Eyl, CI #96 15/15) — `AYLAR` ay kısaltması (H12+H14 tek kökten kördü) · `kur`
-v1 izleri · `--kapsam-zorla` exit 5 · `surum` · `hook --kur`; ÜÇ REGRESYON açıldı-kapandı ·
-**çok satırlı mesajın HÜKÜM KANALINDA kaybı** (CI #90→#94) — artık `(+N satir: stderr)` ·
-**gitfile körlüğü** (4 Eyl, CI #86) — `.git` worktree'de METİN DOSYASI; ŞIK D 12/0 ·
-**M-Y4** (20 Ağu) `pay=esik//10` KALDIRILDI, **GERİ EKLENMEZ** · **md.10** hüküm iç tutarlılığı ·
-**md.9** görünürlük · **md.6-8** keşif/eşle/durma · **md.2+4+5** README · `--kesif` **72 depoda**.
+**devral türetimi+H4 git havuzu+H12/H14 git delili+çapa/dosya ekseni+H4 çıplak ad+BEŞLİ PAKET**
+(6 Eyl, CI #96-99) — `devral` bölümü DİSKTEN türetir · `_h4_havuz` git'e sorar (DİZİN+DOSYA,
+300k'da 0,85sn) · H12/H14 GİT'E sorar · çıplak ad haksız OLU basmıyor · `AYLAR` kısaltması +
+3 regresyon açıldı-kapandı. **M-Y4 GERİ EKLENMEZ** · md.2/4/5/6-8/9/10 · `--kesif` 72 depoda ·
+gitfile körlüğü (4 Eyl) kapandı.
 
 ## Bilinen sınırlar (ölçülmüş)
 - 🔴 **"GERÇEK ORTAMDA OLMAZ" DEMEDEN ÖNCE ORTAMI ÖLÇ (6 Eyl ISIRDI):** M-Y2 kusuru "hiçbir

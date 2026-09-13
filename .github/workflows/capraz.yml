@@ -2446,3 +2446,56 @@ jobs:
           name: ci-adim-muafiyeti-${{ matrix.os }}
           path: ci-adim-muafiyeti-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-35) BOLUM KUR MUTANTI — besli-paket/IS_EMRI_BOLUM_KUR.md (13 Eylul 2026,
+  #     URUN KODU turu, R8 sert duragi): `devral`, diskte ZATEN `## ` basligi
+  #     olan bir projede `zorunlu_bolumler`i MEVCUT basliklardan turetir ve
+  #     eksik basligi FORCE EKLEMEZ (6 Eyl kilidi "diskteki gercek ustundur").
+  #     `## GUNCEL DURUM` hic tasimadan devralinan bir proje (OLCULDU: gercek
+  #     Momentum kopyasi) icin `not`/`derle` dongusu HIC BASLAYAMAZ. `devral`
+  #     KENDISI degismedi (dokunulmazlar listesi); cozum YENI, ACIK komut:
+  #     `hafiza.py bolum-kur` (+ `--dene` kuru prova) — yalniz EKSIK zorunlu
+  #     bolumu (`BOLUM_HEDEF` degerleri + '## ARSIV DIZINI') ilk basliktan
+  #     sonra ekler, var olana DOKUNMAZ, idempotenttir. REDDEDILEN alternatif
+  #     (`rc["zorunlu_bolumler"]`den turetme) kod yazilmadan ONCE OLCULUP
+  #     elendi: gercek bir `devral` sonrasi o liste '## GUNCEL DURUM' HIC
+  #     icermiyordu — oradan turetilen bir komut hicbir sey EKLEMEZDI (M-3).
+  #
+  #     UC KAPI (Momentum SINIFI fikstur, GERCEK `devral --esle` ile kurulur):
+  #     KAPI-1 bolum-kur+not+derle → derle fragmani ISLER, [H17]/[H6] SUSAR ·
+  #     KAPI-2 bolumler ZATEN varken ikinci kosum → '0 bolum eklendi', bayt
+  #     degismez · KAPI-3 POZITIF KONTROL: taze `kur` projesi → bolum-kur
+  #     hicbir sey eklemez, tam tur YESIL kalir (duzeltme `kur` yolunu
+  #     BOZMAMALI). UC MUTANT: M-1 ekleme dali sokulur · M-2 "yalniz eksik"
+  #     kosulu kaldirilir · M-3 REDDEDILEN turetim.
+  #
+  #     `faz0/ci_kapsam_kapisi.py`nin MUAFIYETSIZ kapsamina girdigi icin bu
+  #     is ZORUNLU. Exit-2'si git/motor HER ZAMAN checkout'ta VAR oldugu icin
+  #     CI'da beklenmez; `d6c83d3a`'daki olu-kod kalibi buraya KOPYALANMADI
+  #     (gereksiz yere eklenseydi KENDISI yeni bir olu kod ornegi olurdu).
+  #     UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  bolum_kur_mutanti:
+    name: bolum kur mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: eksik zorunlu bolum KURULABILIYOR mu (uc kapi, hukum gevsemez)
+        shell: bash
+        run: python faz0/bolum_kur_mutanti.py 2>&1 | tee bolum-kur-cikti.txt
+      - name: bolum kur mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bolum-kur-${{ matrix.os }}
+          path: bolum-kur-cikti.txt
+          if-no-files-found: warn
