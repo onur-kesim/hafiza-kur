@@ -1,0 +1,20 @@
+# PROJE_RADAR.jsonl — hafiza-kur · kisir dongu defteri (append-only, satir SILINMEZ)
+# Kuruldu: 13 Eyl 2026, Onur kilidi "A + B" (bkz. besli-paket/BITIS_OLCUTU.md).
+# GERIYE DOLDURMA KAPSAMI: yalniz Cowork'un KENDI olctugu uc tur (12-13 Eyl 2026).
+#   Daha eski turlar OLCULMEDI, bu yuzden YAZILMADI — tahminle beslenen radarin
+#   hukmu de tahmindir (defter-semasi.md kurali).
+# artefakt = "OLCEN-TARAF": uc turda da tekrar eden sey tek bir dosya degil, olcen
+#   tarafin kendisidir (ortam_olcum.sh -> ortam_sinifi_mutanti.py -> CI adimi).
+#   Mantiksal ad oldugu icin D1 ve R4 bu defterde OLCULEMEDI doner — bu beklenendir.
+# oturum = Claude Code'un ayri kosumu (uc kosum, tek Cowork oturumu icinde).
+# urun_kodu_satiri = git'ten turetildi: `git show --numstat <commit> -- skill/`
+{"tarih":"2026-09-12","oturum":1,"artefakt":"OLCEN-TARAF","tur":1,"asama":"kapi","bulgu":{"bloker":0,"major":1,"minor":3},"siniflar":["kor-kapi","bayat-sayi"],"mekanik_kontrol_siniflari":["kor-kapi"],"kapatilan":3,"uretilen":2,"downstream_kod_var":true,"sonlanma_olcutu":"sinif","butce":{"oturum":1,"token":750000},"urun_kodu_satiri":77,"token":286000,"not":"B4 (d5df7c56): B4-1/B4-3/B4-4 kapandi, ortam_olcum.sh root'ta exit 0. Cowork bagimsiz olcumu olcen betigin YANLIS-YESIL verdigini buldu (kor-kapi). Mekanik kontrol o an yalniz MOTOR tarafini kapsiyordu, olcen betigi DEGIL. Minor: bayat CI yorumu, DURUM.md 'Momentum kopya yok' yanlis beyani, proje talimatinda bayat depo adresi."}
+{"tarih":"2026-09-12","oturum":2,"artefakt":"OLCEN-TARAF","tur":2,"asama":"kapi","bulgu":{"bloker":0,"major":1,"minor":3},"siniflar":["kor-kapi","bayat-sayi"],"mekanik_kontrol_siniflari":["kor-kapi"],"kapatilan":1,"uretilen":2,"downstream_kod_var":true,"sonlanma_olcutu":"sinif","butce":{"oturum":1,"token":750000},"urun_kodu_satiri":0,"token":478000,"not":"B4-E (05aa54f8): KALEM A+C, korluk kapandi (10/10 mutant ISIRDI, ortam sinifi (linux) CI'da YESILE dondu). Motor hic degismedi. Bulunan: CI adimindaki olu exit-2 muafiyeti (major, kor-kapi) + gercek Windows'ta KAPI-D korlugu + deneme_b4e artigi + bayat CI yorumu."}
+{"tarih":"2026-09-13","oturum":3,"artefakt":"OLCEN-TARAF","tur":3,"asama":"kapi","bulgu":{"bloker":0,"major":0,"minor":0},"siniflar":[],"mekanik_kontrol_siniflari":["kor-kapi"],"kapatilan":3,"uretilen":0,"downstream_kod_var":true,"sonlanma_olcutu":"sinif","butce":{"oturum":1,"token":750000},"urun_kodu_satiri":0,"token":568000,"not":"CI OLU KOD (d6c83d3a): A+B+C. Yeni kapi ci_adim_muafiyeti_mutanti KAPI-1/2/3 temiz, M-1/M-2/M-3 ISIRDI; duzeltme oncesi capraz.yml ile kapi KIRMIZI (bagimsiz dogrulama). ci_kapsam_kapisi 41/41. Batarya 55/56 exit 0. Capalar 36/36+38/38, t_y42 58/58, t_y3 20/20. BULGU YOK — uc turda ilk kez. Motor yine hic degismedi."}
+# OLCUM DUZELTMESI (13 Eyl 2026): yukaridaki uc kayitta `butce.oturum:1` alani
+# OLCULMEMIS bir sayidir — bu projede kilitlenmis bir oturum butcesi YOKTU, alan
+# yer tutucu olarak dolduruldu ve R6'yi (BUTCE ASILDI) haksiz yere kirmiziya
+# dusurdu. Defter append-only oldugu icin eski satir DEGISTIRILMEDI; asagidaki
+# duzeltme kaydi butceyi OLCULEMEDI olarak isaretler. D2 (tur tekrari) bu kayitta
+# BEKLENEN ve DOGRUDUR — duzeltme yapildigini gosterir.
+{"tarih":"2026-09-13","oturum":3,"artefakt":"OLCEN-TARAF","tur":3,"asama":"olcum-duzeltme","bulgu":{"bloker":0,"major":0,"minor":0},"siniflar":[],"mekanik_kontrol_siniflari":["kor-kapi"],"kapatilan":0,"uretilen":0,"downstream_kod_var":true,"sonlanma_olcutu":"sinif","urun_kodu_satiri":0,"token":573000,"not":"[TAHMIN DUZELTMESI] butce alani OLCULMEDI, kaldirildi. R6 kirmizisi olcum hatasindan dogmustu; R1 (bayat-sayi tekrari, mekanik kapi yok) ve R8 (urun kodu durgunlugu) GECERLIDIR."}
