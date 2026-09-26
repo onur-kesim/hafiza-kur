@@ -3066,6 +3066,68 @@ def devir_kesif_bas(kok, envanter, olculemedi):
         print("  OLCULEMEDI        : (yok — kokteki her .md/.jsonl tanindi)")
 
 
+# ------------------------------------------------ devral GIRIS KAPISI (26 Eyl 2026)
+# Is emri: "devral GIRIS KAPISI" (Cowork olcumu, 26 Eyl 2026), SIK A — tek gercek
+# DISKTIR. Iki yardimci da `cmd_devral`in DISINDA durur: govdeye gomulseler
+# `cmd_devral`in CC capasi (faz0/karmasiklik_mutanti.py) 99'dan kayardi (olculdu:
+# 101-104); cagri noktasi dal eklemez.
+
+def _devral_zorunlu_diskten(kok, canli_p, rc):
+    """KALEM 1 — `zorunlu_bolumler` canli YAZILDIKTAN SONRA diskten turetilir.
+
+    OLCULDU (temiz Linux, uid 1001, pallets/click; yerelde Windows'ta tekrarlandi):
+    `devral --esle canli=PROJE_HAFIZA.md` YENI defteri sablondan yaziyordu (8 gercek
+    `## ` basligi) ama liste, dosya YAZILMADAN once taranan basliklardan geliyordu —
+    yeni defterde okunacak baslik yok, liste BOS. Zincir: H3 fiilen olu -> H15 kalici
+    FAIL -> `kapi` hic yesillenmiyor -> `isir` exit 4. Aracin sundugu tek cikis
+    `politika_gerekce` BEYANIYDI: gevsetmeyi kullanici degil ARAC yapmisti ve
+    kullaniciya imzalatiyordu.
+
+    Basliklar ONCEKI tarama ile AYNI bicimde (birebir, susleriyle, `rstrip`)
+    okunur; canli zaten basliklarini tasiyorsa liste AYNI cikar ve `.hafizarc`
+    YENIDEN YAZILMAZ — mevcut devir yollari bayt-ayni kalir. SIRA: DEVIR zincir
+    halkasindan ONCE cagrilir; halka `.hafizarc`in SHA'sini tasir, sonrasi H0'i
+    kirar (olculdu). ELENEN: kur'un sabit listesini kopyalamak (IKI KAYNAK dogar,
+    dosyada diakritikli / listede ASCII) · H15 olcutunu gevsetmek (kusuru gizler)."""
+    _yazim_sonrasi = [s.rstrip() for s in satirlar(canli_p) if s.startswith("## ")]
+    if _yazim_sonrasi == rc["zorunlu_bolumler"]:
+        return
+    rc["zorunlu_bolumler"] = _yazim_sonrasi
+    yaz(os.path.join(kok, RC_AD), json.dumps(rc, ensure_ascii=False, indent=2) + "\n")
+    print("  zorunlu bolumler  : DISKTEN turetildi (%d baslik, yazimdan SONRA okundu)"
+          % len(_yazim_sonrasi))
+
+
+# TRIYAJ'in bolum maddeleri: (bolum, madde metni). Metin, 26 Eyl oncesi KOSULSUZ
+# basilan iki maddenin metnidir; degisen yalniz NE ZAMAN basildigidir.
+_TRIYAJ_BOLUM_MADDELERI = (
+    ("## ARSIV DIZINI",
+     ("[H6] 'ARSIV DIZINI bolumu yok': 6 Eyl kilidinden beri devral bunu artik KENDI icin"
+      " diskte var olan basliklar VARKEN force EKLEMEZ (diskteki gercek ustundur) —")),
+    ("## GUNCEL DURUM",
+     ("[H17] '## GUNCEL DURUM bolumu YOK': bu bolum olmadan `not`/`derle` dongusu\n"
+      "      CALISAMAZ (yazilan fragmanlar canliya hic girmez) —")),
+)
+
+
+def _devral_triyaj_bolum(kok, L, no):
+    """KALEM 2 — TRIYAJ'in 'bolum yok' maddeleri YAZMA SONRASI canlidan basilir.
+
+    OLCULDU: bu maddeler KOSULSUZ basiliyordu; devral'in KENDI yazdigi defterde iki
+    bolum de varken "[H6] ... yok" / "[H17] ... YOK" deyip `bolum-kur` oneriyordu,
+    `bolum-kur` da "0 bolum eklendi" diyordu — yabancinin gordugu ILK cikti kendini
+    yalanliyordu (OKUNMADAN HUKUM sinifi). Artik her madde, `L` (yazim bittikten
+    sonra diskten okunan canli) o bolumu GERCEKTEN tasimiyorsa basilir. Olcut, H6'nin
+    ve `bolum-kur`un kullandigi `_bolum_araligi`dir — iki hukum ayrisamaz. Madde
+    numarasi `no`dan baslayip ardisik artar (bosluk birakmaz)."""
+    for bolum, madde in _TRIYAJ_BOLUM_MADDELERI:
+        if _bolum_araligi(L, bolum)[0] is not None:
+            continue
+        print("   %d. %s" % (no, madde))
+        print("      CIKIS YOLU: python hafiza.py bolum-kur --kok=\"%s\"" % kok)
+        no += 1
+
+
 def cmd_devral(a):
     """ILERLEMIS bir projeyi v2'ye DEVRALIR (kurulum degil, devir).
 
@@ -3264,7 +3326,8 @@ def cmd_devral(a):
         # BAGIMSIZ DENETIM 6. TUR: hic '## ' baslik yoksa VARSAYILANA dusuluyor ve
         # dosyada OLMAYAN 6 bolum birden isteniyordu -> devral'in kendi sozu ("varsayimla
         # ilk gun kirmizi seli uretmez") ihlal. Baslik yoksa ZORUNLU BOLUM DE YOKTUR;
-        # eksikleri asagida devral'in KENDISI ekler.
+        # eksikleri asagida devral'in KENDISI ekler. Bu deger GECICIDIR: nihai liste
+        # yazim bittikten sonra diskten okunur (_devral_zorunlu_diskten, 26 Eyl).
         "zorunlu_bolumler": basliklar or [],
         "kural_evi_bolumleri": kural_evi or VARSAYILAN_RC["kural_evi_bolumleri"],
         "kural_isaretleri": isaretler,
@@ -3362,6 +3425,9 @@ def cmd_devral(a):
         yaz(os.path.join(kok, RC_AD), json.dumps(rc, ensure_ascii=False, indent=2) + "\n")
         print("  eksik zorunlu bolum EKLENDI (%d): %s"
               % (len(_eklenen_bolum), ", ".join(b0[3:] for b0 in _eklenen_bolum[:4])))
+    # 26 Eyl (devral GIRIS KAPISI, KALEM 1): son soz DISKINDIR — yeni acilan canlida
+    # yukaridaki liste bos kaliyordu. Zincir halkasindan ONCE (bkz. yardimci).
+    _devral_zorunlu_diskten(kok, canli_p, rc)
 
     for p0, ilk in [(y.duzelt, '{\n  "duzeltmeler": []\n}\n'),
                     (y.yeni, ";; Beyan edilen YENI satirlar (yorum oneki \';;\')\n"),
@@ -3433,12 +3499,9 @@ def cmd_devral(a):
     print("      SABIT CERCEVE'ye tasi, ya o bolumu .hafizarc'ta kural_evi_bolumleri'ne ekle.")
     print("   3. [H10] KONULAR.md tanimsiz: bloklara konu etiketi eklenirken sozluge de ekle.")
     print("   4. [H13] plansiz seri: SAKLAMA_PLANI.md'ye satir ekle.")
-    print("   5. [H6] 'ARSIV DIZINI bolumu yok': KALEM 1'den beri devral bunu artik KENDI"
-          " icin diskte var olan basliklar VARKEN force EKLEMEZ (diskteki gercek ustundur) —")
-    print("      CIKIS YOLU: python hafiza.py bolum-kur --kok=\"%s\"" % kok)
-    print("   6. [H17] '## GUNCEL DURUM bolumu YOK': bu bolum olmadan `not`/`derle` dongusu")
-    print("      CALISAMAZ (yazilan fragmanlar canliya hic girmez) —")
-    print("      CIKIS YOLU: python hafiza.py bolum-kur --kok=\"%s\"" % kok)
+    # 26 Eyl (devral GIRIS KAPISI, KALEM 2): 5./6. maddeler artik KOSULLU — yazim
+    # bittikten sonra diskteki canli okunur (bkz. yardimci).
+    _devral_triyaj_bolum(kok, satirlar(canli_p), 5)
     print("  Mevcut sisteme (v1) DOKUNULMADI: eski cipa, zincir ve defterler oldugu gibi duruyor.")
     print("\n  Kapi yesillenince: python hafiza.py isir --kok=\"%s\"" % kok)
     return 0
@@ -3451,6 +3514,8 @@ def cmd_devral(a):
 # HIC tasimadan devralinirsa bu dongu HIC BASLAYAMAZ: `derle` hedef bulamayip
 # fragmani sessizce ATLAR, H17/H6 kosulsuz kirmizi kalir. `devral` KENDISI
 # degismez (dokunulmazlar listesi); cozum bu AYRI, ACIK komuttur.
+# (26 Eyl, devral GIRIS KAPISI: `devral`da yalniz `.hafizarc` turetimi ve triyaj
+# maddeleri duzeldi; bolum EKLEME davranisi ve bu komutun aday listesi AYNEN.)
 #
 # Aday listesi BILEREK `rc["zorunlu_bolumler"]`den TURETILMEZ: o liste
 # `devral` aninda MEVCUT basliklardan turetilir ve bir Momentum sinifi

@@ -2499,3 +2499,87 @@ jobs:
           name: bolum-kur-${{ matrix.os }}
           path: bolum-kur-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-36) DEVRAL POLITIKA MUTANTI — "devral GIRIS KAPISI" is emri, KALEM 1
+  #     (26 Eylul 2026, Cowork olcumu): `devral --esle canli=PROJE_HAFIZA.md`
+  #     YENI defteri sablondan yaziyor ama `zorunlu_bolumler`i dosya YAZILMADAN
+  #     ONCE taranan (bos) basliklardan turetiyordu -> liste BOS -> H3 fiilen
+  #     olu -> H15 kalici FAIL -> kapi hic yesillenmiyor -> isir exit 4 (vitrin
+  #     yabancinin elinde HIC kosmuyordu). Duzeltme SIK A: liste yazimdan SONRA
+  #     diskten, birebir turetilir (`_devral_zorunlu_diskten`).
+  #
+  #     UC KAPI (tanidik defteri OLMAYAN commit'li git deposu, ELLE DUZENLEME
+  #     YOK): KAPI-A liste bos degil + diskin birebir kopyasi + kapi exit 0,
+  #     [H15] yok · KAPI-B turetilen baslik silinince [H3] ADIYLA · KAPI-C uc
+  #     uca not+derle -> kapi 0 -> isir 0. IKI MUTANT: P-1 turetim sokulur ·
+  #     P-2 ELENEN SIK B (kur'un sabit listesi). ORTUSME: kardes eksenin
+  #     (MESAJ) mutantlari altinda bu kapi YESIL kalmali + CIFT mutant.
+  #     `ci_kapsam_kapisi`nin MUAFIYETSIZ kapsaminda; exit-2 muafiyeti YOK
+  #     (git ve motor checkout'ta her zaman var). UC PLATFORM,
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  devral_politika_mutanti:
+    name: devral politika mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: yeni canlida zorunlu_bolumler DISKTEN mi (uc kapi, iki mutant, ortusme)
+        shell: bash
+        run: python faz0/devral_politika_mutanti.py 2>&1 | tee devral-politika-cikti.txt
+      - name: devral politika mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: devral-politika-${{ matrix.os }}
+          path: devral-politika-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-37) DEVRAL TESHIS MUTANTI — "devral GIRIS KAPISI" is emri, KALEM 2
+  #     (26 Eylul 2026): devral TRIYAJ'i "[H6] ARSIV DIZINI bolumu yok" ve
+  #     "[H17] GUNCEL DURUM bolumu YOK" maddelerini KOSULSUZ basiyordu; kendi
+  #     yazdigi defterde iki bolum de varken `bolum-kur` oneriyor, `bolum-kur`
+  #     "0 bolum eklendi" diyordu (OKUNMADAN HUKUM). Duzeltme: her madde YAZMA
+  #     SONRASI canli o bolumu gercekten tasimiyorsa basilir
+  #     (`_devral_triyaj_bolum`).
+  #
+  #     DORT KOL (her kolda TRIYAJ maddeleri + `bolum-kur --dene` ile
+  #     CELISMEZLIK): KOL-A yeni canli -> madde yok · KOL-B Momentum sinifi ->
+  #     [H6]+[H17] · KOL-C basliksiz canli -> madde yok · KOL-D kismi -> yalniz
+  #     [H6]. UC MUTANT: M-1 yazma ONCESI durum · M-2 susturma · M-3 tek ortak
+  #     kosul. ORTUSME: kardes eksenin (POLITIKA) mutantlari altinda YESIL
+  #     kalmali + CIFT mutant. Exit-2 muafiyeti YOK. UC PLATFORM,
+  #     `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  devral_teshis_mutanti:
+    name: devral teshis mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: devral triyaji yazma SONRASI durumdan mi (dort kol, uc mutant, ortusme)
+        shell: bash
+        run: python faz0/devral_teshis_mutanti.py 2>&1 | tee devral-teshis-cikti.txt
+      - name: devral teshis mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: devral-teshis-${{ matrix.os }}
+          path: devral-teshis-cikti.txt
+          if-no-files-found: warn

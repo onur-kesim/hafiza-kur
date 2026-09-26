@@ -1,6 +1,6 @@
 # DURUM — hafiza-kur
 **BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #99 `b6a3dda3`: 151 iş, 0 başarısız — 6 Eyl ölçüldü**)
-Son güncelleme: 13 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+Son güncelleme: 26 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **Radar R8 sert durağı bu turla AÇILDI** (13 Eyl kilidi: sıkkı DEVRET, sıradaki tur MOTOR KODU) —
@@ -12,13 +12,12 @@ README_EN kapısı · `h4_gitignore_mutanti`ye **2-EK için AYRI kol**. **25 Ağ
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**`bolum-kur` komutu — Ayak 3'ten İLK ÜRÜN KODU** (13 Eyl, IS_EMRI_BOLUM_KUR.md, R8 sert durak) —
-`devral` diskte `## ` başlığı VARKEN zorunlu bölümü force EKLEMEZ (kasıtlı); `## GÜNCEL DURUM`
-hiç taşımayan bir proje devralınınca döngü HİÇ BAŞLAYAMIYORDU (GERÇEK Momentum kopyasında
-ÖLÇÜLDÜ: `devral`→`bolum-kur`→`not`→`derle`→`kapi`, [H17]+[H6] KAYBOLDU, derle 1 fragman işledi).
-REDDEDİLEN türetim (`rc["zorunlu_bolumler"]`) kod ÖNCESİ ölçüldü: o liste GÜNCEL DURUM hiç
-içermiyordu ⇒ `BOLUM_HEDEF`+ARŞİV DİZİNİ kullanıldı. YENİ `faz0/bolum_kur_mutanti.py` (3 kapı/
-3 mutant). `devral` DEĞİŞMEDİ. ·
+**devral GİRİŞ KAPISI** (26 Eyl, Cowork iş emri, Şık A) — yeni açılan canlıda `zorunlu_bolumler`
+BOŞTU (liste yazım ÖNCESİ taranıyordu ⇒ H15 kalıcı FAIL, `isir` 4), TRİYAJ `[H6]`/`[H17]`'yi
+KOŞULSUZ basıyordu; ikisi de artık YAZIM SONRASI diskten. `devral_politika_mutanti` (3 kapı/2 mt)
+· `devral_teshis_mutanti` (4 kol/3 mt), örtüşme 0; CC 99 sabit. werkzeug: `kapi` 0, `isir` 38/38. ·
+**`bolum-kur`** (13 Eyl) — eksik zorunlu bölümü AÇIK komutla ekler; aday listesi `BOLUM_HEDEF`
++ARŞİV DİZİNİ (`rc["zorunlu_bolumler"]` DEĞİL — o liste Momentum'da GÜNCEL DURUM içermez). ·
 **CI ölü kod+bayat yorum+izlenmeyen artık** (13 Eyl) — `shell: bash`'in `-e`'si exit-2
 muafiyetini `ec=`ye ULAŞTIRMIYORDU (CI #104/#105) ⇒ `set +e`/`set -e` + YENİ
 `ci_adim_muafiyeti_mutanti.py`; yorum+gitignore düzeldi.·

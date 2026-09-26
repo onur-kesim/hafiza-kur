@@ -69,6 +69,15 @@ Kararsızsan: **kod varsa KAPILI, yoksa HAFİF.** Hafif'ten Kapılı'ya sonradan
 > gizlenemez. Kapı: `faz0/kur_koruma_mutanti.py`.
 > `devral` yapılandırmayı diskteki gerçekten türetir ve canlı dosyayı önce yedekler.
 >
+> ✅ **26 Eyl 2026'dan beri `zorunlu_bolumler` de YAZIMDAN SONRA diskten gelir.** H3'ün
+> aradığı liste, canlı yazıldıktan **sonra** diskte duran `## ` başlıklarından — süsleriyle,
+> birebir — türetilir; `devral`ın **yeni açtığı** canlı (`--esle canli=PROJE_HAFIZA.md`)
+> dahil. Ölçüldü: önceden bu yolda liste BOŞ kalıyor, H15 `zorunlu_bolumler BOS` diye kalıcı
+> FAIL veriyor, `kapi` hiç yeşillenmiyor, `isir` exit 4 veriyordu. Triyajın `[H6]`/`[H17]`
+> "bölüm yok" maddeleri de artık yalnız o bölüm yazımdan sonra **gerçekten** yoksa basılır
+> (`bolum-kur` ile aynı ölçüt; önceden koşulsuz basılıyordu). Kapılar:
+> `faz0/devral_politika_mutanti.py` · `faz0/devral_teshis_mutanti.py`.
+>
 > **ŞERH — bu cümle 15 Ağu 2026'da DARALTILDI (ölçüldü, fazla söz veriyordu):**
 > "ayrı ad alanı (`arsiv/hafiza/v2`)" YALNIZCA hafiza-kur'un **kendi v1 kurulumu**
 > diskte bulunduğunda açılır; **başka bir aracın** sistemi için değil. Başka aracın
@@ -90,6 +99,9 @@ python araclar/hafiza/hafiza.py devral --kesif --kok="<proje kökü>"
 python araclar/hafiza/hafiza.py devral      --kok="<proje kökü>" --ad "<Proje Adı>"
 #   `canli` rolü belirsizse (devral DURUR ve bunu ister):
 python araclar/hafiza/hafiza.py devral --esle canli=<dosya>[,kural=<dosya>] --kok="<proje kökü>"
+#   triyaj `[H6]`/`[H17]` "bölüm yok" derse (yalnız bölüm gerçekten eksikse der):
+python araclar/hafiza/hafiza.py bolum-kur   --kok="<proje kökü>" --dene     # kuru prova
+python araclar/hafiza/hafiza.py bolum-kur   --kok="<proje kökü>"            # eksik bölümü ekler
 python araclar/hafiza/hafiza.py bloklastir  --kok="<proje kökü>"            # kuru prova
 python araclar/hafiza/hafiza.py bloklastir  --kok="<proje kökü>" --uygula   # geriye dönük blok
 ```
@@ -98,6 +110,15 @@ python araclar/hafiza/hafiza.py bloklastir  --kok="<proje kökü>" --uygula   # 
 böylece sistem "bugünden itibaren" değil, eski içerik için de çalışır. İçeriğe dokunmaz,
 yalnız görünmez işaret satırı ekler; kural evi bölümlerini ve karar günlüğünü **asla**
 bloklamaz; kapı kırmızıysa işlemi geri alır.
+
+`bolum-kur`, devralınan canlıya `derle`nin yazdığı hedeflerden (`## GUNCEL DURUM` ·
+`## SONRAKI ADIM` · `## KARAR GUNLUGU` · `## ACIK KARARLAR` · `## SABIT CERCEVE`) ve H6'nın
+aradığı `## ARSIV DIZINI`nden **eksik** olanı ekler. `devral`, kendi `## ` başlıkları olan bir
+canlıya bunları **zorla yazmaz** (diskteki gerçek üstündür); ama `## GUNCEL DURUM` yoksa
+`not`/`derle` döngüsü hiç başlayamaz (`[H17]` bunu yakalar). Aday listesi motorun sabit
+ihtiyacıdır, `zorunlu_bolumler`den **türetilmez**. Eksik başlığı ilk `# ` başlığının altına
+ekler; var olan bölüme ve `.hafizarc`'a dokunmaz; zincire `BOLUM_KUR` halkası düşer;
+idempotenttir (`0 bolum eklendi`). Ardından `not` → `derle`. Kapı: `faz0/bolum_kur_mutanti.py`.
 
 ### Sıfırdan kurulum
 
@@ -120,7 +141,10 @@ python araclar/hafiza/hafiza.py isir --kok="<proje kökü>"
 `arsiv/<tür>/`.
 
 Kurulumdan sonra **`.hafizarc`'ı projeye göre ayarla**: `tavan_kb`, `bayatlik_gun`,
-`arsiv_turleri`, `kanonik_artefakt` (varsa tek doğru sürüm dosyası deseni).
+`arsiv_turleri`, `kanonik_artefakt` (varsa tek doğru sürüm dosyası deseni),
+`zorunlu_bolumler` (H3'ün canlıda aradığı başlıklar — `kur` 7 varsayılanla, `devral` diskteki
+başlıklarla açar; listeyi boşaltmak H3'ü kapatır, H15 bunu yakalar). `.hafizarc` zincirdedir:
+değiştirdikten sonra `hafiza.py muhur "gerekçe"` — yoksa `[H0]` kırmızı yanar.
 
 ---
 
@@ -263,6 +287,7 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
 | Devir sonrası eski bölümleri de sisteme almak | `bloklastir` (önce kuru prova) |
 | `[H14]` proje ilerledi, hafıza ilerlemedi | Çalışıldı ama kayıt bırakılmadı → `not` + `derle` |
 | İlerlemiş bir projeye ilk kez uygulanıyor | `devral` (asla `kur`) → triyaj raporunu oku |
+| Devir triyajı `[H6]`/`[H17]` "bölüm yok" diyor | `hafiza.py bolum-kur --dene` → `bolum-kur` → `not` + `derle` |
 
 ---
 
