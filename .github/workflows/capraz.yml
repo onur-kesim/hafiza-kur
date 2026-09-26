@@ -2583,3 +2583,42 @@ jobs:
           name: devral-teshis-${{ matrix.os }}
           path: devral-teshis-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-38) SABIT TARIH DESEN YASAGI — Cowork is emri "ayrisma FIKSTUR ZAMAN
+  #     BOMBASI" (26 Eylul 2026), KALEM 2. faz0/ayrisma_mutanti.py'nin A2
+  #     fiksturu `Son guncelleme: <sabit tarih>` tasiyordu; H12'nin 30 gun
+  #     tavani 14 Eyl'de asildi ve kapi KENDI senaryosu yuzunden kirmizi yandi
+  #     (UCUNCU isirik). Fikstur artik tarihini kosum anindan turetiyor; bu is
+  #     sinifi MEKANIK yasaklar: faz0/ + skill/scripts/ altindaki kosan
+  #     dosyalarin (*.py AST ile — yorum/docstring HARIC; *.sh yorum disi
+  #     satirlar) dize sabitlerinde sabit `Son guncelleme` tarihi -> KIRMIZI.
+  #     BAYATLIK OLCUMU DEGILDIR: zamana HIC bakmaz ("capa son kosumdan eskiyse
+  #     kirmizi" olcutu 6 Eyl'de SONSUZ KIRMIZI verdi). KAPI-1 gercek agac ·
+  #     KAPI-YP yorum/docstring bulgu DEGIL · M-1 ayrisma fiksturune sabit
+  #     tarih GERI · M-2..M-4 dizin/bicim/.sh kapsami. KAPI sinifi: uc
+  #     platform, `continue-on-error` YOK, exit-2 muafiyeti YOK.
+  # ---------------------------------------------------------------------------
+  sabit_tarih_mutanti:
+    name: sabit tarih desen yasagi (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: kosan dosyalarda sabit `Son guncelleme` tarihi YOK mu (desen yasagi, dort mutant)
+        shell: bash
+        run: python faz0/sabit_tarih_mutanti.py 2>&1 | tee sabit-tarih-cikti.txt
+      - name: sabit tarih desen yasagi ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sabit-tarih-${{ matrix.os }}
+          path: sabit-tarih-cikti.txt
+          if-no-files-found: warn

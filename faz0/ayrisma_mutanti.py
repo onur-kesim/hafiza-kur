@@ -45,6 +45,7 @@ CIKIS KODLARI
   1  bir kapi kirmizi, ya da bir mutant KACTI/ORTUSTU (kapi kor)
   2  OLCULEMEDI (motor okunamadi, mutant kurulamadi) — sessiz PASS verilmez
 """
+import datetime
 import io
 import os
 import re
@@ -132,9 +133,19 @@ def kapi_a1(motor, taban):
 # DIZINI DAHIL hicbir sey dayatilmaz). O bolum burada YOKSA H6 "ARSIV DIZINI
 # bolumu yok" diye FAIL verir ve bu senaryo KENDI kapisi yuzunden kirmizi
 # yanar — A2'nin olcmek istedigi eksen (H10-SAHIP gorunurlugu) DEGIL.
-ESKI_DEFTER = ("# Eski Proje\n> Son guncelleme: 2026-08-15\n\n## GUNCEL DURUM\n"
-               '<!-- blok konu="genel-durum" guncel="2026-08-15" kaynak="-" -->\n'
-               "- eski defterden gelen satir\n<!-- /blok -->\n\n## ARSIV DIZINI\n")
+#
+# FIKSTUR TARIHI KOSUM ANINDAN TURETILIR (26 Eyl 2026, Cowork is emri "ayrisma
+# FIKSTUR ZAMAN BOMBASI"): burada sabit bir tarih duruyordu; H12'nin 30 gunluk
+# tavani 14 Eyl'de asildi ve A2 KENDI senaryosunun H12 FAIL'i yuzunden kirmizi
+# yandi (olculdu: HEM 75ff1524 HEM a4cb48f4). Tarih, bayatlik tavaninin (30 gun)
+# rahatca ICINDE kalan 1 gun onceye kurulur; baslik ve blok AYNI degeri tasir.
+# Davranis her kosumda aynidir; degisen yalniz fikstur metnindeki tarih baytidir.
+# Sinif, faz0/sabit_tarih_mutanti.py ile mekanik olarak YASAKLIDIR.
+_FIKSTUR_TARIHI = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+ESKI_DEFTER = (("# Eski Proje\n> Son guncelleme: %s\n\n## GUNCEL DURUM\n"
+                '<!-- blok konu="genel-durum" guncel="%s" kaynak="-" -->\n'
+                "- eski defterden gelen satir\n<!-- /blok -->\n\n## ARSIV DIZINI\n")
+               % (_FIKSTUR_TARIHI, _FIKSTUR_TARIHI))
 
 
 def kapi_a2(motor, taban):
