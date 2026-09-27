@@ -22,7 +22,9 @@ Bu bir CIKARIMDIR ve boyle isaretlenmistir; formulu degistirmek isteyen
 `--formul` ile degistirir, arac itiraz etmez ama HANGI formulle konustugunu
 her seferinde yazar.
 
-ESIKLER (politika; 5 Agu 2026'da kilitlendi — tavan iddiasi DEGILDIR)
+ESIKLER (YEREL SABIT -- KURESEL TALIMATLA AYNI OLMAYABILIR)
+    15 Eyl 2026'da olculdu: kuresel talimat 750k/800k/850k, bu dosya 400k/500k/650k.
+    RENK HUKMU KURESEL TALIMATTAN VERILIR; asagidaki renk YEREL bir tahmindir.
     x < 400.000            YESIL     serbest
     400.000 <= x < 500.000 SARI      hafiza checkpoint'i
     500.000 <= x < 650.000 TURUNCU   yeni buyuk is yok, mevcut isi bitir
