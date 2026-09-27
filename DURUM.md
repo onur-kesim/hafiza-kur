@@ -1,6 +1,6 @@
 # DURUM — hafiza-kur
 **BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #99 `b6a3dda3`: 151 iş, 0 başarısız — 6 Eyl ölçüldü**)
-Son güncelleme: 27 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+Son güncelleme: 28 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **Radar R8 sert durağı bu turla AÇILDI** (13 Eyl kilidi: sıkkı DEVRET, sıradaki tur MOTOR KODU) —
@@ -12,13 +12,11 @@ README_EN kapısı · `h4_gitignore_mutanti`ye **2-EK için AYRI kol**. **25 Ağ
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**ayrisma ZAMAN BOMBASI** (27 Eyl) — A2 fikstürünün sabit `Son guncelleme` tarihi 14 Eyl'de H12'ye
-takıldı (3. ısırık); tarih koşumdan türer + YENİ `sabit_tarih_mutanti` (AST desen yasağı, zamana
-bakmaz, yorum/docstring hariç, 4 mt). ·
-**devral GİRİŞ KAPISI** (26 Eyl, Şık A) — yeni canlıda boş `zorunlu_bolumler` (H15 kalıcı FAIL) ve
-koşulsuz TRİYAJ `[H6]`/`[H17]` artık YAZIM SONRASI diskten; `devral_politika`/`_teshis` mutantları. ·
-**`bolum-kur`** (13 Eyl) — eksik zorunlu bölümü AÇIK komutla ekler; aday listesi `BOLUM_HEDEF`
-+ARŞİV DİZİNİ (`rc["zorunlu_bolumler"]` DEĞİL — o liste Momentum'da GÜNCEL DURUM içermez). ·
+**H1 KAPSAM** (28 Eyl, Şık A) — `isir` H1'in 6 `fail()`'ine KÖR (eşleşme `[H1-` önekini de sayıyor
+⇒ H1-KOVA maskeliyor); YENİ `h1_kapsam_mutanti` (6 kol, 6×6 köşegen) + `sabotaj.py --ek-olcer`:
+isir ile 23/67 (DEĞİŞMEDİ) · ek 6/67 · birleşim 29/67. isir'e H1 mutantı = Şık B, ayrı iş. ·
+**ayrisma zaman bombası** (27 Eyl, `sabit_tarih_mutanti`) · **devral GİRİŞ KAPISI** (26 Eyl) ·
+**`bolum-kur`** (13 Eyl; aday listesi `BOLUM_HEDEF`+ARŞİV DİZİNİ, `rc["zorunlu_bolumler"]` DEĞİL). ·
 **CI ölü kod+bayat yorum+izlenmeyen artık** (13 Eyl) — `shell: bash`'in `-e`'si exit-2
 muafiyetini `ec=`ye ULAŞTIRMIYORDU (CI #104/#105) ⇒ `set +e`/`set -e` + YENİ
 `ci_adim_muafiyeti_mutanti.py`; yorum+gitignore düzeldi.·

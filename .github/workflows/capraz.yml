@@ -2622,3 +2622,43 @@ jobs:
           name: sabit-tarih-${{ matrix.os }}
           path: sabit-tarih-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-39) H1 KAPSAM MUTANTI — Cowork is emri "H1 KAPSAM" (27 Eylul 2026, SIK A
+  #     kilidi). faz0/sabotaj.py: H1'in ALTI fail() cagrisinin ALTISI da `isir`
+  #     icin KAPSAMSIZ (urunun ana vaadi "hicbir satir kaybolmadi" kanitsiz).
+  #     Sebeplerden biri isir'in eslesme kurali: `[H1]` YA DA `[H1-` -> "satir
+  #     KAYIP" kapatilinca ayni kaybi `[H1-KOVA]` gordugu icin M-H1 yine isirir
+  #     (ortusen tespit korlugu MASKELER). Motor DEGISMEDI (SIK B ayri is).
+  #
+  #     ALTI KOL, her biri GERCEK bir ihlal + `kapi --siki` + O EKSENIN baslik
+  #     satiri ve enjekte icerik birlikte: K1 sahte duzeltme · K2 gerekcesiz
+  #     duzeltme · K3 kayip maskeleme · K4 okunamayan arsiv · K5 satir KAYIP ·
+  #     K6 beyansiz ekleme. POZITIF KONTROL KALICI: H1'in alti fail()'i
+  #     sabotaj.py'nin KENDI fonksiyonlariyla tek tek kapatilir, 6x6 matris TAM
+  #     KOSEGEN olmali (kosegen disi kacis = ORTUSME, KIRMIZI).
+  #     KAPI sinifi: uc platform, `continue-on-error` YOK, exit-2 muafiyeti YOK.
+  # ---------------------------------------------------------------------------
+  h1_kapsam_mutanti:
+    name: h1 kapsam mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: H1'in alti ekseni ayri ayri isiriyor mu (alti kol, 6x6 kosegen)
+        shell: bash
+        run: python faz0/h1_kapsam_mutanti.py 2>&1 | tee h1-kapsam-cikti.txt
+      - name: h1 kapsam mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h1-kapsam-${{ matrix.os }}
+          path: h1-kapsam-cikti.txt
+          if-no-files-found: warn
