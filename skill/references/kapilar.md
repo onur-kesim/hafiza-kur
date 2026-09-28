@@ -348,8 +348,8 @@ altısı da bu süzgeçten geçirildi.
 olur, "temiz" olmaz. Ve **bir kapının mutantı diğerlerini kapsamaz**: kapsama iki ayrı
 adımdır — önce envanter (neyin ölçüldüğünü listele), sonra her biri için ayrı mutant.
 
-**Sayım dürüstlüğü:** "38/38 ısırıyor" yalnızca `derle` koşulmuş bir projede geçerlidir.
-Taze bir `kur` projesinde M-H1b ve M-DEVIR ön-koşulsuz kalır; sonuç `36/36 + 2
+**Sayım dürüstlüğü:** "43/43 ısırıyor" yalnızca `derle` koşulmuş bir projede geçerlidir.
+Taze bir `kur` projesinde M-H1b ve M-DEVIR ön-koşulsuz kalır; sonuç `41/41 + 2
 KURULAMADI` olur ve çıkış kodu 2'dir. İkisi de sağlıklıdır; **hangi bağlamda ölçüldüğü
 yazılmadan mutant sayısı beyan edilmez.**
 

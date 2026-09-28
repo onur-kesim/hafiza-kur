@@ -1375,7 +1375,7 @@ jobs:
   # ---------------------------------------------------------------------------
   # README KANIT BLOGU KAPISI — BITTI maddesi 5.
   #     Okurun yapacagi sey README'nin "Kanitini kendin kos" blogudur ve o blok
-  #     SAYISAL BEYAN tasir (36/36 + 2 SINANMADI exit 2 · 38/38 exit 0). Bu
+  #     SAYISAL BEYAN tasir (41/41 + 2 SINANMADI exit 2 · 43/43 exit 0). Bu
   #     beyanlari hicbir kapi olcmuyordu; ikincisi (`derle` sonrasi isir=0)
   #     DURUM.md'nin "olculmuyor" dedigi boslugun ta kendisiydi.
   #
@@ -2661,4 +2661,44 @@ jobs:
         with:
           name: h1-kapsam-${{ matrix.os }}
           path: h1-kapsam-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-40) ISIR ESLESME MUTANTI — Cowork is emri "H1 ISIR SIK B" (28 Eylul 2026,
+  #     Onur kilidi: Soru 1 = A+B · Soru 2 = opsiyonel `siki`). `isir`in eslesme
+  #     kurali etiketi ONEKIYLE de kabul ediyordu: "satir KAYIP" fail()'i
+  #     sokulunce ayni kaybi `[H1-KOVA]` gordugu icin M-H1 yine ISIRDI diyordu
+  #     (ortusen tespit MASKELER). Motor DEGISTI (yalniz cmd_isir + _kapi_metni):
+  #     A tam etiket · B H1'in yedi mutanti eksen cumlesinden parca ister ·
+  #     C `_kapi_metni(kok, siki=False)`, yalniz M-H1s `siki=True`.
+  #
+  #     KOL O statik oz sinama (her parca TAM 1 fail()'e, hedef eksenin
+  #     fail()'ine uyar) · KOL 0 negatif kontrol · KOL a POZITIF KONTROL (eski
+  #     kural geri + satir KAYIP sabote -> M-H1 ISIRDI, maskeleme URETILIR) ·
+  #     KOL a1/a2 A ve B ayri ayri yeter · KOL b yeni kural -> M-H1/M-H1b KACTI ·
+  #     KOL c `siki` kaldirilinca M-H1s KACTI/KURULAMADI (parametre CANLI).
+  #     KAPI sinifi: uc platform, `continue-on-error` YOK, exit-2 muafiyeti YOK.
+  # ---------------------------------------------------------------------------
+  isir_eslesme_mutanti:
+    name: isir eslesme mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: isir eslesme kurali, eksen parcasi ve siki isiriyor mu (O + 6 kol)
+        shell: bash
+        run: python faz0/isir_eslesme_mutanti.py 2>&1 | tee isir-eslesme-cikti.txt
+      - name: isir eslesme mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isir-eslesme-${{ matrix.os }}
+          path: isir-eslesme-cikti.txt
           if-no-files-found: warn

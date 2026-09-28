@@ -5336,11 +5336,19 @@ def _kapi_h17(F, N, O, y):
 
 # ---------------------------------------------------------------- ISIRMA KANITI
 
-def _kapi_metni(kok):
+def _kapi_metni(kok, siki=False):
     # -X utf8 ZORUNLU: Windows'ta cocuk surecin stdout kodlamasi varsayilan olarak cp1254'tur;
     # biz utf-8 okudugumuz icin '·' ve '—' bozuk cikardi (Windows sinamasinda olculdu).
+    # KALEM 3 (besli-paket/IS_EMRI_H1_ISIR_SIKB.md, 28 Eyl 2026, Onur kilidi): `siki`
+    # YALNIZ acikca True verilince arguman listesinin SONUNA `--siki` eklenir.
+    # Varsayilan cagri BIREBIR eskisidir (ayni arguman listesi, ayni ortam). Gerekce:
+    # H1'in eksen-6 dali yalniz `kapi --siki` altinda kosar; bayraksiz `isir` ona
+    # HIC erisemiyordu (olculdu 28 Eyl, Cowork).
     ortam = dict(os.environ, PYTHONIOENCODING="utf-8")
-    r = subprocess.run([sys.executable, "-X", "utf8", os.path.abspath(__file__), "kapi", "--kok=" + kok],
+    argv = [sys.executable, "-X", "utf8", os.path.abspath(__file__), "kapi", "--kok=" + kok]
+    if siki:
+        argv.append("--siki")
+    r = subprocess.run(argv,
                        capture_output=True, text=True, encoding="utf-8", errors="replace", env=ortam)
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
@@ -5378,7 +5386,15 @@ def cmd_isir(a):
     uygulanmaz = []   # KALEM 1 (IS_EMRI_UYGULANMAZ.md): projede git yok -> AYRI eksen,
                       # SINANMADI DEGIL; cikis kodunu etkilemez, "kosulan" sayisina girmez.
 
-    def mutant(ad, kapi, degistir):
+    def mutant(ad, kapi, degistir, icerik_parcasi=None, siki=False):
+        """KALEM 1+2+3 (besli-paket/IS_EMRI_H1_ISIR_SIKB.md, 28 Eyl 2026, Onur kilidi
+        A+B): eslesme TAM etikettir; eski onek dali (etiket + tire) `[H1-KOVA]`
+        satirini `[H1]` sayiyordu -> "satir KAYIP" fail()'i sokulunce ayni kaybi
+        H1-KOVA da gordugu icin M-H1 yine ISIRDI diyordu (ORTUSEN TESPIT MASKELER,
+        olculdu 28 Eyl, Cowork). `icerik_parcasi` verilirse `mutant_git`teki kalibin
+        AYNISI: etiket VE o metin ciktida BIRLIKTE gecmeli. `siki` yalniz eksen-6
+        mutantina verilir (`_kapi_metni` varsayilani degismedi). Uc parametrenin
+        varsayilani eski davranisin BIREBIR kendisidir (onek dali haric)."""
         tmp = tempfile.mkdtemp(prefix="hafiza_isir_")
         hedef = os.path.join(tmp, "p")
         shutil.copytree(kok, hedef, ignore=shutil.ignore_patterns(".git", "node_modules"))
@@ -5392,9 +5408,10 @@ def cmd_isir(a):
                 # NOT: oldur()'un SystemExit'i Exception DEGILDIR; bilerek buradan kacar —
                 # gercek projenin defteri bozuksa `isir` "20/20 ISIRDI" dememeli, DURMALI.
                 raise MutantKurulamadi("%s: %s" % (type(e).__name__, e))
-            k, c = _kapi_metni(hedef)
-            yakalandi = (k != 0) and (("[%s]" % kapi) in c or ("[%s-" % kapi) in c)
-            return yakalandi, k, c
+            k, c = _kapi_metni(hedef, siki)
+            yakalandi = (k != 0) and (("[%s]" % kapi) in c)
+            parca_ok = (icerik_parcasi is None) or (icerik_parcasi in c)
+            return (yakalandi and parca_ok), k, c
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
@@ -5439,7 +5456,9 @@ def cmd_isir(a):
                     ValueError, IndexError) as e:
                 raise MutantKurulamadi("%s: %s" % (type(e).__name__, e))
             k, c = _kapi_metni(hedef)
-            etiketli = (k != 0) and (("[%s]" % kapi) in c or ("[%s-" % kapi) in c)
+            # KALEM 1 (IS_EMRI_H1_ISIR_SIKB.md, 28 Eyl 2026): `mutant()` ile AYNI kural,
+            # eslesme TAM etiket (onek dali kalkti).
+            etiketli = (k != 0) and (("[%s]" % kapi) in c)
             parca_ok = (icerik_parcasi is None) or (icerik_parcasi in c)
             return (etiketli and parca_ok), k, c
         finally:
@@ -6057,6 +6076,143 @@ def cmd_isir(a):
             raise RuntimeError(r.stderr)
         yaz(kp, oku(kp).replace("korunan protokol satiri", "SESSIZCE DEGISTIRILDI"))
 
+    # ---- ISIR: H1 EKSEN MUTANTLARI (KALEM 2, besli-paket/IS_EMRI_H1_ISIR_SIKB.md, 28 Eyl 2026)
+    # Olculdu (faz0/sabotaj.py, motor 559E830A): H1'in alti fail() cagrisinin ALTISI
+    # da `isir` icin KAPSAMSIZDI. Senaryolar faz0/h1_kapsam_mutanti.py kollarindan
+    # (K1-K4, K6) alindi ama GERCEK projeye tasinabilir yazildi: sabit sablon satiri
+    # ARANMAZ, satirlar snapshot/canliden dinamik secilir; on kosul yoksa
+    # MutantKurulamadi (sahte ISIRDI yok). Kopyada `.git` ve muhur YOK: defter
+    # duzenleyen kollar bir [H0] yan bulgusu da uretir — eslesme `[H1]` + eksen
+    # parcasi istedigi icin hukmu etkilemez, yan bulgu olarak raporlanir.
+
+    def _canli_sonuna_yaz(h, satir):
+        with open(_canli(h), "a", encoding="utf-8", newline="\n") as f:
+            f.write("\n" + satir + "\n")
+
+    def _uretilen_disi(L):
+        """(indeks, satir) — v2 arsiv dizini alt blogu (URETILEN, H1 muhasebesinin
+        DISI) atlanir; `_uretilen_haric` ile AYNI sinir, yalniz indeks korunur."""
+        ic = False
+        for j, s in enumerate(L):
+            d = s.strip()
+            if d in (V2BAS, V2SON):
+                ic = (d == V2BAS)
+                continue
+            if not ic:
+                yield j, s
+
+    def _h1_icerik_satiri(h):
+        """Snapshot'ta ve canlida BIRER kez gecen, uretilen blogun DISINDAKI,
+        baslik/alinti/blok isareti OLMAYAN bir icerik satiri.
+        Doner: (canli indeksi, canli satirlari, snapshot satirlari, snapshot indeksi)."""
+        sp = os.path.join(_hdir(h), "_KAYNAK.md")
+        if not os.path.isfile(sp):
+            raise MutantKurulamadi("snapshot (_KAYNAK.md) yok")
+        snapL = satirlar(sp)
+        L = satirlar(_canli(h))
+        snap = [(i, norm(s)) for i, s in _uretilen_disi(snapL)]
+        canli = [(j, norm(s)) for j, s in _uretilen_disi(L)]
+        sn = cok_kume([t for _, t in snap])
+        cn = cok_kume([t for _, t in canli])
+        for j, t in canli:
+            d = t.strip()
+            if len(d) < 20 or d.startswith(("#", ">", "<!--", ";;")):
+                continue
+            if sn.get(t) == 1 and cn.get(t) == 1:
+                return j, L, snapL, next(i for i, x in snap if x == t)
+        raise MutantKurulamadi("snapshot'ta ve canlida birer kez gecen icerik satiri yok")
+
+    def _duzeltme_ekle(h, kayit):
+        """_DUZELTMELER.json'a kayit EKLER; projenin mevcut beyanlari korunur."""
+        p = os.path.join(_hdir(h), "_DUZELTMELER.json")
+        d = defter_yukle(p, {"duzeltmeler": []})
+        if not isinstance(d.setdefault("duzeltmeler", []), list):
+            raise MutantKurulamadi("_DUZELTMELER.json: 'duzeltmeler' liste degil")
+        d["duzeltmeler"].append(kayit)
+        yaz(p, json.dumps(d, ensure_ascii=False, indent=2) + "\n")
+
+    def m_h1d(h):
+        """M-H1d — eksen 'sahte duzeltme' (K1): kaynagi snapshot'ta OLMAYAN bir
+        DUZELTME beyan edilir (gerekce yeterli). 'yeni' satiri canliya da konur ki
+        KAYIP dogmasin; satir no snapshot'un DISINDA (kova beklentisi degismez)."""
+        sp = os.path.join(_hdir(h), "_KAYNAK.md")
+        if not os.path.isfile(sp):
+            raise MutantKurulamadi("snapshot (_KAYNAK.md) yok")
+        snapL = satirlar(sp)
+        eski = "- isir M-H1d: bu satir snapshot'ta hic yok"
+        if norm(eski) in set(norm(s) for s in snapL):
+            raise MutantKurulamadi("sahte kaynak satiri snapshot'ta VAR")
+        yeni = "- isir M-H1d: sahte duzeltmeyle gelen satir"
+        _canli_sonuna_yaz(h, yeni)
+        _duzeltme_ekle(h, {"satir": len(snapL) + 1, "eski": eski, "yeni": yeni,
+                           "gerekce": "isir sinamasi: sahte duzeltme beyani"})
+
+    def m_h1g(h):
+        """M-H1g — eksen 'gerekcesiz duzeltme' (K2): GERCEK bir duzeltme (canlida
+        yapildi, snapshot satir no'su dogru) gerekcesi 10 karakterden KISA beyan
+        edilir. Kaynak snapshot'ta VAR, yeni satir canlida VAR -> KAYIP dogmaz."""
+        j, L, snapL, i = _h1_icerik_satiri(h)
+        yeni = L[j].rstrip() + " (isir M-H1g duzeltmesi)"
+        L[j] = yeni
+        yaz(_canli(h), "\n".join(L))
+        _duzeltme_ekle(h, {"satir": i + 1, "eski": snapL[i], "yeni": yeni, "gerekce": "kisa"})
+
+    def m_h1y(h):
+        """M-H1y — eksen 'YENI zaten var' (K3, kayip maskeleme): snapshot'ta ZATEN
+        olan bir satir _YENI_SATIRLAR.txt'ye 'YENI' diye beyan edilir; ikinci kopyasi
+        canliya da konur ki sayim dengede kalsin (KAYIP dogmasin)."""
+        j, L, _snapL, _i = _h1_icerik_satiri(h)
+        _canli_sonuna_yaz(h, L[j])
+        p = os.path.join(_hdir(h), "_YENI_SATIRLAR.txt")
+        mevcut = oku(p) if os.path.isfile(p) else ""
+        if mevcut and not mevcut.endswith("\n"):
+            mevcut += "\n"
+        yaz(p, mevcut + norm(L[j]) + "\n")
+
+    def m_h1o(h):
+        """M-H1o — eksen 'okunamayan arsiv' (K4): gecersiz UTF-8 bir arsiv dosyasi.
+        Ad CAKISMAZ (HAFIZA_ZZ_ISIR.md; zaten varsa KURULAMADI). Canlida uretilen
+        dizin alt blogu varsa ad oraya yazilir ki H6 yan bulgusu dogmasin."""
+        hd = _hdir(h)
+        ad = "HAFIZA_ZZ_ISIR.md"
+        p = os.path.join(hd, ad)
+        if not os.path.isdir(hd) or os.path.lexists(p):
+            raise MutantKurulamadi("hafiza dizini yok ya da %s zaten var" % ad)
+        with open(p, "wb") as f:
+            f.write(b"\xff\xfe isir M-H1o bozuk arsiv \xfa\n")
+        L = satirlar(_canli(h))
+        son = [j for j, s in enumerate(L) if s.strip() == V2SON]
+        if son:
+            L.insert(son[0], "- `%s` - okunamayan arsiv (isir M-H1o)" % ad)
+            yaz(_canli(h), "\n".join(L))
+
+    def m_h1s(h):
+        """M-H1s — eksen 'beyansiz ekleme' (K6): canliya beyansiz satir; bu mutant
+        `siki=True` ile kosar (asagidaki secenek tablosu). ON KOSUL: temiz kopya
+        `kapi --siki` altinda bu eksenin cumlesini ZATEN basmamali — basiyorsa
+        mutant ayirt edemez (sahte ISIRDI olurdu) -> KURULAMADI."""
+        _k0, c0 = _kapi_metni(h, True)
+        if "BEYANSIZ EKLENMIS" in c0:
+            raise MutantKurulamadi("temiz kopya --siki altinda eksen-6 cumlesi ZATEN basiliyor")
+        _canli_sonuna_yaz(h, "- isir M-H1s: beyansiz eklenen satir")
+
+    # KALEM 2: H1 ailesinin YEDI mutanti etiketle YETINMEZ, kendi EKSEN cumlesinden
+    # bir parca da ister (Onur kilidi: A+B). Parcalar H1 fail() cumlelerinden BIREBIR
+    # alindi; her biri motordaki fail() cagrilarindan TAM BIRINE uyar. Oz sinama
+    # faz0/isir_eslesme_mutanti.py'dedir ve bu sozlugu AST ile okur: tablo TEK yerde
+    # durur, anahtarlar asagidaki `sinamalar` adlaridir.
+    _h1_parca = {
+        "M-H1  butunluk (canli satir silindi)": "satir KAYIP (snapshot'ta var, hicbir ciktida yok)",
+        "M-H1b baseline-SONRASI blok silindi": "satir KAYIP (snapshot'ta var, hicbir ciktida yok)",
+        "M-H1d sahte duzeltme beyani": "beyan edilen DUZELTME kaynagi snapshot'ta YOK",
+        "M-H1g gerekcesiz duzeltme": "GEREKCESIZ",
+        "M-H1y YENI beyani snapshot'ta zaten var": "ZATEN VAR (kayip maskeleme suphesi)",
+        "M-H1o okunamayan arsiv dosyasi": "arsiv dosyasi OKUNAMADI",
+        "M-H1s beyansiz ekleme (--siki)": "satir BEYANSIZ EKLENMIS (--siki)",
+    }
+    # KALEM 3: `--siki` YALNIZ eksen-6 mutantina verilir; digerleri varsayilanla kosar.
+    _h1_secenek = {"M-H1s beyansiz ekleme (--siki)": dict(siki=True)}
+
     sinamalar = [
         ("M-H0  cipa (snapshot kurcalandi)", "H0", m_h0),
         ("M-H1  butunluk (canli satir silindi)", "H1", m_h1),
@@ -6089,13 +6245,18 @@ def cmd_isir(a):
         ("M-H8b  korunan blok: SAHTE KOPYA ile gizleme", "H8", m_h8b),
         ("M-H0d  zincir 0 BAYTA indirildi (tahrif maskeleme)", "H0", m_h0d),
         ("M-H0t  halka zamani GELECEGE alindi (hash yenilendi)", "H0", m_h0t),
+        ("M-H1d sahte duzeltme beyani", "H1", m_h1d),
+        ("M-H1g gerekcesiz duzeltme", "H1", m_h1g),
+        ("M-H1y YENI beyani snapshot'ta zaten var", "H1", m_h1y),
+        ("M-H1o okunamayan arsiv dosyasi", "H1", m_h1o),
+        ("M-H1s beyansiz ekleme (--siki)", "H1", m_h1s),
     ]
     print("=== ISIRMA KANITI (kor kapi protokolu) ===")
     print("temiz surum: YESIL ✓ (yanlis-pozitif yok)\n")
     kacan = []
     for ad, kapi, fn in sinamalar:
         try:
-            ok, k, c = mutant(ad, kapi, fn)
+            ok, k, c = mutant(ad, kapi, fn, _h1_parca.get(ad), **_h1_secenek.get(ad, {}))
         except MutantKurulamadi as e:
             # TESTIN kendi hatasi — kapi hukmu DEGIL. Ayri raporlanir (Fable Bulgu 3).
             kurulamayan.append((ad, kapi, str(e)))

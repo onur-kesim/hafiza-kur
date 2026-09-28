@@ -23,7 +23,7 @@ NE OLCER — DORT KOL
   KOL 1 (POZITIF KONTROL) — git'SIZ proje: kur->not->derle->isir -> exit 0,
       ciktida 'UYGULANMAZ' satiri VAR (M-H12g/M-H14g), SINANMADI sayisi bu iki
       kolu ICERMEZ (0).
-  KOL 2 (GIT'Li KORUNUR) — AYNI akis git'Li bir projede -> 38/38 exit 0,
+  KOL 2 (GIT'Li KORUNUR) — AYNI akis git'Li bir projede -> 43/43 exit 0,
       M-H12g VE M-H14g ISIRDI.
   KOL 3 (SINANMADI KORUNUR) — git VAR (`.git` dizin olarak MEVCUT) ama GERCEK
       BIR DEPO DEGIL (bos dizin, ne HEAD ne objects/refs) -> `_git_kokte_mi`
@@ -173,8 +173,8 @@ def main():
         if k2 != 0:
             bulgu.append("KOL 2: isir exit %d (0 bekleniyordu)" % k2)
         m = _KOSULAN_ORAN.search(c2)
-        if not m or m.group(1) != "38" or m.group(2) != "38":
-            bulgu.append("KOL 2: '38/38 kosulan mutant' degil (%s)" % (m.group(0) if m else "YOK"))
+        if not m or m.group(1) != "43" or m.group(2) != "43":
+            bulgu.append("KOL 2: '43/43 kosulan mutant' degil (%s)" % (m.group(0) if m else "YOK"))
         if not _ISIRDI_H12G.search(c2):
             bulgu.append("KOL 2: M-H12g ISIRDI degil")
         if not _ISIRDI_H14G.search(c2):
