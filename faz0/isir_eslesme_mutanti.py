@@ -10,22 +10,37 @@ NEDEN VAR (olculdu: Cowork 28 Eyl, motor 559E830A; faz0/sabotaj.py)
   Duzeltme (Onur kilidi 28 Eyl: Soru 1 = A+B, Soru 2 = opsiyonel `siki`):
     A  `mutant()`/`mutant_git()` eslesmesi TAM etiket (onek dali kalkti)
     B  H1'in YEDI mutanti kendi EKSEN cumlesinden bir parca da ister (parca
-       sozlugu `cmd_isir` icinde TEK yerde: `_h1_parca`)
+       sozlugu `cmd_isir` icinde TEK yerde; H11 turunda (IS_EMRI_H11_ISIR.md,
+       28 Eyl 2026) adi `_eksen_parca` oldu ve H11'in ON BIR mutantini da tasir)
     C  `_kapi_metni(kok, siki=False)`; yalniz eksen-6 mutanti (M-H1s) `siki=True`
   Bu betik uc duzeltmenin HER BIRINI ayri kolla olcer (her duzeltmeye AYRI mutant).
 
 NE OLCER
   KOL O  STATIK OZ SINAMA (motor KOSULMAZ, ast.literal_eval ile okunur):
-         (i)  `_h1_parca`nin her parcasi motordaki fail() cagrilarinin KAYNAK
-              metinlerinden TAM BIRINE uyar (0 ya da 2+ = KIRMIZI) ve o cagri
-              mutantin HEDEF ekseninin H1 fail()'idir. Eksen <-> fail() baglantisi
+         (i)  `_eksen_parca`nin her parcasi motordaki fail() SABLONLARINDAN TAM
+              BIRINE uyar (0 ya da 2+ = KIRMIZI) ve o cagri mutantin HEDEF
+              ekseninin fail()'idir. H1: eksen <-> fail() baglantisi
               faz0/h1_kapsam_mutanti.py'nin OLCULMUS eslemesinden alinir
-              (`_h1_hedefleri`), burada yeniden yazilmaz.
-         (ii) `sinamalar`da etiketi H1 olan her mutantin parcasi VAR, her parca
-              anahtari bir `sinamalar` adidir; parcalar H1'in ALTI fail()'ini de
-              orter; `siki` secenegi YALNIZ M-H1s'e verilmistir.
+              (`_h1_hedefleri`). H11: hedef, fail()'in KONUMUDUR — durdugu H11
+              alt-fonksiyonu ve o fonksiyondaki SIRASI (`H11_HEDEF`); parca
+              metninden bagimsizdir.
+              SABLON ESLEMESI (IS_EMRI_H11_ISIR.md EK-1 a): fail()'in ikinci
+              argumani AST'ten sablona cevrilir (sabit metin · `%` bicimi ·
+              `+` birlesimi · f-string · kosullu ifade -> iki sablon; baska her
+              ifade TEK yer tutucu). Parca, sablonun bir CIKTISININ alt dizesi
+              olabiliyorsa ve sablonun EN AZ BIR sabit karakterini iceriyorsa
+              "uyar". Yer tutucu TEK SOZCUKTUR (bosluksuz; %d ailesi rakam).
+              Gerekce (olculdu 28 Eyl): lafzi `.+?` ile "yerine-gecen 9999 yok"
+              parcasi `%s: yerini-aldigi %s yok` sablonuna da uyar (ikinci %s
+              = "yerine-gecen 9999") — oysa o %s isdigit()'ten gecmis bir
+              sayidir; H11'in %s degerleri dosya adi ([a-z0-9-]+.md) ve sayidir.
+         (ii) `sinamalar`da etiketi H1 ya da H11 olan her mutantin parcasi VAR,
+              her parca anahtari bir `sinamalar` adidir; parcalar H1'in ALTI ve
+              H11'in ON BIR fail()'ini de orter; `siki` secenegi YALNIZ M-H1s'e
+              verilmistir.
   KOL 0  NEGATIF KONTROL: temiz motor, kur+not+derle sablonu -> `isir` exit 0 ve
-         H1'in yedi mutanti ISIRDI. Bu tutmazsa asagidaki kollar HICBIR SEY olcmez.
+         H1'in yedi, H11'in on bir mutanti ISIRDI. Bu tutmazsa asagidaki kollar
+         HICBIR SEY olcmez.
   KOL a  POZITIF KONTROL (maskeleme URETILIR): motor kopyasinda "satir KAYIP"
          fail()'i sabote edilir (sabotaj.py'nin KENDI fail_cagrilari/sabote_et'i;
          cagri METNINDEN bulunur, satir numarasindan DEGIL) VE eski kural geri
@@ -43,9 +58,14 @@ NE OLCER
 NE OLCMEZ
   1. `mutant_git`teki onek dalinin kalkmasi: motorda tireli tek etiket H1-KOVA'dir
      ve `mutant_git` yalniz H12/H14 git kollarini sinar -> gozlenebilir fark YOK.
-  2. Yeni eksen mutantlarinin (M-H1d/g/y/o/s) KOSEGENI: onu faz0/sabotaj.py
-     (bayraksiz, `isir ile` sutunu) olcer; bu betik yalniz eslesme KURALINI olcer.
+  2. Yeni eksen mutantlarinin (M-H1d/g/y/o/s, M-H11t/v/ys/yy/tk/yd/as/ay/lo/ly)
+     KOSEGENI: onu faz0/sabotaj.py (bayraksiz, `isir ile` sutunu) olcer; bu betik
+     yalniz eslesme KURALINI ve parca tablosunu olcer.
   3. H1-KOVA fail()'lerinin kapsami (bu turun disi).
+  4. Mesaji TUMUYLE bir degiskenden gelen fail() (ör. `fail("H0", h)`): sabit
+     karakteri yoktur, hicbir parca ona "uyamaz" — KOL O onu GOREMEZ. Bosluk
+     iceren yer tutucu degerleri (serbest metin) de modellenmez (yukaridaki
+     gerekce); parca o metne denk gelirse KOL O bunu yakalamaz.
 
 CIKIS KODLARI
   0  KOL O temiz, KOL 0 temiz, a/a1/a2/b/c beklendigi gibi
@@ -88,6 +108,17 @@ CIZGI = "-" * 78
 # 4 okunamayan arsiv · 5 satir KAYIP · 6 beyansiz ekleme).
 HEDEF_EKSEN = {"M-H1": 5, "M-H1b": 5, "M-H1d": 1, "M-H1g": 2,
                "M-H1y": 3, "M-H1o": 4, "M-H1s": 6}
+# H11 turu (besli-paket/IS_EMRI_H11_ISIR.md, 28 Eyl 2026): mutant kimligi -> hedef
+# fail()'in KONUMU = (durdugu H11 alt-fonksiyonu, o fonksiyondaki H11 fail() SIRASI,
+# 1'den). Motorun H11 ALT-BOLMESI (FAZ C) yorumundaki dort parca; parca METNINDEN
+# bagimsizdir — kapi govdesinde bir fail() yer degistirirse KOL O KIRMIZI yanar.
+H11_HEDEF = {"M-H11t": ("_h11_numara", 1), "M-H11": ("_h11_numara", 2),
+             "M-H11v": ("_h11_govde", 1),
+             "M-H11ys": ("_h11_baglanti", 1), "M-H11yy": ("_h11_baglanti", 2),
+             "M-H11tk": ("_h11_baglanti", 3), "M-H11yd": ("_h11_baglanti", 4),
+             "M-H11as": ("_h11_baglanti", 5), "M-H11ay": ("_h11_baglanti", 6),
+             "M-H11lo": ("_h11_canli_link", 1), "M-H11ly": ("_h11_canli_link", 2)}
+TABLO = "_eksen_parca"           # cmd_isir icindeki TEK parca tablosunun adi
 SIKI_KIMLIK = "M-H1s"
 SABOTAJ_KIMLIK = "M-H1"          # sabote edilen fail(): bu mutantin parcasiyla bulunur
 
@@ -149,11 +180,11 @@ def motor_tablolari(kaynak):
         raise Olculemedi("motor ayristirilamadi: %s" % e)
     fn = _cmd_isir(agac)
     try:
-        parca = ast.literal_eval(_atama(fn, "_h1_parca"))
+        parca = ast.literal_eval(_atama(fn, TABLO))
     except ValueError as e:
-        raise Olculemedi("`_h1_parca` bir sozluk LITERALI degil: %s" % e)
+        raise Olculemedi("`%s` bir sozluk LITERALI degil: %s" % (TABLO, e))
     if not isinstance(parca, dict) or not parca:
-        raise Olculemedi("`_h1_parca` bos ya da sozluk degil")
+        raise Olculemedi("`%s` bos ya da sozluk degil" % TABLO)
     sin = _atama(fn, "sinamalar")
     if not isinstance(sin, ast.List):
         raise Olculemedi("`sinamalar` bir liste literali degil")
@@ -182,51 +213,159 @@ def kimlik(ad):
     return ad.split()[0]
 
 
+# ======================================================== SABLON ESLEMESI
+# EK-1 a (besli-paket/IS_EMRI_H11_ISIR.md, 28 Eyl 2026): parca fail()'in KAYNAK
+# metninde birebir ARANMAZ — `%s yok` gibi cumleler kaynakta parcanin kendisini
+# tasimaz. fail()'in ikinci argumani AST'ten SABLONA cevrilir; sablon bir birim
+# listesidir: ("C", karakter) sabit karakter · ("P", sinif) yer tutucu (en az 1
+# karakter; sinif None = TEK SOZCUK, yani bosluksuz). Kosullu ifade iki sablon
+# verir; cagri sablonlarindan HERHANGI birine uyuyorsa parca o fail()'e uyar.
+_BICIM = re.compile(r"%(?:\(\w+\))?[-#0 +]*(?:\d+|\*)?(?:\.(?:\d+|\*))?([a-zA-Z%])")
+_RAKAM = "0123456789-"
+
+
+def _yer_tutucu_sinifi(tur):
+    """printf tur harfi -> yer tutucunun karakter sinifi (None = tek sozcuk)."""
+    if tur in "diu":
+        return _RAKAM
+    if tur in "eEfFgG":
+        return _RAKAM + ".eE+"
+    if tur in "xX":
+        return "0123456789abcdefABCDEF"
+    return None
+
+
+def _printf(metin):
+    out, i = [], 0
+    for m in _BICIM.finditer(metin):
+        out.extend(("C", ch) for ch in metin[i:m.start()])
+        out.append(("C", "%") if m.group(1) == "%" else ("P", _yer_tutucu_sinifi(m.group(1))))
+        i = m.end()
+    out.extend(("C", ch) for ch in metin[i:])
+    return out
+
+
+def _sablonlar(d):
+    """fail() ikinci argumani (AST) -> olasi sablonlar. Sabit metin literal kalir
+    (`%` uygulanmadiysa `%s` de duz metindir); `%` bicimi printf; `+` uc uca;
+    f-string sabit parca + yer tutucu; kosullu ifade iki kol; geri kalan her ifade
+    TEK yer tutucudur."""
+    yer = [[("P", None)]]
+    if isinstance(d, ast.Constant) and isinstance(d.value, str):
+        return [[("C", ch) for ch in d.value]]
+    if isinstance(d, ast.BinOp) and isinstance(d.op, ast.Mod):
+        sol = _sablonlar(d.left)
+        if all(t == "C" for s in sol for t, _ in s):
+            return [_printf("".join(ch for _, ch in s)) for s in sol]
+        return yer
+    if isinstance(d, ast.BinOp) and isinstance(d.op, ast.Add):
+        return [a + b for a in _sablonlar(d.left) for b in _sablonlar(d.right)]
+    if isinstance(d, ast.IfExp):
+        return _sablonlar(d.body) + _sablonlar(d.orelse)
+    if isinstance(d, ast.JoinedStr):
+        out = [[]]
+        for v in d.values:
+            ek = _sablonlar(v) if isinstance(v, ast.Constant) else yer
+            out = [a + b for a in out for b in ek]
+        return out
+    return yer
+
+
+def _uyar(parca, sablon):
+    """`parca`, `sablon`un bir ciktisinin ALT DIZESI olabiliyor mu — ve en az bir
+    SABIT karakteri kapsayarak mi? (Yalniz yer tutucunun icine dusen parca "uymaz":
+    aksi halde her parca her `%s`li cumleye uyardi.) Durum: (birim, yer tutucuda
+    en az 1 karakter yendi, sabit karakter yendi)."""
+    n = len(sablon)
+    durum = {(k, False, False) for k in range(n)}     # parca HERHANGI bir birimde baslar
+    for ch in parca:
+        yeni = set()
+        for k, ici, sabit in durum:
+            if k >= n:
+                continue
+            tur, deger = sablon[k]
+            if tur == "C":
+                if ch == deger:
+                    yeni.add((k + 1, False, True))
+            elif (not ch.isspace()) if deger is None else (ch in deger):
+                yeni.add((k, True, sabit))
+        yeni |= {(k + 1, False, sabit) for k, ici, sabit in yeni if ici}
+        durum = yeni
+        if not durum:
+            return False
+    return any(sabit for _, _, sabit in durum)
+
+
+def cagri_sablonlari(kaynak):
+    """sabotaj.fail_cagrilari SIRASIYLA: [(cagri, sablonlar, ust fonksiyon adi)]."""
+    import sabotaj                         # faz0/ sys.path[0]'dadir
+    agac = ast.parse(kaynak)
+    dugum = {(d.lineno, d.col_offset): d for d in ast.walk(agac)
+             if isinstance(d, ast.Call) and isinstance(d.func, ast.Name) and d.func.id == "fail"}
+    ust = [(f.lineno, f.end_lineno, f.name) for f in agac.body
+           if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    out = []
+    for h in sabotaj.fail_cagrilari(kaynak):
+        d = dugum[(h["lineno"], h["col"])]
+        sab = _sablonlar(d.args[1]) if len(d.args) > 1 else [[("P", None)]]
+        fn = next((ad for b, s, ad in ust if b <= h["lineno"] <= s), None)
+        out.append((h, sab, fn))
+    return out
+
+
+def uyan_cagrilar(parca, cs):
+    return [h for h, sab, _ in cs if any(_uyar(parca, s) for s in sab)]
+
+
+def _tanim(uyan):
+    t = ", ".join("#%02d sat %d [%s]" % (h["no"], h["lineno"], h["kapi"]) for h in uyan[:4])
+    return t + (" ... +%d" % (len(uyan) - 4) if len(uyan) > 4 else "")
+
+
 # ================================================================== KOL O
 def kol_o(kaynak):
     """Doner: (bulgular, sabote edilecek fail() hedefi, parca sozlugu)."""
-    import sabotaj                         # faz0/ sys.path[0]'dadir
     import h1_kapsam_mutanti
     parca, sinamalar, siki_adlar = motor_tablolari(kaynak)
-    adlar = [a for a, _ in sinamalar]
-    L = kaynak.split("\n")
-    cagrilar = sabotaj.fail_cagrilari(kaynak)
+    kapisi = dict(sinamalar)
+    cs = cagri_sablonlari(kaynak)
+    cagrilar = [h for h, _, _ in cs]
     try:
         hedefler, _ = h1_kapsam_mutanti._h1_hedefleri(kaynak)
     except h1_kapsam_mutanti.Olculemedi as e:
         raise Olculemedi("H1 eksen eslemesi kurulamadi: %s" % e)
     b = []
+    h1_parca = {a: p for a, p in parca.items() if kapisi.get(a) == "H1"}
+    h11_parca = {a: p for a, p in parca.items() if kapisi.get(a) == "H11"}
     print("  motordaki fail() sayisi: %d · H1 fail(): %d · parca: %d"
-          % (len(cagrilar), sum(1 for h in cagrilar if h["kapi"] == "H1"), len(parca)))
-    h1_mutantlari = [a for a, k in sinamalar if k == "H1"]
-    for a in h1_mutantlari:
-        if a not in parca:
-            b.append("etiketi H1 olan `%s` mutantinin PARCASI YOK" % a)
+          % (len(cagrilar), sum(1 for h in cagrilar if h["kapi"] == "H1"), len(h1_parca)))
+    for kapi in ("H1", "H11"):
+        for a in [a for a, k in sinamalar if k == kapi]:
+            if a not in parca:
+                b.append("etiketi %s olan `%s` mutantinin PARCASI YOK" % (kapi, a))
     for a in parca:
-        if a not in adlar:
+        if a not in kapisi:
             b.append("parca anahtari `%s` hicbir `sinamalar` adi DEGIL (sessizce "
                      "uygulanmaz)" % a)
+        elif kapisi[a] not in ("H1", "H11"):
+            b.append("`%s` [%s]: bu betik o kapinin eksen eslemesini TANIMIYOR" % (a, kapisi[a]))
     ortulen = set()
     sabotaj_hedefi = None
-    for a, p in sorted(parca.items(), key=lambda x: kimlik(x[0])):
-        uyan = [h for h in cagrilar
-                if p in "\n".join(L[h["lineno"] - 1:h["end_lineno"]])]
+    for a, p in sorted(h1_parca.items(), key=lambda x: kimlik(x[0])):
+        uyan = uyan_cagrilar(p, cs)
         eksen = HEDEF_EKSEN.get(kimlik(a))
         if eksen is None:
             b.append("`%s`: hedef ekseni bu betikte TANIMSIZ" % a)
             continue
         hedef = hedefler[eksen]
-        tanim = ", ".join("#%02d sat %d [%s]" % (h["no"], h["lineno"], h["kapi"]) for h in uyan[:4])
-        if len(uyan) > 4:
-            tanim += " ... +%d" % (len(uyan) - 4)
         if len(uyan) != 1:
             b.append("`%s` parcasi %d fail()'e uyuyor (TAM 1 olmali): %r -> %s"
-                     % (kimlik(a), len(uyan), p, tanim or "-"))
+                     % (kimlik(a), len(uyan), p, _tanim(uyan) or "-"))
             continue
         h = uyan[0]
         if h["kapi"] != "H1" or h["lineno"] != hedef["lineno"]:
             b.append("`%s` parcasi YANLIS fail()'e uyuyor: %s (hedef eksen %d = #%02d sat %d)"
-                     % (kimlik(a), tanim, eksen, hedef["no"], hedef["lineno"]))
+                     % (kimlik(a), _tanim(uyan), eksen, hedef["no"], hedef["lineno"]))
             continue
         ortulen.add(h["lineno"])
         if kimlik(a) == SABOTAJ_KIMLIK:
@@ -237,6 +376,41 @@ def kol_o(kaynak):
     if ortulen != h1_hepsi:
         b.append("parcalar H1'in alti fail()'ini ORTMUYOR: eksik satirlar %s"
                  % sorted(h1_hepsi - ortulen))
+
+    # ---- H11 (IS_EMRI_H11_ISIR.md): hedef = fail()'in KONUMU (fonksiyon, sira)
+    konum, sira = {}, {}
+    for h, _, fn in cs:
+        if h["kapi"] == "H11":
+            sira[fn] = sira.get(fn, 0) + 1
+            konum[(fn, sira[fn])] = h
+    print("  H11 fail(): %d · parca: %d (tablo toplami %d)"
+          % (len(konum), len(h11_parca), len(parca)))
+    if sorted(konum) != sorted(H11_HEDEF.values()):
+        b.append("H11 fail() KONUMLARI beklenen (fonksiyon, sira) kumesi DEGIL: motorda %s"
+                 % sorted(konum))
+    ortulen11 = set()
+    for a, p in sorted(h11_parca.items(), key=lambda x: kimlik(x[0])):
+        hk = H11_HEDEF.get(kimlik(a))
+        if hk is None:
+            b.append("`%s`: hedef ekseni bu betikte TANIMSIZ" % a)
+            continue
+        uyan = uyan_cagrilar(p, cs)
+        if len(uyan) != 1:
+            b.append("`%s` parcasi %d fail()'e uyuyor (TAM 1 olmali): %r -> %s"
+                     % (kimlik(a), len(uyan), p, _tanim(uyan) or "-"))
+            continue
+        h, hedef = uyan[0], konum.get(hk)
+        if hedef is None or h["lineno"] != hedef["lineno"]:
+            b.append("`%s` parcasi YANLIS fail()'e uyuyor: %s (hedef %s/%d)"
+                     % (kimlik(a), _tanim(uyan), hk[0], hk[1]))
+            continue
+        ortulen11.add(h["lineno"])
+        print("  %-7s %-17s -> #%02d sat %-5d TAM 1 fail() : %r"
+              % (kimlik(a), "%s/%d" % hk, h["no"], h["lineno"], p))
+    h11_hepsi = set(h["lineno"] for h in konum.values())
+    if ortulen11 != h11_hepsi:
+        b.append("parcalar H11'in %d fail()'ini ORTMUYOR: eksik satirlar %s"
+                 % (len(h11_hepsi), sorted(h11_hepsi - ortulen11)))
     if [kimlik(a) for a in siki_adlar] != [SIKI_KIMLIK]:
         b.append("`siki=True` alan mutantlar %s (YALNIZ %s olmali)"
                  % ([kimlik(a) for a in siki_adlar], SIKI_KIMLIK))
@@ -393,8 +567,9 @@ def main():
 
     kirmizi, olculemeyen = 0, 0
     beklenen = {
-        "KOL 0": ("H1'in yedi mutanti ISIRDI, exit 0",
-                  lambda k, h: k == 0 and all(h.get(x) == "ISIRDI" for x in HEDEF_EKSEN)),
+        "KOL 0": ("H1'in yedi ve H11'in on bir mutanti ISIRDI, exit 0",
+                  lambda k, h: k == 0 and all(h.get(x) == "ISIRDI"
+                                              for x in list(HEDEF_EKSEN) + list(H11_HEDEF))),
         "KOL a": ("M-H1 ISIRDI (maskeleme URETILDI)",
                   lambda k, h: h.get("M-H1") == "ISIRDI"),
         "KOL a1": ("M-H1 ve M-H1b KACTI (B tek basina yeter)",
@@ -419,6 +594,8 @@ def main():
         tamam = olcut(k, h)
         print("  %-6s %-46s -> %s" % (ad, aciklama, "BEKLENDIGI GIBI" if tamam else "BEKLENMEDIK"))
         print("         isir exit %d · %s" % (k, ozet))
+        if ad == "KOL 0":
+            print("         H11: %s" % " ".join("%s=%s" % (x, h.get(x, "-")) for x in sorted(H11_HEDEF)))
         print("         beklenen: %s" % tanim)
         if ad == "KOL c" and tamam:
             print("         OLCULDU: M-H1s `siki`siz -> %s" % h.get("M-H1s"))

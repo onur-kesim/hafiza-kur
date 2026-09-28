@@ -268,7 +268,7 @@ git kolu için **M-H14b** mutant kopyada kendi deposunu kurar.
 
 | Ölçüm | Sonuç |
 |---|---|
-| Isırma kanıtı (`isir`) | **43/43 ısırıyor** (`derle` koşulmuş projede) · taze `kur` projesinde 41/41 + 2 KURULAMADI |
+| Isırma kanıtı (`isir`) | **53/53 ısırıyor** (`derle` koşulmuş projede) · taze `kur` projesinde 51/51 + 2 KURULAMADI |
 | Sabotaj sınaması | 10 yeni sınamanın 10'u da korumasız hâlde **KAÇTI/KALDI** verdi |
 | Ham traceback avı | **2 330 senaryo · 0 traceback · 0 çökme · 0 asılma** |
 | Senaryo kanıtları (`t_y42.py`) | **57 geçti · 0 kaldı · 1 ölçülemedi** (root olarak koşulduğu için) — toplam 58 |
@@ -333,7 +333,7 @@ değildir. Aynı sınıf: bir kanalı `DEVNULL`'a atan test o kanaldaki sınıf�
 kodun sözleşmesini belgeye yazdım ve kodda kurmadım; belge iki tur boyunca doğru
 sanıldı. Yazdığın her sözleşme maddesi için bir senaryo yaz — yoksa madde bir dilek olur.
 
-**Altıncı kural:** mutant sayısı **bağlamsız beyan edilmez**. "43/43 ısırıyor" yalnız
+**Altıncı kural:** mutant sayısı **bağlamsız beyan edilmez**. "53/53 ısırıyor" yalnız
 `derle` koşulmuş projede doğrudur; taze `kur` projesinde iki mutantın ön-koşulu yoktur
-ve sonuç `41/41 + 2 KURULAMADI`'dır. İkisi de sağlıklıdır — ama hangisinin ölçüldüğü
+ve sonuç `51/51 + 2 KURULAMADI`'dır. İkisi de sağlıklıdır — ama hangisinin ölçüldüğü
 yazılmadan sayı bir iddiadır, ölçüm değil.

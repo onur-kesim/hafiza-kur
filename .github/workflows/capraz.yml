@@ -1375,7 +1375,7 @@ jobs:
   # ---------------------------------------------------------------------------
   # README KANIT BLOGU KAPISI — BITTI maddesi 5.
   #     Okurun yapacagi sey README'nin "Kanitini kendin kos" blogudur ve o blok
-  #     SAYISAL BEYAN tasir (41/41 + 2 SINANMADI exit 2 · 43/43 exit 0). Bu
+  #     SAYISAL BEYAN tasir (51/51 + 2 SINANMADI exit 2 · 53/53 exit 0). Bu
   #     beyanlari hicbir kapi olcmuyordu; ikincisi (`derle` sonrasi isir=0)
   #     DURUM.md'nin "olculmuyor" dedigi boslugun ta kendisiydi.
   #
@@ -2677,6 +2677,9 @@ jobs:
   #     kural geri + satir KAYIP sabote -> M-H1 ISIRDI, maskeleme URETILIR) ·
   #     KOL a1/a2 A ve B ayri ayri yeter · KOL b yeni kural -> M-H1/M-H1b KACTI ·
   #     KOL c `siki` kaldirilinca M-H1s KACTI/KURULAMADI (parametre CANLI).
+  #     H11 turu (IS_EMRI_H11_ISIR.md, 28 Eylul 2026): parca tablosu tek (`_eksen_parca`,
+  #     H1 7 + H11 11); KOL O fail() SABLONUNA gore eslestirir ve H11'in 11 fail()'ini
+  #     de orter; KOL 0 H11'in on bir mutantinin ISIRDIGINI da ister. Yeni is YOK.
   #     KAPI sinifi: uc platform, `continue-on-error` YOK, exit-2 muafiyeti YOK.
   # ---------------------------------------------------------------------------
   isir_eslesme_mutanti:

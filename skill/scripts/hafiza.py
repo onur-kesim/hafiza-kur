@@ -6196,12 +6196,116 @@ def cmd_isir(a):
             raise MutantKurulamadi("temiz kopya --siki altinda eksen-6 cumlesi ZATEN basiliyor")
         _canli_sonuna_yaz(h, "- isir M-H1s: beyansiz eklenen satir")
 
-    # KALEM 2: H1 ailesinin YEDI mutanti etiketle YETINMEZ, kendi EKSEN cumlesinden
-    # bir parca da ister (Onur kilidi: A+B). Parcalar H1 fail() cumlelerinden BIREBIR
-    # alindi; her biri motordaki fail() cagrilarindan TAM BIRINE uyar. Oz sinama
+    # ---- ISIR: H11 EKSEN MUTANTLARI (besli-paket/IS_EMRI_H11_ISIR.md, 28 Eyl 2026)
+    # Olculdu (faz0/sabotaj.py bayraksiz, motor 635FF6E3): H11'in 11 fail()'inden
+    # YALNIZ numara boslugu KAPSAMLIYDI. Hepsi ayni etiketi basar; ayrisma ANCAK eksen
+    # parcasiyla olur (SIK B kalibi, yeni tasarim yok). Her mutant YALNIZ kendi eksenini
+    # kurar: yeni karar numaralari projenin H11'e gorunen EN BUYUK numarasinin hemen
+    # ARDINDAN gelir (bosluk dogmaz), mevcut kararlara dokunulmaz (B-3 dersi: sabit
+    # numara projedeki boslugu doldurup SAHTE KAPI KOR uretmisti). Var olmayan hedef
+    # SABIT 9999'dur ki parca sabit kalsin; projede 9999 VARSA -> KURULAMADI.
+    # KACINILMAZ ORTUSME (beyan): numara TEKRARI siralamada 1..n dizisini her zaman
+    # kirar, yani M-H11t numara BOSLUGUNU da basar; eslesme parcayla oldugu icin
+    # kosegen ayrisir (sabotaj.py ile olculur).
+    _H11_YOK = 9999
+
+    def _h11_yeni(h, adet, yok_sart=False):
+        """(kararlar dizini, ardisik `adet` yeni numara). Numara kumesi `adr_listesi`
+        ile AYNI ad desenidir (H11'in gordugu kume). 4 hane asilamaz; `yok_sart`
+        verilirse 9999 hem projede OLMAMALI hem de yeni numaralara girmemeli."""
+        d = os.path.join(h, "kararlar")
+        nolar = set()
+        for f in (os.listdir(d) if os.path.isdir(d) else []):
+            m0 = ADR_AD.match(f)
+            if m0:
+                nolar.add(int(m0.group(1)))
+        if yok_sart and _H11_YOK in nolar:
+            raise MutantKurulamadi("projede %04d numarali karar ZATEN VAR" % _H11_YOK)
+        bas = max(nolar, default=0) + 1
+        yeni = list(range(bas, bas + adet))
+        if yeni[-1] > _H11_YOK - int(yok_sart):
+            raise MutantKurulamadi("yeni karar numarasi %04d siniri asiyor" % (_H11_YOK - int(yok_sart)))
+        os.makedirs(d, exist_ok=True)
+        return d, yeni
+
+    def _h11_karar(d, no, ek, durum="onerildi", yerini="-", yerine="-"):
+        """Yeni karar dosyasi; `konu` hicbir canli bloga denk gelmez (H12 yan bulgusu
+        dogmasin), govde kisa (yalniz 'kabul' durumunda olculur)."""
+        ad = "%04d-isir-%s.md" % (no, ek)
+        yaz(os.path.join(d, ad),
+            "---\nno: %04d\nbaslik: isir %s\ndurum: %s\ntarih: %s\nkonu: isir-mutant\n"
+            "yerini-aldigi: %s\nyerine-gecen: %s\n---\n\ngovde\n"
+            % (no, ek, durum, bugun(), yerini, yerine))
+        return ad
+
+    def m_h11t(h):
+        """M-H11t — eksen 'numara TEKRARI': ayni yeni numarayla IKI karar dosyasi."""
+        d, (a,) = _h11_yeni(h, 1)
+        _h11_karar(d, a, "m-h11t-bir")
+        _h11_karar(d, a, "m-h11t-iki")
+
+    def m_h11v(h):
+        """M-H11v — eksen 'kabul ama govde bos': durum kabul, govde 200 karakterden kisa."""
+        d, (a,) = _h11_yeni(h, 1)
+        _h11_karar(d, a, "m-h11v", durum="kabul")
+
+    def m_h11ys(h):
+        """M-H11ys — eksen 'yerine-gecen sayi degil'. Durum yerine-gecildi: 'dolu ama
+        durum' ekseni BASILMASIN."""
+        d, (a,) = _h11_yeni(h, 1)
+        _h11_karar(d, a, "m-h11ys", durum="yerine-gecildi", yerine="isir-sayi-degil")
+
+    def m_h11yy(h):
+        """M-H11yy — eksen 'yerine-gecen yok': hedef SABIT 9999 (projede yok)."""
+        d, (a,) = _h11_yeni(h, 1, yok_sart=True)
+        _h11_karar(d, a, "m-h11yy", durum="yerine-gecildi", yerine="%04d" % _H11_YOK)
+
+    def m_h11tk(h):
+        """M-H11tk — eksen 'TEK YONLU': a -> b yerine-gecme, b geri BAGLAMAZ."""
+        d, (a, b) = _h11_yeni(h, 2)
+        _h11_karar(d, a, "m-h11tk-eski", durum="yerine-gecildi", yerine="%04d" % b)
+        _h11_karar(d, b, "m-h11tk-yeni")
+
+    def m_h11yd(h):
+        """M-H11yd — eksen 'dolu ama durum': cift yonlu DOGRU baglanti, ama eski
+        kararin durumu 'yerine-gecildi' DEGIL."""
+        d, (a, b) = _h11_yeni(h, 2)
+        _h11_karar(d, a, "m-h11yd-eski", yerine="%04d" % b)
+        _h11_karar(d, b, "m-h11yd-yeni", yerini="%04d" % a)
+
+    def m_h11as(h):
+        """M-H11as — eksen 'yerini-aldigi sayi degil'."""
+        d, (a,) = _h11_yeni(h, 1)
+        _h11_karar(d, a, "m-h11as", yerini="isir-sayi-degil")
+
+    def m_h11ay(h):
+        """M-H11ay — eksen 'yerini-aldigi yok': hedef SABIT 9999 (projede yok)."""
+        d, (a,) = _h11_yeni(h, 1, yok_sart=True)
+        _h11_karar(d, a, "m-h11ay", yerini="%04d" % _H11_YOK)
+
+    def m_h11lo(h):
+        """M-H11lo — eksen 'olmayan karara link': canli 9999'a link verir. Temiz bir
+        karar da eklenir: kararsiz projede H11 canli linke HIC bakmaz (yoksa sahte
+        KACTI). Satir ters tirnak / markdown link DEGIL -> olu baglanti adayi olmaz."""
+        d, (a,) = _h11_yeni(h, 1, yok_sart=True)
+        _h11_karar(d, a, "m-h11lo")
+        _canli_sonuna_yaz(h, "- isir M-H11lo: kararlar/%04d-isir-yok.md" % _H11_YOK)
+
+    def m_h11ly(h):
+        """M-H11ly — eksen 'yerine gecilmis karara link': cift yonlu DOGRU yerine-gecme,
+        canli ESKI karara link verir."""
+        d, (a, b) = _h11_yeni(h, 2)
+        eski = _h11_karar(d, a, "m-h11ly-eski", durum="yerine-gecildi", yerine="%04d" % b)
+        _h11_karar(d, b, "m-h11ly-yeni", yerini="%04d" % a)
+        _canli_sonuna_yaz(h, "- isir M-H11ly: kararlar/" + eski)
+
+    # KALEM 2 (SIK B) + H11 turu: eksen parcasi isteyen mutantlarin TEK tablosu (kapi
+    # fark etmez). Mutant etiketle YETINMEZ, kendi EKSEN cumlesinden bir parca da ister.
+    # Parcalar fail() cumlelerinden alindi (var olmayan hedefte sabit 9999 dahil); her
+    # biri motordaki fail() SABLONLARINDAN TAM BIRINE uyar. Oz sinama
     # faz0/isir_eslesme_mutanti.py'dedir ve bu sozlugu AST ile okur: tablo TEK yerde
     # durur, anahtarlar asagidaki `sinamalar` adlaridir.
-    _h1_parca = {
+    _eksen_parca = {
         "M-H1  butunluk (canli satir silindi)": "satir KAYIP (snapshot'ta var, hicbir ciktida yok)",
         "M-H1b baseline-SONRASI blok silindi": "satir KAYIP (snapshot'ta var, hicbir ciktida yok)",
         "M-H1d sahte duzeltme beyani": "beyan edilen DUZELTME kaynagi snapshot'ta YOK",
@@ -6209,6 +6313,17 @@ def cmd_isir(a):
         "M-H1y YENI beyani snapshot'ta zaten var": "ZATEN VAR (kayip maskeleme suphesi)",
         "M-H1o okunamayan arsiv dosyasi": "arsiv dosyasi OKUNAMADI",
         "M-H1s beyansiz ekleme (--siki)": "satir BEYANSIZ EKLENMIS (--siki)",
+        "M-H11 karar butunlugu (numara boslugu)": "ADR numara BOSLUGU",
+        "M-H11t numara TEKRARI (ayni no iki dosya)": "ADR numarasi TEKRAR ediyor",
+        "M-H11v kabul ama govde bos": "durum 'kabul' ama govde neredeyse bos",
+        "M-H11ys yerine-gecen SAYI DEGIL": "yerine-gecen SAYI DEGIL",
+        "M-H11yy yerine-gecen 9999 yok": "yerine-gecen 9999 yok",
+        "M-H11tk yerine-gecme TEK YONLU": "yerine-gecme baglantisi TEK YONLU",
+        "M-H11yd yerine-gecen dolu, durum yanlis": "yerine-gecen dolu ama durum",
+        "M-H11as yerini-aldigi SAYI DEGIL": "yerini-aldigi SAYI DEGIL",
+        "M-H11ay yerini-aldigi 9999 yok": "yerini-aldigi 9999 yok",
+        "M-H11lo canli link: olmayan karar": "canli hafiza olmayan bir karara link veriyor",
+        "M-H11ly canli link: yerine gecilmis karar": "canli hafiza YERINE GECILMIS karara link veriyor",
     }
     # KALEM 3: `--siki` YALNIZ eksen-6 mutantina verilir; digerleri varsayilanla kosar.
     _h1_secenek = {"M-H1s beyansiz ekleme (--siki)": dict(siki=True)}
@@ -6250,13 +6365,23 @@ def cmd_isir(a):
         ("M-H1y YENI beyani snapshot'ta zaten var", "H1", m_h1y),
         ("M-H1o okunamayan arsiv dosyasi", "H1", m_h1o),
         ("M-H1s beyansiz ekleme (--siki)", "H1", m_h1s),
+        ("M-H11t numara TEKRARI (ayni no iki dosya)", "H11", m_h11t),
+        ("M-H11v kabul ama govde bos", "H11", m_h11v),
+        ("M-H11ys yerine-gecen SAYI DEGIL", "H11", m_h11ys),
+        ("M-H11yy yerine-gecen 9999 yok", "H11", m_h11yy),
+        ("M-H11tk yerine-gecme TEK YONLU", "H11", m_h11tk),
+        ("M-H11yd yerine-gecen dolu, durum yanlis", "H11", m_h11yd),
+        ("M-H11as yerini-aldigi SAYI DEGIL", "H11", m_h11as),
+        ("M-H11ay yerini-aldigi 9999 yok", "H11", m_h11ay),
+        ("M-H11lo canli link: olmayan karar", "H11", m_h11lo),
+        ("M-H11ly canli link: yerine gecilmis karar", "H11", m_h11ly),
     ]
     print("=== ISIRMA KANITI (kor kapi protokolu) ===")
     print("temiz surum: YESIL ✓ (yanlis-pozitif yok)\n")
     kacan = []
     for ad, kapi, fn in sinamalar:
         try:
-            ok, k, c = mutant(ad, kapi, fn, _h1_parca.get(ad), **_h1_secenek.get(ad, {}))
+            ok, k, c = mutant(ad, kapi, fn, _eksen_parca.get(ad), **_h1_secenek.get(ad, {}))
         except MutantKurulamadi as e:
             # TESTIN kendi hatasi — kapi hukmu DEGIL. Ayri raporlanir (Fable Bulgu 3).
             kurulamayan.append((ad, kapi, str(e)))
