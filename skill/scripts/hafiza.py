@@ -5524,7 +5524,7 @@ def cmd_isir(a):
         zincir = os.path.join(_hdir(h), "_ZINCIR.jsonl")
         if not os.path.isfile(zincir):
             raise MutantKurulamadi("_ZINCIR.jsonl yok")
-        rel = os.path.relpath(zincir, h).replace(os.sep, "/")
+        rel = _rel(zincir, h)
         r = subprocess.run(["git", "-C", h, "add", "-A"], capture_output=True)
         if r.returncode != 0:
             raise MutantKurulamadi("git add basarisiz: %s"
@@ -6562,8 +6562,8 @@ def cmd_isir(a):
         Neden HEPSI: `mutant()` copytree=copy2 mtime'i korur, gercek projede en yeni
         dosya bugunku olabilir; yalniz yeni dosya eklemek YETMEZ, hafiza-disi aday
         kumesini kapidan ayri hesaplamak da kapiyla AYRISABILIRDI (TEK TANIM)."""
-        gecikme = rc["hafiza_gecikme_gun"]
-        if gecikme <= 0:
+        _gec = rc["hafiza_gecikme_gun"]
+        if _gec <= 0:
             raise MutantKurulamadi("hafiza_gecikme_gun=0 — H14 KAPALI (bilincli)")
         m0 = re.search(r"Son g[uü]ncelleme:\s*(.{0,40})", oku(_canli(h)))
         t_son = tarih_coz(m0.group(1)) if m0 else None
@@ -6573,7 +6573,7 @@ def cmd_isir(a):
             raise MutantKurulamadi("'Son guncelleme' GELECEKTE — H14 tarihi cozulmus sayilmaz")
         yeni = os.path.join(h, "isir_h14e_proje.txt")
         yaz(yeni, "hafiza DISI proje dosyasi (isir M-H14e)\n")
-        ts = _dt.datetime.combine(t_son - _dt.timedelta(days=gecikme + 30),
+        ts = _dt.datetime.combine(t_son - _dt.timedelta(days=_gec + 30),
                                   _dt.time(12, 0)).timestamp()
         for k0, _d0, f0 in os.walk(h):
             for f in f0:

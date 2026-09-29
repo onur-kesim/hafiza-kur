@@ -22,7 +22,8 @@ onlari dogrular; tutmuyorsa mutant hukmu ANLAMSIZDIR ve betik durur.
 
 Ayrica CIPA olarak gercek motordan iki deger sinanir, HER GUNCELLEMEDE radon ile
 CAPRAZLANARAK: cmd_isir 17 -> 22 (7 Eyl 2026, IS_EMRI_ISIR_GIT_VE_ORTAM_KAPISI.md
-KALEM 1: `mutant_git` + M-H12g/M-H14g eklendi — govde BUYUDU, ADDITIVE) ·
+KALEM 1: `mutant_git` + M-H12g/M-H14g eklendi — govde BUYUDU, ADDITIVE) -> 26 (7 Eyl,
+UYGULANMAZ) -> 30 (29 Eyl, TEK TANIK; tarihce asagida CIPA'nin ustunde) ·
 cmd_devral 88 -> 97 (15 Agu).
 
 KULLANIM     python3 faz0/karmasiklik_mutanti.py
@@ -216,7 +217,28 @@ BEKLENEN = {
 #     Ikili (arac, radon) 26'da da anlasiyor. Capa ARACIN KENDI CIKTISINDAN
 #     guncellenmedi: once radon'la BAGIMSIZ caprazlandi, ikisi anlastigi icin
 #     capa o degere kuruldu.
-CIPA = {"cmd_isir": 26, "cmd_devral": 99}
+#   29 Eyl 2026 (IS_EMRI_TEK_TANIK_ISIR.md): cmd_isir 26 -> 30. Sebep BILINEN ve
+#     BEYANLI — Onur kilidi 29 Eyl (emsal: 7 Eyl 17 -> 22 -> 26). TEK TANIK turunda
+#     alti yeni mutant (M-Hcy/M-H0k/M-H10t/M-H12c/M-H14e/M-H9) `cmd_isir` govdesine
+#     EKLENDI (kapi govdelerine DOKUNULMADI) ve `sinamalar_git`e DORTLU tuple'li
+#     ucuncu kol (M-H9, mutant_git) girdi. Artisin KAYNAGI OLCULDU, tahmin degil:
+#     SONUC satirinin kuyrugunu M-H9'un UC durumuna (UYGULANMAZ / KURULAMADI /
+#     OLCULDU) bolen `if/elif/else` blogu = 2 dal + 2 uretec ifadesi = +4. Yalniz o
+#     6 satir cikarilinca radon `cmd_isir - D (26)` verir (deney: ayni oturum);
+#     alti mutantin ic fonksiyonlari ve `sinamalar_git` tuple'i radon'da AYRI kayittir,
+#     `cmd_isir`in CC'sine YAZILMAZ (1ba9d08e'de 10 mutant eklendi, CC 26'da kaldi).
+#     CC>20 kumesi BUYUMEDI (7 -> 7), birlesik `ihlal` 9'da KALDI (9 -> 9;
+#     `karmasiklik.py --ihlal`, once/sonra). CI #114 bu kapiyi UC PLATFORMDA kirmizi
+#     yakti (`cmd_isir beklenen 26 · arac 30`); kapi gorevini YAPTI, sessizce gecmedi.
+#     BAGIMSIZ caprazlama (ayni oturum, ayni kap, radon 6.0.1):
+#       python -m radon cc -s <60c32af motoru> -> `cmd_isir - D (26)`
+#       python -m radon cc -s skill/scripts/hafiza.py -> `cmd_isir - D (30)`
+#       python3 faz0/karmasiklik.py <60c32af motoru> -> cmd_isir  26
+#       python3 faz0/karmasiklik.py <bu motor>       -> cmd_isir  30
+#     Ikili (arac, radon) 30'da da anlasiyor. Capa ARACIN KENDI CIKTISINDAN
+#     guncellenmedi: once radon'la BAGIMSIZ caprazlandi, ikisi anlastigi icin
+#     capa o degere kuruldu.
+CIPA = {"cmd_isir": 30, "cmd_devral": 99}
 
 # ------------------------------------------------------------------ MUTANTLAR
 # (ad, aciklama, [(eski, yeni)], ayirt eden ornek)

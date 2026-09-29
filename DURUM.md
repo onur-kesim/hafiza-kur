@@ -11,27 +11,23 @@ tanıklı/yetim) KAPSAM DIŞI; yeni tur ONUR KİLİDİ ister. **25 Ağu yazısı
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**TEK TANIK İSIR** (bu tur, motor `479cb056`→`f7eeaa6b`, 362.848→371.550 B) — 6 yeni mutant
-(M-Hcy·M-H0k·M-H10t·M-H12c·M-H14e·M-H9: sabote edilince kapı YEŞİL basan fail()'ler); sabotaj
-isir 49→**55/67** (köşegen 6/6, önceki 49 KORUNDU, örtüşme 0). SONUÇ kuyruğu M-H9 durumunu
-söyler (öneki B-7/readme için BİREBİR). Ölçüldü: taze git'li 67/67+2 SINANMADI · derle 69/69 ·
-git'siz derle 66/66+3 UYGULANMAZ; 10 yerde sayı güncellendi. `t_y42` (dokunulmadı) 56 senaryoda
-taban motorla hüküm farkı 0. ·
-**H6/H8/H16 İSIR** (`1ba9d08e`/`60c32af9`) — 10 yeni mutant, sabotaj isir 39→49/67; EK-1 yetkisiz
-Windows'ta `os.symlink`→`mklink /J` junction (ÖLÇÜLDÜ); `isir_eslesme_mutanti` KOL O+KOL J. ·
-**H11 İSIR** (`fe3df31e`, CI #112) — 10 kör fail(), sabotaj isir 29→39/67. ·
-**ŞIK B** (`c4acba69`, CI #111 181/181) — isir H1 0/6→6/6 (tam etiket + eksen parçası + `siki`), sabotaj isir 23→29/67. ·
-**ŞIK A** (`612a2a74`, CI #110 178/178) — `h1_kapsam_mutanti` + `sabotaj.py --ek-olcer` (isir/ek/birleşim AYRI). ·
+**TEK TANIK DÜZELTME** (bu tur; CI #114 9 kırmızı = 3 sınıf × 3 platform) — D1 `karmasiklik_mutanti`
+çıpası `cmd_isir` 26→**30** (Onur kilidi; radon 6.0.1 `D (26)`→`D (30)`; artış SONUÇ-kuyruğu
+bloğundan +4, blok çıkarılınca 26 — deneyle ölçüldü; CC>20 7→7, ihlal 9→9) · D2 `m_h9` çıplak
+`relpath`→`_rel` · D3 `m_h14e` değişken adı (`h14_bolme` 7/7). Motor `f7eeaa6b`→`2e759307`
+(371.509 B). Sabotaj **55/67 AYNEN**; isir 67/67+2 · 69/69 · git'siz 66/66+3 AYNEN. ·
+**TEK TANIK İSIR** (`f21aeaaf`) — 6 yeni mutant, sabotaj isir 49→55/67 (köşegen 6/6). ·
+**H6/H8/H16 İSIR** (`1ba9d08e`) 39→49/67, EK-1 junction · **H11 İSIR** (`fe3df31e`) 29→39/67. ·
+**ŞIK B** (`c4acba69`, CI #111) isir H1 0/6→6/6, isir 23→29/67 · **ŞIK A** (`612a2a74`, CI #110)
+`h1_kapsam_mutanti` + `sabotaj.py --ek-olcer`. ·
 **ayrisma zaman bombası** (27 Eyl, `sabit_tarih_mutanti`) · **devral GİRİŞ KAPISI** (26 Eyl) ·
 **`bolum-kur`** (13 Eyl; aday listesi `BOLUM_HEDEF`+ARŞİV DİZİNİ, `rc["zorunlu_bolumler"]` DEĞİL). ·
 **CI ölü kod+bayat yorum+izlenmeyen artık** (13 Eyl) — `shell: bash -e` exit-2 muafiyetini
 `ec=`ye ULAŞTIRMIYORDU ⇒ `set +e`/`set -e` + `ci_adim_muafiyeti_mutanti.py`. ·
 **B4-3+B4-4+grep tuzağı+ÖLÇEN TARAFIN körlüğü** (12 Eyl) — `derle` `yaz(y.canli)` dönene kadar
-ERTELER · `kilit_al` on-kontrolden geçer + son ağ EACCES/EPERM/EROFS · `_b44_sinifla` DÖRT
-kuralla sertleşti. ·
-**devral türetimi+H4 git havuzu+H12/H14 git delili+çapa/dosya ekseni+H4 çıplak ad+BEŞLİ PAKET+
-gitfile körlüğü** (4-6 Eyl, CI #96-99) — devral disk'ten türetir, git sorguları CI'da hızlı,
-M-Y4/çıplak-ad/AYLAR kilitleri KORUNDU.
+ERTELER · `kilit_al` ön-kontrol + EACCES/EPERM/EROFS ağı · `_b44_sinifla` DÖRT kural. ·
+**devral türetimi+H4 git havuzu+H12/H14 git delili+H4 çıplak ad+BEŞLİ PAKET+gitfile körlüğü**
+(4-6 Eyl, CI #96-99) — devral disk'ten türetir; M-Y4/çıplak-ad/AYLAR kilitleri KORUNDU.
 
 ## Bilinen sınırlar (ölçülmüş)
 - 🔴 **"GERÇEK ORTAMDA OLMAZ" DEMEDEN ÖNCE ORTAMI ÖLÇ (6 Eyl ISIRDI):** M-Y2 kusuru "hiçbir
@@ -64,6 +60,9 @@ M-Y4/çıplak-ad/AYLAR kilitleri KORUNDU.
 - 🔴 **ÇAPALARA BAKILMADAN KAPI GÖVDESİNE SATIR EKLENMEZ — DÖRDÜNCÜ ısırık 6 Eyl** (`gitfile`
   6. kol 4→6 unutuldu). 🔴 **"TÜM `faz0` bataryası" YALNIZ `*_mutanti.py` DEĞİL, `.sh` de DEĞİL**
   — `yol_ayraci_kapisi` atlandı (CI #96 kırmızı), `ortam_olcum.sh` aylarca hiç koşulmadı.
+  **İKİNCİ ısırık 29 Eyl (CI #114):** ölçüt = `capraz.yml`'deki HER `python faz0/*.py` adımı push
+  ÖNCESİ koşulur; liste YML'DEN TÜRETİLİR, elle seçilmez (yerelde 61/70 exit 0; 8'i ortam: `zip`
+  yok · symlink 1314 · probe — `f21aeaa` tabanıyla AYNI).
   **BELGE ve YORUM da kapı kırar**; `yol_ayraci_kapisi` YORUM ile KODU AYIRT ETMİYOR (ayrı tur).
   **ÇAPA ARACIN KENDİ ÇIKTISINDAN GÜNCELLENMEZ**; **mesaj metni ile koşul TEK KAYNAKTAN üretilir**.
 - 🔴 **İŞ EMRİ KISITI EN BAŞA YAZILIR**; geçici satırın kaldırma talimatı KALEM 1'e girer.
