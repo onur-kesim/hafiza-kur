@@ -118,9 +118,28 @@ H11_HEDEF = {"M-H11t": ("_h11_numara", 1), "M-H11": ("_h11_numara", 2),
              "M-H11tk": ("_h11_baglanti", 3), "M-H11yd": ("_h11_baglanti", 4),
              "M-H11as": ("_h11_baglanti", 5), "M-H11ay": ("_h11_baglanti", 6),
              "M-H11lo": ("_h11_canli_link", 1), "M-H11ly": ("_h11_canli_link", 2)}
+# H6/H8/H16 turu (besli-paket/IS_EMRI_H8_H6_H16_ISIR.md, 29 Eyl 2026): AYNI
+# gerekce H11 ile PAYLASILIR — H16'nin uc fail() cagrisi DORT dizin
+# (kararlar/gunluk/gunluk_ars/h) icin TEK yerden AYNI sablonu basar (dizin adi
+# kaynakta bir DEGISKENDIR, literal degil); icerik-esleme TEK BASINA hangi
+# dizini kastettigini ayirt edemez. Hedef bu yuzden KONUMDUR (H6/H8 de,
+# tutarlilik ve saglamlik icin, AYNI yontemle -- parca metninden BAGIMSIZ --
+# dogrulanir; H11'in kendisiyle AYNI dongude, bkz. `kol_o`).
+H6_HEDEF = {"M-H6y": ("_kapi_govde", 1),
+            "M-H6b": ("_kapi_h6", 1), "M-H6": ("_kapi_h6", 2), "M-H6t": ("_kapi_h6", 3)}
+H8_HEDEF = {"M-H8y": ("_kapi_h8", 1), "M-H8o": ("_kapi_h8", 2), "M-H8b": ("_kapi_h8", 3),
+            "M-H8m": ("_kapi_h8", 4), "M-H8g": ("_kapi_h8", 5), "M-H8": ("_kapi_h8", 6)}
+H16_HEDEF = {"M-H16y": ("_kapi_h16", 1), "M-H16d": ("_kapi_h16", 2), "M-H16k": ("_kapi_h16", 3)}
+POZISYON_GRUPLARI = (("H11", H11_HEDEF), ("H6", H6_HEDEF), ("H8", H8_HEDEF), ("H16", H16_HEDEF))
 TABLO = "_eksen_parca"           # cmd_isir icindeki TEK parca tablosunun adi
 SIKI_KIMLIK = "M-H1s"
 SABOTAJ_KIMLIK = "M-H1"          # sabote edilen fail(): bu mutantin parcasiyla bulunur
+# EK-1 (besli-paket/IS_EMRI_H8_H6_H16_ISIR.md): junction dali AYRICA kolla
+# olculur — symlink'i zorla basarisiz kil, junction'a dustu mu / #66 ISIRDI mi.
+JUNCTION_KIMLIK = "M-H16k"
+JUNCTION_FONKSIYON = "m_h16k"
+JUNCTION_ESKI = "os.symlink(dis, d, target_is_directory=True)"
+JUNCTION_YENI = "raise OSError(1314, 'KOL J zorla basarisiz (EK-1)')"
 
 # Metin capalari (motor kaynagi). Her biri kendi KAPSAMINDA TAM 1 kez gecmeli.
 A_ESKI = 'yakalandi = (k != 0) and (("[%s]" % kapi) in c)'
@@ -339,7 +358,8 @@ def kol_o(kaynak):
     h11_parca = {a: p for a, p in parca.items() if kapisi.get(a) == "H11"}
     print("  motordaki fail() sayisi: %d · H1 fail(): %d · parca: %d"
           % (len(cagrilar), sum(1 for h in cagrilar if h["kapi"] == "H1"), len(h1_parca)))
-    for kapi in ("H1", "H11"):
+    POZ_ETIKET = tuple(e for e, _ in POZISYON_GRUPLARI)
+    for kapi in ("H1",) + POZ_ETIKET:
         for a in [a for a, k in sinamalar if k == kapi]:
             if a not in parca:
                 b.append("etiketi %s olan `%s` mutantinin PARCASI YOK" % (kapi, a))
@@ -347,7 +367,7 @@ def kol_o(kaynak):
         if a not in kapisi:
             b.append("parca anahtari `%s` hicbir `sinamalar` adi DEGIL (sessizce "
                      "uygulanmaz)" % a)
-        elif kapisi[a] not in ("H1", "H11"):
+        elif kapisi[a] not in ("H1",) + POZ_ETIKET:
             b.append("`%s` [%s]: bu betik o kapinin eksen eslemesini TANIMIYOR" % (a, kapisi[a]))
     ortulen = set()
     sabotaj_hedefi = None
@@ -377,40 +397,48 @@ def kol_o(kaynak):
         b.append("parcalar H1'in alti fail()'ini ORTMUYOR: eksik satirlar %s"
                  % sorted(h1_hepsi - ortulen))
 
-    # ---- H11 (IS_EMRI_H11_ISIR.md): hedef = fail()'in KONUMU (fonksiyon, sira)
-    konum, sira = {}, {}
+    # ---- H11/H6/H8/H16 (IS_EMRI_H11_ISIR.md + IS_EMRI_H8_H6_H16_ISIR.md):
+    # hedef = fail()'in KONUMU (fonksiyon, o etikete gore sirasi, 1'den).
+    # H11'in TEK ekseniydi; H8_H6_H16 turunde AYNI dongu genellestirildi
+    # (POZISYON_GRUPLARI) — davranis H11 icin BIREBIR eskisi (sadece kod
+    # tekrari kalkti).
+    konum_g, sira_g = {}, {}
     for h, _, fn in cs:
-        if h["kapi"] == "H11":
-            sira[fn] = sira.get(fn, 0) + 1
-            konum[(fn, sira[fn])] = h
-    print("  H11 fail(): %d · parca: %d (tablo toplami %d)"
-          % (len(konum), len(h11_parca), len(parca)))
-    if sorted(konum) != sorted(H11_HEDEF.values()):
-        b.append("H11 fail() KONUMLARI beklenen (fonksiyon, sira) kumesi DEGIL: motorda %s"
-                 % sorted(konum))
-    ortulen11 = set()
-    for a, p in sorted(h11_parca.items(), key=lambda x: kimlik(x[0])):
-        hk = H11_HEDEF.get(kimlik(a))
-        if hk is None:
-            b.append("`%s`: hedef ekseni bu betikte TANIMSIZ" % a)
-            continue
-        uyan = uyan_cagrilar(p, cs)
-        if len(uyan) != 1:
-            b.append("`%s` parcasi %d fail()'e uyuyor (TAM 1 olmali): %r -> %s"
-                     % (kimlik(a), len(uyan), p, _tanim(uyan) or "-"))
-            continue
-        h, hedef = uyan[0], konum.get(hk)
-        if hedef is None or h["lineno"] != hedef["lineno"]:
-            b.append("`%s` parcasi YANLIS fail()'e uyuyor: %s (hedef %s/%d)"
-                     % (kimlik(a), _tanim(uyan), hk[0], hk[1]))
-            continue
-        ortulen11.add(h["lineno"])
-        print("  %-7s %-17s -> #%02d sat %-5d TAM 1 fail() : %r"
-              % (kimlik(a), "%s/%d" % hk, h["no"], h["lineno"], p))
-    h11_hepsi = set(h["lineno"] for h in konum.values())
-    if ortulen11 != h11_hepsi:
-        b.append("parcalar H11'in %d fail()'ini ORTMUYOR: eksik satirlar %s"
-                 % (len(h11_hepsi), sorted(h11_hepsi - ortulen11)))
+        etiket = h["kapi"]
+        if etiket in dict(POZISYON_GRUPLARI):
+            sira_g.setdefault(etiket, {})
+            sira_g[etiket][fn] = sira_g[etiket].get(fn, 0) + 1
+            konum_g.setdefault(etiket, {})[(fn, sira_g[etiket][fn])] = h
+    for etiket, hedef_map in POZISYON_GRUPLARI:
+        konum = konum_g.get(etiket, {})
+        etiket_parca = {a: p for a, p in parca.items() if kapisi.get(a) == etiket}
+        print("  %s fail(): %d · parca: %d" % (etiket, len(konum), len(etiket_parca)))
+        if sorted(konum) != sorted(hedef_map.values()):
+            b.append("%s fail() KONUMLARI beklenen (fonksiyon, sira) kumesi DEGIL: motorda %s"
+                     % (etiket, sorted(konum)))
+        ortulen = set()
+        for a, p in sorted(etiket_parca.items(), key=lambda x: kimlik(x[0])):
+            hk = hedef_map.get(kimlik(a))
+            if hk is None:
+                b.append("`%s`: hedef ekseni bu betikte TANIMSIZ" % a)
+                continue
+            uyan = uyan_cagrilar(p, cs)
+            if len(uyan) != 1:
+                b.append("`%s` parcasi %d fail()'e uyuyor (TAM 1 olmali): %r -> %s"
+                         % (kimlik(a), len(uyan), p, _tanim(uyan) or "-"))
+                continue
+            h, hedef = uyan[0], konum.get(hk)
+            if hedef is None or h["lineno"] != hedef["lineno"]:
+                b.append("`%s` parcasi YANLIS fail()'e uyuyor: %s (hedef %s/%d)"
+                         % (kimlik(a), _tanim(uyan), hk[0], hk[1]))
+                continue
+            ortulen.add(h["lineno"])
+            print("  %-7s %-17s -> #%02d sat %-5d TAM 1 fail() : %r"
+                  % (kimlik(a), "%s/%d" % hk, h["no"], h["lineno"], p))
+        hepsi = set(h["lineno"] for h in konum.values())
+        if ortulen != hepsi:
+            b.append("parcalar %s'in %d fail()'ini ORTMUYOR: eksik satirlar %s"
+                     % (etiket, len(hepsi), sorted(hepsi - ortulen)))
     if [kimlik(a) for a in siki_adlar] != [SIKI_KIMLIK]:
         b.append("`siki=True` alan mutantlar %s (YALNIZ %s olmali)"
                  % ([kimlik(a) for a in siki_adlar], SIKI_KIMLIK))
@@ -526,6 +554,7 @@ def main():
     A = ("mutant", A_ESKI, A_YENI)
     B = ("mutant", B_ESKI, B_YENI)
     C = (None, C_ESKI, C_YENI)
+    J = (JUNCTION_FONKSIYON, JUNCTION_ESKI, JUNCTION_YENI)
     try:
         turevler = [
             ("KOL 0 ", "temiz motor (negatif kontrol)", motor_turet(kaynak, None, [])),
@@ -539,6 +568,8 @@ def main():
              motor_turet(kaynak, sab_hedef, [])),
             ("KOL c ", "M-H1s'ten siki=True kaldirildi (sabotaj YOK)",
              motor_turet(kaynak, None, [C])),
+            ("KOL J ", "EK-1: %s symlink zorla basarisiz (junction kolu)" % JUNCTION_KIMLIK,
+             motor_turet(kaynak, None, [J])),
         ]
     except Olculemedi as e:
         print("SONUC: OLCULEMEDI — motor turetilemedi: %s" % e)
@@ -566,10 +597,11 @@ def main():
         shutil.rmtree(taban, ignore_errors=True)
 
     kirmizi, olculemeyen = 0, 0
+    _tum_pozisyon_kimlik = [a for _, hd in POZISYON_GRUPLARI for a in hd]
     beklenen = {
-        "KOL 0": ("H1'in yedi ve H11'in on bir mutanti ISIRDI, exit 0",
+        "KOL 0": ("H1'in yedi ve H11/H6/H8/H16'nin TUM mutanti ISIRDI, exit 0",
                   lambda k, h: k == 0 and all(h.get(x) == "ISIRDI"
-                                              for x in list(HEDEF_EKSEN) + list(H11_HEDEF))),
+                                              for x in list(HEDEF_EKSEN) + _tum_pozisyon_kimlik)),
         "KOL a": ("M-H1 ISIRDI (maskeleme URETILDI)",
                   lambda k, h: h.get("M-H1") == "ISIRDI"),
         "KOL a1": ("M-H1 ve M-H1b KACTI (B tek basina yeter)",
@@ -580,6 +612,10 @@ def main():
                   lambda k, h: h.get("M-H1") == "KACTI" and h.get("M-H1b") == "KACTI"),
         "KOL c": ("M-H1s KACTI ya da KURULAMADI",
                   lambda k, h: h.get("M-H1s") in ("KACTI", "KURULAMADI")),
+        "KOL J": ("Windows'ta %s ISIRDI (junction'a dustu); Windows disinda "
+                  "KURULAMADI (durustce SINANMADI, asla sahte KACTI/ISIRDI)" % JUNCTION_KIMLIK,
+                  lambda k, h: h.get(JUNCTION_KIMLIK) == ("ISIRDI" if os.name == "nt"
+                                                           else "KURULAMADI")),
     }
     for ad, aciklama, _ in turevler:
         ad = ad.strip()
@@ -595,10 +631,14 @@ def main():
         print("  %-6s %-46s -> %s" % (ad, aciklama, "BEKLENDIGI GIBI" if tamam else "BEKLENMEDIK"))
         print("         isir exit %d · %s" % (k, ozet))
         if ad == "KOL 0":
-            print("         H11: %s" % " ".join("%s=%s" % (x, h.get(x, "-")) for x in sorted(H11_HEDEF)))
+            for etiket, hedef_map in POZISYON_GRUPLARI:
+                print("         %-3s: %s" % (etiket, " ".join(
+                    "%s=%s" % (x, h.get(x, "-")) for x in sorted(hedef_map))))
         print("         beklenen: %s" % tanim)
         if ad == "KOL c" and tamam:
             print("         OLCULDU: M-H1s `siki`siz -> %s" % h.get("M-H1s"))
+        if ad == "KOL J":
+            print("         OLCULDU: platform=%s -> %s=%s" % (os.name, JUNCTION_KIMLIK, h.get(JUNCTION_KIMLIK)))
         if not tamam:
             kirmizi += 1
     print()

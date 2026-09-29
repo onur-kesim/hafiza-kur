@@ -6299,6 +6299,163 @@ def cmd_isir(a):
         _h11_karar(d, b, "m-h11ly-yeni", yerini="%04d" % a)
         _canli_sonuna_yaz(h, "- isir M-H11ly: kararlar/" + eski)
 
+    # ---- ISIR: H6/H8/H16 EKSEN MUTANTLARI (besli-paket/IS_EMRI_H8_H6_H16_ISIR.md,
+    # 29 Eyl 2026, Onur kilidi "sıradakine geç" — SIK B kalibi AYNEN: tam etiket +
+    # eksen parcasi, yeni tasarim YOK). Kapi govdelerine (_kapi_govde H6 erken
+    # cikisi, _kapi_h6, _kapi_h8, _kapi_h16) DOKUNULMADI; hepsi ADDITIVE.
+
+    def _h8_koru(h, ad, gerekce):
+        """ISIR H8 eksen mutantlari: `ad` dosyasini KORU:BAS/SON isaretleriyle
+        olusturur ve `korunan` komutuyla beyan eder (M-H8/M-H8b ile AYNI cagri
+        kalibi). Basarisizsa MutantKurulamadi (test kurulum hatasi, kapi
+        hukmu degil)."""
+        p = os.path.join(h, ad)
+        yaz(p, "<!--KORU:BAS-->\nkorunan protokol satiri\n<!--KORU:SON-->\n")
+        r = subprocess.run([sys.executable, "-X", "utf8", os.path.abspath(__file__), "korunan",
+                            "--kok=" + h, "--dosya=" + ad, "--bas=<!--KORU:BAS-->",
+                            "--son=<!--KORU:SON-->", "--gerekce=" + gerekce],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace",
+                           env=dict(os.environ, PYTHONIOENCODING="utf-8"))
+        if r.returncode != 0:
+            raise MutantKurulamadi(r.stderr.strip()[:120])
+        return p
+
+    def m_h6y(h):
+        """M-H6y — eksen 'HAFIZA DIZINI YOK' (call #2, `_kapi_govde` erken
+        cikisi): y.h'nin KENDISI silinir. Erken donus nedeniyle bu kosumda
+        BASKA HICBIR kapi (H16 dahil) calismaz — kor kapi kanitiyla tutarli
+        TEK eksendir (EK-1: 'biri yeter')."""
+        hd = _hdir(h)
+        if not os.path.isdir(hd):
+            raise MutantKurulamadi("HAFIZA DIZINI zaten yok/dizin degil")
+        shutil.rmtree(hd)
+
+    def m_h6b(h):
+        """M-H6b — eksen 'ARSIV DIZINI bolumu yok' (call #22): basligin
+        KENDISI (ve govdesi) canliden silinir; H6 dizin listesini HICBIR
+        YERDE bulamaz."""
+        L = satirlar(_canli(h))
+        i, j = _bolum_araligi(L, "## ARSIV DIZINI")
+        if i is None:
+            raise MutantKurulamadi("ARSIV DIZINI bolumu zaten yok")
+        yaz(_canli(h), "\n".join(L[:i] + L[j:]))
+
+    def m_h6t(h):
+        """M-H6t — eksen 'DIZINDE var ama diskte YOK' (call #24): ARSIV DIZINI
+        blogunda GERCEKTE diskte olmayan bir HAFIZA_*.md adi listelenir
+        (M-H1o ile AYNI V2SON-ONCESI ekleme teknigi)."""
+        L = satirlar(_canli(h))
+        son = [j for j, s in enumerate(L) if s.strip() == V2SON]
+        if not son:
+            raise MutantKurulamadi("V2 arsiv dizini blogu yok (once derle/bolum-kur gerekir)")
+        ad = "HAFIZA_ZZ_ISIR_HAYALET.md"
+        if os.path.isfile(os.path.join(_hdir(h), ad)):
+            raise MutantKurulamadi("hedef ad diskte zaten var")
+        L.insert(son[0], "- `%s`" % ad)
+        yaz(_canli(h), "\n".join(L))
+
+    def m_h8y(h):
+        """M-H8y — eksen 'KORUNAN dosya yok' (call #26): beyandan SONRA
+        dosyanin KENDISI silinir."""
+        p = _h8_koru(h, "ISIR_H8Y_DOSYA.md", "isir H8y dosya-yok sinamasi")
+        os.remove(p)
+
+    def m_h8o(h):
+        """M-H8o — eksen 'KORUNAN dosya OKUNAMADI' (call #27): beyandan
+        SONRA gecersiz UTF-8 baytlarla degistirilir (M-H1o ile ayni teknik)."""
+        p = _h8_koru(h, "ISIR_H8O_DOSYA.md", "isir H8o okunamaz sinamasi")
+        with open(p, "wb") as f:
+            f.write(b"\xff\xfe isir M-H8o bozuk dosya \xfa\n")
+
+    def m_h8m(h):
+        """M-H8m — eksen 'KORUNAN blok bulunamadi' (call #29): beyandan SONRA
+        isaretlerin SIRASI TERS cevrilir. Ikisi de TAM 1 kez gecmeye devam
+        eder (isaret-cifti sayimi 1/1 kalir) ama bas..son sirasi bozulur —
+        `korunan_blok_bul` regex'i sirayla arar, bulamaz."""
+        p = _h8_koru(h, "ISIR_H8M_DOSYA.md", "isir H8m blok-bulunamadi sinamasi")
+        yaz(p, "<!--KORU:SON-->\nkorunan protokol satiri\n<!--KORU:BAS-->\n")
+
+    def m_h8g(h):
+        """M-H8g — eksen 'KORUNAN blok KAPSAMI GENISLEDI' (call #30, B4-6
+        gecis): dosyanin GUNCEL icerigi 'son' isaretinin SATIR KUYRUGUNU
+        tasir; `_KORUNAN.json` beyanini ELLE (cmd_korunan'i ATLAYARAK) v2.4.1
+        (eski, kuyruksuz) kapsamin SHA'siyla yazariz — bugunku GENIS kapsam
+        farkli sha verir, ESKI dar kapsam hala tutar -> GECIS hukmu (bkz.
+        `korunan_blok_bul_eski`)."""
+        bas, son = "<!--KORU:BAS-->", "<!--KORU:SON-->"
+        ad = "ISIR_H8G_DOSYA.md"
+        p = os.path.join(h, ad)
+        icerik = "on metin\n%s\nkorunan govde\n%s ekstra kuyruk\n" % (bas, son)
+        yaz(p, icerik)
+        m_eski = korunan_blok_bul_eski(icerik, bas, son)
+        if m_eski is None:
+            raise MutantKurulamadi("eski kapsam eslesmedi (kurulum hatasi)")
+        hd = _hdir(h)
+        os.makedirs(hd, exist_ok=True)
+        yaz(os.path.join(hd, "_KORUNAN.json"),
+            json.dumps({"bloklar": [{"dosya": ad, "bas": bas, "son": son,
+                                     "sha": sha(m_eski.group(0)),
+                                     "gerekce": "isir H8g gecis sinamasi", "tarih": bugun()}]},
+                       ensure_ascii=False, indent=1) + "\n")
+
+    def m_h16y(h):
+        """M-H16y — eksen 'gunluk YOK' (call #64): KAPSAM KILITLI dort
+        dizinden biri tamamen silinir (EK-1: 'h' dali erisilemez —
+        kararlar/gunluk/gunluk_ars kullan)."""
+        d = os.path.join(h, "gunluk")
+        if os.path.isdir(d) and not os.path.islink(d):
+            shutil.rmtree(d)
+        elif os.path.lexists(d):
+            os.remove(d)
+        else:
+            raise MutantKurulamadi("gunluk zaten yok (kurulum hatasi)")
+
+    def m_h16d(h):
+        """M-H16d — eksen 'kararlar DIZIN DEGIL' (call #65): kararlar/
+        silinip yerine AYNI ADLA duz bir dosya konur."""
+        d = os.path.join(h, "kararlar")
+        if os.path.isdir(d) and not os.path.islink(d):
+            shutil.rmtree(d)
+        elif os.path.lexists(d):
+            os.remove(d)
+        else:
+            raise MutantKurulamadi("kararlar zaten yok (kurulum hatasi)")
+        yaz(d, "isir M-H16d: kararlar artik bir dosya\n")
+
+    def m_h16k(h):
+        """M-H16k — eksen 'gunluk_ars PROJE DISINA BAGLI' (call #66, EK-1 —
+        besli-paket/IS_EMRI_H8_H6_H16_ISIR.md): gunluk_ars (y.h/gunluk —
+        'h' dalinin KENDISI DEGIL; EK-1 notu 'h dali erisilemez, H6 erken
+        doner') PROJE DISINDAKI bir hedefe baglanir. Once os.symlink;
+        yetkisiz Windows'ta OSError (WinError 1314) -> `mklink /J` junction'a
+        duser (isdir True, islink False, ama `kok_disina_mi` realpath'le YINE
+        yakalar). Ikisi de kurulamazsa MutantKurulamadi: durustce SINANMADI,
+        asla sahte KAPI KOR.
+        GUVENLIK: baglanti hedefi mutant'in KENDI izole tmp KARDESI —
+        `mutant()`in kendi `tmp`si altinda, oradaki `finally: rmtree(tmp)` ile
+        TEMIZLENIR — asla gercek kullanici/proje dosyasina isaret ETMEZ."""
+        hd = _hdir(h)
+        d = os.path.join(hd, "gunluk")
+        if os.path.isdir(d) and not os.path.islink(d):
+            shutil.rmtree(d)
+        elif os.path.lexists(d):
+            os.remove(d)
+        dis = os.path.join(os.path.dirname(h), "isir_h16k_dis")
+        os.makedirs(dis, exist_ok=True)
+        try:
+            os.symlink(dis, d, target_is_directory=True)
+            yontem = "symlink"
+        except OSError:
+            if os.name != "nt":
+                raise MutantKurulamadi("symlink kurulamadi (Windows disinda junction yok)")
+            r = subprocess.run(["cmd", "/c", "mklink", "/J", d, dis],
+                               capture_output=True, text=True)
+            if r.returncode != 0 or not os.path.isdir(d):
+                raise MutantKurulamadi("ne symlink ne junction kurulabildi (yetkisiz ortam): "
+                                        + (r.stderr or r.stdout or "").strip()[:120])
+            yontem = "junction"
+        print("  [M-H16k] baglanti yontemi: %s" % yontem)
+
     # KALEM 2 (SIK B) + H11 turu: eksen parcasi isteyen mutantlarin TEK tablosu (kapi
     # fark etmez). Mutant etiketle YETINMEZ, kendi EKSEN cumlesinden bir parca da ister.
     # Parcalar fail() cumlelerinden alindi (var olmayan hedefte sabit 9999 dahil); her
@@ -6324,7 +6481,27 @@ def cmd_isir(a):
         "M-H11ay yerini-aldigi 9999 yok": "yerini-aldigi 9999 yok",
         "M-H11lo canli link: olmayan karar": "canli hafiza olmayan bir karara link veriyor",
         "M-H11ly canli link: yerine gecilmis karar": "canli hafiza YERINE GECILMIS karara link veriyor",
+        "M-H6  dizin (dizinsiz arsiv dosyasi)": "arsiv dosyasi DIZINDE YOK",
+        "M-H6y HAFIZA DIZINI yok (govde erken cikis)": "HAFIZA DIZINI YOK",
+        "M-H6b ARSIV DIZINI bolumu yok": "ARSIV DIZINI bolumu yok",
+        "M-H6t DIZINDE var, diskte yok": "DIZINDE var ama diskte YOK",
+        "M-H8  korunan blok (beyansiz degisim)": "KORUNAN blok DEGISMIS (beyansiz)",
+        "M-H8b  korunan blok: SAHTE KOPYA ile gizleme": "KORUNAN isaret cifti",
+        "M-H8y KORUNAN dosya yok": "KORUNAN dosya yok",
+        "M-H8o KORUNAN dosya okunamadi": "KORUNAN dosya OKUNAMADI",
+        "M-H8m KORUNAN blok bulunamadi": "KORUNAN blok bulunamadi",
+        "M-H8g KORUNAN blok kapsami genisledi": "KORUNAN blok KAPSAMI GENISLEDI",
+        "M-H16y gunluk yok": "gunluk YOK",
+        "M-H16d kararlar dizin degil": "kararlar DIZIN DEGIL",
+        "M-H16k gunluk_ars proje disina bagli": "gunluk_ars PROJE DISINA BAGLI",
     }
+    # H16'nin uc fail() cagrisi DORT dizin (kararlar/gunluk/gunluk_ars/h) icin
+    # AYNI sablonu ("%s YOK: %s" vb.) TEK cagri yerinden basar — dizin adi
+    # (`ad`) kaynakta bir DEGISKENDIR, literal DEGIL. Yukaridaki parcalar bu
+    # yuzden RUNTIME ciktiya (yukarida, `mutant()`in `icerik_parcasi in c`
+    # kontrolu) gore secildi; isir_eslesme_mutanti.py bunlari STATIK sablonla
+    # degil, H11'deki gibi POZISYONLA (fonksiyon + sira) dogrular (bkz. o
+    # betikteki H16_HEDEF/H6_HEDEF/H8_HEDEF).
     # KALEM 3: `--siki` YALNIZ eksen-6 mutantina verilir; digerleri varsayilanla kosar.
     _h1_secenek = {"M-H1s beyansiz ekleme (--siki)": dict(siki=True)}
 
@@ -6375,6 +6552,16 @@ def cmd_isir(a):
         ("M-H11ay yerini-aldigi 9999 yok", "H11", m_h11ay),
         ("M-H11lo canli link: olmayan karar", "H11", m_h11lo),
         ("M-H11ly canli link: yerine gecilmis karar", "H11", m_h11ly),
+        ("M-H6y HAFIZA DIZINI yok (govde erken cikis)", "H6", m_h6y),
+        ("M-H6b ARSIV DIZINI bolumu yok", "H6", m_h6b),
+        ("M-H6t DIZINDE var, diskte yok", "H6", m_h6t),
+        ("M-H8y KORUNAN dosya yok", "H8", m_h8y),
+        ("M-H8o KORUNAN dosya okunamadi", "H8", m_h8o),
+        ("M-H8m KORUNAN blok bulunamadi", "H8", m_h8m),
+        ("M-H8g KORUNAN blok kapsami genisledi", "H8", m_h8g),
+        ("M-H16y gunluk yok", "H16", m_h16y),
+        ("M-H16d kararlar dizin degil", "H16", m_h16d),
+        ("M-H16k gunluk_ars proje disina bagli", "H16", m_h16k),
     ]
     print("=== ISIRMA KANITI (kor kapi protokolu) ===")
     print("temiz surum: YESIL ✓ (yanlis-pozitif yok)\n")

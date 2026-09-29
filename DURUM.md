@@ -1,17 +1,23 @@
 # DURUM — hafiza-kur
 **BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #99 `b6a3dda3`: 151 iş, 0 başarısız — 6 Eyl ölçüldü**)
-Son güncelleme: 28 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+Son güncelleme: 29 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
-**Radar R8 sert durağı bu turla AÇILDI** (13 Eyl kilidi: sıkkı DEVRET, sıradaki tur MOTOR KODU) —
-Bitiş Ölçütü Ayak 2 KARŞILANDI (CI 163/163), Ayak 3 bu turla İLERLEDİ. Ayak 1 (16/18) ÜST SINIR
-kabul edildi (13 Eyl kilidi) — H2/H5 mutant kapsamı ölçüm turu AÇILMAZ. **K4 — H6 İÇERİK körlüğü
-(kilit ALINDI, sıradaki iş).** ŞIK B kilit ailesi (B2+B3) · md.11 eşitlik körlüğü yönü ·
-README_EN kapısı · `h4_gitignore_mutanti`ye **2-EK için AYRI kol**. **25 Ağu yazısı KAPSAM DIŞI**
-(İş Portföyü'nde kapanır) · **Deneme**: BEŞLİ PAKET kapandı, başlaması Onur kilidi bekler.
+**K4 — H6/H8/H16 İSIR körlüğü TAMAMLANDI (bu tur, 39→49/67).** ŞIK B kilit ailesi (B2+B3) ·
+md.11 eşitlik körlüğü yönü · README_EN kapısı · `h4_gitignore_mutanti`ye **2-EK için AYRI kol**.
+Kalan 18 kör nokta (H0/H1-KOVA/H10/H12/H13/H-LINK/H-/H4/H5/H9/H2/H14/H17) KAPSAM DIŞI bırakıldı;
+yeni tur ONUR KİLİDİ ister. **25 Ağu yazısı KAPSAM DIŞI** (İş Portföyü'nde kapanır) ·
+**Deneme**: BEŞLİ PAKET kapandı, başlaması Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
+**H6/H8/H16 İSIR** (bu tur, motor `6f73711d`→`479cb056`) — 10 yeni mutant (H6 4×4·H8 6×6·H16 3×3
+köşegen, fail() METNİNDEN); sabotaj isir 39→**49/67** (önceki 39 KORUNDU, 0 düşen). EK-1:
+`os.symlink` yetkisiz→`mklink /J` junction (bu Windows'ta ÖLÇÜLDÜ, hedef mutant'ın izole tmp'si);
+`isir_eslesme_mutanti` KOL O (pozisyonla) + yeni KOL J (junction zorlaması) ✅, `h1_kapsam_mutanti`
+✅. taze 59/59+2 SINANMADI (aynı 2: M-H1b,M-DEVIR) · derle 63/63. ·
+**H11 İSIR** (`fe3df31e`, CI #112) — karar bütünlüğü kapısının 10 kör fail()'i, sabotaj isir
+29→39/67; DURUM.md o turda unutulmuştu, şimdi eklendi. ·
 **ŞIK B** (`c4acba69`, CI #111 181/181) — isir H1 0/6→6/6 (tam etiket + eksen parçası + `siki`), sabotaj isir 23→29/67. ·
 **ŞIK A** (`612a2a74`, CI #110 178/178) — `h1_kapsam_mutanti` + `sabotaj.py --ek-olcer` (isir/ek/birleşim AYRI). ·
 **ayrisma zaman bombası** (27 Eyl, `sabit_tarih_mutanti`) · **devral GİRİŞ KAPISI** (26 Eyl) ·
@@ -22,11 +28,9 @@ muafiyetini `ec=`ye ULAŞTIRMIYORDU (CI #104/#105) ⇒ `set +e`/`set -e` + YENİ
 **B4-3+B4-4+grep tuzağı+ÖLÇEN TARAFIN körlüğü** (12 Eyl) — `derle` `yaz(y.canli)` dönene kadar
 ERTELER · `kilit_al` on-kontrolden geçer + son ağ EACCES/EPERM/EROFS · `_b44_sinifla` DÖRT
 kuralla sertleşti. ·
-**devral türetimi+H4 git havuzu+H12/H14 git delili+çapa/dosya ekseni+H4 çıplak ad+BEŞLİ PAKET**
-(6 Eyl, CI #96-99) — `devral` bölümü DİSKTEN türetir · `_h4_havuz` git'e sorar (DİZİN+DOSYA,
-300k'da 0,85sn) · H12/H14 GİT'E sorar · çıplak ad haksız OLU basmıyor · `AYLAR` kısaltması +
-3 regresyon açıldı-kapandı. **M-Y4 GERİ EKLENMEZ** · md.2/4/5/6-8/9/10 · `--kesif` 72 depoda ·
-gitfile körlüğü (4 Eyl) kapandı.
+**devral türetimi+H4 git havuzu+H12/H14 git delili+çapa/dosya ekseni+H4 çıplak ad+BEŞLİ PAKET+
+gitfile körlüğü** (4-6 Eyl, CI #96-99) — devral disk'ten türetir, git sorguları CI'da hızlı,
+M-Y4/çıplak-ad/AYLAR kilitleri KORUNDU.
 
 ## Bilinen sınırlar (ölçülmüş)
 - 🔴 **"GERÇEK ORTAMDA OLMAZ" DEMEDEN ÖNCE ORTAMI ÖLÇ (6 Eyl ISIRDI):** M-Y2 kusuru "hiçbir
