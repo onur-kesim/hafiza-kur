@@ -248,8 +248,8 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
 >
 > **`isir` çıkış kodları:** `0` hepsi ısırdı · `1` **KAPI KÖR** · `2` ölçülemeyen mutant
 > (testin ön-koşulu yok — kapı hükmü DEĞİL) · `4` temiz sürüm zaten FAIL. Sayı bağlamsız
-> beyan edilmez: `derle` koşulmuş projede **53/53**, taze `kur` projesinde
-> **51/51 + 2 KURULAMADI** (ikisi de sağlıklı). Çıktıda mutant başına `KURULAMADI`,
+> beyan edilmez: `derle` koşulmuş projede **63/63**, taze `kur` projesinde
+> **61/61 + 2 KURULAMADI** (ikisi de sağlıklı). Çıktıda mutant başına `KURULAMADI`,
 > özet satırında aynı şey için `SINANMADI` yazıyor — iki kelime tek anlamdadır.
 
 ---

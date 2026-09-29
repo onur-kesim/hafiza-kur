@@ -1375,7 +1375,7 @@ jobs:
   # ---------------------------------------------------------------------------
   # README KANIT BLOGU KAPISI — BITTI maddesi 5.
   #     Okurun yapacagi sey README'nin "Kanitini kendin kos" blogudur ve o blok
-  #     SAYISAL BEYAN tasir (51/51 + 2 SINANMADI exit 2 · 53/53 exit 0). Bu
+  #     SAYISAL BEYAN tasir (61/61 + 2 SINANMADI exit 2 · 63/63 exit 0). Bu
   #     beyanlari hicbir kapi olcmuyordu; ikincisi (`derle` sonrasi isir=0)
   #     DURUM.md'nin "olculmuyor" dedigi boslugun ta kendisiydi.
   #

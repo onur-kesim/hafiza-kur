@@ -15,7 +15,7 @@ yeni tur ONUR KİLİDİ ister. **25 Ağu yazısı KAPSAM DIŞI** (İş Portföy�
 köşegen, fail() METNİNDEN); sabotaj isir 39→**49/67** (önceki 39 KORUNDU, 0 düşen). EK-1:
 `os.symlink` yetkisiz→`mklink /J` junction (bu Windows'ta ÖLÇÜLDÜ, hedef mutant'ın izole tmp'si);
 `isir_eslesme_mutanti` KOL O (pozisyonla) + yeni KOL J (junction zorlaması) ✅, `h1_kapsam_mutanti`
-✅. taze 59/59+2 SINANMADI (aynı 2: M-H1b,M-DEVIR) · derle 63/63. ·
+✅. taze (git'li) 61/61+2 SINANMADI (aynı 2: M-H1b,M-DEVIR) · derle 63/63. ·
 **H11 İSIR** (`fe3df31e`, CI #112) — karar bütünlüğü kapısının 10 kör fail()'i, sabotaj isir
 29→39/67; DURUM.md o turda unutulmuştu, şimdi eklendi. ·
 **ŞIK B** (`c4acba69`, CI #111 181/181) — isir H1 0/6→6/6 (tam etiket + eksen parçası + `siki`), sabotaj isir 23→29/67. ·

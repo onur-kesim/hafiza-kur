@@ -83,15 +83,15 @@ Beyana güvenme; bu deponun kuralı bu.
 cd skill/scripts
 mkdir -p deneme && git init -q deneme
 python3 hafiza.py kur --kok=deneme --ad "Deneme"
-python3 hafiza.py isir --kok=deneme    # taze projede: 51/51 + 2 SINANMADI, exit 2
+python3 hafiza.py isir --kok=deneme    # taze projede: 61/61 + 2 SINANMADI, exit 2
 python3 hafiza.py not --kok=deneme --konu=genel-durum --metin="ilk not"
 python3 hafiza.py derle --kok=deneme
-python3 hafiza.py isir --kok=deneme    # derle sonrası: 53/53, exit 0
+python3 hafiza.py isir --kok=deneme    # derle sonrası: 63/63, exit 0
 python3 t_y3.py                        # 20 senaryo, temiz hata
 python3 t_y42.py                       # 58 senaryo
 ```
 
-Mutant sayısını **bağlamsız okuma**: `53/53` yalnız `derle` koşulmuş projede
+Mutant sayısını **bağlamsız okuma**: `63/63` yalnız `derle` koşulmuş projede
 doğrudur. Taze bir projede `M-H1b` ve `M-DEVIR` ön-koşulsuz kalır — bu sağlıklı
 bir projedir ve çıkış kodu `2`'dir.
 

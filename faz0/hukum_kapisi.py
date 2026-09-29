@@ -22,8 +22,8 @@ NEDEN VAR (Y-2, olculdu: CI run #2)
 
 BEKLENEN HUKUMLER
   t_y3   : SONUC: 20/20 senaryo TEMIZ HATA veriyor
-  isir(1): SONUC: 51/51 kosulan mutant ISIRIYOR      (derle ONCESI)
-  isir(2): SONUC: 53/53 kosulan mutant ISIRIYOR      (derle SONRASI)
+  isir(1): SONUC: 61/61 kosulan mutant ISIRIYOR      (derle ONCESI)
+  isir(2): SONUC: 63/63 kosulan mutant ISIRIYOR      (derle SONRASI)
   t_y42  : SONUC: N gecti - M kaldi - K olculemedi
   Desenler kasten ASCII'dir: koruma `errors="replace"` ile devreye girdiginde
   '-' ayraci '?' olarak basilabilir; kapi bu yuzden ayracin kendisine bakmaz.
@@ -59,9 +59,9 @@ BEKLENEN = [
     ("t_y3", "t_y3   — 20 temiz hata senaryosu",
      re.compile(r"^SONUC: 20/20 senaryo TEMIZ HATA", re.M)),
     ("isir1", "isir   — derle ONCESI mutant kosumu",
-     re.compile(r"^SONUC: 51/51 kosulan mutant ISIRIYOR", re.M)),
+     re.compile(r"^SONUC: 61/61 kosulan mutant ISIRIYOR", re.M)),
     ("isir2", "isir   — derle SONRASI TAM kosum",
-     re.compile(r"^SONUC: 53/53 kosulan mutant ISIRIYOR", re.M)),
+     re.compile(r"^SONUC: 63/63 kosulan mutant ISIRIYOR", re.M)),
     ("t_y42", "t_y42  — 58 davranis senaryosu",
      re.compile(r"^SONUC: \d+ gecti", re.M)),
 ]
