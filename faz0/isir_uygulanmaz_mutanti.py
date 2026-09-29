@@ -21,10 +21,11 @@ besli-paket/OLCUM_RAPORU_7EYL_ISIR_GIT.md)
 
 NE OLCER — DORT KOL
   KOL 1 (POZITIF KONTROL) — git'SIZ proje: kur->not->derle->isir -> exit 0,
-      ciktida 'UYGULANMAZ' satiri VAR (M-H12g/M-H14g), SINANMADI sayisi bu iki
-      kolu ICERMEZ (0).
-  KOL 2 (GIT'Li KORUNUR) — AYNI akis git'Li bir projede -> 63/63 exit 0,
-      M-H12g VE M-H14g ISIRDI.
+      ciktida TAM UC 'UYGULANMAZ' satiri VAR (M-H12g/M-H14g/M-H9 — M-H9 TEK TANIK
+      turunda, IS_EMRI_TEK_TANIK_ISIR.md, eklendi), SINANMADI sayisi bu kollari
+      ICERMEZ (0).
+  KOL 2 (GIT'Li KORUNUR) — AYNI akis git'Li bir projede -> 69/69 exit 0,
+      M-H12g, M-H14g VE M-H9 ISIRDI.
   KOL 3 (SINANMADI KORUNUR) — git VAR (`.git` dizin olarak MEVCUT) ama GERCEK
       BIR DEPO DEGIL (bos dizin, ne HEAD ne objects/refs) -> `_git_kokte_mi`
       yine de True doner (doktrin: "icerigi COP ise bile True doner") ama
@@ -114,9 +115,10 @@ def hal_git_bozuk(motor, kok):
     return kok
 
 
-_UYGULANMAZ_SATIR = re.compile(r"^\s*M-H1[24]g.*->\s*UYGULANMAZ", re.M)
+_UYGULANMAZ_SATIR = re.compile(r"^\s*M-H(?:1[24]g|9)\s.*->\s*UYGULANMAZ", re.M)
 _ISIRDI_H12G = re.compile(r"^\s*M-H12g.*->\s*ISIRDI", re.M)
 _ISIRDI_H14G = re.compile(r"^\s*M-H14g.*->\s*ISIRDI", re.M)
+_ISIRDI_H9 = re.compile(r"^\s*M-H9\s.*->\s*ISIRDI", re.M)
 _SINANMADI_SAYI = re.compile(r"·\s*(\d+)\s+SINANMADI")
 _KOSULAN_ORAN = re.compile(r"(\d+)/(\d+) kosulan mutant ISIRIYOR")
 
@@ -156,8 +158,9 @@ def main():
         print("  KOL 1 (git YOK)      : isir exit=%d" % k1)
         if k1 != 0:
             bulgu.append("KOL 1: isir exit %d (0 bekleniyordu)" % k1)
-        if not _UYGULANMAZ_SATIR.search(c1):
-            bulgu.append("KOL 1: 'M-H1?g ... UYGULANMAZ' satiri YOK")
+        n_u = len(_UYGULANMAZ_SATIR.findall(c1))
+        if n_u != 3:
+            bulgu.append("KOL 1: UYGULANMAZ satiri %d (M-H12g/M-H14g/M-H9 = 3 bekleniyordu)" % n_u)
         m = _SINANMADI_SAYI.search(c1)
         if not m or int(m.group(1)) != 0:
             bulgu.append("KOL 1: SINANMADI sayisi 0 degil (%s) — UYGULANMAZ SINANMADI'ya "
@@ -173,8 +176,10 @@ def main():
         if k2 != 0:
             bulgu.append("KOL 2: isir exit %d (0 bekleniyordu)" % k2)
         m = _KOSULAN_ORAN.search(c2)
-        if not m or m.group(1) != "63" or m.group(2) != "63":
-            bulgu.append("KOL 2: '63/63 kosulan mutant' degil (%s)" % (m.group(0) if m else "YOK"))
+        if not m or m.group(1) != "69" or m.group(2) != "69":
+            bulgu.append("KOL 2: '69/69 kosulan mutant' degil (%s)" % (m.group(0) if m else "YOK"))
+        if not _ISIRDI_H9.search(c2):
+            bulgu.append("KOL 2: M-H9 ISIRDI degil")
         if not _ISIRDI_H12G.search(c2):
             bulgu.append("KOL 2: M-H12g ISIRDI degil")
         if not _ISIRDI_H14G.search(c2):

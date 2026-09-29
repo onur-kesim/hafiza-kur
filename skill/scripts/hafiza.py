@@ -5513,6 +5513,39 @@ def cmd_isir(a):
         _h12g_damgayi_eskit_ve_commitle(h, rc["bayatlik_gun"] + rc["hafiza_gecikme_gun"] + 10)
         yaz(os.path.join(h, "_h14g_calisma_izi.md"), "bugun calisildi, commitlenmedi\n")
 
+    def m_h9(h):
+        """M-H9 (mutant_git, .git DAHIL) — eksen 'git'te IZLENMIYOR' (H9 izlenirlik):
+        kimlik kurulur, HER SEY `add -A` ile izlenir, `_ZINCIR.jsonl` index'ten
+        CIKARILIR ve COMMIT'lenir. Commit'i mutantin KENDISI atar: sablon/README
+        akisinda git VAR ama commit YOK -> H9 'HENUZ COMMIT YOK' dalina duser ve bu
+        satira HIC ulasilmaz (olculdu). Git bozuksa `add`/`commit` basarisiz olur ->
+        MutantKurulamadi (SINANMADI, sahte KOR degil)."""
+        ort = _git_kimlik_kur(h)
+        zincir = os.path.join(_hdir(h), "_ZINCIR.jsonl")
+        if not os.path.isfile(zincir):
+            raise MutantKurulamadi("_ZINCIR.jsonl yok")
+        rel = os.path.relpath(zincir, h).replace(os.sep, "/")
+        r = subprocess.run(["git", "-C", h, "add", "-A"], capture_output=True)
+        if r.returncode != 0:
+            raise MutantKurulamadi("git add basarisiz: %s"
+                                    % r.stderr.decode("utf-8", "replace")[:120])
+        if subprocess.run(["git", "-C", h, "ls-files", "--error-unmatch", rel],
+                          capture_output=True).returncode == 0:
+            r = subprocess.run(["git", "-C", h, "rm", "--cached", "-q", "--", rel],
+                               capture_output=True)
+            if r.returncode != 0:
+                raise MutantKurulamadi("zincir index'ten cikarilamadi: %s"
+                                        % r.stderr.decode("utf-8", "replace")[:120])
+        r = subprocess.run(["git", "-C", h, "commit", "-q", "--allow-empty", "-m",
+                            "isir M-H9: zincir index'ten cikarildi (mutant_git)"],
+                           capture_output=True, env=ort)
+        if r.returncode != 0:
+            raise MutantKurulamadi("git commit basarisiz: %s"
+                                    % r.stderr.decode("utf-8", "replace")[:150])
+        if subprocess.run(["git", "-C", h, "ls-files", "--error-unmatch", rel],
+                          capture_output=True).returncode == 0:
+            raise MutantKurulamadi("zincir HALA izleniyor (kurulum etkisiz)")
+
     def _komut(hedef, *argv):
         """Mutant kopyasinda gercek bir komut kosar; (cikis_kodu, cikti) doner."""
         r = subprocess.run([sys.executable, "-X", "utf8", os.path.abspath(__file__)]
@@ -6456,6 +6489,103 @@ def cmd_isir(a):
             yontem = "junction"
         print("  [M-H16k] baglanti yontemi: %s" % yontem)
 
+    # ---- ISIR: TEK TANIK MUTANTLARI (besli-paket/IS_EMRI_TEK_TANIK_ISIR.md, 29 Eyl
+    # 2026, Onur kilidi "6 tek tanik"; kanit: OLCUM_RAPORU_29EYL_KALAN18_ERISIM.md).
+    # Olculdu: bu alti fail() sabote edilince kapi YESIL basiyordu (kusuru gorebilen
+    # BASKA hicbir kapi/etiket yok). Hepsi SIK B kalibi: tam etiket + `icerik_parcasi`.
+    # Tarih/konu/dosya adi SABIT yazilmaz — kullanici projesinde "genel-durum"
+    # olmayabilir; canlidan TURETILIR, on-kosul yoksa MutantKurulamadi (sahte ISIRDI/
+    # KOR yok). Kapi govdelerine DOKUNULMADI.
+
+    def m_hcy(h):
+        """M-Hcy — eksen 'CANLI HAFIZA YOK' (`_kapi_govde` erken cikisi): canli
+        hafiza dosyasi silinir. Bu satir olurse hicbir kapi kosmaz ve hukum 'YESIL'
+        kalirdi (olculdu)."""
+        cp = _canli(h)
+        if not os.path.isfile(cp):
+            raise MutantKurulamadi("canli hafiza zaten yok")
+        os.remove(cp)
+
+    def m_h0k(h):
+        """M-H0k — eksen '_KAYNAK.md / _CIPA.json yok' (H0 kanit tabani): snapshot
+        (`_KAYNAK.md`) silinir; cipa dosyasi yerinde kalir (tek eksik)."""
+        p = os.path.join(_hdir(h), "_KAYNAK.md")
+        if not os.path.isfile(p):
+            raise MutantKurulamadi("snapshot (_KAYNAK.md) yok")
+        os.remove(p)
+
+    def m_h10t(h):
+        """M-H10t — eksen 'KONULAR.md'de tanimsiz konu' (H10 sozluk): canliya konusu
+        sozlukte OLMAYAN bir blok eklenir (M-H10 ile ayni ekleme kalibi)."""
+        kn = os.path.join(h, "KONULAR.md")
+        if not os.path.isfile(kn):
+            raise MutantKurulamadi("KONULAR.md yok — H10 sozluk kolu bu projede kosmaz")
+        konu = "zz-isir-tanimsiz"
+        if re.search(r"^\|\s*%s\s*\|" % re.escape(konu), oku(kn), re.M):
+            raise MutantKurulamadi("'%s' KONULAR.md'de ZATEN tanimli" % konu)
+        blok = ['<!-- blok konu="%s" guncel="%s" kaynak="-" -->' % (konu, bugun()),
+                "- isir M-H10t: KONULAR.md'de olmayan konu", "<!-- /blok -->"]
+        yaz(_canli(h), "\n".join(satirlar(_canli(h)) + [""] + blok))
+
+    def m_h12c(h):
+        """M-H12c — eksen 'CANLI BAYAT' (H12 sapma): canlidaki ILK konulu blogun
+        konusuyla, tarihi o blogun `guncel`inden +1 gun olan bir gunluk fragmani
+        yazilir. Konu/tarih canlidan TUREtilir (sabit 'genel-durum' YAZILMAZ);
+        `slug(konu) != konu` ise kapinin `en_yeni` anahtari tutmaz -> sonraki blok."""
+        L = satirlar(_canli(h))
+        for s in kod_disi(L):
+            m0 = BLOK_BAS.search(s)
+            if not m0:
+                continue
+            oz = oznitelik_coz(m0.group(1))
+            konu, guncel = oz.get("konu", ""), oz.get("guncel", "")
+            if not konu or slug(konu) != konu:
+                continue
+            try:
+                t = _dt.date.fromisoformat(guncel[:10])
+            except ValueError:
+                continue
+            break
+        else:
+            raise MutantKurulamadi("canlida (slug'lanmis konulu + ISO `guncel`li) blok yok")
+        yeni = (t + _dt.timedelta(days=1)).isoformat()
+        gd = os.path.join(h, "gunluk")
+        os.makedirs(gd, exist_ok=True)
+        yaz(os.path.join(gd, "isir-m-h12c-%s.md" % konu),
+            "---\nkonu: %s\ntur: durum\ntarih: %s\noturum: -\n---\n\n"
+            "isir M-H12c: canli bloktan (%s) YENI fragman\n" % (konu, yeni, guncel))
+
+    def m_h14e(h):
+        """M-H14e — eksen 'hafiza tarihi proje dosyalarindan ILERIDE' (H14): hafiza
+        DISI bir dosya olusturulur ve kopyadaki TUM dosyalarin mtime'i
+        `hafiza_gecikme_gun`+30 gun (canlinin 'Son guncelleme'sinden) geriye cekilir.
+        Neden HEPSI: `mutant()` copytree=copy2 mtime'i korur, gercek projede en yeni
+        dosya bugunku olabilir; yalniz yeni dosya eklemek YETMEZ, hafiza-disi aday
+        kumesini kapidan ayri hesaplamak da kapiyla AYRISABILIRDI (TEK TANIM)."""
+        gecikme = rc["hafiza_gecikme_gun"]
+        if gecikme <= 0:
+            raise MutantKurulamadi("hafiza_gecikme_gun=0 — H14 KAPALI (bilincli)")
+        m0 = re.search(r"Son g[uü]ncelleme:\s*(.{0,40})", oku(_canli(h)))
+        t_son = tarih_coz(m0.group(1)) if m0 else None
+        if not t_son:
+            raise MutantKurulamadi("canlinin 'Son guncelleme' tarihi cozulemedi")
+        if t_son > _dt.date.today():
+            raise MutantKurulamadi("'Son guncelleme' GELECEKTE — H14 tarihi cozulmus sayilmaz")
+        yeni = os.path.join(h, "isir_h14e_proje.txt")
+        yaz(yeni, "hafiza DISI proje dosyasi (isir M-H14e)\n")
+        ts = _dt.datetime.combine(t_son - _dt.timedelta(days=gecikme + 30),
+                                  _dt.time(12, 0)).timestamp()
+        for k0, _d0, f0 in os.walk(h):
+            for f in f0:
+                p0 = os.path.join(k0, f)
+                if not os.path.islink(p0):
+                    try:
+                        os.utime(p0, (ts, ts))
+                    except OSError:
+                        pass
+        if abs(os.path.getmtime(yeni) - ts) > 5:
+            raise MutantKurulamadi("mtime geri cekilemedi (utime etkisiz)")
+
     # KALEM 2 (SIK B) + H11 turu: eksen parcasi isteyen mutantlarin TEK tablosu (kapi
     # fark etmez). Mutant etiketle YETINMEZ, kendi EKSEN cumlesinden bir parca da ister.
     # Parcalar fail() cumlelerinden alindi (var olmayan hedefte sabit 9999 dahil); her
@@ -6494,6 +6624,11 @@ def cmd_isir(a):
         "M-H16y gunluk yok": "gunluk YOK",
         "M-H16d kararlar dizin degil": "kararlar DIZIN DEGIL",
         "M-H16k gunluk_ars proje disina bagli": "gunluk_ars PROJE DISINA BAGLI",
+        "M-Hcy canli hafiza YOK (dosya silindi)": "CANLI HAFIZA YOK",
+        "M-H0k snapshot (_KAYNAK.md) silindi": "_KAYNAK.md / _CIPA.json yok",
+        "M-H10t KONULAR.md'de tanimsiz konu": "tanimsiz konu",
+        "M-H12c canli bloktan YENI fragman": "CANLI BAYAT",
+        "M-H14e hafiza proje dosyalarindan ILERIDE": "gun ILERIDE",
     }
     # H16'nin uc fail() cagrisi DORT dizin (kararlar/gunluk/gunluk_ars/h) icin
     # AYNI sablonu ("%s YOK: %s" vb.) TEK cagri yerinden basar — dizin adi
@@ -6562,6 +6697,11 @@ def cmd_isir(a):
         ("M-H16y gunluk yok", "H16", m_h16y),
         ("M-H16d kararlar dizin degil", "H16", m_h16d),
         ("M-H16k gunluk_ars proje disina bagli", "H16", m_h16k),
+        ("M-Hcy canli hafiza YOK (dosya silindi)", "H-", m_hcy),
+        ("M-H0k snapshot (_KAYNAK.md) silindi", "H0", m_h0k),
+        ("M-H10t KONULAR.md'de tanimsiz konu", "H10", m_h10t),
+        ("M-H12c canli bloktan YENI fragman", "H12", m_h12c),
+        ("M-H14e hafiza proje dosyalarindan ILERIDE", "H14", m_h14e),
     ]
     print("=== ISIRMA KANITI (kor kapi protokolu) ===")
     print("temiz surum: YESIL ✓ (yanlis-pozitif yok)\n")
@@ -6607,13 +6747,19 @@ def cmd_isir(a):
 
     # ---- GIT'E BAGLI MUTANTLAR (mutant_git; kopyaya .git DAHIL alinir) ----
     # KALEM 1 (IS_EMRI_ISIR_GIT_VE_ORTAM_KAPISI.md, 7 Eyl 2026): yukaridaki
-    # `sinamalar`/`komut_sinamalari` cercevelerine DOKUNULMADI. Bu YALNIZ H12'nin
-    # ve H14'un git kolunu (t_git > t_son -> 'kayit birakildi, damga donmus')
-    # sinar. M-H9 (git izlenirligi) BU TURDA ACILMAZ; asagidaki SINANMADI satiri
-    # AYNEN kaliyor.
+    # `sinamalar`/`komut_sinamalari` cercevelerine DOKUNULMADI. Bu H12'nin ve
+    # H14'un git kolunu (t_git > t_son -> 'kayit birakildi, damga donmus') VE
+    # (TEK TANIK turu, IS_EMRI_TEK_TANIK_ISIR.md, 29 Eyl 2026) M-H9'u sinar: git
+    # izlenirligi (zincir index'ten cikarilip commit'lenir). Eski "M-H9 ->
+    # SINANMADI" satiri ve "H9 icin mutant YOK" cumlesi M-H9 kosunca YALAN
+    # olurdu; SONUC satirinin kuyrugu artik M-H9'un durumunu soyler. `mutant_git`
+    # eslesmesi ETIKET ([H9]) VE parca ister; parca H12'nin "git'te %s tarihinde"
+    # sablonuna da statik olarak uyar ama o fail() [H12] etiketlidir (KOL O TEK TANIK
+    # tekilligi AYNI etiketli fail()'ler arasinda arar).
     sinamalar_git = [
         ("M-H12g git kolu: damga eski, defter COMMIT'LENDI", "H12", m_h12g, "commit'lenmis"),
         ("M-H14g git kolu: defter commit'lendi, damga DONDU", "H14", m_h14g, "TARIH DAMGASI DONMUS"),
+        ("M-H9  git izlenirligi (zincir index'ten cikti)", "H9", m_h9, "git'te IZLENMIYOR"),
     ]
     for ad, kapi, fn, parca in sinamalar_git:
         try:
@@ -6652,9 +6798,14 @@ def cmd_isir(a):
         for ad, kapi, c in kacan:
             print("\n--- %s (%s) ---\n%s" % (ad, kapi, c))
         return 1
-    print("\n  %-42s -> SINANMADI (mutant kopyasina .git alinmiyor)" % "M-H9  git izlenirligi")
     kosulan = (len(sinamalar) + len(komut_sinamalari) + len(sinamalar_git)
                - len(kurulamayan) - len(uygulanmaz))
+    if any(a.startswith("M-H9 ") for a, _, _ in uygulanmaz):
+        h9_kuyruk = "izlenirlik mutanti (M-H9) UYGULANMAZ — projede git yok."
+    elif any(a.startswith("M-H9 ") for a, _, _ in kurulamayan):
+        h9_kuyruk = "izlenirlik mutanti (M-H9) KURULAMADI — SINANMADI'ya dahil."
+    else:
+        h9_kuyruk = "izlenirlik mutanti (M-H9) OLCULDU."
     # KALEM 1 (IS_EMRI_UYGULANMAZ.md, 7 Eyl 2026): SONUC satirinin METNI
     # BIREBIR korunur — `t_y42.py` sat. 1099 (B-7 kolu) tam da bu satirdaki
     # "SINANMADI · H9" alt dizesini ARAR (`skill/scripts/t_y42.py`'ye
@@ -6664,8 +6815,10 @@ def cmd_isir(a):
     if uygulanmaz:
         print("  (%d kol UYGULANMAZ — git yok; yukarida ayrica listelendi, bu sayiya GIRMEZ)"
               % len(uygulanmaz))
-    print("\nSONUC: %d/%d kosulan mutant ISIRIYOR · %d SINANMADI · H9 icin mutant YOK."
-          % (kosulan, kosulan, len(kurulamayan)))
+    # `t_y42.py` B-7 ve `readme_mutanti` bu cumlenin "ISIRIYOR · N SINANMADI · H9"
+    # ONEKINI arar; onek BIREBIR korunur, yalniz kuyruk M-H9'un durumunu soyler.
+    print("\nSONUC: %d/%d kosulan mutant ISIRIYOR · %d SINANMADI · H9 %s"
+          % (kosulan, kosulan, len(kurulamayan), h9_kuyruk))
     # FABLE 3. TUR · B-7: "kurulamayan mutant" ile "kacan mutant" ayni cikis koduna
     # (1) katlaniyordu. Oysa ikisi TAMAMEN farkli hukumler: kacan mutant KAPI KORLUGU
     # (ciddi), kurulamayan mutant testin kendi on-kosulunun saglanmamasi. Taze bir

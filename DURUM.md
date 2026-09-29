@@ -3,28 +3,29 @@
 Son güncelleme: 29 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
-**K4 — H6/H8/H16 İSIR körlüğü TAMAMLANDI (bu tur, 39→49/67).** ŞIK B kilit ailesi (B2+B3) ·
+**K4 — H6/H8/H16 + TEK TANIK İSIR TAMAMLANDI (39→49→55/67).** ŞIK B kilit ailesi (B2+B3) ·
 md.11 eşitlik körlüğü yönü · README_EN kapısı · `h4_gitignore_mutanti`ye **2-EK için AYRI kol**.
-Kalan 18 kör nokta (H0/H1-KOVA/H10/H12/H13/H-LINK/H-/H4/H5/H9/H2/H14/H17) KAPSAM DIŞI bırakıldı;
-yeni tur ONUR KİLİDİ ister. **25 Ağu yazısı KAPSAM DIŞI** (İş Portföyü'nde kapanır) ·
-**Deneme**: BEŞLİ PAKET kapandı, başlaması Onur kilidi bekler.
+Kalan 12 kör nokta (H0 3911·H4·H1-KOVA×2·H5·H12 4968·H13×2·H2·H17·H-LINK·H10 4716; başka
+tanıklı/yetim) KAPSAM DIŞI; yeni tur ONUR KİLİDİ ister. **25 Ağu yazısı KAPSAM DIŞI**
+(İş Portföyü'nde kapanır) · **Deneme**: BEŞLİ PAKET kapandı, başlaması Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**H6/H8/H16 İSIR** (bu tur, motor `6f73711d`→`479cb056`) — 10 yeni mutant (H6 4×4·H8 6×6·H16 3×3
-köşegen, fail() METNİNDEN); sabotaj isir 39→**49/67** (önceki 39 KORUNDU, 0 düşen). EK-1:
-`os.symlink` yetkisiz→`mklink /J` junction (bu Windows'ta ÖLÇÜLDÜ, hedef mutant'ın izole tmp'si);
-`isir_eslesme_mutanti` KOL O (pozisyonla) + yeni KOL J (junction zorlaması) ✅, `h1_kapsam_mutanti`
-✅. taze (git'li) 61/61+2 SINANMADI (aynı 2: M-H1b,M-DEVIR) · derle 63/63. ·
-**H11 İSIR** (`fe3df31e`, CI #112) — karar bütünlüğü kapısının 10 kör fail()'i, sabotaj isir
-29→39/67; DURUM.md o turda unutulmuştu, şimdi eklendi. ·
+**TEK TANIK İSIR** (bu tur, motor `479cb056`→`f7eeaa6b`, 362.848→371.550 B) — 6 yeni mutant
+(M-Hcy·M-H0k·M-H10t·M-H12c·M-H14e·M-H9: sabote edilince kapı YEŞİL basan fail()'ler); sabotaj
+isir 49→**55/67** (köşegen 6/6, önceki 49 KORUNDU, örtüşme 0). SONUÇ kuyruğu M-H9 durumunu
+söyler (öneki B-7/readme için BİREBİR). Ölçüldü: taze git'li 67/67+2 SINANMADI · derle 69/69 ·
+git'siz derle 66/66+3 UYGULANMAZ; 10 yerde sayı güncellendi. `t_y42` (dokunulmadı) 56 senaryoda
+taban motorla hüküm farkı 0. ·
+**H6/H8/H16 İSIR** (`1ba9d08e`/`60c32af9`) — 10 yeni mutant, sabotaj isir 39→49/67; EK-1 yetkisiz
+Windows'ta `os.symlink`→`mklink /J` junction (ÖLÇÜLDÜ); `isir_eslesme_mutanti` KOL O+KOL J. ·
+**H11 İSIR** (`fe3df31e`, CI #112) — 10 kör fail(), sabotaj isir 29→39/67. ·
 **ŞIK B** (`c4acba69`, CI #111 181/181) — isir H1 0/6→6/6 (tam etiket + eksen parçası + `siki`), sabotaj isir 23→29/67. ·
 **ŞIK A** (`612a2a74`, CI #110 178/178) — `h1_kapsam_mutanti` + `sabotaj.py --ek-olcer` (isir/ek/birleşim AYRI). ·
 **ayrisma zaman bombası** (27 Eyl, `sabit_tarih_mutanti`) · **devral GİRİŞ KAPISI** (26 Eyl) ·
 **`bolum-kur`** (13 Eyl; aday listesi `BOLUM_HEDEF`+ARŞİV DİZİNİ, `rc["zorunlu_bolumler"]` DEĞİL). ·
-**CI ölü kod+bayat yorum+izlenmeyen artık** (13 Eyl) — `shell: bash`'in `-e`'si exit-2
-muafiyetini `ec=`ye ULAŞTIRMIYORDU (CI #104/#105) ⇒ `set +e`/`set -e` + YENİ
-`ci_adim_muafiyeti_mutanti.py`; yorum+gitignore düzeldi.·
+**CI ölü kod+bayat yorum+izlenmeyen artık** (13 Eyl) — `shell: bash -e` exit-2 muafiyetini
+`ec=`ye ULAŞTIRMIYORDU ⇒ `set +e`/`set -e` + `ci_adim_muafiyeti_mutanti.py`. ·
 **B4-3+B4-4+grep tuzağı+ÖLÇEN TARAFIN körlüğü** (12 Eyl) — `derle` `yaz(y.canli)` dönene kadar
 ERTELER · `kilit_al` on-kontrolden geçer + son ağ EACCES/EPERM/EROFS · `_b44_sinifla` DÖRT
 kuralla sertleşti. ·

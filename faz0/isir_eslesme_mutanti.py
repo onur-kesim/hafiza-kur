@@ -136,6 +136,15 @@ SIKI_KIMLIK = "M-H1s"
 SABOTAJ_KIMLIK = "M-H1"          # sabote edilen fail(): bu mutantin parcasiyla bulunur
 # EK-1 (besli-paket/IS_EMRI_H8_H6_H16_ISIR.md): junction dali AYRICA kolla
 # olculur — symlink'i zorla basarisiz kil, junction'a dustu mu / #66 ISIRDI mi.
+# TEK TANIK turu (besli-paket/IS_EMRI_TEK_TANIK_ISIR.md, 29 Eyl 2026): kapisinin
+# DIGER mutantlari parcasiz kalir (mevcut mutantlar birebir) => bu grup icin
+# "kapinin tum fail()'leri ortulmeli" sarti YOK; her parca TAM 1 fail()'e uymali
+# ve o fail()'in KONUMU (etiket, fonksiyon, o etikete gore sirasi) beklenenle
+# ayni olmali. M-H9'un parcasi `_eksen_parca`da degil, `sinamalar_git`
+# tuple'inin 4. ogesindedir (mutant_git kalibi).
+TEK_TANIK_HEDEF = {"M-Hcy": ("H-", "_kapi_govde", 1), "M-H0k": ("H0", "_kapi_h0", 1),
+                   "M-H10t": ("H10", "_h10_sozluk", 1), "M-H12c": ("H12", "_h12_sapma_hukmu", 1),
+                   "M-H14e": ("H14", "_h14_hukum", 1), "M-H9": ("H9", "_kapi_h9", 1)}
 JUNCTION_KIMLIK = "M-H16k"
 JUNCTION_FONKSIYON = "m_h16k"
 JUNCTION_ESKI = "os.symlink(dis, d, target_is_directory=True)"
@@ -192,7 +201,8 @@ def _ic_fonksiyon(fn, ad):
 
 
 def motor_tablolari(kaynak):
-    """Doner: parca {ad: parca}, sinamalar [(ad, kapi)], siki_adlar [ad]."""
+    """Doner: parca {ad: parca}, sinamalar [(ad, kapi)], siki_adlar [ad],
+    git_parca {ad: (kapi, parca)} (`sinamalar_git` 4'lu tuple'lari)."""
     try:
         agac = ast.parse(kaynak)
     except SyntaxError as e:
@@ -225,7 +235,16 @@ def motor_tablolari(kaynak):
         for kw in v.keywords:
             if kw.arg == "siki" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
                 siki_adlar.append(k.value)
-    return parca, sinamalar, siki_adlar
+    sg = _atama(fn, "sinamalar_git")
+    if not isinstance(sg, ast.List):
+        raise Olculemedi("`sinamalar_git` bir liste literali degil")
+    git_parca = {}                                   # ad -> (kapi, parca)
+    for e in sg.elts:
+        if (isinstance(e, ast.Tuple) and len(e.elts) == 4
+                and all(isinstance(e.elts[i], ast.Constant) and isinstance(e.elts[i].value, str)
+                        for i in (0, 1, 3))):
+            git_parca[e.elts[0].value] = (e.elts[1].value, e.elts[3].value)
+    return parca, sinamalar, siki_adlar, git_parca
 
 
 def kimlik(ad):
@@ -345,7 +364,7 @@ def _tanim(uyan):
 def kol_o(kaynak):
     """Doner: (bulgular, sabote edilecek fail() hedefi, parca sozlugu)."""
     import h1_kapsam_mutanti
-    parca, sinamalar, siki_adlar = motor_tablolari(kaynak)
+    parca, sinamalar, siki_adlar, git_parca = motor_tablolari(kaynak)
     kapisi = dict(sinamalar)
     cs = cagri_sablonlari(kaynak)
     cagrilar = [h for h, _, _ in cs]
@@ -367,7 +386,7 @@ def kol_o(kaynak):
         if a not in kapisi:
             b.append("parca anahtari `%s` hicbir `sinamalar` adi DEGIL (sessizce "
                      "uygulanmaz)" % a)
-        elif kapisi[a] not in ("H1",) + POZ_ETIKET:
+        elif kapisi[a] not in ("H1",) + POZ_ETIKET and kimlik(a) not in TEK_TANIK_HEDEF:
             b.append("`%s` [%s]: bu betik o kapinin eksen eslemesini TANIMIYOR" % (a, kapisi[a]))
     ortulen = set()
     sabotaj_hedefi = None
@@ -403,9 +422,10 @@ def kol_o(kaynak):
     # (POZISYON_GRUPLARI) — davranis H11 icin BIREBIR eskisi (sadece kod
     # tekrari kalkti).
     konum_g, sira_g = {}, {}
+    izlenen_etiket = set(dict(POZISYON_GRUPLARI)) | {e for e, _, _ in TEK_TANIK_HEDEF.values()}
     for h, _, fn in cs:
         etiket = h["kapi"]
-        if etiket in dict(POZISYON_GRUPLARI):
+        if etiket in izlenen_etiket:
             sira_g.setdefault(etiket, {})
             sira_g[etiket][fn] = sira_g[etiket].get(fn, 0) + 1
             konum_g.setdefault(etiket, {})[(fn, sira_g[etiket][fn])] = h
@@ -439,6 +459,43 @@ def kol_o(kaynak):
         if ortulen != hepsi:
             b.append("parcalar %s'in %d fail()'ini ORTMUYOR: eksik satirlar %s"
                      % (etiket, len(hepsi), sorted(hepsi - ortulen)))
+
+    # ---- TEK TANIK (IS_EMRI_TEK_TANIK_ISIR.md): tamamlik ISTENMEZ (kapilarin diger
+    # mutantlari parcasiz); her parca TAM 1 fail()'e uymali ve o fail() beklenen
+    # (etiket, fonksiyon, sira) KONUMUNDA olmali.
+    tek_parca = {a: p for a, p in parca.items() if kimlik(a) in TEK_TANIK_HEDEF}
+    tek_etiket = {a: kapisi.get(a) for a in tek_parca}
+    for a, (kp, p) in git_parca.items():
+        if kimlik(a) in TEK_TANIK_HEDEF:
+            tek_parca[a] = p
+            tek_etiket[a] = kp
+    print("  TEK TANIK fail(): parca %d / beklenen %d" % (len(tek_parca), len(TEK_TANIK_HEDEF)))
+    for kim in TEK_TANIK_HEDEF:
+        if kim not in {kimlik(a) for a in tek_parca}:
+            b.append("TEK TANIK `%s` mutantinin PARCASI YOK" % kim)
+    for a, p in sorted(tek_parca.items(), key=lambda x: kimlik(x[0])):
+        etiket, fn0, sira0 = TEK_TANIK_HEDEF[kimlik(a)]
+        if tek_etiket[a] != etiket:
+            b.append("`%s`: kapi etiketi %r (beklenen %r)" % (kimlik(a), tek_etiket[a], etiket))
+            continue
+        # Tekillik AYNI ETIKETLI fail()'ler arasinda aranir: `mutant()`/`mutant_git()`
+        # eslesmesi `[etiket]` VE parcayi BIRLIKTE ister; baska etiketli bir sablona
+        # statik uyum (or. "git'te IZLENMIYOR" ~ H12 "git'te %s tarihinde") runtime'da
+        # etkisizdir. Etiket-disi uyum sayisi bilgi olarak basilir.
+        tum = uyan_cagrilar(p, cs)
+        uyan = [x for x in tum if x["kapi"] == etiket]
+        if len(uyan) != 1:
+            b.append("`%s` parcasi [%s] etiketli %d fail()'e uyuyor (TAM 1 olmali): %r -> %s"
+                     % (kimlik(a), etiket, len(uyan), p, _tanim(uyan) or "-"))
+            continue
+        h, hedef = uyan[0], konum_g.get(etiket, {}).get((fn0, sira0))
+        if hedef is None or h["lineno"] != hedef["lineno"]:
+            b.append("`%s` parcasi YANLIS fail()'e uyuyor: %s (hedef %s %s/%d)"
+                     % (kimlik(a), _tanim(uyan), etiket, fn0, sira0))
+            continue
+        print("  %-7s %-24s -> #%02d sat %-5d TAM 1 [%s] fail() (etiket-disi uyum %d) : %r"
+              % (kimlik(a), "%s/%d" % (fn0, sira0), h["no"], h["lineno"], etiket,
+                 len(tum) - 1, p))
     if [kimlik(a) for a in siki_adlar] != [SIKI_KIMLIK]:
         b.append("`siki=True` alan mutantlar %s (YALNIZ %s olmali)"
                  % ([kimlik(a) for a in siki_adlar], SIKI_KIMLIK))
@@ -598,10 +655,16 @@ def main():
 
     kirmizi, olculemeyen = 0, 0
     _tum_pozisyon_kimlik = [a for _, hd in POZISYON_GRUPLARI for a in hd]
+    # M-H9 mutant_git'tir: bu betigin sablonu git'SIZ kurulur -> UYGULANMAZ (gercek
+    # davranisi sabotaj.py #4629 KAPSAMLI + isir_uygulanmaz_mutanti KOL 2 olcer).
+    _tek_mutant = [x for x in TEK_TANIK_HEDEF if x != "M-H9"]
     beklenen = {
-        "KOL 0": ("H1'in yedi ve H11/H6/H8/H16'nin TUM mutanti ISIRDI, exit 0",
+        "KOL 0": ("H1'in yedi, H11/H6/H8/H16'nin TUM ve tek tanik mutantlari ISIRDI "
+                  "(M-H9: git'siz sablonda UYGULANMAZ), exit 0",
                   lambda k, h: k == 0 and all(h.get(x) == "ISIRDI"
-                                              for x in list(HEDEF_EKSEN) + _tum_pozisyon_kimlik)),
+                                              for x in list(HEDEF_EKSEN) + _tum_pozisyon_kimlik
+                                              + _tek_mutant)
+                  and h.get("M-H9") in ("ISIRDI", "UYGULANMAZ")),
         "KOL a": ("M-H1 ISIRDI (maskeleme URETILDI)",
                   lambda k, h: h.get("M-H1") == "ISIRDI"),
         "KOL a1": ("M-H1 ve M-H1b KACTI (B tek basina yeter)",
@@ -634,6 +697,8 @@ def main():
             for etiket, hedef_map in POZISYON_GRUPLARI:
                 print("         %-3s: %s" % (etiket, " ".join(
                     "%s=%s" % (x, h.get(x, "-")) for x in sorted(hedef_map))))
+            print("         TEK: %s" % " ".join(
+                "%s=%s" % (x, h.get(x, "-")) for x in sorted(TEK_TANIK_HEDEF)))
         print("         beklenen: %s" % tanim)
         if ad == "KOL c" and tamam:
             print("         OLCULDU: M-H1s `siki`siz -> %s" % h.get("M-H1s"))
