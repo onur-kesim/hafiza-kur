@@ -52,7 +52,9 @@ KURULAMADI — h14_bolme dersi)
       (eski karsiligi `zip -l`: hafiza.py 259.228 -> 264.431 bayt, 5.203 satirin LF'i CRLF)
   M-2 suzgec `references`i dusurur (paylasilan suzgec bozulur)           -> KAPI-2 isirmali, KAPI-1 yesil
       (eski karsiligi `-x 'references/*'`: alti `references/*.md` paketten duser)
-  M-3 determinizm sokulur (date_time = simdi)                            -> DETERMINIZM isirmali;
+  M-3 determinizm sokulur (date_time = simdi, saniye CIFTE yuvarlanmis)  -> DETERMINIZM isirmali;
+      (ZIP tarihi 2 sn cozunurludur: tek saniye yazilsa komutun (vi) ayagi ONU DA yakalar, eksen karisir —
+      ilk surumde bu, saniyeye gore TESADUFEN gecip KACTI basti; 30 Eyl 2026 paralel kosumda gorundu)
       iki kapi KOR: paket gecerli, eksiksiz, bit-bit — yalniz tekrar uretilemez
   M-4 uretici LF->CRLF yazar, komutun olcumu ACIK                        -> IC OLCUM isirmali:
       exit != 0, `hafiza-kur.skill` YOK, KAPI satiri YOK (kapilara hic ulasilmaz)
@@ -183,7 +185,8 @@ MUTANTLAR = [
      [('_SKILL_KUR_HARIC_DIZIN = ("deneme", "__pycache__")',
        '_SKILL_KUR_HARIC_DIZIN = ("deneme", "__pycache__", "references")')], "KAPI-2"),
     ("M-3 determinizm sokuldu (date_time = simdi)",
-     [('_PAKET_TARIH = (1980, 1, 1, 0, 0, 0)', '_PAKET_TARIH = __import__("time").localtime()[:6]')],
+     [('_PAKET_TARIH = (1980, 1, 1, 0, 0, 0)',
+       '_PAKET_TARIH = (lambda t: t[:5] + (t[5] - t[5] % 2,))(__import__("time").localtime())')],
      "DETERMINIZM"),
     ("M-4 uretici bozuk, komutun olcumu acik", [_URETICI_CRLF], "IC-OLCUM"),
     ("M-5 uye sirasi tersine doner", [("for rel in sorted(kd):", "for rel in sorted(kd, reverse=True):")], "IC-OLCUM"),
