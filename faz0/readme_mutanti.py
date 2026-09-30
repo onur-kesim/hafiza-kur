@@ -90,8 +90,8 @@ _MOTOR_KOD = re.compile(r"CIKIS KODLARI:\s*(.+)")
 _KOD = re.compile(r"(\d+)")
 # README'nin "Cikis kodlari" paragrafi
 _README_ISIR = re.compile(r"`isir`\s*:(.+?)\.", re.S)
-_README_SKILL_KUR = re.compile(r"`skill-kur`\s*:(.+?)\.(?:\s|$)", re.S)
-_README_PAKET = re.compile(r"`paket`\s*:(.+?)\.(?:\s|$)", re.S)
+_README_SKILL_KUR = re.compile(r"^`skill-kur`\s*:(.+?)(?:\n[ \t]*\n|\Z)", re.S | re.M)   # PARAGRAF: bos satira kadar
+_README_PAKET = re.compile(r"^`paket`\s*:(.+?)(?:\n[ \t]*\n|\Z)", re.S | re.M)
 _KOD_ARKA = re.compile(r"`(\d+)`")          # README'de kodlar `N` icinde yazilir; prozdaki rakam SAYILMAZ
 # kosucularin ozet satirlari: t_y3 "SONUC: 20/20 senaryo ..." · t_y42 "... (toplam 58)"
 _KANIT_TOPLAM = re.compile(r"toplam\s+(\d+)")
@@ -213,17 +213,19 @@ _YARDIM_ONBELLEK = {}
 
 def komut_kodlari(kaynak_scripts, komut):
     """Motorun `<komut> --help` sonundaki `CIKIS KODLARI:` satirinin kod KUMESI (set | None)."""
-    if komut not in _YARDIM_ONBELLEK:
+    anahtar = (os.path.abspath(kaynak_scripts), komut)
+    if anahtar not in _YARDIM_ONBELLEK:
         p = subprocess.run([sys.executable, "-X", "utf8", "hafiza.py", komut, "--help"],
                            cwd=kaynak_scripts, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         m = _MOTOR_KOD.search(p.stdout.decode("utf-8", "replace"))
-        _YARDIM_ONBELLEK[komut] = (set(int(x) for x in _KOD.findall(m.group(1)))
-                                   if (m and p.returncode == 0) else None)
-    return _YARDIM_ONBELLEK[komut]
+        _YARDIM_ONBELLEK[anahtar] = (set(int(x) for x in _KOD.findall(m.group(1)))
+                                     if (m and p.returncode == 0) else None)
+    return _YARDIM_ONBELLEK[anahtar]
 
 
 def kapi3_komut_sozlesmesi(metin, kaynak_scripts):
-    """README'nin `skill-kur` ve `paket` kod kumeleri motorun `--help` satirlariyla ayni mi? (ADDITIVE)"""
+    """README'nin `skill-kur` ve `paket` kod kumeleri motorun `--help` satirlariyla ayni mi? (ADDITIVE)
+    SINIR: KUMEYI karsilastirir, kodlarin ANLAMINI degil (1 ile 2'nin anlamlari takas edilse kume ayni kalir)."""
     bulgu = []
     for komut, desen in (("skill-kur", _README_SKILL_KUR), ("paket", _README_PAKET)):
         m = desen.search(metin)
@@ -366,14 +368,21 @@ def m6_ty42_sayisi(s):
 
 def m7_skill_kur_kodu_dustu(s):
     """README `skill-kur` sozlesmesinden `3` dusmus (BULGU'nun ta kendisi) -> KAPI-3 isirmali."""
-    yeni = s.replace("`3` dosya sistemi yazmaya izin vermedi (kurulum tamamlanmadı)", "", 1)
+    yeni = s.replace("`3` dosya sistemi yazmaya izin vermedi (kurulum tamamlanmadı) ya da beklenmeyen hata (hüküm yok)", "", 1)
+    return yeni if yeni != s else None
+
+
+def m9_kod_ve_nokta_birlikte_dustu(s):
+    """`3` VE paragrafin son noktasi birlikte silinir (bagimsiz turun yeniden urettigi kor nokta): eski regex
+    komsu `paket` paragrafina tasiyip kapiyi sessizce YESIL basiyordu -> KAPI-3 isirmali."""
+    yeni = s.replace(" ·\n`3` dosya sistemi yazmaya izin vermedi (kurulum tamamlanmadı) ya da beklenmeyen hata (hüküm yok).", "", 1)
     return yeni if yeni != s else None
 
 
 def m8_paket_kodu_bozulur(s):
     """README `paket` sozlesmesinde yanlis kod -> KAPI-3 isirmali (skill-kur satiri dokunulmaz)."""
-    yeni = s.replace("`2` kullanım hatası · `3` dosya sistemi yazmaya izin vermedi (paket üretilmedi)",
-                     "`2` kullanım hatası · `4` dosya sistemi yazmaya izin vermedi (paket üretilmedi)", 1)
+    yeni = s.replace("`3` dosya sistemi yazmaya izin vermedi (paket üretilmedi)",
+                     "`4` dosya sistemi yazmaya izin vermedi (paket üretilmedi)", 1)
     return yeni if yeni != s else None
 
 
@@ -386,6 +395,7 @@ MUTANTLAR = [
     ("M-6 t_y42 senaryo sayisi yanlis", m6_ty42_sayisi, "KAPI-2"),
     ("M-7 skill-kur sozlesmesinden 3 dustu", m7_skill_kur_kodu_dustu, "KAPI-3"),
     ("M-8 paket sozlesmesinde yanlis kod", m8_paket_kodu_bozulur, "KAPI-3"),
+    ("M-9 skill-kur 3 ve noktasi birlikte dustu", m9_kod_ve_nokta_birlikte_dustu, "KAPI-3"),
 ]
 
 

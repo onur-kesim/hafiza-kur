@@ -14,32 +14,44 @@ KAPI (motorun `paket` komutunun uretim-sonrasi olcumunun (v) ayagi — `hafiza.p
   SKILL.md on-maddesindeki `description` > 500 KARAKTER ise paket URETILMEZ (exit 1, dosya YOK).
   Okunamayan aciklama da KIRMIZIDIR: olculemeyen sey temiz sayilmaz.
 
-NE OLCER — SINIR IKI TARAFTAN, UC YAML BICIMINDE
+NE OLCER — SINIR IKI TARAFTAN, UC YAML BICIMINDE + BAGIMSIZ TURUN 'YANLIS YESIL' SINIFLARI
   S-0          depodaki GERCEK SKILL.md: BAGIMSIZ sayim <= 500 ve `paket` exit 0
   S-500 x3     tam 500 karakter -> exit 0 (katlanmis `>-` cok satir · tirnakli tek satir · duz tek satir)
   S-501 x3     tam 501 karakter -> exit 1, paket YOK, mesaj 501 ve 500'u anar
-  S-500B       500 KARAKTER ama 500 BAYTTAN COK (Turkce harfli) -> exit 0: KARAKTER sayilir, bayt degil
+  S-500B       500 KARAKTER ama 500 BAYTTAN COK (Turkce harfli) -> exit 0: karakter sayilir, bayt degil
   S-YOK        `description` okunamiyor -> exit 1 (olculemeyen temiz sayilmaz)
-  S-CIFT       `description` IKI KEZ var (ilki kisa, ikincisi 501) -> exit 1: hangisinin gecerli
-               oldugu ayristiriciya gore degisir (PyYAML sonuncuyu alir); ilkini alip YESIL demek
-               sessiz kayip olurdu
+  S-CIFT       `description` IKI KEZ var -> exit 1 (PyYAML sonuncuyu alir; ilkini alip YESIL demek sessiz kayip)
+  S-500S/501S  katlanmis blokta SATIR SONU BOSLUKLARI (YAML'de ICERIKTIR) toplam 500 -> exit 0 · 501 -> exit 1
+               (motor bosluklari kirpinca 505'i 496 sayip GECIRIYORDU)
+  S-DEVAM      duz skalar + BOS SATIR + girintili devam (gercekte 600+ karakter) -> exit 1 (motor yalniz
+               ilk satiri sayip GECIRIYORDU)
+  S-BOS/NULL/GECERSIZ  `""` · `~` · `foo: bar` -> exit 1 (bos/null/gecersiz YAML temiz sayilmaz)
+  S-EMOJI500/501  250 emoji = 500 UTF-16 birimi -> exit 0 · +1 karakter = 501 -> exit 1 (kod noktasi
+               sayilsaydi 251 olur ve GECERDI)
 
-MUTANTLAR (motor KOPYASINDA dizge sabotaji; hedef dizge TAM 1 kez gecmeli — h14_bolme dersi)
-  M-A1 sinir 500 -> 501            -> S-501 satirlari YESIL kalir (yakalanmali)
-  M-A2 sinir 500 -> 499            -> S-500 satirlari KIRMIZI olur
-  M-A3 KARAKTER yerine BAYT sayar  -> S-500B KIRMIZI olur
-  M-A4 okunamayan aciklama GECER   -> S-YOK YESIL kalir
-  M-A5 kapi komple sokulur         -> S-501 satirlari YESIL kalir
+MUTANTLAR (motor KOPYASINDA dizge sabotaji; hedef dizge TAM 1 kez gecmeli — h14_bolme dersi; her mutant
+yalniz kendi vakalarini kosar)
+  M-A1 sinir 500 -> 501               -> S-501 satirlari YESIL kalir
+  M-A2 sinir 500 -> 499               -> S-500 satirlari KIRMIZI olur
+  M-A3 KARAKTER yerine BAYT sayar     -> S-500B KIRMIZI olur
+  M-A4 okunamayan/bos aciklama GECER  -> S-YOK · S-BOS YESIL kalir
+  M-A5 kapi komple sokulur            -> S-501 satirlari YESIL kalir
   M-A6 yinelenen anahtarda ILKINI alir -> S-CIFT YESIL kalir
+  M-A7 UTF-16 yerine KOD NOKTASI sayar -> S-EMOJI501 YESIL kalir
+  M-A8 blok satir sonu bosluklarini KIRPAR -> S-501S YESIL kalir
+  M-A9 devam kontrolu bos satiri ATLAMAZ -> S-DEVAM YESIL kalir
+  M-A10 duz skalar korumasi (null/gecersiz) SOKULUR -> S-NULL YESIL kalir
 POZITIF KONTROL: temiz motorda TUM vakalar beklenen hukmu vermeli; vermezse mutant hukmu ANLAMSIZDIR.
 
 NE OLCMEZ (hukum degil, SINIR)
-  1. claude.ai'nin SAYIMINI (UTF-16 birimi mi, karakter mi) dogrudan olcmez: bu dosyanin tum
-     karakterleri BMP'dedir ve ikisi ayni sayidir. BMP-disi (emoji) bir aciklama icin sayim
-     OLCULMEDI.
+  1. claude.ai'nin SAYIMINI (UTF-16 birimi mi, kod noktasi mi) dogrudan olcmez: 30 Eyl 2026 ornegi
+     yalniz BMP'ydi. Motor MUHAFAZAKAR olani (UTF-16 birimi; kod noktasindan hicbir zaman az degil)
+     sayar. Bu, is emrindeki "Unicode karakter" ifadesinden yalniz BMP-disi karakterlerde ayrilir.
   2. Motorun YAML ayristiricisi tam YAML DEGILDIR: blok skalar (`>`/`>-`/`|`/`|-`), tirnakli ve duz
-     TEK satir desteklenir; baska her sey "okunamadi" = KIRMIZI. Bu bir SINIRDIR ve kapiyi
-     gevsetmez, sikilastirir.
+     TEK satir desteklenir; baska her sey "okunamadi" = KIRMIZI (12.000 rastgele vakada PyYAML ile
+     karsilastirildi: yanlis-kisa 0, gecersiz YAML'i kabul 0 — bu dosyanin vakalari o taramanin
+     sabit parcasidir, taramanin kendisi degil). On-maddenin GERI KALANI (ornegin `name:` satirinin
+     gecerliligi) olculmez.
 
 CIKIS KODLARI
   0  pozitif kontrol temiz VE tum mutantlar ISIRDI
@@ -110,9 +122,28 @@ def on_madde(bicim, aciklama):
         govde = "description: %s\n" % aciklama
     elif bicim == "cift":
         govde = "description: kisa bir aciklama" + chr(10) + 'description: "%s"' % aciklama + chr(10)
+    elif bicim == "satirlar":                           # `aciklama` = HAZIR satir listesi (sonda bosluklar korunur)
+        govde = "description: >-" + chr(10) + "".join("  %s" % x + chr(10) for x in aciklama)
+    elif bicim == "devam":                              # duz skalar + BOS SATIR + girintili devam
+        govde = "description: kisa" + chr(10) + chr(10) + "  %s" % aciklama + chr(10)
+    elif bicim == "bos":
+        govde = 'description: ""' + chr(10)
+    elif bicim == "null":
+        govde = "description: ~" + chr(10)
+    elif bicim == "gecersiz":
+        govde = "description: foo: bar" + chr(10)
     else:
         govde = "aciklama_degil: bir sey\n"
     return "---\nname: hafiza-kur\n%s---\n\n# Deneme\n" % govde
+
+
+def sonbos_satirlar(n0, k):
+    """Toplam katlanmis uzunlugu n0 + k olan satirlar: n0 karakterlik metin 78 sutunda sarilir, ilk k
+    satirin SONUNA birer bosluk eklenir (YAML blok skalarda satir sonu bosluklari ICERIKTIR)."""
+    satirlar = textwrap.wrap(metin(n0, ASCII_SOZLUK), width=78, break_long_words=False, break_on_hyphens=False)
+    if len(satirlar) <= k:
+        raise Olculemedi("sonbos_satirlar: satir sayisi %d <= %d" % (len(satirlar), k))
+    return [x + (" " if i < k else "") for i, x in enumerate(satirlar)]
 
 
 def bagimsiz_uzunluk(md):
@@ -175,13 +206,28 @@ def vakalar():
     v.append(("S-500B coklu bayt (500 krk, %d bayt)" % len(t.encode("utf-8")), on_madde("katlanmis", t), 0, ()))
     v.append(("S-YOK aciklama okunamiyor", on_madde("yok", ""), 1, ("OKUNAMADI",)))
     v.append(("S-CIFT yinelenen description", on_madde("cift", metin(501, ASCII_SOZLUK)), 1, ("OKUNAMADI",)))
+    # bagimsiz tur 30 Eyl 2026'nin gercek YANLIS-YESIL siniflari (motor gercek uzunluktan KUCUK sayiyordu)
+    v.append(("S-500S sonda bosluklar (toplam 500)", on_madde("satirlar", sonbos_satirlar(494, 6)), 0, ()))
+    v.append(("S-501S sonda bosluklar (toplam 501)", on_madde("satirlar", sonbos_satirlar(495, 6)), 1,
+              ("501", "PAKET OLCUMU TUTMADI")))
+    v.append(("S-DEVAM duz skalar + bos satir + devam", on_madde("devam", metin(600, ASCII_SOZLUK)), 1, ("OKUNAMADI",)))
+    v.append(("S-BOS bos aciklama", on_madde("bos", ""), 1, ("OKUNAMADI",)))
+    v.append(("S-NULL description: ~", on_madde("null", ""), 1, ("OKUNAMADI",)))
+    v.append(("S-GECERSIZ description: foo: bar", on_madde("gecersiz", ""), 1, ("OKUNAMADI",)))
+    emoji = chr(0x1F600)                                   # BMP-disi: 1 kod noktasi = 2 UTF-16 birimi
+    v.append(("S-EMOJI500 (250 emoji = 500 UTF-16)", on_madde("duz", emoji * 250), 0, ()))
+    v.append(("S-EMOJI501 (250 emoji + 1 = 501 UTF-16)", on_madde("duz", emoji * 250 + "a"), 1,
+              ("501", "PAKET OLCUMU TUTMADI")))
     return v
 
 
-def batarya(taban, motor_metni, etiket):
-    """Tum vakalari (motor_metni None = temiz) kosar. [(ad, durum, ayrinti)]; durum TAMAM | SAPTI."""
+def batarya(taban, motor_metni, etiket, onek=""):
+    """Vakalari (motor_metni None = temiz; `onek` verilirse yalniz adi onunla baslayanlar) kosar.
+    [(ad, durum, ayrinti)]; durum TAMAM | SAPTI."""
     sonuc = []
     for i, (ad, md, beklenen, aranan) in enumerate(vakalar()):
+        if not ad.startswith(onek):
+            continue
         d = os.path.join(taban, "%s-%d" % (etiket, i))
         skill_kopyasi(d, motor_metni)
         if md is not None:
@@ -211,13 +257,21 @@ def batarya(taban, motor_metni, etiket):
 MUTANTLAR = [
     ("M-A1", "sinir 500 -> 501", "_PAKET_ACIKLAMA_SINIRI = 500\n", "_PAKET_ACIKLAMA_SINIRI = 501\n", "S-501"),
     ("M-A2", "sinir 500 -> 499", "_PAKET_ACIKLAMA_SINIRI = 500\n", "_PAKET_ACIKLAMA_SINIRI = 499\n", "S-500 "),
-    ("M-A3", "KARAKTER yerine BAYT sayar", "    if len(a) > _PAKET_ACIKLAMA_SINIRI:\n",
-     '    if len(a.encode("utf-8")) > _PAKET_ACIKLAMA_SINIRI:\n', "S-500B"),
-    ("M-A4", "okunamayan aciklama GECER", '        return "(v) SKILL.md on-maddesinden',
+    ("M-A3", "KARAKTER yerine BAYT sayar", '    return len(a.encode("utf-16-le")) // 2' + chr(10),
+     '    return len(a.encode("utf-8"))' + chr(10), "S-500B"),
+    ("M-A4", "okunamayan/bos aciklama GECER", '        return "(v) SKILL.md on-maddesinden',
      '        return None; "(v) SKILL.md on-maddesinden', "S-YOK"),
-    ("M-A5", "kapi komple sokulur", "def _paket_aciklama_ayagi(skill_md_bayt):\n",
-     "def _paket_aciklama_ayagi(skill_md_bayt):\n    return None\n", "S-501"),
-    ("M-A6", "yinelenen anahtarda ILKINI alir", "    if len(bulunan) != 1:\n", "    if not bulunan:\n", "S-CIFT"),
+    ("M-A5", "kapi komple sokulur", "def _paket_aciklama_ayagi(skill_md_bayt):" + chr(10),
+     "def _paket_aciklama_ayagi(skill_md_bayt):" + chr(10) + "    return None" + chr(10), "S-501"),
+    ("M-A6", "yinelenen anahtarda ILKINI alir", "    if len(bulunan) != 1:" + chr(10), "    if not bulunan:" + chr(10), "S-CIFT"),
+    ("M-A7", "UTF-16 yerine KOD NOKTASI sayar", '    return len(a.encode("utf-16-le")) // 2' + chr(10),
+     "    return len(a)" + chr(10), "S-EMOJI501"),
+    ("M-A8", "blok satir sonu bosluklarini KIRPAR", "        govde.append(s)" + chr(10),
+     "        govde.append(s.rstrip())" + chr(10), "S-501S"),
+    ("M-A9", "devam kontrolu bos satiri ATLAMAZ", '    dolu = next((x for x in sonraki if x.strip()), "")' + chr(10),
+     '    dolu = sonraki[0] if sonraki else ""' + chr(10), "S-DEVAM"),
+    ("M-A10", "duz skalar korumasi (null/gecersiz) SOKULUR", "    if _yaml_duz_gecersiz(deger):" + chr(10),
+     "    if False:" + chr(10), "S-NULL"),
 ]
 
 
@@ -257,7 +311,7 @@ def main():
                 bir_kez(temiz_metin, eski)
                 sab = temiz_metin.replace(eski, yeni, 1)
                 compile(sab, "<mutant>", "exec")
-                sonuc = batarya(taban, sab, ad)
+                sonuc = batarya(taban, sab, ad, sapmali)
             except (Olculemedi, SyntaxError) as e:
                 olculemedi.append(ad)
                 print("  %-5s %-28s OLCULEMEDI: %s" % (ad, acik, e))

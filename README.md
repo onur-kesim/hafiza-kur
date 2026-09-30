@@ -3,9 +3,12 @@
 Taşınabilir bir **proje hafızası kapı sistemi**. Tek dosyalık saf Python motoru
 (stdlib, sıfır bağımlılık) bir projenin hafıza dosyalarını yönetir ve **ölçer**.
 
-> **Durum:** geliştirme aşamasında, **henüz yayımlanmadı.** Aşağıdaki Kurulum yolu
-> çalışır (depoyu klonlarsın); bu depo CI ölçümü ücretsiz koşabilsin diye publictir —
-> bir yayın değildir. PyPI paketi, marketplace girişi ya da duyuru **yoktur**.
+> **Durum:** geliştirme aşamasında, **henüz yayımlanmadı.** Aşağıdaki Kurulum komutları
+> vardır ve ölçülmüştür — Claude Code yolu (`skill-kur`) gerçek ev dizininde ve CI'da;
+> `paket` paketi üretip kendi kendini ölçer. **Ölçülmeyen tek halka:** `paket`in ürettiği
+> dosyanın claude.ai'ye yüklenip kabul edilmesi (30 Eyl 2026 yüklemesi `zip` ile üretilmiş
+> paketleydi). Bu depo CI ölçümü ücretsiz koşabilsin diye publictir — bir yayın değildir.
+> PyPI paketi, marketplace girişi ya da duyuru **yoktur**.
 
 ---
 
@@ -27,7 +30,7 @@ Python 3 ve `git` yeter (motor stdlib, sıfır bağımlılık; `bash` ve `zip` g
    python3 skill/scripts/hafiza.py skill-kur
    ```
 
-   Sonra Claude Code'da `/hafiza-kur`.
+   Sonra Claude Code'da `/hafiza-kur` (`skills/` dizini yeni açıldıysa açık oturumda `/reload-skills`).
 
 3. **Cowork / claude.ai** — bu klasörü okumazlar; `.skill` paketini üretip yüklersin:
 
@@ -35,7 +38,8 @@ Python 3 ve `git` yeter (motor stdlib, sıfır bağımlılık; `bash` ve `zip` g
    python3 skill/scripts/hafiza.py paket
    ```
 
-   Sonra claude.ai → **Customize → Skills → Upload skill** → `hafiza-kur.skill`.
+   Paket depo kökünde `hafiza-kur.skill` olarak oluşur (komut yolunu basar). Sonra claude.ai →
+   **Customize → Skills → Upload skill** → `hafiza-kur.skill`.
 
 ---
 
@@ -83,10 +87,11 @@ yeşil ama kapsam eksik (`?` ile işaretli en az bir şey ölçülmedi).
 
 `skill-kur`: `0` kuruldu ya da zaten kurulu · `1` kurulum ölçümü tutmadı (kurulmadı) ·
 `2` kullanım hatası ya da hedefte FARKLI bir kurulum var (hiçbir şey değişmez) ·
-`3` dosya sistemi yazmaya izin vermedi (kurulum tamamlanmadı).
+`3` dosya sistemi yazmaya izin vermedi (kurulum tamamlanmadı) ya da beklenmeyen hata (hüküm yok).
 
 `paket`: `0` üretildi ve ölçüldü · `1` üretim sonrası ölçüm tutmadı (paket bırakılmaz) ·
-`2` kullanım hatası · `3` dosya sistemi yazmaya izin vermedi (paket üretilmedi).
+`2` kullanım hatası ya da kaynakta dizin bağlantısı var ·
+`3` dosya sistemi yazmaya izin vermedi (paket üretilmedi) ya da beklenmeyen hata (hüküm yok).
 
 **Yardımcı komutlar**
 
@@ -109,6 +114,8 @@ yerini seçersin. Çıktı **deterministiktir** (sıralı ad, sabit tarih/izin, 
 iki üretim bayt-birebir eşittir) ve komut üretimden sonra **kendi paketini ölçer** — zip'ten geri
 okunan motor kaynakla bit-bit, envanter süzülmüş kaynakla aynı, açıklama en çok 500 karakter
 (claude.ai daha fazlasını kayıtta sessizce kırpıyor). Ölçüm tutmazsa paket **bırakılmaz**.
+Kaynakta dizin bağlantısı (symlink/junction) varsa `paket` **reddeder** — bağlantıyı izlemez,
+sessizce de düşürmez.
 
 `kur`, ağaçta başka bir aracın defterini tanırsa (`CLAUDE.md`, `AGENTS.md`,
 `DURUM.md`, `memory-bank/` …) **durur** ve `devral` önerir — belge bunu zaten

@@ -134,9 +134,12 @@ set -e
 
 if [ "$KAPI_RC" -ne 0 ]; then
   echo
-  echo "DURDU: uretilen paket kapiyi gecemedi (kod $KAPI_RC). Paket GECERSIZ."
+  echo "DURDU: uretilen paket kapiyi gecemedi (kod $KAPI_RC). Paket GECERSIZ ve SILINDI."
   echo "  -- 'belge de bir arayuzdur ve yalan soyleyebilir' (A-2'nin dersi);"
   echo "     bu yuzden BEYAN degil PAKET olculur."
+  # Motorun `paket` komutu olcum tutmayinca dosyayi BIRAKMAZ; kapi da ayni sozu tutar: kirmizi paket
+  # diskte kalirsa exit kodunu yok sayan biri onu claude.ai'ye yukler (bagimsiz tur 30 Eyl 2026).
+  rm -f hafiza-kur.skill
   exit 1
 fi
 

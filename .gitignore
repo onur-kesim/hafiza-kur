@@ -31,6 +31,8 @@ hukum.log
 
 # --- paketleme çıktısı (kaynağı skill/ dizinidir) ---
 *.skill
+# `paket` gecici ad: hafiza-kur.skill.<pid>.tmp (surec sert olurse kalabilir)
+*.skill.*.tmp
 
 # =============================================================================
 # ASLA YOKSAYMA — bunlar kanıt tabanıdır, .gitignore'a girerlerse H9 kırmızı yanar

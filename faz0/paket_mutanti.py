@@ -20,7 +20,7 @@ NEDEN VAR (olculdu 14 Agu 2026)
   AYNEN kalir. Bu, mutantlarin da yeni uretici uzerinde yeniden kurulmasini gerektirdi: eski M-1
   (`zip -l`) ve M-2 (`-x references/*`) artik olmayan bir komutu sabote ediyordu.
 
-NE OLCER — DORT AYRI EKSEN (kapilar `paketle.sh`in icinde yasar, burasi ISIRMAYI olcer)
+NE OLCER — BES AYRI EKSEN (kapilar `paketle.sh`in icinde yasar, burasi ISIRMAYI olcer)
   KAPI-1 MOTOR BIT-BIT : zip'ten geri cikarilan `scripts/hafiza.py` kaynakla ayni mi
   KAPI-2 ENVANTER      : `skill/` altindaki filtre-disi her dosya pakette var mi
                          (ve pakette FAZLA dosya yok mu)
@@ -29,7 +29,13 @@ NE OLCER — DORT AYRI EKSEN (kapilar `paketle.sh`in icinde yasar, burasi ISIRMA
                          tarih cozunurlugu 2 sn'dir, bekleme olmadan "simdiki tarih" kusuru
                          iki uretimi ayni saniyeye dusurup GIZLENIRDI.
   IC OLCUM             : `paket` komutunun KENDI uretim-sonrasi olcumu bozuk ureticiyi yakaliyor
-                         mu, ve yakalayinca paketi BIRAKMIYOR mu (exit 1, dosya YOK).
+                         mu, ve yakalayinca paketi BIRAKMIYOR mu (exit 1, dosya YOK). Olcum uye
+                         SIRASINI ve sabit alanlari (tarih/sistem/izin/saklanmis giris) da denetler:
+                         iki uretimi karsilastirmak bunlari GORMEZ (ayni makinede ikisi de ayni bozuktur).
+  BAGLANTI             : kaynakta DIZIN BAGLANTISI (symlink/junction) varsa `paket` REDDEDER (exit 2,
+                         dosya YOK). `os.walk` bagli dizini izlemez; eski `zip -r` izliyordu. Reddetmese
+                         paket references/'i SESSIZCE dusururdu ve iki KAPI da YESIL basardi (ikisi de
+                         ayni yuruyusu kullanir) — bagimsiz tur 30 Eyl 2026'da yeniden uretildi.
 
   KAPI-1/2 ORTUSMEZ ve biri otekinin yerine GECMEZ: motor bit-bit dogru olup `references/`
   tumden dusebilir (LISANS sinifi); ya da butun dosyalar yerinde olup motorun baytlari satir-sonu
@@ -50,8 +56,16 @@ KURULAMADI — h14_bolme dersi)
       iki kapi KOR: paket gecerli, eksiksiz, bit-bit — yalniz tekrar uretilemez
   M-4 uretici LF->CRLF yazar, komutun olcumu ACIK                        -> IC OLCUM isirmali:
       exit != 0, `hafiza-kur.skill` YOK, KAPI satiri YOK (kapilara hic ulasilmaz)
+  M-5 uye sirasi tersine doner (sorted(reverse=True))                    -> IC OLCUM isirmali
+      (iki uretim yine BAYT-ESIT, iki KAPI yine YESIL: sirayi yalniz komutun kendi olcumu gorur)
+  M-6 create_system 3 -> 0 (Windows'un varsayilani)                      -> IC OLCUM isirmali
+  M-7 dizin baglantisi reddi sokulur                                     -> BAGLANTI isirmali:
+      baglantili kaynakta `paket` exit 0 verir (temiz motor exit 2 + dosya YOK)
 
 NE OLCMEZ (hukum degil, SINIR)
+  0. Platformlar arasi SHA ESITLIGINI CI'da olcmez: DETERMINIZM ayni makinede iki uretimi karsilastirir;
+     Windows 3.12/3.14 ile WSL 3.14'te paketin AYNI SHA verdigi 30 Eyl 2026'da elle olculdu (macOS olculmedi).
+     create_system/sira gibi platforma bagli sapmalari IC OLCUM'un (vi) ayagi on kosul olarak yakalar.
   1. Paketin KURULUP KOSTUGUNU olcmez — o `faz0/paketten_kos.py`in isidir.
   2. claude.ai'nin paketi KABUL ETTIGINI olcmez (hesaba yukleme yok; olculdu 30 Eyl 2026'da, `zip`
      CIKTISIYLA — Python zipfile ciktisiyla kabul ayri bir olcumdur).
@@ -172,6 +186,9 @@ MUTANTLAR = [
      [('_PAKET_TARIH = (1980, 1, 1, 0, 0, 0)', '_PAKET_TARIH = __import__("time").localtime()[:6]')],
      "DETERMINIZM"),
     ("M-4 uretici bozuk, komutun olcumu acik", [_URETICI_CRLF], "IC-OLCUM"),
+    ("M-5 uye sirasi tersine doner", [("for rel in sorted(kd):", "for rel in sorted(kd, reverse=True):")], "IC-OLCUM"),
+    ("M-6 create_system 3 -> 0", [("zi.create_system = 3", "zi.create_system = 0")], "IC-OLCUM"),
+    ("M-7 dizin baglantisi reddi sokuldu", [("    if baglanti:" + chr(10), "    if False:" + chr(10))], "BAGLANTI"),
 ]
 
 
@@ -191,8 +208,46 @@ def mutant_uygula(dizin, degisiklikler):
     return None
 
 
+def baglanti_kur(d):
+    """`skill/references`i `d/dis/references`e giden bir DIZIN BAGLANTISINA cevirir (POSIX symlink, Windows
+    junction — ikisi de ayricalik istemez). None = kuruldu; str = KURULAMADI sebebi (OLCULEMEDI)."""
+    hedef, yol = os.path.join(d, "dis", "references"), os.path.join(d, "skill", "references")
+    os.makedirs(os.path.dirname(hedef))
+    shutil.move(yol, hedef)
+    try:
+        if os.name == "nt":
+            r = subprocess.run(["cmd", "/c", "mklink", "/J", yol, hedef], capture_output=True)
+            if r.returncode != 0:
+                return "junction kurulamadi: %s" % r.stdout.decode("cp850", "replace").strip()[:80]
+        else:
+            os.symlink(hedef, yol, target_is_directory=True)
+    except OSError as e:
+        return "symlink kurulamadi: %s" % e
+    if not os.path.isdir(yol):
+        return "baglanti dizin olarak acilmiyor"
+    return None
+
+
+def baglanti_hukmu(bash, d, mutant):
+    """BAGLANTI ekseni: temiz motor -> exit 2 + paket YOK + 'dizin baglantisi' mesaji; mutant -> bu hukmun
+    DISINA ciktiysa ISIRDI. (durum, aciklama); kurulamazsa ('OLCULEMEDI', sebep)."""
+    sebep = baglanti_kur(d)
+    if sebep:
+        return "OLCULEMEDI", sebep
+    rc, _k1, _k2, ham = kos(bash, d)
+    paket_var = os.path.exists(os.path.join(d, "hafiza-kur.skill"))
+    temiz_hukum = rc == 2 and not paket_var and "dizin baglantisi" in ham
+    if mutant:
+        return (("KACTI", "baglanti reddi hala calisiyor") if temiz_hukum else
+                ("ISIRDI", "BAGLANTI · baglantili kaynakta paket exit %s ile URETILDI (temiz motor exit 2)" % rc))
+    return (("TAMAM", "exit 2 · paket YOK · 'dizin baglantisi' mesaji") if temiz_hukum
+            else ("SAPTI", "exit %s · paket var mi: %s" % (rc, paket_var)))
+
+
 def hukum(beklenen, bash, d):
     """Mutant tek bir eksende isirdi mi? (durum, aciklama): durum ISIRDI | ORTUSTU | KACTI."""
+    if beklenen == "BAGLANTI":
+        return baglanti_hukmu(bash, d, True)
     rc, k1, k2, ham = kos(bash, d)
     ates = [a for a, h in (("KAPI-1", k1), ("KAPI-2", k2)) if h == "KIRMIZI"]
     if beklenen in ("KAPI-1", "KAPI-2"):
@@ -249,8 +304,18 @@ def main():
             print("\nSONUC: KIRMIZI — temiz agacta paket determinist degil ya da paketle.sh motorun ciktisindan farkli.")
             return 1
 
+        bd = os.path.join(gecici, "temiz-baglanti")
+        os.makedirs(bd)
+        kum_havuzu(bd)
+        bdurum, bacik = baglanti_hukmu(bash, bd, False)
+        print("  BAGLANTI        : %s · %s" % (bdurum, bacik))
+        if bdurum == "SAPTI":
+            print("\nSONUC: KIRMIZI — temiz motor dizin baglantili kaynagi REDDETMEDI.")
+            return 1
+
         print("\n--- MUTANT SINAMASI (kapinin var olmasi ISIRDIGI anlamina gelmez) ---")
         kacan = 0
+        olculemeyen = 0
         for ad, degisiklikler, beklenen in MUTANTLAR:
             d = os.path.join(gecici, ad.split()[0])
             os.makedirs(d)
@@ -263,6 +328,9 @@ def main():
             durum, acik = hukum(beklenen, bash, d)
             if durum == "ISIRDI":
                 print("  %-46s -> ISIRDI ✓  (%s)" % (ad, acik))
+            elif durum == "OLCULEMEDI":
+                print("  %-46s -> OLCULEMEDI (%s)" % (ad, acik))
+                olculemeyen += 1
             else:
                 print("  %-46s -> %s ✗  (%s)" % (ad, "KACTI" if durum == "KACTI" else "ORTUSTU", acik))
                 kacan += 1
@@ -271,6 +339,9 @@ def main():
             print("\nSONUC: KAPI KOR — %d/%d mutant beklendigi gibi olculmedi."
                   % (kacan, len(MUTANTLAR)))
             return 1
+        if olculemeyen or bdurum == "OLCULEMEDI":
+            print("\nSONUC: OLCULEMEDI — BAGLANTI ekseni kurulamadi (symlink/junction): sessiz PASS verilmez.")
+            return 2
         print("\nSONUC: YESIL — iki kapi da temiz, determinizm temiz, %d/%d mutant AYRI eksende ISIRDI."
               % (len(MUTANTLAR), len(MUTANTLAR)))
         return 0

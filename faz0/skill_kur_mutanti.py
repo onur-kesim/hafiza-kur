@@ -31,9 +31,10 @@ KOLLAR (gercek motor, sahte HOME)
   K-SALTOKUNUR  (besli-paket/IS_EMRI_URUN_HAZIRLIK.md KALEM 4, 30 Eyl 2026) dosya sistemi yazmaya izin
                 vermeyince -> exit 3; mesaj ENGEL OLAN dizini (`.claude` ya da `.claude/skills`) soyler,
                 genel yakalayicinin ILGISIZ satirlarini (`kapi` onerisi · VAR OLMAYAN gecici dizine
-                chmod) BASMAZ. DORT kol: A1/A2 ENJEKSIYONLA (her platformda: `mkdtemp` / son rename
-                EACCES atar) · B/C GERCEK salt-okunur dizinle (yalniz POSIX + root DEGILKEN; aksi
-                halde o ALT-OLCUM "OLCULEMEDI" basilir, sonuc "YESIL (SINIRLI)" olur)
+                chmod) BASMAZ. ALTI kol: A1/A2/A3 ENJEKSIYONLA (her platformda: `mkdtemp` / son rename /
+                yedege tasima EACCES atar; A3'te ayrica `os.access(skills, W_OK)` sahte False) · B/C/D GERCEK salt-okunur dizinle (yalniz POSIX + root DEGILKEN; aksi
+                halde o ALT-OLCUM "OLCULEMEDI" basilir, sonuc "YESIL (SINIRLI)" olur); D = var olan
+                FARKLI kurulum + salt-okunur skills/ + `--guncelle` (eski kurulum SAGLAM kalmali)
 
 MUTANTLAR (motor KOPYASINDA dizge sabotaji; hedef dizge motorda TAM 1 kez gecmeli, degilse
 OLCULEMEDI — h14_bolme dersi). Her mutantin BEKLENEN kolu KIRMIZI yanmali:
@@ -44,6 +45,8 @@ OLCULEMEDI — h14_bolme dersi). Her mutantin BEKLENEN kolu KIRMIZI yanmali:
   M-SK-YER    yedek `skills/` ALTINA alinir (Claude Code orada SKILL.md bulani yukler) -> K-GUNCELLE
   M-SK-GENEL  `skill-kur`un dosya sistemi yakalayicisi sokulur (genel yakalayiciya duser)  -> K-SALTOKUNUR
   M-SK-RENAME son rename'in izin hatasi exit 3 yerine ESKI "olcum tutmadi" exit 1 olur    -> K-SALTOKUNUR
+  M-SK-ENGEL  engel dizin secimi sokulur: `--guncelle` + salt-okunur skills/ iken YAZILABILIR yedek
+              dizini "engel" diye gosterilir (bagimsiz tur 30 Eyl 2026 bunu elle yeniden uretti)  -> K-SALTOKUNUR
 POZITIF KONTROL: temiz motorda tum kollar YESIL olmali; degilse mutant hukmu ANLAMSIZDIR -> exit 2.
 
 CIKIS  0 yesil + tum mutantlar ISIRDI · 1 bir mutant KACTI · 2 OLCULEMEDI (pozitif kontrol tutmadi,
@@ -351,6 +354,17 @@ if _mod == "mkdtemp":
         raise PermissionError(errno.EACCES, "Permission denied",
                               os.path.join(k.get("dir") or ".", ".hafiza-kur-kur-enjekte"))
     tempfile.mkdtemp = _engelli
+elif _mod == "yedek":
+    _gercek, _erisim0 = os.replace, os.access
+    def _engelli(src, dst, *a, **k):
+        if os.path.basename(src) == "hafiza-kur" and os.path.basename(os.path.dirname(os.path.dirname(dst))) == "hafiza-kur-yedek":
+            raise PermissionError(errno.EACCES, "Permission denied", src, None, dst)
+        return _gercek(src, dst, *a, **k)
+    def _erisim(yol, mod, *a, **k):
+        if mod == os.W_OK and os.path.basename(os.path.normpath(str(yol))) == "skills":
+            return False
+        return _erisim0(yol, mod, *a, **k)
+    os.replace, os.access = _engelli, _erisim
 else:
     _gercek = os.replace
     def _engelli(src, dst, *a, **k):
@@ -363,13 +377,13 @@ runpy.run_path(_motor, run_name="__main__")
 '''
 
 
-def kos_enjekte(ctx, mod, home):
-    """Motoru ENJEKSIYON sarmalayicisiyla kosar (`mod`: mkdtemp | replace). (kod, cikti)."""
+def kos_enjekte(ctx, mod, home, komut=("skill-kur",)):
+    """Motoru ENJEKSIYON sarmalayicisiyla kosar (`mod`: mkdtemp | replace | yedek). (kod, cikti)."""
     yol = os.path.join(ctx["taban"], "enjekte.py")
     with open(yol, "w", encoding="utf-8", newline="\n") as f:
         f.write(ENJEKSIYON)
     env = dict(os.environ, HOME=home, USERPROFILE=home, PYTHONIOENCODING="utf-8", HK_ENJEKTE=mod)
-    r = subprocess.run([sys.executable, "-X", "utf8", yol, ctx["motor"], "skill-kur"],
+    r = subprocess.run([sys.executable, "-X", "utf8", yol, ctx["motor"]] + list(komut),
                        capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
                        timeout=300)
     return r.returncode, (r.stdout or "") + (r.stderr or "")
@@ -381,8 +395,9 @@ def fs_hukmu_hatalari(ad, k, c, engel):
     hata = []
     if k != 3:
         hata.append("%s: exit %d (3 bekleniyordu): %s" % (ad, k, c.strip().splitlines()[-1][:70] if c.strip() else ""))
-    if os.path.normcase(os.path.normpath(engel)) not in os.path.normcase(c):
-        hata.append("%s: engel olan dizin gosterilmedi (%s)" % (ad, engel))
+    satirlar = [os.path.normcase(x.strip()) for x in c.splitlines()]
+    if os.path.normcase("Engel olan yer: %s" % os.path.normpath(engel)) not in satirlar:
+        hata.append("%s: `Engel olan yer: %s` SATIRI yok" % (ad, engel))
     if "hafiza.py kapi" in c:
         hata.append("%s: ILGISIZ `kapi` onerisi basildi" % ad)
     if ".hafiza-kur-kur-" in c:
@@ -426,6 +441,14 @@ def kol_saltokunur(ctx):
     hata += fs_hukmu_hatalari("A2", k, c, skills2)
     if os.listdir(skills2) or sorted(os.listdir(os.path.dirname(skills2))) != ["skills"]:
         hata.append("A2: hedefte/`.claude/` icinde artik var")
+    # A3: var olan FARKLI kurulum + `--guncelle`: yedege tasima EACCES atar ve `skills/` yazilamaz gorunur
+    # (her platformda; engel dizin SECIMI: yazilabilir yedek dizini DEGIL `skills/` gosterilmeli)
+    h3 = _farkli_hazirla(ctx, "salt_a3")
+    skills3, eski3 = os.path.join(h3, ".claude", "skills"), bayt_agaci(hedef_yolu(h3))
+    k, c = kos_enjekte(ctx, "yedek", h3, ("skill-kur", "--guncelle"))
+    hata += fs_hukmu_hatalari("A3", k, c, skills3)
+    if bayt_agaci(hedef_yolu(h3)) != eski3:
+        hata.append("A3: var olan kurulum DEGISTI")
     # B/C: GERCEK salt-okunur dizin (yalniz POSIX + root degilken)
     sebep = gercek_izin_uygulanir(ctx["taban"])
     if sebep is None:
@@ -439,13 +462,26 @@ def kol_saltokunur(ctx):
             finally:
                 os.chmod(ro, 0o755)
             hata += fs_hukmu_hatalari(ad, k, c, ro)
+        # D: var olan FARKLI kurulum + salt-okunur skills/ + `--guncelle`: rename hedef dizine yapilamaz;
+        # ENGEL `skills/`tir (yedek dizini yazilabilirdir — yanlis dizin gostermek kolay hata), eski kurulum SAGLAM
+        hd = _farkli_hazirla(ctx, "salt_d")
+        skills_d = os.path.join(hd, ".claude", "skills")
+        eski_d = bayt_agaci(hedef_yolu(hd))
+        os.chmod(skills_d, 0o555)
+        try:
+            k, c = kos(ctx["motor"], ["skill-kur", "--guncelle"], hd)
+        finally:
+            os.chmod(skills_d, 0o755)
+        hata += fs_hukmu_hatalari("D", k, c, skills_d)
+        if bayt_agaci(hedef_yolu(hd)) != eski_d:
+            hata.append("D: var olan kurulum DEGISTI (`--guncelle` + izin hatasi)")
     if hata:
         return ("KIRMIZI", "; ".join(hata), False)
     if sebep:
-        return ("YESIL", "A1+A2 enjeksiyon: exit 3, engel olan dizin gosterildi, `kapi`/chmod-gecici satiri YOK · "
-                "B+C gercek salt-okunur: OLCULEMEDI (%s)" % sebep, "salt")
-    return ("YESIL", "A1+A2 enjeksiyon ve B+C gercek salt-okunur dizin: exit 3, engel olan dizin gosterildi, "
-            "`kapi`/chmod-gecici satiri YOK", False)
+        return ("YESIL", "A1+A2+A3 enjeksiyon: exit 3, engel olan yer dogru, `kapi`/chmod-gecici satiri YOK · "
+                "B+C+D gercek salt-okunur: OLCULEMEDI (%s)" % sebep, "salt")
+    return ("YESIL", "A1+A2+A3 enjeksiyon ve B+C+D gercek salt-okunur dizin: exit 3, `Engel olan yer:` satiri dogru, "
+            "`kapi`/chmod-gecici satiri YOK, D'de eski kurulum saglam", False)
 
 
 KOLLAR = [("K-TAZE", kol_taze), ("K-AYNI", kol_ayni), ("K-FARKLI", kol_farkli),
@@ -470,11 +506,14 @@ MUTANTLAR = [
      'os.path.join(taban, "hafiza-kur-yedek")', 'os.path.join(taban, "skills", "hafiza-kur-yedek")',
      "K-GUNCELLE"),
     ("M-SK-GENEL", "dosya sistemi yakalayicisi sokulur (genel yakalayiciya duser)",
-     '        return _dosya_sistemi_hukmu("skill-kur", _engel_dizin(e), "baska bir kokle dene: --proje <kok>")\n',
+     '        return _dosya_sistemi_hukmu("skill-kur", _engel_dizin(e), ipucu)\n',
      "        raise\n", "K-SALTOKUNUR"),
     ("M-SK-RENAME", "son rename'in izin hatasi eski 'olcum tutmadi' exit 1 olur",
      '            if getattr(e, "errno", None) in _FS_ENGEL_KODLARI:\n                raise ',
      '            if False:\n                raise ', "K-SALTOKUNUR"),
+    ("M-SK-ENGEL", "engel dizin secimi (yazilamayan ust dizin dongusu) sokulur -> yanlis dizin gosterilir",
+     "        if os.path.isdir(d) and not os.access(d, os.W_OK):\n            return d\n",
+     "        if False:\n            return d\n", "K-SALTOKUNUR"),
 ]
 
 
@@ -508,8 +547,8 @@ def kollari_kos(kaynak_skill, motor_metni, taban, zip_zorla):
 SINIR_NOTU = {
     "zip": "\n  SINIRLI: K-ENV'in zip envanteri karsilastirmasi OLCULEMEDI (calisan bash yok); "
            "CI ubuntu kolu `--zip-zorla` ile olcer.",
-    "salt": "\n  SINIRLI: K-SALTOKUNUR'un GERCEK salt-okunur kollari (B/C) OLCULEMEDI (POSIX degil ya da "
-            "root); A1/A2 enjeksiyon kollari olculdu, gercek-izin kollarini CI ubuntu/macOS olcer.",
+    "salt": "\n  SINIRLI: K-SALTOKUNUR'un GERCEK salt-okunur kollari (B/C/D) OLCULEMEDI (POSIX degil ya da "
+            "root); A1/A2/A3 enjeksiyon kollari olculdu, gercek-izin kollarini CI ubuntu/macOS olcer.",
 }
 
 

@@ -6836,14 +6836,14 @@ def cmd_isir(a):
 # baglanti/symlink kurulumu YOK; var olan FARKLIysa DUR, `--guncelle` ile YEDEKLE (silme
 # yok). Bu bir KOMUTTUR, kapi degil: hukum cagrisi (`fail`) KULLANILMAZ.
 _SKILL_KUR_AD = "hafiza-kur"
-_SKILL_KUR_HARIC_DIZIN = ("deneme", "__pycache__")   # paketle.sh `-x` kuraliyla AYNI (TEK YER)
+_SKILL_KUR_HARIC_DIZIN = ("deneme", "__pycache__")   # eski paketle.sh `-x` kuraliyla AYNI; `paket` de bunu kullanir (TEK YER)
 _SKILL_KUR_NOT = ("  NOT: Cowork ve claude.ai bu klasoru OKUMAZ; orada `python hafiza.py paket` ile "
                   "paketi uret, claude.ai -> Customize -> Skills -> Upload skill ile yukle.")
 # `--help` sonundaki kod satirlari README'nin kod kumeleriyle `faz0/readme_mutanti.py` KAPI-3
 # tarafindan karsilastirilir: sozlesmenin TEK KAYNAGI bunlardir (satirlarda baska rakam YOK).
 _SKILL_KUR_KODLAR = ("CIKIS KODLARI: 0 kuruldu ya da zaten kurulu · 1 kurulum olcumu tutmadi (kurulmadi) · "
                      "2 kullanim hatasi ya da hedefte FARKLI bir kurulum var (hicbir sey degismez) · "
-                     "3 dosya sistemi yazmaya izin vermedi (kurulum tamamlanmadi)")
+                     "3 dosya sistemi yazmaya izin vermedi (kurulum tamamlanmadi) ya da beklenmeyen hata (hukum yok)")
 _FS_ENGEL_KODLARI = (_errno.EACCES, _errno.EPERM, _errno.EROFS)
 
 
@@ -6859,11 +6859,15 @@ def _skill_kaynak_dizini():
 
 
 def _engel_dizin(e):
-    """Bir yazma hatasinin ENGEL OLAN dizini: hatadaki yollarin ust dizinlerinden, var olan ve
-    yazilamayan ilki; bulunamazsa ilk yolun ust dizini. OLCULDU 30 Eyl 2026: `mkdtemp` hatasindaki
+    """Bir yazma hatasinin ENGEL OLAN yeri: (1) hatadaki yollardan VAR OLAN ve yazilamayan ilki (salt-okunur
+    hedef dosya/dizin kendisi), yoksa (2) bu yollarin ust dizinlerinden var olan ve yazilamayan ilki
+    (salt-okunur `.claude`), bulunamazsa ilk yolun ust dizini. OLCULDU 30 Eyl 2026: `mkdtemp` hatasindaki
     `filename` VAR OLMAYAN gecici bir addir — engel olan onun ust dizinidir."""
     yollar = [p for p in (getattr(e, "filename2", None), getattr(e, "filename", None))
               if isinstance(p, (str, os.PathLike))]
+    for p in yollar:
+        if os.path.lexists(p) and not os.access(p, os.W_OK):
+            return os.path.abspath(p)
     adaylar = [os.path.dirname(os.path.abspath(p)) for p in yollar]
     for d in adaylar:
         if os.path.isdir(d) and not os.access(d, os.W_OK):
@@ -6880,7 +6884,7 @@ def _dosya_sistemi_hukmu(komut, engel, yol_ipucu):
         "HATA: IZIN/DOSYA SISTEMI HATASI — %s tamamlanamadi.\n"
         "  Engel olan yer: %s\n"
         "  Bu bir ARAC kusuru degil; dosya sisteminin hukmudur.\n"
-        "  CIKIS YOLU:  chmod u+w %s        (Windows:  attrib -r %s)  ya da %s\n"
+        "  CIKIS YOLU:  chmod u+w %s        (Windows:  attrib -r %s ya da yazma izni ver)  ya da %s\n"
         % (komut, engel, engel, engel, yol_ipucu))
     return 3
 
@@ -6897,9 +6901,10 @@ def _skill_kur_baglanti_mi(p):
 
 def _skill_kur_dosyalar(dizin):
     """Suzulmus dosya kumesi {goreli yol: mutlak yol}. Nokta ile baslayan her ad (dizin de
-    dosya da) ve `_SKILL_KUR_HARIC_DIZIN` atlanir: paketle.sh `-x '.*' -x '*/.*'
-    -x '*/deneme/*' -x '*/__pycache__/*'` ile AYNI kural (README'nin kanit akisi
-    `scripts/deneme/` yaratir)."""
+    dosya da) ve `_SKILL_KUR_HARIC_DIZIN` atlanir: eski paketle.sh'in `-x '.*' -x '*/.*'
+    -x '*/deneme/*' -x '*/__pycache__/*'` kuralinin KARSILIGI (README'nin kanit akisi
+    `scripts/deneme/` yaratir). `skill-kur` ve `paket` AYNI suzgeci kullanir. NOT: suzgec
+    `deneme`yi TAM ad eslemesiyle eler; `.gitignore`un `skill/scripts/deneme*/` onekini KAPSAMAZ."""
     out = {}
     for r0, d0, f0 in os.walk(dizin):
         d0[:] = [d for d in d0 if d not in _SKILL_KUR_HARIC_DIZIN and not d.startswith(".")]
@@ -7045,7 +7050,8 @@ def cmd_skill_kur(a):
     except OSError as e:
         if getattr(e, "errno", None) not in _FS_ENGEL_KODLARI:
             raise
-        return _dosya_sistemi_hukmu("skill-kur", _engel_dizin(e), "baska bir kokle dene: --proje <kok>")
+        ipucu = "baska bir --proje <kok> ver" if a.proje else "baska bir kokle dene: --proje <kok>"
+        return _dosya_sistemi_hukmu("skill-kur", _engel_dizin(e), ipucu)
 
 
 def _skill_kur_uygula(a, kd, sha_k, taban, hedef):
@@ -7083,20 +7089,32 @@ _PAKET_IZIN = 0o100644 << 16                # duz dosya rw-r--r--: kaynaktaki mo
 # da ayni yuklemede olculdu. Claude Code tarafinin siniri ayridir (1.536) ve bu kapidan ETKILENMEZ.
 _PAKET_ACIKLAMA_SINIRI = 500
 _PAKET_KODLAR = ("CIKIS KODLARI: 0 paket uretildi ve olculdu · 1 uretim sonrasi olcum tutmadi (paket "
-                 "BIRAKILMAZ) · 2 kullanim hatasi · 3 dosya sistemi yazmaya izin vermedi (paket uretilmedi)")
+                 "BIRAKILMAZ) · 2 kullanim hatasi ya da kaynakta dizin baglantisi var · 3 dosya sistemi "
+                 "yazmaya izin vermedi (paket uretilmedi) ya da beklenmeyen hata (hukum yok)")
 
 
 def _yaml_blok_govdesi(satirlar):
-    """Blok skalarin satirlari (girinti kirpilmis, bos kuyruk atilmis); sonraki anahtarda durur."""
+    """Blok skalarin satirlari (girinti kirpilmis); sonraki anahtarda durur. Satir SONU BOSLUKLARI
+    ICERIKTIR (YAML) ve KIRPILMAZ: kirpmak uzunlugu eksik sayip >500 aciklamayi gecirirdi (bagimsiz
+    tur 30 Eyl 2026: 504 gercek, 496 sayildi). Desteklenmeyen bicim (girintide sekme, girintiyi asan
+    yalniz-bosluk satiri) None = OLCULEMEDI."""
     govde = []
     for s in satirlar:
         if s.strip() and not s[:1].isspace():
             break                                          # sonraki anahtar
-        govde.append(s.rstrip())
-    while govde and not govde[-1]:
-        govde.pop()
-    girinti = min([len(s) - len(s.lstrip()) for s in govde if s] or [0])
-    return [s[girinti:] for s in govde]
+        govde.append(s)
+    dolu = [s for s in govde if s.strip()]
+    if any("\t" in s[:len(s) - len(s.lstrip())] for s in dolu):
+        return None                                        # girintide sekme YAML'de gecersiz
+    girinti = (len(dolu[0]) - len(dolu[0].lstrip(" "))) if dolu else 0     # girintiyi ILK dolu satir belirler (YAML)
+    if any(len(s) - len(s.lstrip(" ")) < girinti for s in dolu):
+        return None                                        # ilk satirdan az girintili satir: YAML hatasi
+    if any(len(s) > girinti for s in govde if not s.strip()):
+        return None                                        # girintiyi asan yalniz-bosluk satiri: icerik mi bos mu belirsiz
+    cikti = [s[girinti:] if s.strip() else "" for s in govde]
+    while cikti and not cikti[-1]:
+        cikti.pop()
+    return cikti
 
 
 def _yaml_katla(satirlar):
@@ -7118,25 +7136,40 @@ def _yaml_blok_degeri(baslik, satirlar):
     if not g:
         return None
     govde = _yaml_blok_govdesi(satirlar)
-    if g.group(1) == ">" and any(s[:1].isspace() for s in govde):
+    if govde is None or (g.group(1) == ">" and any(s[:1].isspace() for s in govde)):
         return None                                        # "daha girintili" satirlar: katlanma kurali farkli
     deger = _yaml_katla(govde) if g.group(1) == ">" else "\n".join(govde)
     return deger if (g.group(2) == "-" or not govde) else deger + "\n"
 
 
+def _yaml_duz_gecersiz(deger):
+    """Duz (tirnaksiz) skalar STRING degilse ya da YAML'de gecersizse True: bos · null/bool/sayi/tarih
+    tek sozcuk (YAML 1.1) · `: ` iceren (eslem) · `- ` / `? ` ile baslayan."""
+    if not deger or re.search(r":(\s|$)", deger) or re.match(r"[-?](\s|$)", deger):
+        return True
+    return " " not in deger and (deger.lower() in ("~", "null", "true", "false", "yes", "no", "on", "off", "y", "n")
+                                 or re.match(r"[-+.]?[0-9.]", deger) is not None)
+
+
 def _yaml_tek_satir_degeri(ilk, sonraki):
-    """Tirnakli ya da duz TEK SATIRLIK skalar; cok satirli/bos/ankrajli bicim None."""
-    if not ilk or ilk[0] in "&*!%@`[{|>" or (sonraki and sonraki[0][:1].isspace() and sonraki[0].strip()):
+    """Tirnakli ya da duz TEK SATIRLIK skalar; cok satirli/bos/ankrajli/string-olmayan bicim None.
+    Devam satiri kontrolu BOS SATIRLARI ATLAR (duz skalarda bos satirdan sonraki girintili satir devamdir)."""
+    dolu = next((x for x in sonraki if x.strip()), "")
+    if not ilk or ilk[0] in "&*!%@`[{|>" or dolu[:1].isspace():
         return None
     if ilk[0] == '"':
         try:
             deger = json.loads(ilk)
         except ValueError:
             return None
-        return deger if isinstance(deger, str) else None
+        return deger if (isinstance(deger, str) and deger) else None
     if ilk[0] == "'":
-        return ilk[1:-1].replace("''", "'") if len(ilk) > 1 and ilk.endswith("'") else None
-    return re.split(r"\s#", ilk, maxsplit=1)[0].rstrip()
+        ic = ilk[1:-1] if len(ilk) > 1 and ilk.endswith("'") else None
+        return None if (not ic or "'" in ic.replace("''", "")) else ic.replace("''", "'")
+    deger = re.split(r"\s#", ilk, maxsplit=1)[0].rstrip()
+    if _yaml_duz_gecersiz(deger):
+        return None
+    return deger
 
 
 def _skill_aciklama(md):
@@ -7158,16 +7191,25 @@ def _skill_aciklama(md):
     return _yaml_tek_satir_degeri(ilk, satirlar[i + 1:])
 
 
+def _paket_karakter_sayisi(a):
+    """claude.ai'nin sayimi (UTF-16 birimi mi, kod noktasi mi) OLCULEMEDI: 30 Eyl 2026 ornegi yalniz
+    BMP'ydi. MUHAFAZAKAR olan sayilir — UTF-16 birimi (kod noktasindan hicbir zaman az degil). BMP-disi
+    karakter (emoji) yoksa ikisi AYNIDIR (Turkce harflerin hepsi BMP'dedir)."""
+    return len(a.encode("utf-16-le")) // 2
+
+
 def _paket_aciklama_ayagi(skill_md_bayt):
-    """(v) ayagi: SKILL.md aciklamasi sinirda mi? Tutmayan ayagin adi ya da None."""
+    """(v) ayagi: SKILL.md aciklamasi sinirda mi? Tutmayan ayagin adi ya da None. Bos aciklama da
+    KIRMIZIDIR (otomatik tetik kosulu yok demek)."""
     a = _skill_aciklama(skill_md_bayt.decode("utf-8", "replace"))
-    if a is None:
-        return "(v) SKILL.md on-maddesinden `description` OKUNAMADI (olculemeyen sey temiz sayilmaz)"
-    if len(a) > _PAKET_ACIKLAMA_SINIRI:
-        return ("(v) SKILL.md aciklamasi %d karakter > %d: claude.ai kaydi 500. karakterde SESSIZCE "
-                "kirpiyor (30 Eyl 2026'da gercek yuklemede olculdu; kirpilan kisim otomatik tetik "
+    if a is None or not a.strip():
+        return "(v) SKILL.md on-maddesinden `description` OKUNAMADI ya da BOS (olculemeyen sey temiz sayilmaz)"
+    n = _paket_karakter_sayisi(a)
+    if n > _PAKET_ACIKLAMA_SINIRI:
+        return ("(v) SKILL.md aciklamasi %d karakter (UTF-16 birimi) > %d: claude.ai kaydi 500. karakterde "
+                "SESSIZCE kirpiyor (30 Eyl 2026'da gercek yuklemede olculdu; kirpilan kisim otomatik tetik "
                 "kosulunu tasiyordu) — aciklamayi kisalt, ayrintiyi govdeye tasi"
-                % (len(a), _PAKET_ACIKLAMA_SINIRI))
+                % (n, _PAKET_ACIKLAMA_SINIRI))
     return None
 
 
@@ -7191,7 +7233,8 @@ def _paket_olc(kd, yol, sha_k):
     """PAKET OLCUMU: uretimden SONRA, yerine konmadan ONCE; zip'ten GERI OKUNANLAR kaynakla
     karsilastirilir. Tutmayan ayagin adi (None = tuttu): (i) zip olarak acilir + CRC · (ii) envanter
     = suzulmus kaynak (eksik/fazla/yinelenen ad yok) · (iii) motor bit-bit · (iv) her dosya
-    bayt-esit · (v) SKILL.md aciklamasi <= sinir."""
+    bayt-esit · (v) SKILL.md aciklamasi <= sinir · (vi) uye SIRASI ve sabit alanlar (tarih/sistem/izin/
+    saklanmis giris) beklenen: determinizmin on kosullari iki uretimi karsilastirmadan da olculur."""
     import zipfile
     try:
         with zipfile.ZipFile(yol) as z:
@@ -7200,6 +7243,9 @@ def _paket_olc(kd, yol, sha_k):
             adlar = z.namelist()
             if len(adlar) != len(set(adlar)) or set(adlar) != set(kd):
                 return "(ii) paket envanteri suzulmus kaynakla ayni DEGIL"
+            sabit = {(i.date_time, i.create_system, i.external_attr, i.compress_type) for i in z.infolist()}
+            if adlar != sorted(adlar) or sabit != {(_PAKET_TARIH, 3, _PAKET_IZIN, zipfile.ZIP_STORED)}:
+                return "(vi) uye sirasi ya da sabit alanlar (tarih/sistem/izin/sikistirma) beklenenden farkli: paket determinist DEGIL"
             veri = {n: z.read(n) for n in adlar}
     except (OSError, zipfile.BadZipFile) as e:
         return "(i) paket zip olarak okunamadi: %s" % e
@@ -7226,12 +7272,28 @@ def _paket_yol_hatasi(kaynak, yol):
     """Kullanim hatasi (exit 2) sebebi ya da None."""
     if os.path.isdir(yol):
         return "--cikti bir DIZIN: %s (dosya yolu ver)" % yol
-    if not os.path.isdir(os.path.dirname(yol)):
-        return "cikti dizini yok: %s" % os.path.dirname(yol)
-    g, k = os.path.normcase(os.path.realpath(yol)), os.path.normcase(os.path.realpath(kaynak))
-    if g == k or g.startswith(k + os.sep):
-        return "cikti kaynak skill/ dizininin ICINDE: %s (paket kendini icine alirdi)" % yol
-    return None
+    d = os.path.dirname(yol)
+    if not os.path.isdir(d):
+        return "cikti dizini yok: %s" % d
+    while True:                    # samefile: buyuk/kucuk harf duyarsiz dosya sistemlerinde (macOS/Windows) da dogru
+        if os.path.samefile(d, kaynak):
+            return "cikti kaynak skill/ dizininin ICINDE: %s (paket kendini icine alirdi)" % yol
+        ust = os.path.dirname(d)
+        if ust == d:
+            return None
+        d = ust
+
+
+def _paket_baglantilar(kaynak):
+    """Kaynaktaki (suzgecin DISINDA kalan) DIZIN BAGLANTILARI (symlink/junction). `os.walk` bagli dizini
+    izlemez ve paket onu SESSIZCE dusururdu (eski `zip -r` izliyordu; iki kapi da ayni yuruyusu kullandigi
+    icin YESIL basardi — bagimsiz tur 30 Eyl 2026). Bulunursa `paket` REDDEDER (exit 2)."""
+    bulunan = []
+    for r0, d0, _f0 in os.walk(kaynak):
+        d0[:] = [d for d in d0 if d not in _SKILL_KUR_HARIC_DIZIN and not d.startswith(".")]
+        bulunan += [_rel(os.path.join(r0, d), kaynak) for d in d0
+                    if _skill_kur_baglanti_mi(os.path.join(r0, d))]
+    return sorted(bulunan)
 
 
 def _paket_gecici_sil(gecici):
@@ -7247,7 +7309,7 @@ def cmd_paket(a):
     """paket [--cikti <yol>] — `skill/` dizininden claude.ai / Cowork icin `.skill` paketini (zip)
     URETIR ve OLCER. Varsayilan cikti `<depo>/hafiza-kur.skill`. Gecici ada yazilir, olculur, sonra
     yerine konur: olcum tutmazsa paket BIRAKILMAZ (var olan dosyaya dokunulmaz). Cikis: 0 uretildi ·
-    1 olcum tutmadi · 2 kullanim · 3 dosya sistemi yazmaya izin vermedi."""
+    1 olcum tutmadi · 2 kullanim/kaynakta dizin baglantisi · 3 dosya sistemi yazmaya izin vermedi."""
     kaynak, hata = _skill_kaynak_dizini()
     if hata:
         print(hata)
@@ -7256,6 +7318,11 @@ def cmd_paket(a):
     sebep = _paket_yol_hatasi(kaynak, yol)
     if sebep:
         print("HATA: %s" % sebep)
+        return 2
+    baglanti = _paket_baglantilar(kaynak)
+    if baglanti:
+        print("HATA: kaynakta dizin baglantisi (symlink/junction) var: %s — paket onlari izlemez ve SESSIZCE "
+              "dusururdu; gercek dizine cevir" % ", ".join(baglanti))
         return 2
     kd = _skill_kur_dosyalar(kaynak)
     sha_k = _skill_kur_sha(os.path.join(kaynak, "scripts", "hafiza.py"))

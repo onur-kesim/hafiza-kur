@@ -135,8 +135,9 @@ KOPYALAR ve kopya üzerinde ÖLÇER; bağ/symlink kurmaz. Hedefte FARKLI bir kur
 (silmez; yedek `skills/` altında OLAMAZ — Claude Code orada SKILL.md bulan her klasörü yükler).
 > **`skill-kur` çıkış kodları:** `0` kuruldu / zaten kurulu · `1` kurulum ölçümü tutmadı
 > (kurulmadı) · `2` kullanım hatası ya da hedefte FARKLI bir kurulum var · `3` dosya sistemi
-> yazmaya izin vermedi (engel olan dizin gösterilir). Cowork ve claude.ai bu klasörü OKUMAZ; orada
-> `python hafiza.py paket` ile paketi üret (aşağıda). Kapı: `faz0/skill_kur_mutanti.py`.
+> yazmaya izin vermedi (engel olan yer gösterilir) ya da beklenmeyen hata (hüküm yok). Cowork ve
+> claude.ai bu klasörü OKUMAZ; orada `python hafiza.py paket` ile paketi üret (aşağıda).
+> Kapı: `faz0/skill_kur_mutanti.py`.
 
 ### Skill'i Cowork / claude.ai'ye paketleme (`paket`)
 
@@ -144,12 +145,14 @@ KOPYALAR ve kopya üzerinde ÖLÇER; bağ/symlink kurmaz. Hedefte FARKLI bir kur
 (varsayılan `<depo>/hafiza-kur.skill`); bash ve `zip` GEREKMEZ (stdlib `zipfile`). Kaynak ve süzgeç
 `skill-kur` ile AYNIDIR. Çıktı DETERMİNİSTTİR (sıralı ad, sabit tarih/izin): aynı kaynaktan iki
 üretim bayt-birebir eşittir. Üretimden SONRA komut kendi paketini ölçer (zip'ten geri okunan motor
-= kaynak · envanter = süzülmüş kaynak · her dosya bayt-eşit · açıklama ≤ 500 karakter); tutmazsa
-paket BIRAKILMAZ (`1`). Sonra: claude.ai → Customize → Skills → Upload skill → `hafiza-kur.skill`.
+= kaynak · envanter = süzülmüş kaynak · her dosya bayt-eşit · üye sırası/sabit alanlar · açıklama
+≤ 500 karakter); tutmazsa paket BIRAKILMAZ (`1`). Kaynakta dizin bağlantısı (symlink/junction) varsa
+REDDEDER (`2`): bağlantıyı izlemez, sessizce de düşürmez. Sonra: claude.ai → Customize → Skills →
+Upload skill → `hafiza-kur.skill`.
 > **`paket` çıkış kodları:** `0` üretildi ve ölçüldü · `1` üretim sonrası ölçüm tutmadı · `2`
-> kullanım hatası · `3` dosya sistemi yazmaya izin vermedi. `paketle.sh` bu komutu çağırır ve kendi
-> iki kapısını (motor bit-bit · envanter) bağımsız koşar. Kapılar: `faz0/paket_mutanti.py` ·
-> `faz0/aciklama_siniri_mutanti.py`.
+> kullanım hatası ya da kaynakta dizin bağlantısı var · `3` dosya sistemi yazmaya izin vermedi ya da
+> beklenmeyen hata (hüküm yok). `paketle.sh` bu komutu çağırır ve kendi iki kapısını (motor bit-bit ·
+> envanter) bağımsız koşar. Kapılar: `faz0/paket_mutanti.py` · `faz0/aciklama_siniri_mutanti.py`.
 
 ### Sıfırdan kurulum
 
