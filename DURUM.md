@@ -1,6 +1,12 @@
 # DURUM — hafiza-kur
 **BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #99 `b6a3dda3`: 151 iş, 0 başarısız — 6 Eyl ölçüldü**)
-Son güncelleme: 29 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+Son güncelleme: 30 Eyl 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+
+## DEVİR — O4 (Code) · 30 Eyl 2026 · bağlam 800k TURUNCU
+`skill-kur` COMMIT `72a4a8b` (push YOK) · GERÇEK ev dizinine KURULDU (exit 0, `~/.claude/skills/hafiza-kur`,
+sha `65DF4AAC…` = repo) · canlı algılama: ilk `Skill` çağrısı "Unknown skill", ardından listeye `hafiza-kur`
+DÜŞTÜ (gecikmeli). Sıradaki: Onur push → CI'da `skill_kur_mutanti` (K-ENV zip yalnız ubuntu'da ilk kez
+ölçülür); yerel exit≠0 dokuz adım ortam (zip/symlink). Açılış: `hafiza-kur · O4 · başla` (Cowork O3'ten varsayım).
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **K4 — H6/H8/H16 + TEK TANIK İSIR TAMAMLANDI (39→49→55/67).** ŞIK B kilit ailesi (B2+B3) ·
@@ -11,24 +17,17 @@ tanıklı/yetim) KAPSAM DIŞI; yeni tur ONUR KİLİDİ ister. **25 Ağu yazısı
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**`skill-kur`** (bu tur; motor `2e759307`→`65df4aac`, 371.509→380.578 B) — `skill-kur [--proje]
-[--guncelle]`: KOPYA+ÖLÇ (motor bit-bit · envanter · kopyadaki `surum` SHA), FARKLI kurulumda DUR
-(exit 2), `--guncelle` eskiyi `hafiza-kur-yedek/` altına TAŞIR (silme yok). `faz0/skill_kur_mutanti.py`:
-7 kol + 5 mutant (5/5 ISIRDI, beklenen kolda), sahte HOME; `capraz.yml` işi 3 platform (ubuntu
-`--zip-zorla`). Sabotaj **55/67 AYNEN** (satır no dâhil); isir 67/67+2 · 69/69 · 66/66+3 AYNEN;
-`cmd_skill_kur` CC 12/34 satır, CC>20 7→7, ihlal 9→9. SINIR: M-SK-YER yalnız YEDEK yerini ölçer
-(geçici dizinin `skills/` altına alınması sonradan gözlemlenemez); K-ENV zip yalnız CI ubuntu. ·
-**TEK TANIK DÜZELTME** (`adcd950f`, CI #114 9 kırmızı) — `cmd_isir` çıpası 26→**30** (Onur kilidi;
-radon `D (26)`→`D (30)`, +4 SONUÇ-kuyruğu bloğundan) · `m_h9` `_rel` · `m_h14e` `_gec`.
-**TEK TANIK İSIR** (`f21aeaaf`) 49→55/67. ·
-**H6/H8/H16 İSIR** (`1ba9d08e`) 39→49 · **H11 İSIR** (`fe3df31e`) 29→39/67. ·
-**ŞIK B/A** (`c4acba69`/`612a2a74`) isir H1 0/6→6/6, `h1_kapsam_mutanti`+`--ek-olcer`. ·
-**ayrisma zaman bombası** (27 Eyl) · **devral GİRİŞ KAPISI** (26 Eyl) · **`bolum-kur`** (13 Eyl;
-aday listesi `BOLUM_HEDEF`+ARŞİV DİZİNİ, `rc["zorunlu_bolumler"]` DEĞİL). ·
-**CI ölü kod** (13 Eyl; `ci_adim_muafiyeti_mutanti.py`) · **B4-3+B4-4** (12 Eyl; `derle` `yaz(y.canli)`
-dönene kadar ERTELER, `kilit_al` ön-kontrol, `_b44_sinifla` DÖRT kural) ·
-**devral türetimi+H4 git havuzu+H12/H14 git delili+BEŞLİ PAKET+gitfile** (4-6 Eyl, CI #96-99) —
-devral disk'ten türetir; M-Y4/çıplak-ad/AYLAR kilitleri KORUNDU.
+**`skill-kur`** (bu tur; motor `2e759307`→`65df4aac`) — KOPYA+ÖLÇ, FARKLI kurulumda DUR (exit 2), `--guncelle`
+eskiyi `hafiza-kur-yedek/` altına TAŞIR (silme yok); `faz0/skill_kur_mutanti.py` 7 kol+5 mutant (5/5 ISIRDI),
+`capraz.yml` işi 3 platform. Sabotaj **55/67 AYNEN**; isir 67/67+2 · 69/69 · 66/66+3 AYNEN; CC>20 7→7,
+ihlal 9→9. SINIR: M-SK-YER yalnız YEDEK yerini ölçer (geçici dizinin `skills/` altına alınması
+gözlemlenemez); K-ENV zip yalnız CI ubuntu. ·
+**TEK TANIK DÜZELTME/İSIR** (`adcd950f`/`f21aeaaf`) — `cmd_isir` çıpası 26→**30** (Onur kilidi; +4 SONUÇ-kuyruğu
+bloğundan), isir 49→55/67 · **H6/H8/H16** (`1ba9d08e`) + **H11** (`fe3df31e`) İSIR 29→49/67. ·
+**Eski turlar** (ayrıntı git geçmişinde): ŞIK B/A (`c4acba69`/`612a2a74`, isir H1 0/6→6/6) · ayrisma
+zaman bombası (27 Eyl) · devral GİRİŞ KAPISI (26 Eyl) · `bolum-kur` (13 Eyl) · CI ölü kod (13 Eyl) ·
+B4-3+B4-4 (12 Eyl) · devral türetimi+H4 git havuzu+H12/H14 git delili+BEŞLİ PAKET+gitfile (4-6 Eyl,
+CI #96-99; M-Y4/çıplak-ad/AYLAR kilitleri KORUNDU).
 
 ## Bilinen sınırlar (ölçülmüş)
 - 🔴 **"GERÇEK ORTAMDA OLMAZ" DEMEDEN ÖNCE ORTAMI ÖLÇ (6 Eyl ISIRDI):** M-Y2 kusuru "hiçbir
