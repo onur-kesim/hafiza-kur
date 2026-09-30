@@ -51,13 +51,23 @@ yeşil ama kapsam eksik (`?` ile işaretli en az bir şey ölçülmedi).
 `isir`: `0` hepsi ısırdı · `1` **kapı kör** ·
 `2` ölçülemeyen mutant · `4` temiz sürüm zaten FAIL.
 
+`skill-kur`: `0` kuruldu ya da zaten kurulu · `1` kurulum ölçümü tutmadı (kurulmadı) ·
+`2` kullanım hatası ya da hedefte FARKLI bir kurulum var (hiçbir şey değişmez).
+
 **Yardımcı komutlar**
 
 ```bash
+python3 skill/scripts/hafiza.py skill-kur          # skill'i ~/.claude/skills/hafiza-kur/ altına kopyalar + ölçer
 python3 skill/scripts/hafiza.py surum              # sürüm + motorun KENDİ sha256'sı
 python3 skill/scripts/hafiza.py hook --kur --kok=<proje>   # pre-commit kapısı kurar
 python3 skill/scripts/hafiza.py kapi --kok=<proje> --kapsam-zorla   # CI için
 ```
+
+`skill-kur`, `skill/` dizinini Claude Code'un skill klasörüne **kopyalar** ve kopya üzerinde
+ölçer (motor bit-bit · envanter · kopyadaki motorun `surum` SHA'sı); `--proje <kök>` ile
+`<kök>/.claude/skills/` altına kurar. Hedefte FARKLI bir kurulum varsa **durur**; `--guncelle`
+eskisini `~/.claude/hafiza-kur-yedek/` altına TAŞIR (silmez). Cowork ve claude.ai bu klasörü
+okumaz — orada `hafiza-kur.skill`'i claude.ai'ye yükle.
 
 `kur`, ağaçta başka bir aracın defterini tanırsa (`CLAUDE.md`, `AGENTS.md`,
 `DURUM.md`, `memory-bank/` …) **durur** ve `devral` önerir — belge bunu zaten

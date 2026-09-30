@@ -2705,3 +2705,53 @@ jobs:
           name: isir-eslesme-${{ matrix.os }}
           path: isir-eslesme-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-41) SKILL-KUR OLCERI — Cowork is emri "skill-kur" (30 Eylul 2026, Onur kilidi:
+  #     KOPYA+OLC · var olan farkliysa DUR, `--guncelle` ile YEDEKLE · kisisel varsayilan
+  #     + `--proje <kok>`). `python hafiza.py skill-kur` skill'i Claude Code'un skill
+  #     klasorune kopyalar ve kopya uzerinde OLCER (bit-bit motor · envanter · kopyadaki
+  #     motorun `surum` SHA'si). PyPI/marketplace YOK (CLAUDE.md §5 kilidi kirilmaz).
+  #
+  #     YEDI KOL (gercek motor, SAHTE HOME — `HOME` ve `USERPROFILE` alt surecte gecici
+  #     dizine ayarli, gercek ev dizinine YAZILMAZ): K-TAZE · K-AYNI · K-FARKLI ·
+  #     K-GUNCELLE · K-PROJE · K-ENV · K-MOTORYALNIZ; BES MUTANT (M-SK-OLCUM/EZME/YEDEK/
+  #     SUZGEC/YER) her biri BEKLENEN kolu KIRMIZI yakmali. POZITIF KONTROL: temiz motorda
+  #     tum kollar YESIL, yoksa exit 2.
+  #
+  #     K-ENV'in paketle.sh zip envanteri karsilastirmasi `bash`+`zip`+`python3` ister;
+  #     yoksa o ALT-OLCUM "OLCULEMEDI" basilir ve sonuc "YESIL (SINIRLI)" olur. `zip`
+  #     YALNIZ ubuntu kolunda garantilidir (paket_kapisi ile ayni gerekce): ubuntu kolu
+  #     `--zip-zorla` ile calisir ve zip yoksa exit 2 verir — sessiz yesil DEGIL.
+  #     `faz0/ci_kapsam_kapisi.py`nin MUAFIYETSIZ kapsamina girdigi icin bu is ZORUNLU.
+  #     UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  skill_kur_mutanti:
+    name: skill kur olceri (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            bayrak: "--zip-zorla"
+          - os: windows-latest
+            bayrak: ""
+          - os: macos-latest
+            bayrak: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: skill-kur KOPYALIYOR ve OLCUYOR mu (7 kol + 5 mutant, sahte HOME)
+        shell: bash
+        run: python faz0/skill_kur_mutanti.py ${{ matrix.bayrak }} 2>&1 | tee skill-kur-cikti.txt
+      - name: skill kur olceri ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-kur-${{ matrix.os }}
+          path: skill-kur-cikti.txt
+          if-no-files-found: warn

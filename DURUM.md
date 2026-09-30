@@ -11,23 +11,24 @@ tanıklı/yetim) KAPSAM DIŞI; yeni tur ONUR KİLİDİ ister. **25 Ağu yazısı
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**TEK TANIK DÜZELTME** (bu tur; CI #114 9 kırmızı = 3 sınıf × 3 platform) — D1 `karmasiklik_mutanti`
-çıpası `cmd_isir` 26→**30** (Onur kilidi; radon 6.0.1 `D (26)`→`D (30)`; artış SONUÇ-kuyruğu
-bloğundan +4, blok çıkarılınca 26 — deneyle ölçüldü; CC>20 7→7, ihlal 9→9) · D2 `m_h9` çıplak
-`relpath`→`_rel` · D3 `m_h14e` değişken adı (`h14_bolme` 7/7). Motor `f7eeaa6b`→`2e759307`
-(371.509 B). Sabotaj **55/67 AYNEN**; isir 67/67+2 · 69/69 · git'siz 66/66+3 AYNEN. ·
-**TEK TANIK İSIR** (`f21aeaaf`) — 6 yeni mutant, sabotaj isir 49→55/67 (köşegen 6/6). ·
-**H6/H8/H16 İSIR** (`1ba9d08e`) 39→49/67, EK-1 junction · **H11 İSIR** (`fe3df31e`) 29→39/67. ·
-**ŞIK B** (`c4acba69`, CI #111) isir H1 0/6→6/6, isir 23→29/67 · **ŞIK A** (`612a2a74`, CI #110)
-`h1_kapsam_mutanti` + `sabotaj.py --ek-olcer`. ·
-**ayrisma zaman bombası** (27 Eyl, `sabit_tarih_mutanti`) · **devral GİRİŞ KAPISI** (26 Eyl) ·
-**`bolum-kur`** (13 Eyl; aday listesi `BOLUM_HEDEF`+ARŞİV DİZİNİ, `rc["zorunlu_bolumler"]` DEĞİL). ·
-**CI ölü kod+bayat yorum+izlenmeyen artık** (13 Eyl) — `shell: bash -e` exit-2 muafiyetini
-`ec=`ye ULAŞTIRMIYORDU ⇒ `set +e`/`set -e` + `ci_adim_muafiyeti_mutanti.py`. ·
-**B4-3+B4-4+grep tuzağı+ÖLÇEN TARAFIN körlüğü** (12 Eyl) — `derle` `yaz(y.canli)` dönene kadar
-ERTELER · `kilit_al` ön-kontrol + EACCES/EPERM/EROFS ağı · `_b44_sinifla` DÖRT kural. ·
-**devral türetimi+H4 git havuzu+H12/H14 git delili+H4 çıplak ad+BEŞLİ PAKET+gitfile körlüğü**
-(4-6 Eyl, CI #96-99) — devral disk'ten türetir; M-Y4/çıplak-ad/AYLAR kilitleri KORUNDU.
+**`skill-kur`** (bu tur; motor `2e759307`→`65df4aac`, 371.509→380.578 B) — `skill-kur [--proje]
+[--guncelle]`: KOPYA+ÖLÇ (motor bit-bit · envanter · kopyadaki `surum` SHA), FARKLI kurulumda DUR
+(exit 2), `--guncelle` eskiyi `hafiza-kur-yedek/` altına TAŞIR (silme yok). `faz0/skill_kur_mutanti.py`:
+7 kol + 5 mutant (5/5 ISIRDI, beklenen kolda), sahte HOME; `capraz.yml` işi 3 platform (ubuntu
+`--zip-zorla`). Sabotaj **55/67 AYNEN** (satır no dâhil); isir 67/67+2 · 69/69 · 66/66+3 AYNEN;
+`cmd_skill_kur` CC 12/34 satır, CC>20 7→7, ihlal 9→9. SINIR: M-SK-YER yalnız YEDEK yerini ölçer
+(geçici dizinin `skills/` altına alınması sonradan gözlemlenemez); K-ENV zip yalnız CI ubuntu. ·
+**TEK TANIK DÜZELTME** (`adcd950f`, CI #114 9 kırmızı) — `cmd_isir` çıpası 26→**30** (Onur kilidi;
+radon `D (26)`→`D (30)`, +4 SONUÇ-kuyruğu bloğundan) · `m_h9` `_rel` · `m_h14e` `_gec`.
+**TEK TANIK İSIR** (`f21aeaaf`) 49→55/67. ·
+**H6/H8/H16 İSIR** (`1ba9d08e`) 39→49 · **H11 İSIR** (`fe3df31e`) 29→39/67. ·
+**ŞIK B/A** (`c4acba69`/`612a2a74`) isir H1 0/6→6/6, `h1_kapsam_mutanti`+`--ek-olcer`. ·
+**ayrisma zaman bombası** (27 Eyl) · **devral GİRİŞ KAPISI** (26 Eyl) · **`bolum-kur`** (13 Eyl;
+aday listesi `BOLUM_HEDEF`+ARŞİV DİZİNİ, `rc["zorunlu_bolumler"]` DEĞİL). ·
+**CI ölü kod** (13 Eyl; `ci_adim_muafiyeti_mutanti.py`) · **B4-3+B4-4** (12 Eyl; `derle` `yaz(y.canli)`
+dönene kadar ERTELER, `kilit_al` ön-kontrol, `_b44_sinifla` DÖRT kural) ·
+**devral türetimi+H4 git havuzu+H12/H14 git delili+BEŞLİ PAKET+gitfile** (4-6 Eyl, CI #96-99) —
+devral disk'ten türetir; M-Y4/çıplak-ad/AYLAR kilitleri KORUNDU.
 
 ## Bilinen sınırlar (ölçülmüş)
 - 🔴 **"GERÇEK ORTAMDA OLMAZ" DEMEDEN ÖNCE ORTAMI ÖLÇ (6 Eyl ISIRDI):** M-Y2 kusuru "hiçbir

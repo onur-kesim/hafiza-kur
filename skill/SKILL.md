@@ -120,6 +120,17 @@ ihtiyacıdır, `zorunlu_bolumler`den **türetilmez**. Eksik başlığı ilk `# `
 ekler; var olan bölüme ve `.hafizarc`'a dokunmaz; zincire `BOLUM_KUR` halkası düşer;
 idempotenttir (`0 bolum eklendi`). Ardından `not` → `derle`. Kapı: `faz0/bolum_kur_mutanti.py`.
 
+### Skill'i Claude Code'a kurma (`skill-kur`)
+
+`python hafiza.py skill-kur [--proje <kök>] [--guncelle]` — bu `skill/` dizinini
+`~/.claude/skills/hafiza-kur/` altına (`--proje` ile `<kök>/.claude/skills/hafiza-kur/`)
+KOPYALAR ve kopya üzerinde ÖLÇER; bağ/symlink kurmaz. Hedefte FARKLI bir kurulum varsa durur
+(hiçbir şey değişmez); `--guncelle` eskisini `~/.claude/hafiza-kur-yedek/<tarih>/` altına TAŞIR
+(silmez; yedek `skills/` altında OLAMAZ — Claude Code orada SKILL.md bulan her klasörü yükler).
+> **`skill-kur` çıkış kodları:** `0` kuruldu / zaten kurulu · `1` kurulum ölçümü tutmadı
+> (kurulmadı) · `2` kullanım hatası ya da hedefte FARKLI bir kurulum var. Cowork ve claude.ai bu
+> klasörü OKUMAZ; orada `hafiza-kur.skill`'i claude.ai'ye yükle. Kapı: `faz0/skill_kur_mutanti.py`.
+
 ### Sıfırdan kurulum
 
 ```

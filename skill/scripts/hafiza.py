@@ -6831,6 +6831,189 @@ def cmd_isir(a):
         return 2
     return 0
 
+# ------------------------------------------------------------------ skill-kur
+# IS_EMRI_SKILL_KUR.md (30 Eyl 2026, Onur kilidi): paketin gidecegi yer. KOPYA + OLC;
+# baglanti/symlink kurulumu YOK; var olan FARKLIysa DUR, `--guncelle` ile YEDEKLE (silme
+# yok). Bu bir KOMUTTUR, kapi degil: hukum cagrisi (`fail`) KULLANILMAZ.
+_SKILL_KUR_AD = "hafiza-kur"
+_SKILL_KUR_HARIC_DIZIN = ("deneme", "__pycache__")   # paketle.sh `-x` kuraliyla AYNI (TEK YER)
+_SKILL_KUR_NOT = ("  NOT: Cowork ve claude.ai bu klasoru OKUMAZ; orada hafiza-kur.skill'i "
+                  "claude.ai'ye yukle.")
+
+
+def _skill_kur_baglanti_mi(p):
+    """symlink VEYA Windows junction (islink junction'i gormez)."""
+    if os.path.islink(p):
+        return True
+    try:
+        return bool(os.lstat(p).st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+    except (AttributeError, OSError):
+        return False
+
+
+def _skill_kur_dosyalar(dizin):
+    """Suzulmus dosya kumesi {goreli yol: mutlak yol}. Nokta ile baslayan her ad (dizin de
+    dosya da) ve `_SKILL_KUR_HARIC_DIZIN` atlanir: paketle.sh `-x '.*' -x '*/.*'
+    -x '*/deneme/*' -x '*/__pycache__/*'` ile AYNI kural (README'nin kanit akisi
+    `scripts/deneme/` yaratir)."""
+    out = {}
+    for r0, d0, f0 in os.walk(dizin):
+        d0[:] = [d for d in d0 if d not in _SKILL_KUR_HARIC_DIZIN and not d.startswith(".")]
+        for f in f0:
+            if not f.startswith("."):
+                p = os.path.join(r0, f)
+                out[_rel(p, dizin)] = p
+    return out
+
+
+def _skill_kur_sha(p):
+    return sha_dosya(p).upper()
+
+
+def _skill_kur_fark(kd, hedef, sha_k):
+    """(ayni_mi, sebep): kurulu `hedef` kaynakla BAYT-BAYTA ayni mi? Hedef gercek bir dizin
+    (baglanti/dosya DEGIL) olmali; `scripts/hafiza.py` SHA'si ve suzulmus envanter esit."""
+    if _skill_kur_baglanti_mi(hedef) or not os.path.isdir(hedef):
+        return False, "hedef gercek bir dizin degil (symlink/baglanti ya da dosya)"
+    m = os.path.join(hedef, "scripts", "hafiza.py")
+    try:
+        if not os.path.isfile(m):
+            return False, "hedefte scripts/hafiza.py yok (hafiza-kur kurulumu degil)"
+        if _skill_kur_sha(m) != sha_k:
+            return False, "scripts/hafiza.py SHA'si farkli"
+        hd = _skill_kur_dosyalar(hedef)
+        if set(hd) != set(kd):
+            return False, "envanter farkli (kaynakta olup kuruluda olmayan: %d · kuruluda "\
+                          "olup kaynakta olmayan: %d)" % (len(set(kd) - set(hd)), len(set(hd) - set(kd)))
+        kotu = [r for r in kd if _skill_kur_sha(kd[r]) != _skill_kur_sha(hd[r])]
+    except OSError as e:
+        return False, "okunamadi: %s" % e
+    return (not kotu), ("icerigi farkli dosya: %s" % ", ".join(sorted(kotu)[:3]) if kotu else "")
+
+
+def _skill_kur_olc(kd, kopya, sha_k):
+    """KURULUM OLCUMU: kopya uzerinde, yerine konmadan ONCE. Tutmayan ayagin adi (None = tuttu):
+    (i) motor bit-bit · (ii) envanter + her dosya bayt-esit · (iii) kopyadaki motor `surum` ile
+    KENDI SHA'sini kaynakla ayni basiyor."""
+    m = os.path.join(kopya, "scripts", "hafiza.py")
+    if not os.path.isfile(m) or _skill_kur_sha(m) != sha_k:
+        return "(i) kopyadaki scripts/hafiza.py kaynakla bit-bit ayni DEGIL"
+    kp = _skill_kur_dosyalar(kopya)
+    if set(kp) != set(kd) or any(_skill_kur_sha(kp[r]) != _skill_kur_sha(kd[r]) for r in kd):
+        return "(ii) kopya envanteri suzulmus kaynakla ayni DEGIL"
+    try:
+        r = subprocess.run([sys.executable, "-X", "utf8", m, "surum"], capture_output=True,
+                           text=True, encoding="utf-8", errors="replace", timeout=120,
+                           env=dict(os.environ, PYTHONIOENCODING="utf-8"))
+    except (OSError, subprocess.TimeoutExpired):
+        return "(iii) kopyadaki motor `surum` KOSULAMADI"
+    g = re.search(r"^sha256\s+([0-9A-Fa-f]{64})", r.stdout or "", re.M)
+    if r.returncode != 0 or not g or g.group(1).upper() != sha_k:
+        return "(iii) kopyadaki motor `surum` KENDI SHA'sini kaynakla ayni basmiyor"
+    return None
+
+
+def _skill_kur_yedekle(hedef, yedek_kok):
+    """Eski hedefi OLDUGU GIBI (baglantiysa baglanin KENDISI, izlenmeden) yedek altina TASIR.
+    SILME YOK. Yedek `skills/` ALTINDA OLAMAZ: Claude Code orada SKILL.md bulan her
+    klasoru skill olarak yukler."""
+    ts = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    d, n = os.path.join(yedek_kok, ts), 1
+    while os.path.lexists(d):
+        n += 1
+        d = os.path.join(yedek_kok, "%s-%d" % (ts, n))
+    os.makedirs(d)
+    yol = os.path.join(d, _SKILL_KUR_AD)
+    os.replace(hedef, yol)
+    return yol
+
+
+def _skill_kur_yerlestir(kd, hedef, taban, sha_k, var):
+    """Atomik kurma: `<taban>` (skills/ DEGIL) altinda gecici kopya -> ORADA olc -> (varsa eski
+    hedefi yedege tasi) -> rename. Olcum tutmazsa hedefe DOKUNULMAZ. (kod, yedek_yolu)."""
+    os.makedirs(taban, exist_ok=True)
+    gecici = tempfile.mkdtemp(prefix=".hafiza-kur-kur-", dir=taban)
+    try:
+        kopya = os.path.join(gecici, _SKILL_KUR_AD)
+        for rel, p in kd.items():
+            h = os.path.join(kopya, *rel.split("/"))
+            os.makedirs(os.path.dirname(h), exist_ok=True)
+            shutil.copyfile(p, h)
+        ayak = _skill_kur_olc(kd, kopya, sha_k)
+        if ayak:
+            print("KURULUM OLCUMU TUTMADI — kurulmadi: %s" % ayak)
+            return 1, None
+        yedek = _skill_kur_yedekle(hedef, os.path.join(taban, "hafiza-kur-yedek")) if var else None
+        os.makedirs(os.path.dirname(hedef), exist_ok=True)
+        try:
+            os.replace(kopya, hedef)
+        except OSError as e:
+            if yedek:
+                os.replace(yedek, hedef)
+            print("KURULUM OLCUMU TUTMADI — kurulmadi: yerine konamadi (%s)" % e)
+            return 1, None
+        return 0, yedek
+    finally:
+        shutil.rmtree(gecici, ignore_errors=True)
+
+
+def _skill_kur_cakisma(kd, hedef, sha_k, guncelle):
+    """Hedef VAR: 0 (ZATEN KURULU) · 2 (farkli, `--guncelle` yok: HICBIR SEY degismez) ·
+    None (farkli + `--guncelle`: yedekleyip kurmaya devam)."""
+    ayni, sebep = _skill_kur_fark(kd, hedef, sha_k)
+    if ayni:
+        print("ZATEN KURULU: %s\n  sha256 %s · %d dosya\n  HICBIR DOSYAYA YAZILMADI."
+              % (hedef, sha_k, len(kd)))
+        print(_SKILL_KUR_NOT)
+        return 0
+    if guncelle:
+        return None
+    try:
+        kurulu = _skill_kur_sha(os.path.join(hedef, "scripts", "hafiza.py"))
+    except OSError:
+        kurulu = "okunamadi"
+    print("CATISMA: hedefte FARKLI bir kurulum var: %s\n  sebep       : %s\n  kaynak sha  : %s\n"
+          "  kurulu sha  : %s\n  HICBIR SEY DEGISMEDI. Degistirmek icin `skill-kur --guncelle` "
+          "(eski kurulum yedege TASINIR, silinmez)." % (hedef, sebep, sha_k, kurulu))
+    return 2
+
+
+def cmd_skill_kur(a):
+    """skill-kur [--proje <kok>] [--guncelle] — bu skill'i Claude Code'un skill klasorune KOPYALAR
+    ve OLCER. Kaynak: motorun kendi dizininin ustu (`<...>/skill/`). Hedef: `~/.claude/skills/
+    hafiza-kur/` (`--proje`: `<kok>/.claude/skills/hafiza-kur/`). Cikis: 0 kuruldu/zaten kurulu ·
+    1 olcum tutmadi (kurulmadi) · 2 kullanim/catisma."""
+    kaynak = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if not (os.path.isfile(os.path.join(kaynak, "SKILL.md"))
+            and os.path.isfile(os.path.join(kaynak, "scripts", "hafiza.py"))):
+        print("HATA: kaynak skill dizini degil: %s (SKILL.md ve scripts/hafiza.py yok — motor "
+              "tek basina kopyalanmis olabilir; depodaki/paketteki skill/ dizininden kos)" % kaynak)
+        return 2
+    kok = os.path.abspath(a.proje) if a.proje else os.path.expanduser("~")
+    if not os.path.isdir(kok) or kok == "~":
+        print("HATA: %s dizini yok: %s" % ("--proje" if a.proje else "ev", kok))
+        return 2
+    taban = os.path.join(kok, ".claude")
+    hedef = os.path.join(taban, "skills", _SKILL_KUR_AD)
+    kd, sha_k = _skill_kur_dosyalar(kaynak), _skill_kur_sha(os.path.join(kaynak, "scripts", "hafiza.py"))
+    var = os.path.lexists(hedef)
+    if var:
+        kod = _skill_kur_cakisma(kd, hedef, sha_k, a.guncelle)
+        if kod is not None:
+            return kod
+    yeni_skills = not os.path.isdir(os.path.join(taban, "skills"))
+    kod, yedek = _skill_kur_yerlestir(kd, hedef, taban, sha_k, var)
+    if kod:
+        return kod
+    print("KURULDU: %s\n  sha256 %s · %d dosya" % (hedef, sha_k, len(kd)))
+    if yedek:
+        print("  ESKI KURULUM YEDEKTE (silinmedi): %s" % yedek)
+    if yeni_skills:
+        print("  skills/ dizini bu komutla YENI acildi — acik oturumda /reload-skills gerekebilir.")
+    print(_SKILL_KUR_NOT)
+    return 0
+
+
 # ---------------------------------------------------------------- main
 
 def _boru_koptu_mu(e):
@@ -7057,6 +7240,13 @@ def main():
 
     p = alt.add_parser("surum", help="motorun surumunu ve KENDI SHA256'sini basar")
     p.set_defaults(fn=cmd_surum)
+
+    p = alt.add_parser("skill-kur", help="skill'i Claude Code'un skill klasorune KOPYALAR + olcer "
+                                         "(var olan farkliysa durur)")
+    p.add_argument("--proje", help="kisisel yerine <kok>/.claude/skills/ altina kur")
+    p.add_argument("--guncelle", action="store_true",
+                   help="var olan FARKLI kurulumu <.claude>/hafiza-kur-yedek/ altina TASIR (silmez), sonra kurar")
+    p.set_defaults(fn=cmd_skill_kur)
 
     p = alt.add_parser("hook", help="git pre-commit kapisini kurar")
     p.add_argument("--kok")
