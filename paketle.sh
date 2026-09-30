@@ -6,6 +6,13 @@
 # `skill/scripts/hafiza.py` tek gerçek kaynaktır (H5 doktrini — "aktif sürüm
 # hangisi" sorusunun iki cevabı olamaz).
 #
+# 🔄 30 Eyl 2026 (besli-paket/IS_EMRI_URUN_HAZIRLIK.md KALEM 1): ÜRETİM artık
+#   `zip` komutuyla DEĞİL, motorun `paket` alt komutuyla yapılır (stdlib
+#   `zipfile`, DETERMİNİST, üretimden sonra KENDİ paketini ölçer). Bu betik o
+#   komutu ÇAĞIRIR; aşağıdaki İKİ KAPI AYNEN kalır ve komutun kendi ölçümünden
+#   BAĞIMSIZDIR (komutun ölçümü körleşse bile paket burada yakalanır). `zip` ve
+#   `unzip` artık gerekmez; `python3`/`python`/`py`den çalışan ilki kullanılır.
+#
 # ÜRETİLEN PAKET ÖLÇÜLÜR (14 Ağu 2026'da düzeltildi — aşağıdaki ders):
 #   KAPI-1 MOTOR BIT-BIT : zip'ten geri çıkarılan `scripts/hafiza.py`, kaynakla
 #                          BİT-BİT aynı mı? (satır-sonu çevirimi, yanlış dosya,
@@ -33,18 +40,35 @@ KOK="$(cd "$(dirname "$0")" && pwd)"
 cd "$KOK"
 
 [ -d skill ] || { echo "HATA: skill/ yok"; exit 2; }
-command -v zip >/dev/null || { echo "HATA: zip komutu yok"; exit 2; }
-command -v python3 >/dev/null || { echo "HATA: python3 yok"; exit 2; }
 
-GERCEK="$(python3 -c "import hashlib;print(hashlib.sha256(open('skill/scripts/hafiza.py','rb').read()).hexdigest().upper())")"
+# Calisan python: python3 / python / py — CALISTIGI OLCULEREK secilir (Windows'ta `python3`
+# bir Store kisayolu olabilir: `command -v` bulur ama calistirmaz).
+PY=""
+for aday in python3 python py; do
+  command -v "$aday" >/dev/null 2>&1 || continue
+  if "$aday" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; then
+    PY="$aday"; break
+  fi
+done
+[ -n "$PY" ] || { echo "HATA: calisan python yok (python3 / python / py denendi)"; exit 2; }
+
+GERCEK="$("$PY" -c "import hashlib;print(hashlib.sha256(open('skill/scripts/hafiza.py','rb').read()).hexdigest().upper())")"
 echo "hafiza.py SHA256 (kaynak): $GERCEK"
 
 rm -f hafiza-kur.skill
-( cd skill && zip -q -r -X "../hafiza-kur.skill" . -x '.*' -x '*/.*' -x '*/deneme/*' -x '*/__pycache__/*' )
+set +e
+"$PY" skill/scripts/hafiza.py paket --cikti hafiza-kur.skill
+URETIM_RC=$?
+set -e
+if [ "$URETIM_RC" -ne 0 ]; then
+  echo
+  echo "DURDU: motorun paket komutu paketi URETEMEDI ya da OLCEMEDI (kod $URETIM_RC). Paket YOK."
+  exit "$URETIM_RC"
+fi
 
 # --- KAPILAR: uretilen paket olculur (beyan degil) --------------------------
 set +e
-python3 - "$KOK" <<'PY'
+"$PY" - "$KOK" <<'PY'
 import hashlib, os, sys, zipfile
 
 kok = sys.argv[1]
@@ -118,4 +142,8 @@ fi
 
 echo
 echo "PAKET: $KOK/hafiza-kur.skill"
-unzip -l hafiza-kur.skill | tail -n +4 | head -n -2 | awk '{print "  " $4}'
+"$PY" - <<'PY'
+import zipfile
+for ad in sorted(a for a in zipfile.ZipFile("hafiza-kur.skill").namelist() if not a.endswith("/")):
+    print("  " + ad)
+PY

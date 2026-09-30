@@ -1,15 +1,12 @@
 ---
 name: hafiza-kur
 description: >-
-  Bir projeye kalıcı HAFIZA + DOSYALAMA + ARŞİVLEME düzenini kurar ve işletir (v2).
-  Kullanıcı "hafıza düzenini kur", "arşivleme sistemi kur", "bu projeye hafıza kur",
-  "dosya düzeni kur", "proje hafızası", "canlı hafıza", "karar günlüğü", "ADR",
-  "karar kaydı", "emekliye ayır", "hafızayı derle", "hafıza kapısı", "kapıyı koş",
-  "devir notu", "oturum protokolü", "dosyalar şişti", "hangi dosya nereye",
-  "eski sürümleri arşivle" dediğinde YA DA yeni bir proje/klasör bağlanıp orada
-  `.hafizarc` / `PROJE_HAFIZA.md` bulunmadığında DEVREYE GİR. Ayrıca her oturum
-  AÇILIŞINDA ve KAPANIŞINDA protokolü uygular. İlke: hiçbir satır silinmez, taşınır;
-  "kaybolmadı" bir iddia değil TEST SONUCUDUR; ölçülmeyen şeye "temiz" denmez.
+  Projeye kalıcı HAFIZA + DOSYALAMA + ARŞİVLEME düzeni kurar ve işletir (v2). "Hafıza
+  düzenini kur", "arşivleme sistemi kur", "proje hafızası", "karar günlüğü", "ADR",
+  "emekliye ayır", "hafızayı derle", "kapıyı koş", "devir notu", "dosyalar şişti"
+  dendiğinde YA DA yeni bir proje/klasör bağlanıp orada `.hafizarc` / `PROJE_HAFIZA.md`
+  bulunmadığında DEVREYE GİR. Her oturum AÇILIŞINDA ve KAPANIŞINDA protokolü uygular.
+  Hiçbir satır silinmez, taşınır; ölçülmeyene "temiz" denmez.
 ---
 
 # Hafıza ve Arşivleme Düzeni — v2
@@ -20,6 +17,15 @@ katmandır**, ürün o düzenin gerçekten çalıştığını **ÖLÇEN kapı si
 ölçülmeyen kapının hükmü yoktur. İki kaynaktan doğdu: sahada denenmiş bir sistem (ölçülen
 bütünlük, kendi kapısını koşan araçlar, mutant kanıtı) ve sektörün olgun pratikleri
 (ADR, saklama planı, log-compaction, fragman modeli, checkpoint).
+
+> **Tam tetik listesi.** Frontmatter açıklaması claude.ai'nin **500 karakter** sınırına sığdırıldı
+> (claude.ai bundan fazlasını kayıtta sessizce kırpıyor; `paket` bunu ölçer — §2); ayrıntı burada.
+> Kullanıcı şunlardan birini derse devreye gir: "hafıza düzenini kur" · "arşivleme sistemi kur" ·
+> "bu projeye hafıza kur" · "dosya düzeni kur" · "proje hafızası" · "canlı hafıza" · "karar
+> günlüğü" · "ADR" · "karar kaydı" · "emekliye ayır" · "hafızayı derle" · "hafıza kapısı" ·
+> "kapıyı koş" · "devir notu" · "oturum protokolü" · "dosyalar şişti" · "hangi dosya nereye" ·
+> "eski sürümleri arşivle" — YA DA yeni bir proje/klasör bağlanıp orada `.hafizarc` /
+> `PROJE_HAFIZA.md` bulunmadığında. Her oturum AÇILIŞINDA ve KAPANIŞINDA protokolü uygula.
 
 ---
 
@@ -128,8 +134,22 @@ KOPYALAR ve kopya üzerinde ÖLÇER; bağ/symlink kurmaz. Hedefte FARKLI bir kur
 (hiçbir şey değişmez); `--guncelle` eskisini `~/.claude/hafiza-kur-yedek/<tarih>/` altına TAŞIR
 (silmez; yedek `skills/` altında OLAMAZ — Claude Code orada SKILL.md bulan her klasörü yükler).
 > **`skill-kur` çıkış kodları:** `0` kuruldu / zaten kurulu · `1` kurulum ölçümü tutmadı
-> (kurulmadı) · `2` kullanım hatası ya da hedefte FARKLI bir kurulum var. Cowork ve claude.ai bu
-> klasörü OKUMAZ; orada `hafiza-kur.skill`'i claude.ai'ye yükle. Kapı: `faz0/skill_kur_mutanti.py`.
+> (kurulmadı) · `2` kullanım hatası ya da hedefte FARKLI bir kurulum var · `3` dosya sistemi
+> yazmaya izin vermedi (engel olan dizin gösterilir). Cowork ve claude.ai bu klasörü OKUMAZ; orada
+> `python hafiza.py paket` ile paketi üret (aşağıda). Kapı: `faz0/skill_kur_mutanti.py`.
+
+### Skill'i Cowork / claude.ai'ye paketleme (`paket`)
+
+`python hafiza.py paket [--cikti <yol>]` — `skill/` dizininden `hafiza-kur.skill` (zip) üretir
+(varsayılan `<depo>/hafiza-kur.skill`); bash ve `zip` GEREKMEZ (stdlib `zipfile`). Kaynak ve süzgeç
+`skill-kur` ile AYNIDIR. Çıktı DETERMİNİSTTİR (sıralı ad, sabit tarih/izin): aynı kaynaktan iki
+üretim bayt-birebir eşittir. Üretimden SONRA komut kendi paketini ölçer (zip'ten geri okunan motor
+= kaynak · envanter = süzülmüş kaynak · her dosya bayt-eşit · açıklama ≤ 500 karakter); tutmazsa
+paket BIRAKILMAZ (`1`). Sonra: claude.ai → Customize → Skills → Upload skill → `hafiza-kur.skill`.
+> **`paket` çıkış kodları:** `0` üretildi ve ölçüldü · `1` üretim sonrası ölçüm tutmadı · `2`
+> kullanım hatası · `3` dosya sistemi yazmaya izin vermedi. `paketle.sh` bu komutu çağırır ve kendi
+> iki kapısını (motor bit-bit · envanter) bağımsız koşar. Kapılar: `faz0/paket_mutanti.py` ·
+> `faz0/aciklama_siniri_mutanti.py`.
 
 ### Sıfırdan kurulum
 

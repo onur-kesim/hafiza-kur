@@ -24,9 +24,16 @@ KOLLAR (gercek motor, sahte HOME)
                 olmayan `--proje` -> exit 2
   K-ENV         kaynaga `scripts/deneme/x.md`, `scripts/__pycache__/y.pyc`, `.gizli`,
                 `references/.gizli_dizin/z.md` enjekte -> kurulumda YOK; kurulu envanter paketle.sh'in
-                zip envanteriyle AYNI. `bash`+`zip` yoksa o ALT-OLCUM "OLCULEMEDI" basilir ve sonuc
+                zip envanteriyle AYNI. Calisan `bash` yoksa (paketle.sh artik `zip` ISTEMEZ; motorun `paket`
+                komutunu cagirir) o ALT-OLCUM "OLCULEMEDI" basilir ve sonuc
                 "YESIL (SINIRLI)" olur (sessiz yesil DEGIL); `--zip-zorla` ile exit 2
   K-MOTORYALNIZ motor tek basina bir dizine kopyalanip oradan kosulur -> exit 2, HOME'a yazilmadi
+  K-SALTOKUNUR  (besli-paket/IS_EMRI_URUN_HAZIRLIK.md KALEM 4, 30 Eyl 2026) dosya sistemi yazmaya izin
+                vermeyince -> exit 3; mesaj ENGEL OLAN dizini (`.claude` ya da `.claude/skills`) soyler,
+                genel yakalayicinin ILGISIZ satirlarini (`kapi` onerisi · VAR OLMAYAN gecici dizine
+                chmod) BASMAZ. DORT kol: A1/A2 ENJEKSIYONLA (her platformda: `mkdtemp` / son rename
+                EACCES atar) · B/C GERCEK salt-okunur dizinle (yalniz POSIX + root DEGILKEN; aksi
+                halde o ALT-OLCUM "OLCULEMEDI" basilir, sonuc "YESIL (SINIRLI)" olur)
 
 MUTANTLAR (motor KOPYASINDA dizge sabotaji; hedef dizge motorda TAM 1 kez gecmeli, degilse
 OLCULEMEDI — h14_bolme dersi). Her mutantin BEKLENEN kolu KIRMIZI yanmali:
@@ -35,10 +42,12 @@ OLCULEMEDI — h14_bolme dersi). Her mutantin BEKLENEN kolu KIRMIZI yanmali:
   M-SK-YEDEK  yedege tasima yerine SILME                            -> K-GUNCELLE
   M-SK-SUZGEC suzgecten `deneme` cikarilir                          -> K-ENV
   M-SK-YER    yedek `skills/` ALTINA alinir (Claude Code orada SKILL.md bulani yukler) -> K-GUNCELLE
+  M-SK-GENEL  `skill-kur`un dosya sistemi yakalayicisi sokulur (genel yakalayiciya duser)  -> K-SALTOKUNUR
+  M-SK-RENAME son rename'in izin hatasi exit 3 yerine ESKI "olcum tutmadi" exit 1 olur    -> K-SALTOKUNUR
 POZITIF KONTROL: temiz motorda tum kollar YESIL olmali; degilse mutant hukmu ANLAMSIZDIR -> exit 2.
 
-CIKIS  0 yesil + 5/5 mutant ISIRDI · 1 bir mutant KACTI · 2 OLCULEMEDI (pozitif kontrol tutmadi,
-       capa yok, `--zip-zorla` + zip yok) — sessiz PASS YOK
+CIKIS  0 yesil + tum mutantlar ISIRDI · 1 bir mutant KACTI · 2 OLCULEMEDI (pozitif kontrol tutmadi,
+       capa yok, `--zip-zorla` + calisan bash yok) — sessiz PASS YOK
 KULLANIM  python faz0/skill_kur_mutanti.py [motor] [--zip-zorla]
 """
 import hashlib
@@ -155,7 +164,8 @@ def surum_sha(motor, home):
 
 
 # ------------------------------------------------------------------------ KOLLAR
-# Her kol: (durum, ayrinti, sinirli). durum: YESIL | KIRMIZI. sinirli: alt-olcum OLCULEMEDI mi.
+# Her kol: (durum, ayrinti, sinirli). durum: YESIL | KIRMIZI. sinirli: False ya da OLCULEMEDI kalan
+# alt-olcumun etiketi ("zip" = K-ENV'in zip envanteri · "salt" = K-SALTOKUNUR'un gercek-izin kollari).
 def _yesil(hata, ok="tamam"):
     return ("KIRMIZI", "; ".join(hata), False) if hata else ("YESIL", ok, False)
 
@@ -251,18 +261,41 @@ def kol_proje(ctx):
     return _yesil(hata, "proje hedefi dogru, HOME'a HIC yazilmadi, olmayan --proje exit 2")
 
 
+def bash_bul():
+    """Calisan bir POSIX bash (yol | None). Windows'ta System32'deki bash.exe WSL baslaticisidir ve
+    dagitim yoksa CALISMAZ: once Git'in bash'i aranir; her aday `echo` ile SINANIR."""
+    adaylar = []
+    if os.name == "nt" and shutil.which("git"):
+        d = os.path.dirname(os.path.abspath(shutil.which("git")))
+        for _ in range(4):
+            adaylar += [os.path.join(d, "bin", "bash.exe"), os.path.join(d, "usr", "bin", "bash.exe")]
+            d = os.path.dirname(d)
+    if shutil.which("bash"):
+        adaylar.append(shutil.which("bash"))
+    for a in adaylar:
+        if not os.path.isfile(a):
+            continue
+        try:
+            r = subprocess.run([a, "-c", "echo hk-ok"], capture_output=True, text=True, timeout=30)
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if r.returncode == 0 and r.stdout.strip() == "hk-ok":
+            return a
+    return None
+
+
 def zip_envanteri(ctx):
     """paketle.sh'i injekte edilmis kaynakla kosar. (zip DOSYA envanteri | None, sebep): None =
-    bu platformda kosulamiyor (bash/zip/python3 yok ya da paketle.sh paket uretmedi) — bu bir
+    bu platformda kosulamiyor (calisan bash yok ya da paketle.sh paket uretmedi) — bu bir
     SINIRLI durumudur; yalniz `--zip-zorla` (CI ubuntu) onu sert hataya cevirir."""
-    eksik = [k for k in ("bash", "zip", "python3") if not shutil.which(k)]
-    if eksik:
-        return None, "%s yok" % "/".join(eksik)
+    bash = bash_bul()
+    if not bash:
+        return None, "calisan bash yok"
     d = os.path.join(ctx["taban"], "paketle")
     os.makedirs(d)
     shutil.copy(os.path.join(KOK_DEPO, "paketle.sh"), d)
     shutil.copytree(ctx["skill_enjekte"], os.path.join(d, "skill"))
-    r = subprocess.run(["bash", "paketle.sh"], cwd=d, capture_output=True, text=True, timeout=300,
+    r = subprocess.run([bash, "paketle.sh"], cwd=d, capture_output=True, text=True, timeout=300,
                        encoding="utf-8", errors="replace")
     z = os.path.join(d, "hafiza-kur.skill")
     if not os.path.isfile(z):
@@ -284,7 +317,7 @@ def kol_env(ctx):
         if artik in kurulu:
             hata.append("suzulmesi gereken artik KURULDU: %s" % artik)
     z, sebep = zip_envanteri(ctx)
-    sinirli = z is None
+    sinirli = "zip" if z is None else False
     if z is not None and z != kurulu:
         hata.append("kurulu envanter paketle.sh zip envanterinden FARKLI (yalniz kurulu: %s · yalniz zip: %s)"
                     % (sorted(kurulu - z)[:3], sorted(z - kurulu)[:3]))
@@ -308,9 +341,116 @@ def kol_motoryalniz(ctx):
     return _yesil(hata, "exit 2 'kaynak skill dizini degil', HOME'a yazilmadi")
 
 
+# Enjeksiyon sarmalayicisi: motoru `runpy` ile ayni `__main__` yolundan kosar (yani `_guvenli_calistir`
+# dahil) ama bir dosya sistemi cagrisini EACCES ile dusurur. Izin MODELIYLE degil ENJEKSIYONLA:
+# `os.chmod` Windows'ta dizinlerde etkisizdir ve root'ta izin hic ates etmez (fazA dersi).
+ENJEKSIYON = '''import errno, os, runpy, sys, tempfile
+_mod, _motor = os.environ["HK_ENJEKTE"], sys.argv[1]
+if _mod == "mkdtemp":
+    def _engelli(*a, **k):
+        raise PermissionError(errno.EACCES, "Permission denied",
+                              os.path.join(k.get("dir") or ".", ".hafiza-kur-kur-enjekte"))
+    tempfile.mkdtemp = _engelli
+else:
+    _gercek = os.replace
+    def _engelli(src, dst, *a, **k):
+        if os.path.basename(dst) == "hafiza-kur" and os.path.basename(os.path.dirname(dst)) == "skills":
+            raise PermissionError(errno.EACCES, "Permission denied", src, None, dst)
+        return _gercek(src, dst, *a, **k)
+    os.replace = _engelli
+sys.argv = [_motor] + sys.argv[2:]
+runpy.run_path(_motor, run_name="__main__")
+'''
+
+
+def kos_enjekte(ctx, mod, home):
+    """Motoru ENJEKSIYON sarmalayicisiyla kosar (`mod`: mkdtemp | replace). (kod, cikti)."""
+    yol = os.path.join(ctx["taban"], "enjekte.py")
+    with open(yol, "w", encoding="utf-8", newline="\n") as f:
+        f.write(ENJEKSIYON)
+    env = dict(os.environ, HOME=home, USERPROFILE=home, PYTHONIOENCODING="utf-8", HK_ENJEKTE=mod)
+    r = subprocess.run([sys.executable, "-X", "utf8", yol, ctx["motor"], "skill-kur"],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
+                       timeout=300)
+    return r.returncode, (r.stdout or "") + (r.stderr or "")
+
+
+def fs_hukmu_hatalari(ad, k, c, engel):
+    """Dosya sistemi hukmunun 5 sartini olcer: exit 3 · ENGEL OLAN dizin adi · `kapi` onerisi YOK ·
+    VAR OLMAYAN gecici dizine chmod YOK · ham traceback YOK."""
+    hata = []
+    if k != 3:
+        hata.append("%s: exit %d (3 bekleniyordu): %s" % (ad, k, c.strip().splitlines()[-1][:70] if c.strip() else ""))
+    if os.path.normcase(os.path.normpath(engel)) not in os.path.normcase(c):
+        hata.append("%s: engel olan dizin gosterilmedi (%s)" % (ad, engel))
+    if "hafiza.py kapi" in c:
+        hata.append("%s: ILGISIZ `kapi` onerisi basildi" % ad)
+    if ".hafiza-kur-kur-" in c:
+        hata.append("%s: VAR OLMAYAN gecici dizine chmod onerisi basildi" % ad)
+    if "Traceback" in c:
+        hata.append("%s: ham traceback" % ad)
+    return hata
+
+
+def gercek_izin_uygulanir(taban):
+    """chmod 0555 bu ortamda gercekten YAZMAYI engelliyor mu? (Windows/root: hayir -> None)"""
+    if os.name != "posix" or not hasattr(os, "geteuid") or os.geteuid() == 0:
+        return "POSIX degil ya da root"
+    d = os.path.join(taban, "izin_sondaji")
+    os.makedirs(d)
+    os.chmod(d, 0o555)
+    try:
+        with open(os.path.join(d, "x"), "w"):
+            return "chmod 0555 yazmayi ENGELLEMEDI"
+    except OSError:
+        return None
+    finally:
+        os.chmod(d, 0o755)
+
+
+def kol_saltokunur(ctx):
+    hata = []
+    # A1/A2: ENJEKSIYON (her platform). A1: `.claude` icinde gecici dizin acilamaz · A2: son rename
+    # `skills/` icine yapilamaz. Gercek ev dizinine degil SAHTE HOME'a bakar.
+    h1 = yeni_home(ctx["taban"], "salt_a1")
+    taban1 = os.path.join(h1, ".claude")
+    os.makedirs(taban1)
+    k, c = kos_enjekte(ctx, "mkdtemp", h1)
+    hata += fs_hukmu_hatalari("A1", k, c, taban1)
+    if os.listdir(taban1):
+        hata.append("A1: `.claude/` icinde artik var: %s" % os.listdir(taban1))
+    h2 = yeni_home(ctx["taban"], "salt_a2")
+    skills2 = os.path.join(h2, ".claude", "skills")
+    os.makedirs(skills2)
+    k, c = kos_enjekte(ctx, "replace", h2)
+    hata += fs_hukmu_hatalari("A2", k, c, skills2)
+    if os.listdir(skills2) or sorted(os.listdir(os.path.dirname(skills2))) != ["skills"]:
+        hata.append("A2: hedefte/`.claude/` icinde artik var")
+    # B/C: GERCEK salt-okunur dizin (yalniz POSIX + root degilken)
+    sebep = gercek_izin_uygulanir(ctx["taban"])
+    if sebep is None:
+        for ad, alt in (("B", ".claude"), ("C", os.path.join(".claude", "skills"))):
+            h = yeni_home(ctx["taban"], "salt_" + ad.lower())
+            ro = os.path.join(h, alt)
+            os.makedirs(ro)
+            os.chmod(ro, 0o555)
+            try:
+                k, c = kos(ctx["motor"], ["skill-kur"], h)
+            finally:
+                os.chmod(ro, 0o755)
+            hata += fs_hukmu_hatalari(ad, k, c, ro)
+    if hata:
+        return ("KIRMIZI", "; ".join(hata), False)
+    if sebep:
+        return ("YESIL", "A1+A2 enjeksiyon: exit 3, engel olan dizin gosterildi, `kapi`/chmod-gecici satiri YOK · "
+                "B+C gercek salt-okunur: OLCULEMEDI (%s)" % sebep, "salt")
+    return ("YESIL", "A1+A2 enjeksiyon ve B+C gercek salt-okunur dizin: exit 3, engel olan dizin gosterildi, "
+            "`kapi`/chmod-gecici satiri YOK", False)
+
+
 KOLLAR = [("K-TAZE", kol_taze), ("K-AYNI", kol_ayni), ("K-FARKLI", kol_farkli),
           ("K-GUNCELLE", kol_guncelle), ("K-PROJE", kol_proje), ("K-ENV", kol_env),
-          ("K-MOTORYALNIZ", kol_motoryalniz)]
+          ("K-MOTORYALNIZ", kol_motoryalniz), ("K-SALTOKUNUR", kol_saltokunur)]
 
 # ----------------------------------------------------------------------- MUTANTLAR
 # (ad, aciklama, eski, yeni, BEKLENEN kol)
@@ -329,6 +469,12 @@ MUTANTLAR = [
     ("M-SK-YER", "yedek `skills/` ALTINA alinir",
      'os.path.join(taban, "hafiza-kur-yedek")', 'os.path.join(taban, "skills", "hafiza-kur-yedek")',
      "K-GUNCELLE"),
+    ("M-SK-GENEL", "dosya sistemi yakalayicisi sokulur (genel yakalayiciya duser)",
+     '        return _dosya_sistemi_hukmu("skill-kur", _engel_dizin(e), "baska bir kokle dene: --proje <kok>")\n',
+     "        raise\n", "K-SALTOKUNUR"),
+    ("M-SK-RENAME", "son rename'in izin hatasi eski 'olcum tutmadi' exit 1 olur",
+     '            if getattr(e, "errno", None) in _FS_ENGEL_KODLARI:\n                raise ',
+     '            if False:\n                raise ', "K-SALTOKUNUR"),
 ]
 
 
@@ -359,6 +505,14 @@ def kollari_kos(kaynak_skill, motor_metni, taban, zip_zorla):
     return sonuc
 
 
+SINIR_NOTU = {
+    "zip": "\n  SINIRLI: K-ENV'in zip envanteri karsilastirmasi OLCULEMEDI (calisan bash yok); "
+           "CI ubuntu kolu `--zip-zorla` ile olcer.",
+    "salt": "\n  SINIRLI: K-SALTOKUNUR'un GERCEK salt-okunur kollari (B/C) OLCULEMEDI (POSIX degil ya da "
+            "root); A1/A2 enjeksiyon kollari olculdu, gercek-izin kollarini CI ubuntu/macOS olcer.",
+}
+
+
 def main():
     _cikti_kodlamasini_guvenceye_al()
     zip_zorla = "--zip-zorla" in sys.argv
@@ -370,8 +524,8 @@ def main():
     kaynak_skill = os.path.dirname(os.path.dirname(motor))
     metin = open(motor, encoding="utf-8", newline="").read()
     print(CIZGI)
-    print("SKILL-KUR OLCERI · motor %s · platform %s · bash/zip: %s" % (
-        motor, sys.platform, "VAR" if (shutil.which("bash") and shutil.which("zip")) else "YOK"))
+    print("SKILL-KUR OLCERI · motor %s · platform %s · calisan bash: %s" % (
+        motor, sys.platform, "VAR" if bash_bul() else "YOK"))
     print(CIZGI)
     gercek_home = os.path.expanduser("~")
     onceki = sorted(os.listdir(os.path.join(gercek_home, ".claude", "skills"))) \
@@ -379,7 +533,7 @@ def main():
 
     taban0 = tempfile.mkdtemp(prefix="skill_kur_olcer_")
     try:
-        print("POZITIF KONTROL (temiz motor, 7 kol):")
+        print("POZITIF KONTROL (temiz motor, %d kol):" % len(KOLLAR))
         temiz = kollari_kos(kaynak_skill, None, os.path.join(taban0, "temiz"), zip_zorla)
         for ad, durum, ayr, _s in temiz:
             print("  %-14s %-10s %s" % (ad, durum, ayr))
@@ -387,9 +541,9 @@ def main():
             print("\nSONUC: OLCULEMEDI — pozitif kontrol tutmadi (temiz motorda kirmizi/olculemeyen kol); "
                   "mutant hukumleri ANLAMSIZ, mutantlar KOSULMADI.")
             return 2
-        sinirli = any(s for _, _, _, s in temiz)
-        if sinirli and zip_zorla:
-            print("\nSONUC: OLCULEMEDI — `--zip-zorla` verildi ama bash/zip yok (K-ENV zip karsilastirmasi).")
+        sinirli = sorted({s for _, _, _, s in temiz if s})
+        if "zip" in sinirli and zip_zorla:
+            print("\nSONUC: OLCULEMEDI — `--zip-zorla` verildi ama calisan bash yok (K-ENV zip karsilastirmasi).")
             return 2
 
         print("\nMUTANTLAR (her biri BEKLENEN kolu KIRMIZI yakmali):")
@@ -428,10 +582,9 @@ def main():
     if kacti:
         print("SONUC: KIRMIZI — %d mutant KACTI: %s" % (len(kacti), ", ".join(kacti)))
         return 1
-    print("SONUC: %s — 7 kol yesil, %d/%d mutant ISIRDI (%s)%s"
-          % ("YESIL (SINIRLI)" if sinirli else "YESIL", len(isirdi), len(MUTANTLAR), ", ".join(isirdi),
-             "\n  SINIRLI: K-ENV'in zip envanteri karsilastirmasi OLCULEMEDI (bash/zip yok); "
-             "CI ubuntu kolu `--zip-zorla` ile olcer." if sinirli else ""))
+    print("SONUC: %s — %d kol yesil, %d/%d mutant ISIRDI (%s)%s"
+          % ("YESIL (SINIRLI)" if sinirli else "YESIL", len(KOLLAR), len(isirdi), len(MUTANTLAR),
+             ", ".join(isirdi), "".join(SINIR_NOTU[x] for x in sinirli)))
     return 0
 
 

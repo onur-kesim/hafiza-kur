@@ -1295,31 +1295,41 @@ jobs:
   #
   #     Kapilar `paketle.sh`in ICINDE yasar (insanin kosturdugu yer orasi):
   #     KAPI-1 MOTOR BIT-BIT · KAPI-2 ENVANTER. `faz0/paket_mutanti.py` onlarin
-  #     ISIRDIGINI kanitlar: M-1 `zip -l` -> KAPI-1 · M-2 `-x references/*` -> KAPI-2.
+  #     ISIRDIGINI kanitlar (14 Agu'da `zip -l` ve `-x references/*` ile; 30 Eyl'den beri
+  #     YENI ureticide esdeger dizge sabotajiyla): M-1 satir sonu cevrimi -> KAPI-1 ·
+  #     M-2 suzgec references'i dusurur -> KAPI-2.
   #     Ikisi de GERCEK ariza: satir-sonu cevrimi (`.gitattributes * -text` dersi)
   #     ve dosya dusmesi (LISANS sinifi). Ortusurlerse arac ORTUSTU deyip kirmizi yanar.
   #
-  #     `zip` YALNIZ ubuntu kolunda gerekir; paket ARTEFAKT olarak windows/macos'a
-  #     gecer. Gercek kullanicinin yaptigi da budur: paket bir kez uretilir, BASKA
-  #     bir makinede kurulur. Acma stdlib `zipfile` iledir — hedefte `unzip` gerekmez.
+  #     30 Eyl 2026 (besli-paket/IS_EMRI_URUN_HAZIRLIK.md KALEM 1): `.skill` URETIMI
+  #     `zip` komutundan motorun `paket` alt komutuna (stdlib `zipfile`) tasindi;
+  #     `paketle.sh` onu CAGIRIR, iki kapisi AYNEN kalir. `zip` ARTIK GEREKMEZ, bu yuzden
+  #     is UC PLATFORMDA kosar (eskiden yalniz ubuntu). Paket ARTEFAKTI yine yalniz
+  #     ubuntu kolundan cikar (ayni ad iki isten yuklenemez) ve `paketten_kos` onu
+  #     windows/macos'a tasir: paket bir kez uretilir, BASKA bir makinede kurulur.
+  #     `paket_mutanti` artik DORT eksen olcer: KAPI-1 · KAPI-2 · DETERMINIZM · IC OLCUM.
   # ---------------------------------------------------------------------------
   paket_kapisi:
-    name: paket kapisi (uretim + mutant)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    name: paket kapisi (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: paketle.sh (KAPI-1 MOTOR BIT-BIT + KAPI-2 ENVANTER)
+      - name: paketle.sh (motorun paket komutu + KAPI-1 MOTOR BIT-BIT + KAPI-2 ENVANTER)
         shell: bash
         run: bash paketle.sh 2>&1 | tee paket-kapisi-cikti.txt
-      - name: iki kapi + iki mutant
+      - name: iki kapi + determinizm + dort mutant
         shell: bash
         run: python faz0/paket_mutanti.py 2>&1 | tee -a paket-kapisi-cikti.txt
       - name: paket (artefakt — asagidaki is bunu kurar)
-        if: always()
+        if: always() && matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: hafiza-kur-skill
@@ -1329,8 +1339,43 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: paket-kapisi-ubuntu
+          name: paket-kapisi-${{ matrix.os }}
           path: paket-kapisi-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # ACIKLAMA SINIRI MUTANTI — besli-paket/IS_EMRI_URUN_HAZIRLIK.md KALEM 2 (30 Eyl 2026).
+  #     claude.ai bir skill'in aciklamasini KAYITTA 500. KARAKTERDE SESSIZCE KIRPIYOR:
+  #     30 Eyl 2026'da GERCEK yuklemede olculdu (713 karakter -> 500'de, kelime ortasinda;
+  #     kaybolan kisim otomatik tetik KOSULU idi). Motorun `paket` komutu aciklama > 500
+  #     ise paketi URETMEZ; bu is o kapinin siniri IKI TARAFTAN olctugunu kanitlar:
+  #     500 yesil · 501 kirmizi · 500 KARAKTER ama > 500 BAYT yesil · okunamayan kirmizi;
+  #     alti mutant (sinir +1 · sinir -1 · bayt sayar · okunamayan gecer · kapi sokuk · yinelenen anahtarda ilkini alir).
+  #     Bu is `paket` komutunun YAZILDIGI yerde kosar; paketten_kos'a bagli DEGIL.
+  #     UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  aciklama_siniri_mutanti:
+    name: aciklama siniri mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: aciklama siniri iki taraftan olculuyor mu (10 vaka + 6 mutant)
+        shell: bash
+        run: python faz0/aciklama_siniri_mutanti.py 2>&1 | tee aciklama-siniri-cikti.txt
+      - name: aciklama siniri ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aciklama-siniri-${{ matrix.os }}
+          path: aciklama-siniri-cikti.txt
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
@@ -1404,7 +1449,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: uc kapi + dort mutant
+      - name: uc kapi + sekiz mutant
         shell: bash
         run: python faz0/readme_mutanti.py 2>&1 | tee readme-kapisi-cikti.txt
       - name: README kapisi ciktisi (artefakt)
@@ -2719,10 +2764,17 @@ jobs:
   #     SUZGEC/YER) her biri BEKLENEN kolu KIRMIZI yakmali. POZITIF KONTROL: temiz motorda
   #     tum kollar YESIL, yoksa exit 2.
   #
-  #     K-ENV'in paketle.sh zip envanteri karsilastirmasi `bash`+`zip`+`python3` ister;
-  #     yoksa o ALT-OLCUM "OLCULEMEDI" basilir ve sonuc "YESIL (SINIRLI)" olur. `zip`
-  #     YALNIZ ubuntu kolunda garantilidir (paket_kapisi ile ayni gerekce): ubuntu kolu
-  #     `--zip-zorla` ile calisir ve zip yoksa exit 2 verir — sessiz yesil DEGIL.
+  #     K-ENV'in paketle.sh envanter karsilastirmasi CALISAN `bash` ister (30 Eyl 2026'dan
+  #     beri `zip` ISTEMEZ: paketle.sh motorun `paket` komutunu cagirir); yoksa o ALT-OLCUM
+  #     "OLCULEMEDI" basilir ve sonuc "YESIL (SINIRLI)" olur. ubuntu kolu `--zip-zorla` ile
+  #     calisir ve calisan bash yoksa exit 2 verir — sessiz yesil DEGIL. windows/macOS
+  #     bayraksiz kalir (oradaki bash'in varligi bu CI'da henuz OLCULMEDI).
+  #
+  #     30 Eyl 2026 (IS_EMRI_URUN_HAZIRLIK.md KALEM 4): SEKIZINCI KOL K-SALTOKUNUR (salt-okunur
+  #     `.claude` / `.claude/skills` -> exit 3, ENGEL OLAN dizin; ilgisiz `kapi`/chmod satiri YOK)
+  #     ve IKI yeni mutant (M-SK-GENEL · M-SK-RENAME). A1/A2 kollari enjeksiyonla HER platformda
+  #     kosar; B/C gercek salt-okunur dizinle YALNIZ POSIX + root degilken (ubuntu/macOS), aksi
+  #     halde o ALT-OLCUM OLCULEMEDI basilir.
   #     `faz0/ci_kapsam_kapisi.py`nin MUAFIYETSIZ kapsamina girdigi icin bu is ZORUNLU.
   #     UC PLATFORM, `continue-on-error` YOK.
   # ---------------------------------------------------------------------------
@@ -2745,7 +2797,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: skill-kur KOPYALIYOR ve OLCUYOR mu (7 kol + 5 mutant, sahte HOME)
+      - name: skill-kur KOPYALIYOR ve OLCUYOR mu (8 kol + 7 mutant, sahte HOME)
         shell: bash
         run: python faz0/skill_kur_mutanti.py ${{ matrix.bayrak }} 2>&1 | tee skill-kur-cikti.txt
       - name: skill kur olceri ciktisi (artefakt)

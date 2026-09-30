@@ -3,9 +3,39 @@
 Taşınabilir bir **proje hafızası kapı sistemi**. Tek dosyalık saf Python motoru
 (stdlib, sıfır bağımlılık) bir projenin hafıza dosyalarını yönetir ve **ölçer**.
 
-> **Durum:** geliştirme aşamasında, **henüz kurulmadı ve yayımlanmadı.** Bu depo
-> CI ölçümü ücretsiz koşabilsin diye publictir — bir yayın değildir. PyPI paketi,
-> marketplace girişi ya da duyuru **yoktur**.
+> **Durum:** geliştirme aşamasında, **henüz yayımlanmadı.** Aşağıdaki Kurulum yolu
+> çalışır (depoyu klonlarsın); bu depo CI ölçümü ücretsiz koşabilsin diye publictir —
+> bir yayın değildir. PyPI paketi, marketplace girişi ya da duyuru **yoktur**.
+
+---
+
+## Kurulum
+
+Python 3 ve `git` yeter (motor stdlib, sıfır bağımlılık; `bash` ve `zip` gerekmez). Komutlar
+`python3` ile yazıldı; **Windows'ta `python` ya da `py` kullan.**
+
+1. Depoyu al:
+
+   ```bash
+   git clone https://github.com/onur-kesim/hafiza-kur.git
+   cd hafiza-kur
+   ```
+
+2. **Claude Code** — skill'i `~/.claude/skills/hafiza-kur/` altına kopyalar ve kopya üzerinde ölçer:
+
+   ```bash
+   python3 skill/scripts/hafiza.py skill-kur
+   ```
+
+   Sonra Claude Code'da `/hafiza-kur`.
+
+3. **Cowork / claude.ai** — bu klasörü okumazlar; `.skill` paketini üretip yüklersin:
+
+   ```bash
+   python3 skill/scripts/hafiza.py paket
+   ```
+
+   Sonra claude.ai → **Customize → Skills → Upload skill** → `hafiza-kur.skill`.
 
 ---
 
@@ -52,12 +82,17 @@ yeşil ama kapsam eksik (`?` ile işaretli en az bir şey ölçülmedi).
 `2` ölçülemeyen mutant · `4` temiz sürüm zaten FAIL.
 
 `skill-kur`: `0` kuruldu ya da zaten kurulu · `1` kurulum ölçümü tutmadı (kurulmadı) ·
-`2` kullanım hatası ya da hedefte FARKLI bir kurulum var (hiçbir şey değişmez).
+`2` kullanım hatası ya da hedefte FARKLI bir kurulum var (hiçbir şey değişmez) ·
+`3` dosya sistemi yazmaya izin vermedi (kurulum tamamlanmadı).
+
+`paket`: `0` üretildi ve ölçüldü · `1` üretim sonrası ölçüm tutmadı (paket bırakılmaz) ·
+`2` kullanım hatası · `3` dosya sistemi yazmaya izin vermedi (paket üretilmedi).
 
 **Yardımcı komutlar**
 
 ```bash
 python3 skill/scripts/hafiza.py skill-kur          # skill'i ~/.claude/skills/hafiza-kur/ altına kopyalar + ölçer
+python3 skill/scripts/hafiza.py paket              # claude.ai / Cowork için hafiza-kur.skill üretir + ölçer
 python3 skill/scripts/hafiza.py surum              # sürüm + motorun KENDİ sha256'sı
 python3 skill/scripts/hafiza.py hook --kur --kok=<proje>   # pre-commit kapısı kurar
 python3 skill/scripts/hafiza.py kapi --kok=<proje> --kapsam-zorla   # CI için
@@ -67,7 +102,13 @@ python3 skill/scripts/hafiza.py kapi --kok=<proje> --kapsam-zorla   # CI için
 ölçer (motor bit-bit · envanter · kopyadaki motorun `surum` SHA'sı); `--proje <kök>` ile
 `<kök>/.claude/skills/` altına kurar. Hedefte FARKLI bir kurulum varsa **durur**; `--guncelle`
 eskisini `~/.claude/hafiza-kur-yedek/` altına TAŞIR (silmez). Cowork ve claude.ai bu klasörü
-okumaz — orada `hafiza-kur.skill`'i claude.ai'ye yükle.
+okumaz — orada `paket` ile `hafiza-kur.skill`'i üret ve claude.ai'ye yükle.
+
+`paket`, aynı `skill/` kaynağından (aynı süzgeçle) `hafiza-kur.skill`'i üretir; `--cikti <yol>` ile
+yerini seçersin. Çıktı **deterministiktir** (sıralı ad, sabit tarih/izin, sıkıştırma yok: aynı kaynaktan
+iki üretim bayt-birebir eşittir) ve komut üretimden sonra **kendi paketini ölçer** — zip'ten geri
+okunan motor kaynakla bit-bit, envanter süzülmüş kaynakla aynı, açıklama en çok 500 karakter
+(claude.ai daha fazlasını kayıtta sessizce kırpıyor). Ölçüm tutmazsa paket **bırakılmaz**.
 
 `kur`, ağaçta başka bir aracın defterini tanırsa (`CLAUDE.md`, `AGENTS.md`,
 `DURUM.md`, `memory-bank/` …) **durur** ve `devral` önerir — belge bunu zaten

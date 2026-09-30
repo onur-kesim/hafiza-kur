@@ -27,6 +27,10 @@ NE OLCER — UC AYRI EKSEN
                      README yanlis sayi yazarsa KIRMIZI yanar.
   KAPI-3 SOZLESME  : README'nin "Cikis kodlari" paragrafindaki `isir` kod KUMESI,
                      motorun kendi bastigi `CIKIS KODLARI:` satiriyla ayni mi.
+                     30 Eyl 2026 (ADDITIVE, IS_EMRI_URUN_HAZIRLIK.md KALEM 3): `skill-kur` ve `paket`
+                     icin de ayni karsilastirma — motorun `<komut> --help` sonundaki `CIKIS KODLARI:`
+                     satiri ile README'deki `skill-kur:` / `paket:` paragraflari. Sebep: README'nin
+                     skill-kur sozlesmesinde `3` YOKTU ve hicbir sey bunu olcmuyordu.
 
 NE OLCMEZ (hukum degil, SINIR — gizlenmez)
   1. `t_y3.py` / `t_y42.py` ARTIK BURADA KOSAR (Onur karari, 14 Agu). Gerekcesi
@@ -47,7 +51,7 @@ NE OLCMEZ (hukum degil, SINIR — gizlenmez)
      beyanlarini.
 
 CIKIS KODLARI
-  0  uc kapi da temiz VE 4/4 mutant AYRI eksende ISIRDI
+  0  uc kapi da temiz VE tum mutantlar AYRI eksende ISIRDI
   1  bir kapi kirmizi, ya da bir mutant KACTI/ORTUSTU (kapi kor)
   2  olculemedi (README yok, blok yok, taninmayan satir, git yok)
 """
@@ -86,6 +90,9 @@ _MOTOR_KOD = re.compile(r"CIKIS KODLARI:\s*(.+)")
 _KOD = re.compile(r"(\d+)")
 # README'nin "Cikis kodlari" paragrafi
 _README_ISIR = re.compile(r"`isir`\s*:(.+?)\.", re.S)
+_README_SKILL_KUR = re.compile(r"`skill-kur`\s*:(.+?)\.(?:\s|$)", re.S)
+_README_PAKET = re.compile(r"`paket`\s*:(.+?)\.(?:\s|$)", re.S)
+_KOD_ARKA = re.compile(r"`(\d+)`")          # README'de kodlar `N` icinde yazilir; prozdaki rakam SAYILMAZ
 # kosucularin ozet satirlari: t_y3 "SONUC: 20/20 senaryo ..." · t_y42 "... (toplam 58)"
 _KANIT_TOPLAM = re.compile(r"toplam\s+(\d+)")
 _KANIT_ORAN = re.compile(r"SONUC:\s*\d+\s*/\s*(\d+)\s+senaryo")
@@ -199,6 +206,38 @@ def kapi3_sozlesme(metin, isir_ciktisi):
         return ["README %s diyor, motor %s basiyor (fark: %s)"
                 % (sorted(belge), sorted(gercek), sorted(belge ^ gercek))]
     return []
+
+
+_YARDIM_ONBELLEK = {}
+
+
+def komut_kodlari(kaynak_scripts, komut):
+    """Motorun `<komut> --help` sonundaki `CIKIS KODLARI:` satirinin kod KUMESI (set | None)."""
+    if komut not in _YARDIM_ONBELLEK:
+        p = subprocess.run([sys.executable, "-X", "utf8", "hafiza.py", komut, "--help"],
+                           cwd=kaynak_scripts, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        m = _MOTOR_KOD.search(p.stdout.decode("utf-8", "replace"))
+        _YARDIM_ONBELLEK[komut] = (set(int(x) for x in _KOD.findall(m.group(1)))
+                                   if (m and p.returncode == 0) else None)
+    return _YARDIM_ONBELLEK[komut]
+
+
+def kapi3_komut_sozlesmesi(metin, kaynak_scripts):
+    """README'nin `skill-kur` ve `paket` kod kumeleri motorun `--help` satirlariyla ayni mi? (ADDITIVE)"""
+    bulgu = []
+    for komut, desen in (("skill-kur", _README_SKILL_KUR), ("paket", _README_PAKET)):
+        m = desen.search(metin)
+        if not m:
+            bulgu.append("README'de `%s` cikis kodu paragrafi bulunamadi" % komut)
+            continue
+        belge = set(int(x) for x in _KOD_ARKA.findall(m.group(1)))
+        gercek = komut_kodlari(kaynak_scripts, komut)
+        if gercek is None:
+            bulgu.append("motor `%s --help` ciktisinda `CIKIS KODLARI:` satirini basmadi" % komut)
+        elif belge != gercek:
+            bulgu.append("README `%s` icin %s diyor, motor %s basiyor (fark: %s)"
+                         % (komut, sorted(belge), sorted(gercek), sorted(belge ^ gercek)))
+    return bulgu
 
 
 # --------------------------------------------------------------- KAPI-2 (canli)
@@ -325,6 +364,19 @@ def m6_ty42_sayisi(s):
     return yeni if yeni != s else None
 
 
+def m7_skill_kur_kodu_dustu(s):
+    """README `skill-kur` sozlesmesinden `3` dusmus (BULGU'nun ta kendisi) -> KAPI-3 isirmali."""
+    yeni = s.replace("`3` dosya sistemi yazmaya izin vermedi (kurulum tamamlanmadı)", "", 1)
+    return yeni if yeni != s else None
+
+
+def m8_paket_kodu_bozulur(s):
+    """README `paket` sozlesmesinde yanlis kod -> KAPI-3 isirmali (skill-kur satiri dokunulmaz)."""
+    yeni = s.replace("`2` kullanım hatası · `3` dosya sistemi yazmaya izin vermedi (paket üretilmedi)",
+                     "`2` kullanım hatası · `4` dosya sistemi yazmaya izin vermedi (paket üretilmedi)", 1)
+    return yeni if yeni != s else None
+
+
 MUTANTLAR = [
     ("M-1 beyan yorumdan silindi", m1_beyan_silinir, "KAPI-1"),
     ("M-2 README yanlis oran yaziyor", m2_oran_bozulur, "KAPI-2"),
@@ -332,6 +384,8 @@ MUTANTLAR = [
     ("M-4 sozlesmeden kod dustu", m4_sozlesme_eksilir, "KAPI-3"),
     ("M-5 t_y3 senaryo sayisi yanlis", m5_ty3_sayisi, "KAPI-2"),
     ("M-6 t_y42 senaryo sayisi yanlis", m6_ty42_sayisi, "KAPI-2"),
+    ("M-7 skill-kur sozlesmesinden 3 dustu", m7_skill_kur_kodu_dustu, "KAPI-3"),
+    ("M-8 paket sozlesmesinde yanlis kod", m8_paket_kodu_bozulur, "KAPI-3"),
 ]
 
 
@@ -346,7 +400,7 @@ def hukum(metin, kaynak_scripts, kanit_onbellek=None):
         return ("BILINMEYEN", bilinmeyen)
     k1 = kapi1_beyan(adimlar)
     k2, onbellek, son = kapi2_gercek(adimlar, kaynak_scripts, kanit_onbellek)
-    k3 = kapi3_sozlesme(metin, son)
+    k3 = kapi3_sozlesme(metin, son) + kapi3_komut_sozlesmesi(metin, kaynak_scripts)
     return (k1, k2, k3, onbellek)
 
 

@@ -29,7 +29,8 @@ Gerekçe — Fable 5, 4. tur denetimi §9:
 ```
 
 Motor `skill/scripts/` altında yaşar ve **ikinci bir kopyası yoktur** — `.skill`
-paketi `skill/` dizininden üretilir (`paketle.sh`). `capraz.yml`, `ortam_olcum.sh`
+paketi `skill/` dizininden üretilir (`hafiza.py paket`; `paketle.sh` onu çağırıp ölçer).
+`capraz.yml`, `ortam_olcum.sh`
 ve `sabotaj.py` içindeki varsayılan yollar bu düzene göredir.
 
 ---
