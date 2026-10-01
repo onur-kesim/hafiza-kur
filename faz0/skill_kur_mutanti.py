@@ -27,6 +27,14 @@ KOLLAR (gercek motor, sahte HOME)
                 zip envanteriyle AYNI. Calisan `bash` yoksa (paketle.sh artik `zip` ISTEMEZ; motorun `paket`
                 komutunu cagirir) o ALT-OLCUM "OLCULEMEDI" basilir ve sonuc
                 "YESIL (SINIRLI)" olur (sessiz yesil DEGIL); `--zip-zorla` ile exit 2
+  K-COP         (besli-paket/IS_EMRI_TAKMA_AD_BEYAZ_LISTE.md KALEM 2, 1 Eki 2026) kaynakta BEYAZ LISTE DISI cop
+                (`scripts/deneme_b4e/…`, `deneme2/…`, `references/notlar.txt`, `scripts/alt/y.py`, `SKILL.md.bak`
+                …) varken `skill-kur` -> exit 0; kurulan envanter == beyaz liste (BU harness'in kendi okuyusu:
+                `SKILL.md` · `references/*.md` · `scripts/*.py`, motorun sabitlerine BAKILMAZ); her cop icin
+                `DISARIDA BIRAKILDI: <rel> (beyaz liste disi)` satiri (ne eksik ne fazla); `__pycache__`/nokta
+                dosyalari icin satir YOK. Ayrica KURULU hedefe cop sizmissa (eski kara liste doneminden kalan
+                kurulum) `skill-kur` CATISMA (exit 2) der, `--guncelle` yedekleyip temizini kurar; kaynakta DIZIN BAGLANTISI
+                (symlink/junction) varsa REDDEDER (exit 2, HOME'a yazmaz): `DISARIDA` satirlari STDOUT'tan ve LISTE olarak okunur
   K-MOTORYALNIZ motor tek basina bir dizine kopyalanip oradan kosulur -> exit 2, HOME'a yazilmadi
   K-SALTOKUNUR  (besli-paket/IS_EMRI_URUN_HAZIRLIK.md KALEM 4, 30 Eyl 2026) dosya sistemi yazmaya izin
                 vermeyince -> exit 3; mesaj ENGEL OLAN dizini (`.claude` ya da `.claude/skills`) soyler,
@@ -41,7 +49,11 @@ OLCULEMEDI — h14_bolme dersi). Her mutantin BEKLENEN kolu KIRMIZI yanmali:
   M-SK-OLCUM  olcum sokulur + kopyaya bozulma enjekte edilir      -> K-TAZE
   M-SK-EZME   catisma kontrolu sokulur (farkli kurulum sessizce degisir) -> K-FARKLI
   M-SK-YEDEK  yedege tasima yerine SILME                            -> K-GUNCELLE
-  M-SK-SUZGEC suzgecten `deneme` cikarilir                          -> K-ENV
+  M-SK-BEYAZ  beyaz liste sokulur (her dosya beyaz: yuruyus + yalniz __pycache__/nokta kara listesi) -> K-COP
+              (eski `M-SK-SUZGEC` "suzgecten `deneme` cikarilir" bu mutantla BIRLESTI: beyaz listede `deneme`
+              diye bir kural kalmadi; ayni sokum K-ENV'i de kirmizi yakar, ikisi de beklenen)
+  M-SK-BAGLANTI  `skill-kur`un kaynakta dizin baglantisi reddi sokulur (eksik kurulum sessizce exit 0) -> K-COP
+  M-SK-HEDEF  KURULU hedefin envanteri de beyaz listeyle suzulur (eski kurulumdaki cop gorunmez) -> K-COP
   M-SK-YER    yedek `skills/` ALTINA alinir (Claude Code orada SKILL.md bulani yukler) -> K-GUNCELLE
   M-SK-GENEL  `skill-kur`un dosya sistemi yakalayicisi sokulur (genel yakalayiciya duser)  -> K-SALTOKUNUR
   M-SK-RENAME son rename'in izin hatasi exit 3 yerine ESKI "olcum tutmadi" exit 1 olur    -> K-SALTOKUNUR
@@ -125,21 +137,77 @@ def skill_kopya(hedef, kaynak_skill, motor_metni=None):
 
 
 def suzulmus(dizin):
-    """paketle.sh -x kurali: nokta ile baslayan her sey, `deneme`, `__pycache__` DISI dosyalar."""
-    out = {}
-    for r0, d0, f0 in os.walk(dizin):
-        d0[:] = [d for d in d0 if d not in ("deneme", "__pycache__") and not d.startswith(".")]
-        for f in f0:
-            if not f.startswith("."):
-                p = os.path.join(r0, f)
-                out[os.path.relpath(p, dizin).replace(os.sep, "/")] = sha(p)
-    return out
+    """{goreli yol: sha}: BEYAZ listenin BU harness'in kendi okuyusuyla beklenen kumesi (`beyaz_beklenen`; motorun
+    sabitlerine BAKMAZ). Eskiden paketle.sh'in kara listesi (`deneme` tam ad) idi: kaynakta `deneme_x/` varken dogru
+    calisan motoru KIRMIZI gosterirdi (bagimsiz inceleme 1 Eki 2026)."""
+    return {r: sha(os.path.join(dizin, *r.split("/"))) for r in beyaz_beklenen(dizin)}
 
 
 def _yaz(p, icerik=b"x"):
     os.makedirs(os.path.dirname(p), exist_ok=True)
     with open(p, "wb") as f:
         f.write(icerik)
+
+
+# K-COP: beyaz liste DISI cop (her biri icin `DISARIDA BIRAKILDI:` satiri BEKLENIR; `scripts/deneme/` dahil: beyaz
+# listede `deneme` istisnasi YOK) ve GURULTU (nokta/__pycache__: satir YOK).
+COP_DOSYALAR = ("scripts/deneme_b4e/arsiv/PROJE_HAFIZA.md", "scripts/deneme2/arsiv/PROJE_HAFIZA.md",
+                "scripts/deneme/k.md", "references/notlar.txt", "scripts/yan.sh", "scripts/alt/y.py",
+                "SKILL.md.bak", "notlar/x.md")
+GURULTU_DOSYALAR = ("scripts/__pycache__/y.pyc", ".gizli", "references/.gizli_dizin/z.md", "scripts/.nokta")
+_DISARIDA = re.compile(r"^DISARIDA BIRAKILDI: (.+) \(beyaz liste disi\)$", re.M)
+
+
+def cop_enjekte_et(skill_dir):
+    for rel in COP_DOSYALAR + GURULTU_DOSYALAR:
+        _yaz(os.path.join(skill_dir, *rel.split("/")))
+
+
+def beyaz_beklenen(skill_dir):
+    """BEYAZ listenin BU harness'in kendi okuyusuyla beklenen kumesi (motorun sabitlerine BAKMAZ): kokte
+    `SKILL.md`, `references/*.md` ve `scripts/*.py` (tek seviye). Temiz kopyadan okunur."""
+    out = {"SKILL.md"}
+    for alt, uzanti in (("references", ".md"), ("scripts", ".py")):
+        out |= {alt + "/" + f for f in os.listdir(os.path.join(skill_dir, alt))
+                if f.endswith(uzanti) and not f.startswith(".")}
+    return out
+
+
+def disarida_beklenen(skill_dir):
+    """Beyaz liste DISINDA kalan, nokta/__pycache__ OLMAYAN dosyalar (BU harness'in kendi yuruyusu): `DISARIDA
+    BIRAKILDI:` satirlarinin tam kumesi. Liste olarak karsilastirilir (tekrar da hata)."""
+    bek, out = beyaz_beklenen(skill_dir), []
+    for r0, d0, f0 in os.walk(skill_dir):
+        d0[:] = [d for d in d0 if d != "__pycache__" and not d.startswith(".")]
+        for f in f0:
+            if not f.startswith("."):
+                rel = os.path.relpath(os.path.join(r0, f), skill_dir).replace(os.sep, "/")
+                if rel not in bek:
+                    out.append(rel)
+    return sorted(out)
+
+
+def dizin_baglantisi(yol, hedef):
+    """`yol`u `hedef`e giden DIZIN BAGLANTISI yapar (POSIX symlink, Windows junction — ayricalik istemez).
+    None = kuruldu; str = KURULAMADI sebebi."""
+    try:
+        if os.name == "nt":
+            r = subprocess.run(["cmd", "/c", "mklink", "/J", yol, hedef], capture_output=True)
+            if r.returncode != 0:
+                return "junction kurulamadi: %s" % r.stdout.decode("cp850", "replace").strip()[:80]
+        else:
+            os.symlink(hedef, yol, target_is_directory=True)
+    except OSError as e:
+        return "symlink kurulamadi: %s" % e
+    return None if os.path.isdir(yol) else "baglanti dizin olarak acilmiyor"
+
+
+def kos_ayri(motor, args, home):
+    """`kos` gibi ama stdout ve stderr AYRI: `DISARIDA BIRAKILDI:` satirlari STDOUT'a basilmali (is emri)."""
+    env = dict(os.environ, HOME=home, USERPROFILE=home, PYTHONIOENCODING="utf-8")
+    r = subprocess.run([sys.executable, "-X", "utf8", motor] + list(args), capture_output=True,
+                       text=True, encoding="utf-8", errors="replace", env=env, timeout=300)
+    return r.returncode, r.stdout or "", r.stderr or ""
 
 
 def enjekte_et(skill_dir):
@@ -330,6 +398,64 @@ def kol_env(ctx):
             "OLCULEMEDI (%s)" % sebep), sinirli)
 
 
+def kol_cop(ctx):
+    home = yeni_home(ctx["taban"], "cop")
+    k, c, _e = kos_ayri(ctx["motor_cop"], ["skill-kur"], home)
+    hedef = hedef_yolu(home)
+    if k != 0 or not os.path.isdir(hedef):
+        return ("KIRMIZI", "exit %d, hedef yok (cop varken kurulum exit 0 vermeliydi)" % k, False)
+    hata = []
+    kurulu, bek = set(bayt_agaci(hedef)), beyaz_beklenen(ctx["skill"])
+    if kurulu != bek:
+        hata.append("kurulu envanter beyaz listeden FARKLI (fazla: %s · eksik: %s)"
+                    % (sorted(kurulu - bek)[:3], sorted(bek - kurulu)[:3]))
+    bildirilen, beklenen = sorted(_DISARIDA.findall(c)), disarida_beklenen(ctx["skill_cop"])
+    if bildirilen != beklenen:
+        hata.append("STDOUT'taki DISARIDA satirlari beklenenden FARKLI (bildirilmeyen: %s · fazladan/tekrar: %s)"
+                    % (sorted(set(beklenen) - set(bildirilen))[:3],
+                       sorted(x for x in set(bildirilen) if bildirilen.count(x) > beklenen.count(x) or x not in beklenen)[:3]))
+    gurultu = [g for g in GURULTU_DOSYALAR if g in c]
+    if gurultu:
+        hata.append("gurultu dosyasi icin DISARIDA satiri basildi: %s" % gurultu[:2])
+    # KURULU hedefe cop sizmis (eski kara liste doneminden kalan kurulum): FARKLI kurulum sayilmali
+    _yaz(os.path.join(hedef, "scripts", "deneme_b4e", "arsiv", "PROJE_HAFIZA.md"))
+    once = agac(hedef)
+    k2, c2 = kos(ctx["motor_cop"], ["skill-kur"], home)
+    if k2 != 2 or "CATISMA" not in c2:
+        hata.append("kurulu hedefte cop varken `skill-kur` exit %d (2 + CATISMA bekleniyordu): ZATEN KURULU demek sizintiyi gizler" % k2)
+    if agac(hedef) != once:
+        hata.append("CATISMA'da hedef DEGISTI")
+    k3, _c3 = kos(ctx["motor_cop"], ["skill-kur", "--guncelle"], home)
+    yd = yedekler(home)
+    if k3 != 0 or set(bayt_agaci(hedef)) != bek:
+        hata.append("`--guncelle` sonrasi kurulu envanter beyaz liste DEGIL (exit %d)" % k3)
+    if len(yd) != 1 or "scripts/deneme_b4e/arsiv/PROJE_HAFIZA.md" not in bayt_agaci(yd[0]):
+        hata.append("yedek, sizmis copu SAKLAMADI (silme yok kurali)")
+    # KAYNAKTA dizin baglantisi (beyaz listedeki `references/` bir baglanti): `skill-kur` REDDETMELI (exit 2), eksik
+    # kurulumu exit 0 ile "KURULDU" DEMEMELI ve HOME'a hicbir sey yazmamali (`paket` ile ayni; bagimsiz inceleme bulgusu)
+    sinirli = False
+    bd = os.path.join(ctx["taban"], "cop_bagli")
+    shutil.copytree(ctx["skill"], os.path.join(bd, "skill"))
+    ref, dis = os.path.join(bd, "skill", "references"), os.path.join(bd, "dis_references")
+    shutil.move(ref, dis)
+    sebep = dizin_baglantisi(ref, dis)
+    if sebep:
+        sinirli = "bag"
+    else:
+        hb = yeni_home(ctx["taban"], "cop_bagli_home")
+        kb, cb, _eb = kos_ayri(os.path.join(bd, "skill", "scripts", "hafiza.py"), ["skill-kur"], hb)
+        if kb != 2 or "dizin baglantisi" not in cb:
+            hata.append("kaynakta dizin baglantisi varken `skill-kur` exit %d (2 + 'dizin baglantisi' bekleniyordu): "
+                        "eksik kurulum SESSIZCE kurulur" % kb)
+        if os.listdir(hb):
+            hata.append("dizin baglantili kaynakta `skill-kur` HOME'a YAZDI: %s" % os.listdir(hb))
+    if hata:
+        return ("KIRMIZI", "; ".join(hata), sinirli)
+    return ("YESIL", "cop varken %d dosya kuruldu (= beyaz liste) · %d cop icin STDOUT'ta DISARIDA satiri (ne eksik ne fazla) · "
+                     "gurultu sessiz · kurulu hedefteki cop CATISMA, --guncelle yedekler · dizin baglantisi: %s"
+            % (len(kurulu), len(bildirilen), "REDDEDILDI (exit 2)" if not sebep else "OLCULEMEDI (%s)" % sebep), sinirli)
+
+
 def kol_motoryalniz(ctx):
     home = yeni_home(ctx["taban"], "solo_home")
     solo = os.path.join(ctx["taban"], "solo_dizin", "x")
@@ -485,7 +611,7 @@ def kol_saltokunur(ctx):
 
 
 KOLLAR = [("K-TAZE", kol_taze), ("K-AYNI", kol_ayni), ("K-FARKLI", kol_farkli),
-          ("K-GUNCELLE", kol_guncelle), ("K-PROJE", kol_proje), ("K-ENV", kol_env),
+          ("K-GUNCELLE", kol_guncelle), ("K-PROJE", kol_proje), ("K-ENV", kol_env), ("K-COP", kol_cop),
           ("K-MOTORYALNIZ", kol_motoryalniz), ("K-SALTOKUNUR", kol_saltokunur)]
 
 # ----------------------------------------------------------------------- MUTANTLAR
@@ -499,9 +625,13 @@ MUTANTLAR = [
      "    if guncelle:\n        return None\n", "    return None\n", "K-FARKLI"),
     ("M-SK-YEDEK", "yedege tasima yerine SILME",
      "    os.replace(hedef, yol)\n", "    shutil.rmtree(hedef)\n", "K-GUNCELLE"),
-    ("M-SK-SUZGEC", "suzgecten `deneme` cikarilir",
-     '_SKILL_KUR_HARIC_DIZIN = ("deneme", "__pycache__")', '_SKILL_KUR_HARIC_DIZIN = ("__pycache__",)',
-     "K-ENV"),
+    ("M-SK-BEYAZ", "beyaz liste sokulur (her dosya beyaz sayilir)",
+     "def _skill_kur_beyaz_mi(rel):",
+     "def _skill_kur_beyaz_mi(rel):\n    return True\n\n\ndef _skill_kur_beyaz_mi_eski(rel):", "K-COP"),
+    ("M-SK-BAGLANTI", "skill-kur dizin baglantisi reddi sokulur (eksik kurulum sessizce exit 0)",
+     "    bagli = _paket_baglantilar(kaynak)\n    if bagli:\n", "    bagli = _paket_baglantilar(kaynak)\n    if False:\n", "K-COP"),
+    ("M-SK-HEDEF", "kurulu hedefin envanteri de beyaz listeyle suzulur (eski kurulumdaki cop gorunmez)",
+     "        hd = _skill_kur_tum(hedef)\n", "        hd = _skill_kur_dosyalar(hedef)\n", "K-COP"),
     ("M-SK-YER", "yedek `skills/` ALTINA alinir",
      'os.path.join(taban, "hafiza-kur-yedek")', 'os.path.join(taban, "skills", "hafiza-kur-yedek")',
      "K-GUNCELLE"),
@@ -531,7 +661,11 @@ def kollari_kos(kaynak_skill, motor_metni, taban, zip_zorla):
     enj = os.path.join(taban, "skill_enjekte")
     motor_enj = skill_kopya(enj, kaynak_skill, motor_metni)
     enjekte_et(enj)
-    ctx = {"taban": taban, "skill": skill, "motor": motor, "skill_enjekte": enj, "motor_enjekte": motor_enj}
+    cop = os.path.join(taban, "skill_cop")
+    motor_cop = skill_kopya(cop, kaynak_skill, motor_metni)
+    cop_enjekte_et(cop)
+    ctx = {"taban": taban, "skill": skill, "motor": motor, "skill_enjekte": enj, "motor_enjekte": motor_enj,
+           "motor_cop": motor_cop, "skill_cop": cop}
     sonuc = []
     for ad, fn in KOLLAR:
         try:
@@ -545,6 +679,8 @@ def kollari_kos(kaynak_skill, motor_metni, taban, zip_zorla):
 
 
 SINIR_NOTU = {
+    "bag": "\n  SINIRLI: K-COP'un dizin baglantisi alt-olcumu OLCULEMEDI (symlink/junction kurulamadi); "
+           "CI ubuntu/macOS (symlink) ve Windows (junction) kolu olcer.",
     "zip": "\n  SINIRLI: K-ENV'in zip envanteri karsilastirmasi OLCULEMEDI (calisan bash yok); "
            "CI ubuntu kolu `--zip-zorla` ile olcer.",
     "salt": "\n  SINIRLI: K-SALTOKUNUR'un GERCEK salt-okunur kollari (B/C/D) OLCULEMEDI (POSIX degil ya da "

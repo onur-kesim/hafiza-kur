@@ -6836,13 +6836,22 @@ def cmd_isir(a):
 # baglanti/symlink kurulumu YOK; var olan FARKLIysa DUR, `--guncelle` ile YEDEKLE (silme
 # yok). Bu bir KOMUTTUR, kapi degil: hukum cagrisi (`fail`) KULLANILMAZ.
 _SKILL_KUR_AD = "hafiza-kur"
-_SKILL_KUR_HARIC_DIZIN = ("deneme", "__pycache__")   # eski paketle.sh `-x` kuraliyla AYNI; `paket` de bunu kullanir (TEK YER)
+# KALEM 2 (IS_EMRI_TAKMA_AD_BEYAZ_LISTE.md, 1 Eki 2026, Onur kilidi): paketin ve kurulumun ICERIGI BEYAZ LISTEDIR,
+# kara liste degil. Sebep (OLCULDU 1 Eki 2026, `deneme_b4e/arsiv/PROJE_HAFIZA.md`): eski kara liste `deneme`yi TAM ad
+# eslemesiyle eliyordu, `.gitignore` ise `skill/scripts/deneme*/` onekiyle; fark SIZINTI idi — cop pakete ve kullanicinin
+# `~/.claude/skills/` dizinine gitti, ve motorun kendi olcumu ile `paketle.sh` KAPI-2'si AYNI kuraldan turedigi icin ikisi
+# de KOR kaldi (paylasilan kural = paylasilan korluk). Artik: `SKILL.md` (kok) · `references/*.md` · `scripts/*.py`
+# (tek seviye); BASKA HER DOSYA alinmaz ve `DISARIDA BIRAKILDI:` satiriyla GORUNUR kilinir. `__pycache__` ve nokta ile
+# baslayan adlar derleme/arac gurultusudur: yuruyusten sessizce atlanir, satir uretmez (bugunku davranis).
+_SKILL_KUR_HARIC_DIZIN = ("__pycache__",)   # `paket` de bunu kullanir (TEK YER)
+_SKILL_KUR_BEYAZ_KOK = ("SKILL.md",)
+_SKILL_KUR_BEYAZ_DIZIN = {"references": ".md", "scripts": ".py"}
 _SKILL_KUR_NOT = ("  NOT: Cowork ve claude.ai bu klasoru OKUMAZ; orada `python hafiza.py paket` ile "
                   "paketi uret, claude.ai -> Customize -> Skills -> Upload skill ile yukle.")
 # `--help` sonundaki kod satirlari README'nin kod kumeleriyle `faz0/readme_mutanti.py` KAPI-3
 # tarafindan karsilastirilir: sozlesmenin TEK KAYNAGI bunlardir (satirlarda baska rakam YOK).
 _SKILL_KUR_KODLAR = ("CIKIS KODLARI: 0 kuruldu ya da zaten kurulu · 1 kurulum olcumu tutmadi (kurulmadi) · "
-                     "2 kullanim hatasi ya da hedefte FARKLI bir kurulum var (hicbir sey degismez) · "
+                     "2 kullanim hatasi, kaynakta dizin baglantisi ya da hedefte FARKLI bir kurulum var (hicbir sey degismez) · "
                      "3 dosya sistemi yazmaya izin vermedi (kurulum tamamlanmadi) ya da beklenmeyen hata (hukum yok)")
 _FS_ENGEL_KODLARI = (_errno.EACCES, _errno.EPERM, _errno.EROFS)
 
@@ -6899,12 +6908,10 @@ def _skill_kur_baglanti_mi(p):
         return False
 
 
-def _skill_kur_dosyalar(dizin):
-    """Suzulmus dosya kumesi {goreli yol: mutlak yol}. Nokta ile baslayan her ad (dizin de
-    dosya da) ve `_SKILL_KUR_HARIC_DIZIN` atlanir: eski paketle.sh'in `-x '.*' -x '*/.*'
-    -x '*/deneme/*' -x '*/__pycache__/*'` kuralinin KARSILIGI (README'nin kanit akisi
-    `scripts/deneme/` yaratir). `skill-kur` ve `paket` AYNI suzgeci kullanir. NOT: suzgec
-    `deneme`yi TAM ad eslemesiyle eler; `.gitignore`un `skill/scripts/deneme*/` onekini KAPSAMAZ."""
+def _skill_kur_tum(dizin):
+    """{goreli yol: mutlak yol}: `dizin` altindaki NOKTA ile baslamayan ve `_SKILL_KUR_HARIC_DIZIN` disindaki HER dosya
+    (beyaz liste UYGULANMADAN). Kurulu hedefin ve kopyanin envanteri bununla olculur: beyaz liste yalniz KAYNAGA
+    uygulanir; hedefi de ona gore suzmek, eski (kara liste donemi) kurulumdaki sizintiyi GORUNMEZ kilardi."""
     out = {}
     for r0, d0, f0 in os.walk(dizin):
         d0[:] = [d for d in d0 if d not in _SKILL_KUR_HARIC_DIZIN and not d.startswith(".")]
@@ -6913,6 +6920,28 @@ def _skill_kur_dosyalar(dizin):
                 p = os.path.join(r0, f)
                 out[_rel(p, dizin)] = p
     return out
+
+
+def _skill_kur_beyaz_mi(rel):
+    """BEYAZ LISTE (TEK YER): kokte `SKILL.md` · `references/*.md` · `scripts/*.py` (tek seviye); baska hicbir sey."""
+    parca = rel.split("/")
+    if len(parca) == 1:
+        return rel in _SKILL_KUR_BEYAZ_KOK
+    uzanti = _SKILL_KUR_BEYAZ_DIZIN.get(parca[0])
+    return len(parca) == 2 and uzanti is not None and parca[1].endswith(uzanti)
+
+
+def _skill_kur_dosyalar(dizin):
+    """Paketin/kurulumun KAYNAK kumesi {goreli yol: mutlak yol} = beyaz liste. `skill-kur` ve `paket` AYNI fonksiyonu
+    kullanir (TEK YER)."""
+    return {r: p for r, p in _skill_kur_tum(dizin).items() if _skill_kur_beyaz_mi(r)}
+
+
+def _skill_kur_disarida_bildir(dizin, kd):
+    """GIZLENEMEZ KIL: beyaz liste disinda kalan HER dosya stdout'a `DISARIDA BIRAKILDI: <rel> (beyaz liste disi)` diye
+    basilir; cikis kodu DEGISMEZ. `paket` ve `skill-kur` ikisi de cagirir."""
+    for rel in sorted(set(_skill_kur_tum(dizin)) - set(kd)):
+        print("DISARIDA BIRAKILDI: %s (beyaz liste disi)" % rel)
 
 
 def _skill_kur_sha(p):
@@ -6930,7 +6959,7 @@ def _skill_kur_fark(kd, hedef, sha_k):
             return False, "hedefte scripts/hafiza.py yok (hafiza-kur kurulumu degil)"
         if _skill_kur_sha(m) != sha_k:
             return False, "scripts/hafiza.py SHA'si farkli"
-        hd = _skill_kur_dosyalar(hedef)
+        hd = _skill_kur_tum(hedef)
         if set(hd) != set(kd):
             return False, "envanter farkli (kaynakta olup kuruluda olmayan: %d · kuruluda "\
                           "olup kaynakta olmayan: %d)" % (len(set(kd) - set(hd)), len(set(hd) - set(kd)))
@@ -6947,7 +6976,7 @@ def _skill_kur_olc(kd, kopya, sha_k):
     m = os.path.join(kopya, "scripts", "hafiza.py")
     if not os.path.isfile(m) or _skill_kur_sha(m) != sha_k:
         return "(i) kopyadaki scripts/hafiza.py kaynakla bit-bit ayni DEGIL"
-    kp = _skill_kur_dosyalar(kopya)
+    kp = _skill_kur_tum(kopya)
     if set(kp) != set(kd) or any(_skill_kur_sha(kp[r]) != _skill_kur_sha(kd[r]) for r in kd):
         return "(ii) kopya envanteri suzulmus kaynakla ayni DEGIL"
     try:
@@ -7038,6 +7067,14 @@ def cmd_skill_kur(a):
     if hata:
         print(hata)
         return 2
+    bagli = _paket_baglantilar(kaynak)
+    if bagli:
+        # KALEM 2 bagimsiz inceleme bulgusu (1 Eki 2026): `os.walk` bagli dizine inmez; `skill-kur` bunu `paket` gibi
+        # REDDETMEZSE (beyaz listedeki `references/` baglantiysa) eksik kurulum exit 0 ile "KURULDU" derdi ve
+        # DISARIDA satiri da uretemezdi (iceri hic inilmedigi icin) — sessiz eleme.
+        print("HATA: kaynakta dizin baglantisi (symlink/junction) var: %s — skill-kur onlari izlemez ve SESSIZCE "
+              "dusururdu; gercek dizine cevir" % ", ".join(bagli))
+        return 2
     kok = os.path.abspath(a.proje) if a.proje else os.path.expanduser("~")
     if not os.path.isdir(kok) or kok == "~":
         print("HATA: %s dizini yok: %s" % ("--proje" if a.proje else "ev", kok))
@@ -7045,6 +7082,7 @@ def cmd_skill_kur(a):
     taban = os.path.join(kok, ".claude")
     hedef = os.path.join(taban, "skills", _SKILL_KUR_AD)
     kd, sha_k = _skill_kur_dosyalar(kaynak), _skill_kur_sha(os.path.join(kaynak, "scripts", "hafiza.py"))
+    _skill_kur_disarida_bildir(kaynak, kd)
     try:
         return _skill_kur_uygula(a, kd, sha_k, taban, hedef)
     except OSError as e:
@@ -7287,7 +7325,7 @@ def _paket_yol_hatasi(kaynak, yol):
 def _paket_baglantilar(kaynak):
     """Kaynaktaki (suzgecin DISINDA kalan) DIZIN BAGLANTILARI (symlink/junction). `os.walk` bagli dizini
     izlemez ve paket onu SESSIZCE dusururdu (eski `zip -r` izliyordu; iki kapi da ayni yuruyusu kullandigi
-    icin YESIL basardi — bagimsiz tur 30 Eyl 2026). Bulunursa `paket` REDDEDER (exit 2)."""
+    icin YESIL basardi — bagimsiz tur 30 Eyl 2026). Bulunursa `paket` ve `skill-kur` REDDEDER (exit 2)."""
     bulunan = []
     for r0, d0, _f0 in os.walk(kaynak):
         d0[:] = [d for d in d0 if d not in _SKILL_KUR_HARIC_DIZIN and not d.startswith(".")]
@@ -7325,6 +7363,7 @@ def cmd_paket(a):
               "dusururdu; gercek dizine cevir" % ", ".join(baglanti))
         return 2
     kd = _skill_kur_dosyalar(kaynak)
+    _skill_kur_disarida_bildir(kaynak, kd)
     sha_k = _skill_kur_sha(os.path.join(kaynak, "scripts", "hafiza.py"))
     gecici = "%s.%d.tmp" % (yol, os.getpid())           # AYNI dizin: rename atomik
     try:

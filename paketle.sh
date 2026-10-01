@@ -75,7 +75,9 @@ kok = sys.argv[1]
 paket = os.path.join(kok, "hafiza-kur.skill")
 kaynak_dizin = os.path.join(kok, "skill")
 
-# `paketle.sh`in -x filtreleri BURADA da uygulanir; iki liste AYNI kuraldan turer.
+# KALEM 2 (1 Eki 2026): bu liste motorun BEYAZ LISTESINDEN BILINCLI OLARAK BAGIMSIZDIR (kara liste: yalniz tam `deneme`,
+# `__pycache__`, nokta). Ikisi artik AYNI kuraldan turemez: `deneme_x/` varken motor 10 dosya paketler, bu kapi ise
+# "EKSIK" der ve KIRMIZI yanar — cop agacta durdugu icin GORUNUR (paylasilan kural = paylasilan korluk dersi).
 HARIC_DIZIN = ("deneme", "__pycache__")
 
 
@@ -127,6 +129,11 @@ print("KAPI-2 ENVANTER      : %s (%d dosya)"
       % ("YESIL" if not k2 else "KIRMIZI", len(bek)))
 for x in k2:
     print("    ! %s" % x)
+if eksik:
+    # 1 Eki 2026 (IS_EMRI_TAKMA_AD_BEYAZ_LISTE.md KALEM 2): `paket` artik BEYAZ LISTE uygular; bu kapi ise (bilincli,
+    # motordan BAGIMSIZ) yalniz `deneme`/`__pycache__`/nokta dislar. "EKSIK" yaniltici olabilir: govde mantigi degismedi.
+    print("    (not: EKSIK dosya `paket`in beyaz listesi disinda olabilir - `paket` ciktisindaki "
+          "`DISARIDA BIRAKILDI:` satirina bak)")
 sys.exit(1 if (k1 or k2) else 0)
 PY
 KAPI_RC=$?

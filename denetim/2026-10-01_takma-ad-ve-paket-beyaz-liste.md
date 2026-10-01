@@ -71,7 +71,55 @@ kullanımı **0** idi (16 alt komutun hepsi Türkçe). Belge ≠ gerçek.
 
 ## KALEM 2 — Beyaz liste
 
-*(commit 2'de doldurulur)*
+### Ölçülmüş zemin (Cowork, 1 Eki 2026, taban `8aab8197`) — `deneme_*` sızıntısı
+Süzgeç `_SKILL_KUR_HARIC_DIZIN = ("deneme","__pycache__")` TAM ad eşlemesi; `.gitignore` `skill/scripts/deneme*/` önekiyle yok sayar.
+
+| vaka (skill/scripts/ altında) | pakette (taban) | `paketle.sh` KAPI-2 (taban) |
+|---|---|---|
+| TABAN | 10 | YEŞİL |
+| `deneme/arsiv/PROJE_HAFIZA.md` | 10 (elendi) | YEŞİL |
+| `deneme_b4e/arsiv/PROJE_HAFIZA.md` | **11 — SIZDI** | **YEŞİL** (kör) |
+| `deneme2/arsiv/PROJE_HAFIZA.md` | **11 — SIZDI** | **YEŞİL** (kör) |
+
+`skill-kur` (HOME geçici) aynı vakada "11 dosya" kurdu ⇒ sızıntı kullanıcının `~/.claude/skills/` dizinine de gidiyordu.
+Motorun kendi ölçümü ile `paketle.sh` KAPI-2 AYNI kuraldan türediği için İKİSİ DE KÖRDÜ.
+
+### Ne yapıldı
+- `_skill_kur_dosyalar` artık **BEYAZ LİSTE**: kökte `SKILL.md` · `references/*.md` · `scripts/*.py` (tek seviye); BAŞKA her dosya
+  ALINMAZ. Kural TEK yerde (`_skill_kur_beyaz_mi`, sabitler `_SKILL_KUR_BEYAZ_KOK`/`_SKILL_KUR_BEYAZ_DIZIN`); `paket` ve `skill-kur`
+  aynı fonksiyonu kullanır.
+- **GİZLENEMEZ KILINDI:** beyaz liste dışı HER dosya için iki komut stdout'a `DISARIDA BIRAKILDI: <rel> (beyaz liste disi)`
+  basar, çıkış kodu DEĞİŞMEZ. `__pycache__` ve nokta ile başlayan ad/dizinler gürültüdür: satır üretmez. **`scripts/deneme/`
+  (tam ad) artık SESSİZ DEĞİL** — beyaz listede `deneme` istisnası yok; README'nin kanıt akışı o dizini yaratır ve paket/skill-kur
+  onun her dosyasını bildirir (gürültü, ama bilinçli: sessiz eleme yok).
+- **Kurulu hedefin ve kopyanın envanteri beyaz listeyle SÜZÜLMEZ** (`_skill_kur_tum`): süzülseydi eski kara liste döneminden
+  kalan kurulumdaki sızıntı (`~/.claude/skills/hafiza-kur/scripts/deneme_b4e/…`) "ZATEN KURULU" diye gizlenirdi. Şimdi `skill-kur`
+  CATISMA (exit 2) der, `--guncelle` eskisini yedeğe TAŞIR (silmez) ve temizini kurar.
+- `paketle.sh` KAPI-2 **DEĞİŞMEDİ** (bilinçli: kendi `os.walk`'u, yalnız tam `deneme`/`__pycache__`/nokta; motordan BAĞIMSIZ). Sonuç:
+  `deneme_x/` varken motor 10 dosya paketler, KAPI-2 "EKSİK: scripts/deneme_x/…" der ve KIRMIZI yanar, paket SİLİNİR — çöp ağaçta
+  durduğu için GÖRÜNÜR. Yanıltıcı "EKSİK" kelimesi için KAPI-2'ye tek satır not eklendi (gövde mantığı değişmedi).
+- **Bağımsız inceleme bulgusu (kapatıldı):** kaynakta DİZİN BAĞLANTISI varken `paket` reddediyordu (exit 2) ama `skill-kur` içeriği
+  sessizce düşürüp exit 0 "KURULDU" diyordu (`os.walk` bağlı dizine inmez ⇒ ne beyaz listeye ne DISARIDA'ya girer; Windows
+  junction'da ise tersine içeri iner). `skill-kur` artık `paket` ile aynı reddi yapar (`_paket_baglantilar`, exit 2). Çıkış kodu
+  KÜMESİ değişmedi (2 zaten "kullanım hatası/çakışma"); `_SKILL_KUR_KODLAR`, README ve SKILL.md'deki 2 cümlesi buna göre genişledi.
+- `_SKILL_KUR_HARIC_DIZIN`'in "TAM ad eşlemesi … KAPSAMAZ" notu kalktı; sabit artık yalnız `("__pycache__",)`.
+
+### Ölçüm araçları (VAR OLAN dosyalar; yeni `faz0/` dosyası YOK)
+- `paket_mutanti.py`: yeni **BEYAZ ekseni** (beklenen küme harness'in KENDİ okuyuşuyla; `deneme_x/`+`deneme2/` varken temiz motor
+  10 dosya + STDOUT'ta her çöp için satır (liste olarak, ne eksik ne fazla) + `paketle.sh` KAPI-2 KIRMIZI + paket silindi);
+  M-2 yeniden hedeflendi (beyaz liste `references`'i düşürür); **M-8** beyaz liste sökülür (iş emrinde "M-4" geçiyordu; M-4 zaten
+  vardı, sıradaki numara M-8). 8/8 mutant.
+- `skill_kur_mutanti.py`: yeni **K-COP** kolu (çöp varken 10 dosya + DISARIDA satırları + kurulu hedefteki çöp CATISMA/`--guncelle`
+  yedekler + kaynakta dizin bağlantısı REDDEDİLİR); `suzulmus()` beyaz liste okuyuşuna geçti (kaynakta `deneme_x/` varken K-TAZE/
+  K-GUNCELLE/K-PROJE'nin yanlış kırmızı vermesi giderildi); M-SK-SUZGEC → **M-SK-BEYAZ** (beyaz liste sökülür), + **M-SK-HEDEF**
+  (kurulu hedef de süzülür) + **M-SK-BAGLANTI** (reddi sök). 9 kol / 10 mutant.
+
+### Ölçüm (Windows py3.12, 1 Eki 2026; Linux ve tam batarya KALEM 3 notunda)
+`paket_mutanti` 8/8 · `skill_kur_mutanti` 9 kol yeşil, 10/10 mutant ISIRDI (K-SALTOKUNUR gerçek-izin kolları B/C/D ÖLÇÜLEMEDİ:
+POSIX değil) · K3: TABAN paketi 10 dosya, KALEM 2 öncesiyle AYNI ad listesi (yalnız `SKILL.md` ve `scripts/hafiza.py` baytları değişti,
+ikisi de KALEM 2'nin kendi düzenlemesi) · `deneme_b4e`/`deneme2`/`Deneme` vakalarında `paketle.sh` KAPI-2 KIRMIZI + paket silindi;
+motor aynı vakada 10 dosya + DISARIDA satırı. `_olcum/o5/kos.sh` birebir koşuldu; `sk.sh` birebir KOŞULAMADI (izin: `rm -rf "$HOME"`),
+yerine aynı vaka elle ve K-COP ile ölçüldü.
 
 ## Bedeller ve sınırlar (gizlenmez)
 - Beklenti README'den geldiği için **README ve motor AYNI yönde birlikte değişirse KAPI-4 yeşil kalır** (örn. ikisinde

@@ -86,7 +86,7 @@ yeşil ama kapsam eksik (`?` ile işaretli en az bir şey ölçülmedi).
 `2` ölçülemeyen mutant · `4` temiz sürüm zaten FAIL.
 
 `skill-kur`: `0` kuruldu ya da zaten kurulu · `1` kurulum ölçümü tutmadı (kurulmadı) ·
-`2` kullanım hatası ya da hedefte FARKLI bir kurulum var (hiçbir şey değişmez) ·
+`2` kullanım hatası, kaynakta dizin bağlantısı ya da hedefte FARKLI bir kurulum var (hiçbir şey değişmez) ·
 `3` dosya sistemi yazmaya izin vermedi (kurulum tamamlanmadı) ya da beklenmeyen hata (hüküm yok).
 
 `paket`: `0` üretildi ve ölçüldü · `1` üretim sonrası ölçüm tutmadı (paket bırakılmaz) ·
@@ -127,11 +127,14 @@ python3 skill/scripts/hafiza.py kapi --kok=<proje> --kapsam-zorla   # CI için
 
 `skill-kur`, `skill/` dizinini Claude Code'un skill klasörüne **kopyalar** ve kopya üzerinde
 ölçer (motor bit-bit · envanter · kopyadaki motorun `surum` SHA'sı); `--proje <kök>` ile
-`<kök>/.claude/skills/` altına kurar. Hedefte FARKLI bir kurulum varsa **durur**; `--guncelle`
+`<kök>/.claude/skills/` altına kurar. Beyaz liste dışında kalan her dosya paketlenmez/kopyalanmaz ve `DISARIDA BIRAKILDI: <yol> (beyaz liste disi)` satırıyla
+**görünür kılınır** (`__pycache__` ve nokta ile başlayan ad/dizinler hariç; çıkış kodu değişmez; kaynakta dizin bağlantısı varsa iki komut da
+reddeder: bağlantının içine inilmez, sessizce düşürülmez). Hedefte FARKLI bir kurulum varsa **durur**; `--guncelle`
 eskisini `~/.claude/hafiza-kur-yedek/` altına TAŞIR (silmez). Cowork ve claude.ai bu klasörü
 okumaz — orada `paket` ile `hafiza-kur.skill`'i üret ve claude.ai'ye yükle.
 
-`paket`, aynı `skill/` kaynağından (aynı süzgeçle) `hafiza-kur.skill`'i üretir; `--cikti <yol>` ile
+`paket`, aynı `skill/` kaynağından (aynı **beyaz listeyle**: `SKILL.md` · `references/*.md` · `scripts/*.py`, tek seviye)
+`hafiza-kur.skill`'i üretir; `--cikti <yol>` ile
 yerini seçersin. Çıktı **deterministiktir** (sıralı ad, sabit tarih/izin, sıkıştırma yok: aynı kaynaktan
 iki üretim bayt-birebir eşittir) ve komut üretimden sonra **kendi paketini ölçer** — zip'ten geri
 okunan motor kaynakla bit-bit, envanter süzülmüş kaynakla aynı, açıklama en çok 500 karakter

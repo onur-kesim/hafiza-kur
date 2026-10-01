@@ -20,7 +20,7 @@ NEDEN VAR (olculdu 14 Agu 2026)
   AYNEN kalir. Bu, mutantlarin da yeni uretici uzerinde yeniden kurulmasini gerektirdi: eski M-1
   (`zip -l`) ve M-2 (`-x references/*`) artik olmayan bir komutu sabote ediyordu.
 
-NE OLCER — BES AYRI EKSEN (kapilar `paketle.sh`in icinde yasar, burasi ISIRMAYI olcer)
+NE OLCER — ALTI AYRI EKSEN (kapilar `paketle.sh`in icinde yasar, burasi ISIRMAYI olcer)
   KAPI-1 MOTOR BIT-BIT : zip'ten geri cikarilan `scripts/hafiza.py` kaynakla ayni mi
   KAPI-2 ENVANTER      : `skill/` altindaki filtre-disi her dosya pakette var mi
                          (ve pakette FAZLA dosya yok mu)
@@ -37,6 +37,15 @@ NE OLCER — BES AYRI EKSEN (kapilar `paketle.sh`in icinde yasar, burasi ISIRMAY
                          paket references/'i SESSIZCE dusururdu ve iki KAPI da YESIL basardi (ikisi de
                          ayni yuruyusu kullanir) — bagimsiz tur 30 Eyl 2026'da yeniden uretildi.
 
+  BEYAZ                : (1 Eki 2026, besli-paket/IS_EMRI_TAKMA_AD_BEYAZ_LISTE.md KALEM 2) paketin/kurulumun
+                         ICERIGI BEYAZ LISTEdir (`SKILL.md` · `references/*.md` · `scripts/*.py`); eski kara
+                         liste `deneme`yi TAM ad eslemesiyle eliyordu, `.gitignore` ise `deneme*` onekiyle: `deneme_x/`
+                         pakete SIZIYORDU ve `paketle.sh` KAPI-2'si de motorun kendi olcumu de YESIL basiyordu (ikisi
+                         AYNI kuraldan turemisti: paylasilan kural = paylasilan korluk). Beklenen kume BURADA, motorun
+                         sabitlerinden BAGIMSIZ yazilidir. `deneme_x/` varken TEMIZ motor: `paket` exit 0, pakette
+                         beyaz liste kadar dosya, stdout'ta her cop icin `DISARIDA BIRAKILDI:` satiri; `paketle.sh`
+                         KAPI-2 KIRMIZI (cop agacta duruyor, GORUNUR) ve paket SILINIR.
+
   KAPI-1/2 ORTUSMEZ ve biri otekinin yerine GECMEZ: motor bit-bit dogru olup `references/`
   tumden dusebilir (LISANS sinifi); ya da butun dosyalar yerinde olup motorun baytlari satir-sonu
   cevrimiyle bozulabilir (`.gitattributes` `* -text` dersinin paketleme karsiligi).
@@ -50,7 +59,7 @@ MUTANTLAR — hepsi GERCEK ariza, uydurma degil (hedef dizge motorda TAM 1 kez g
 KURULAMADI — h14_bolme dersi)
   M-1 satir-sonu cevrimi (uretici LF->CRLF yazar + komutun olcumu sokuk) -> KAPI-1 isirmali, KAPI-2 yesil
       (eski karsiligi `zip -l`: hafiza.py 259.228 -> 264.431 bayt, 5.203 satirin LF'i CRLF)
-  M-2 suzgec `references`i dusurur (paylasilan suzgec bozulur)           -> KAPI-2 isirmali, KAPI-1 yesil
+  M-2 beyaz liste `references`i dusurur (`_SKILL_KUR_BEYAZ_DIZIN`)        -> KAPI-2 isirmali, KAPI-1 yesil
       (eski karsiligi `-x 'references/*'`: alti `references/*.md` paketten duser)
   M-3 determinizm sokulur (date_time = simdi, saniye CIFTE yuvarlanmis)  -> DETERMINIZM isirmali;
       (ZIP tarihi 2 sn cozunurludur: tek saniye yazilsa komutun (vi) ayagi ONU DA yakalar, eksen karisir —
@@ -63,6 +72,9 @@ KURULAMADI — h14_bolme dersi)
   M-6 create_system 3 -> 0 (Windows'un varsayilani)                      -> IC OLCUM isirmali
   M-7 dizin baglantisi reddi sokulur                                     -> BAGLANTI isirmali:
       baglantili kaynakta `paket` exit 0 verir (temiz motor exit 2 + dosya YOK)
+  M-8 beyaz liste sokulur (her dosya beyaz sayilir: yuruyus + yalniz __pycache__/nokta kara listesi)  -> BEYAZ isirmali:
+      `deneme_x/` varken paket 10 degil 12 dosya (cop pakete GIRER). (Is emrinde bu mutantin adi "M-4"
+      geciyordu; M-4 zaten var — uretici bozuk/olcum acik — bu yuzden sirayla M-8.)
 
 NE OLCMEZ (hukum degil, SINIR)
   0. Platformlar arasi SHA ESITLIGINI CI'da olcmez: DETERMINIZM ayni makinede iki uretimi karsilastirir;
@@ -86,6 +98,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import zipfile
 
 
 def _cikti_kodlamasini_guvenceye_al():   # Y-2 KORUMASI (olcum aracina da konur)
@@ -151,6 +164,27 @@ def kos(bash, dizin):
     return p.returncode, (m1.group(1) if m1 else None), (m2.group(1) if m2 else None), c
 
 
+def uret_stdout(dizin, cikti):
+    """`uret` gibi ama STDOUT ayri: `DISARIDA BIRAKILDI:` satirlari STDOUT'a basilmali (is emri)."""
+    p = subprocess.run([sys.executable, motor_yolu(dizin), "paket", "--cikti", cikti],
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return p.returncode, p.stdout.decode("utf-8", "replace")
+
+
+def disarida_beklenen(d):
+    """Beyaz liste DISINDA kalan, nokta/__pycache__ OLMAYAN dosyalar (BU harness'in kendi yuruyusu): `DISARIDA
+    BIRAKILDI:` satirlarinin tam kumesi (liste olarak karsilastirilir: tekrar da hata)."""
+    s, bek, out = os.path.join(d, "skill"), beyaz_beklenen(d), []
+    for r0, d0, f0 in os.walk(s):
+        d0[:] = [x for x in d0 if x != "__pycache__" and not x.startswith(".")]
+        for f in f0:
+            if not f.startswith("."):
+                rel = os.path.relpath(os.path.join(r0, f), s).replace(os.sep, "/")
+                if rel not in bek:
+                    out.append(rel)
+    return sorted(out)
+
+
 def uret(dizin, cikti):
     """Motorun `paket` komutunu DOGRUDAN kosar; (cikis_kodu, ham cikti)."""
     p = subprocess.run([sys.executable, motor_yolu(dizin), "paket", "--cikti", cikti],
@@ -181,9 +215,9 @@ _URETICI_CRLF = ('                veri = f.read()\n',
 _OLCUM_SOK = ('        ayak = _paket_olc(kd, gecici, sha_k)\n', '        ayak = None\n')
 MUTANTLAR = [
     ("M-1 satir-sonu cevrimi (uretici + sokuk olcum)", [_URETICI_CRLF, _OLCUM_SOK], "KAPI-1"),
-    ("M-2 suzgec references'i dusuruyor",
-     [('_SKILL_KUR_HARIC_DIZIN = ("deneme", "__pycache__")',
-       '_SKILL_KUR_HARIC_DIZIN = ("deneme", "__pycache__", "references")')], "KAPI-2"),
+    ("M-2 beyaz liste references'i dusuruyor",
+     [('_SKILL_KUR_BEYAZ_DIZIN = {"references": ".md", "scripts": ".py"}',
+       '_SKILL_KUR_BEYAZ_DIZIN = {"scripts": ".py"}')], "KAPI-2"),
     ("M-3 determinizm sokuldu (date_time = simdi)",
      [('_PAKET_TARIH = (1980, 1, 1, 0, 0, 0)',
        '_PAKET_TARIH = (lambda t: t[:5] + (t[5] - t[5] % 2,))(__import__("time").localtime())')],
@@ -192,6 +226,10 @@ MUTANTLAR = [
     ("M-5 uye sirasi tersine doner", [("for rel in sorted(kd):", "for rel in sorted(kd, reverse=True):")], "IC-OLCUM"),
     ("M-6 create_system 3 -> 0", [("zi.create_system = 3", "zi.create_system = 0")], "IC-OLCUM"),
     ("M-7 dizin baglantisi reddi sokuldu", [("    if baglanti:" + chr(10), "    if False:" + chr(10))], "BAGLANTI"),
+    ("M-8 beyaz liste sokuldu (her dosya beyaz)",
+     [("def _skill_kur_beyaz_mi(rel):",
+       "def _skill_kur_beyaz_mi(rel):" + chr(10) + "    return True" + chr(10) * 3 + "def _skill_kur_beyaz_mi_eski(rel):")],
+     "BEYAZ"),
 ]
 
 
@@ -247,10 +285,60 @@ def baglanti_hukmu(bash, d, mutant):
             else ("SAPTI", "exit %s · paket var mi: %s" % (rc, paket_var)))
 
 
+COP = ("scripts/deneme_x/arsiv/PROJE_HAFIZA.md", "scripts/deneme2/arsiv/PROJE_HAFIZA.md")
+
+
+def beyaz_beklenen(d):
+    """BEYAZ listenin BU harness'in kendi okuyusuyla beklenen kumesi (motorun sabitlerine BAKMAZ): kokte `SKILL.md`,
+    `references/*.md` ve `scripts/*.py` (tek seviye). `d/skill` temiz kopyadan bakilir (cop henuz enjekte edilmemisken)."""
+    s = os.path.join(d, "skill")
+    out = {"SKILL.md"}
+    out |= {"references/" + f for f in os.listdir(os.path.join(s, "references")) if f.endswith(".md")}
+    out |= {"scripts/" + f for f in os.listdir(os.path.join(s, "scripts")) if f.endswith(".py")}
+    return out
+
+
+def beyaz_hukmu(bash, d, mutant):
+    """BEYAZ ekseni: `deneme_x/` ve `deneme2/` (`.gitignore`un `deneme*` onekiyle yok sayilan, eski tam-ad suzgecinin
+    KACIRDIGI cop) agacta dururken TEMIZ motorun hukmu: (a) `paket` exit 0 ve pakette TAM beyaz liste (cop YOK),
+    (b) stdout'ta her cop icin `DISARIDA BIRAKILDI: <rel> (beyaz liste disi)`, (c) `paketle.sh` KAPI-2 KIRMIZI (cop
+    GORUNUR) ve paket SILINIR. Mutant bu hukmun DISINA ciktiysa ISIRDI. (durum, aciklama)."""
+    bek = beyaz_beklenen(d)
+    for c in COP:
+        p = os.path.join(d, "skill", *c.split("/"))
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "wb") as f:
+            f.write(b"cop")
+    cikti = os.path.join(d, "beyaz-uretim.skill")
+    rc, ham = uret_stdout(d, cikti)
+    adlar = None
+    if rc == 0:
+        with zipfile.ZipFile(cikti) as z:
+            adlar = {a for a in z.namelist() if not a.endswith("/")}
+    satirlar = sorted(x for x in ham.splitlines() if x.startswith("DISARIDA BIRAKILDI: "))
+    uretim_tamam = (rc == 0 and adlar == bek)
+    bildirim_tamam = satirlar == sorted("DISARIDA BIRAKILDI: %s (beyaz liste disi)" % x for x in disarida_beklenen(d))
+    prc, _k1, k2, pham = kos(bash, d)
+    paketle_tamam = (prc != 0 and k2 == "KIRMIZI" and not os.path.exists(os.path.join(d, "hafiza-kur.skill"))
+                     and all("EKSIK: %s" % c in pham for c in COP))
+    temiz_hukum = uretim_tamam and bildirim_tamam and paketle_tamam
+    if mutant:
+        if temiz_hukum:
+            return "KACTI", "beyaz liste sokuldu ama temiz hukum AYNEN surdu"
+        return "ISIRDI", "BEYAZ · cop varken paket %s dosya (beklenen %d), DISARIDA satiri %s, paketle.sh KAPI-2=%s exit %s" % (
+            "URETILEMEDI" if adlar is None else len(adlar), len(bek), "VAR" if bildirim_tamam else "YOK", k2, prc)
+    if temiz_hukum:
+        return "TAMAM", "cop varken paket tam %d dosya · her cop icin DISARIDA satiri · paketle.sh KAPI-2 KIRMIZI + paket silindi" % len(bek)
+    return "SAPTI", "uretim=%s (exit %s, %s dosya) · bildirim=%s · paketle=%s (exit %s, KAPI-2=%s)" % (
+        uretim_tamam, rc, "-" if adlar is None else len(adlar), bildirim_tamam, paketle_tamam, prc, k2)
+
+
 def hukum(beklenen, bash, d):
     """Mutant tek bir eksende isirdi mi? (durum, aciklama): durum ISIRDI | ORTUSTU | KACTI."""
     if beklenen == "BAGLANTI":
         return baglanti_hukmu(bash, d, True)
+    if beklenen == "BEYAZ":
+        return beyaz_hukmu(bash, d, True)
     rc, k1, k2, ham = kos(bash, d)
     ates = [a for a, h in (("KAPI-1", k1), ("KAPI-2", k2)) if h == "KIRMIZI"]
     if beklenen in ("KAPI-1", "KAPI-2"):
@@ -314,6 +402,15 @@ def main():
         print("  BAGLANTI        : %s · %s" % (bdurum, bacik))
         if bdurum == "SAPTI":
             print("\nSONUC: KIRMIZI — temiz motor dizin baglantili kaynagi REDDETMEDI.")
+            return 1
+
+        yd = os.path.join(gecici, "temiz-beyaz")
+        os.makedirs(yd)
+        kum_havuzu(yd)
+        ydurum, yacik = beyaz_hukmu(bash, yd, False)
+        print("  BEYAZ LISTE     : %s · %s" % (ydurum, yacik))
+        if ydurum == "SAPTI":
+            print("\nSONUC: KIRMIZI — temiz motor `deneme_x/` copunu beyaz liste disinda BIRAKMADI ya da GORUNUR kilmadi.")
             return 1
 
         print("\n--- MUTANT SINAMASI (kapinin var olmasi ISIRDIGI anlamina gelmez) ---")
