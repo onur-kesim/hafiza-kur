@@ -67,7 +67,7 @@ kullanımı **0** idi (16 alt komutun hepsi Türkçe). Belge ≠ gerçek.
   alt eksenleri beklenenle birebir; KAPI-1/2/3 her M-AD mutantında yeşil kaldı.
 - **K4 (kısmen):** kapı bölgesi (sat. 1-5332) `cmp` ile bayt-AYNI. Motor `7f37417b…` 398.865 B → `98ebe9b6…` 400.435 B.
 - **ÖLÇÜLEMEDİ:** macOS ve py3.11/3.13 (bu makinede yok; CI'da koşar). `capraz.yml` bataryası (K5) ve sabotaj/isir sayıları
-  KALEM 2 sonunda, son ağaçta ölçülür (aşağıda).
+  son ağaçta ölçüldü: aşağıda "Sonuç ölçümü".
 
 ## KALEM 2 — Beyaz liste
 
@@ -120,6 +120,22 @@ POSIX değil) · K3: TABAN paketi 10 dosya, KALEM 2 öncesiyle AYNI ad listesi (
 ikisi de KALEM 2'nin kendi düzenlemesi) · `deneme_b4e`/`deneme2`/`Deneme` vakalarında `paketle.sh` KAPI-2 KIRMIZI + paket silindi;
 motor aynı vakada 10 dosya + DISARIDA satırı. `_olcum/o5/kos.sh` birebir koşuldu; `sk.sh` birebir KOŞULAMADI (izin: `rm -rf "$HOME"`),
 yerine aynı vaka elle ve K-COP ile ölçüldü.
+
+## Sonuç ölçümü (K4/K5 — son ağaç `006e84c`, taban `8aab8197`; 2 Eki 2026)
+- **K5:** `capraz.yml`'deki 88 `run:` adımı (matris değişkenleri çözülerek; liste YML'den türetildi; `ci_yerel.py` kuralları) HER İŞ TAZE
+  KOPYADA, paralel (3 işçi), **TABANDA da** koşuldu; yalnız FARK regresyondur. Linux (WSL `olcum`, py3.14): 82 koştu · 81 exit 0 · 1 exit≠0
+  (`win_kill_probu` exit 2, Linux'ta beklenen) · 6 atlandı (`ruff/mypy/bandit/pip/sudo` yok). Windows (py3.12; matris py3.13 kolları `py -3.14`):
+  86 koştu · 75 exit 0 · 11 exit≠0 (symlink 1314 sınıfı: `t_y42`, `readme_kapisi`, `y2_mutant`, `kalite`…) · 2 atlandı.
+  **Taban↔yeni adım adım exit FARKI SIFIR** (Linux 88/88, Windows 88/88 eşleşti). `readme_kapisi` Linux'ta 1633 s (taban) / 1594 s (yeni).
+- **K4:** sabotaj (`faz0/sabotaj.py`, taban ve yeni motorda AYRI koşum): **55/67 KAPSAMLI**, 12 KAPSAMSIZ, 67 kaydın HEPSİ (satır no, kapı,
+  hüküm, kaçan mutant) tabanla BİREBİR aynı (fark 0) · isir 67/67+2 · derle sonrası 69/69 · git'siz (derle sonrası) 66/66+3 UYGULANMAZ (tabanla
+  aynı) · `t_y42` 57 geçti + 1 YAVAŞ (B-6 "300k satır < 8 sn" zaman duvarı: yeni 8,24 sn, TABAN 8,99 sn — sakin makinede bile; hız notu,
+  doğruluk hükmü DEĞİL; **58/58 bu makinede ÖLÇÜLEMEDİ**, Cowork bulut konteynerinde ölçülmüştü) · CC>20 7→7 · ihlal 9→9 (fonksiyon 306→310)
+  · kapı bölgesi (sat. 1-5332) `cmp` ile bayt-AYNI.
+- **Linux (batarya içinde):** `paket_mutanti` 8/8 (BEYAZ ekseni + M-8 dahil) · `skill_kur_mutanti` 9 kol YEŞİL (K-COP: dizin bağlantısı
+  symlink ile REDDEDİLDİ; K-SALTOKUNUR B/C/D gerçek salt-okunur dizinle YEŞİL) + 10/10 mutant · `paketten_kos` YEŞİL · `readme_mutanti` 4 kapı + 16/16.
+- **ÖLÇÜLEMEDİ:** macOS · py3.11/3.13 (yerelde yok) · Windows'ta `t_y42`/`readme_kapisi` KAPI-2 (symlink 1314 ⇒ Linux'ta ölçüldü) ·
+  Windows'ta K-SALTOKUNUR B/C/D (POSIX değil) ve `skill-kur` dizin bağlantısı reddi yalnız junction ile (symlink Windows'ta kurulamadı).
 
 ## Bedeller ve sınırlar (gizlenmez)
 - Beklenti README'den geldiği için **README ve motor AYNI yönde birlikte değişirse KAPI-4 yeşil kalır** (örn. ikisinde
