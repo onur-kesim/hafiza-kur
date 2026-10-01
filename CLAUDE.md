@@ -15,8 +15,8 @@ değişiklik, getirdiği kolaylık ne olursa olsun yanlıştır. Doktrin: ölç�
 
 **Ürün kararları (özet; yeniden tartışılmaz, değiştirmek gerekçeli ADR ister):** tek dosya kalır
 (bölünen fonksiyonlardır; CC ölçümü `faz0/karmasiklik.py` ile) · embedding/ANN yok, determinist
-geri getirme · İngilizce kanonik komut + Türkçe alias · depo PUBLIC ama YAYIN YOK · çıkış-kodu
-sözleşmesi kırılırsa minor artar.
+geri getirme · Türkçe kanonik komut + İngilizce takma ad (yalnız komut; bayraklar Türkçe) — ADR
+2026-10-01 · depo PUBLIC ama YAYIN YOK · çıkış-kodu sözleşmesi kırılırsa minor artar.
 
 ## 2. BİTTİ LİSTESİ (KİLİT 14 Ağu · eski md.6 KESİLDİ §5 · md.6-9 15-17 Ağu, md.10 17 Ağu — **10 ✅ / 10**)
 - [x] `kur/kapi/isir/not/derle/devral` Linux'ta koşuyor (CI yeşil)

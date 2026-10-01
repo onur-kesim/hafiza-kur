@@ -93,6 +93,28 @@ yeşil ama kapsam eksik (`?` ile işaretli en az bir şey ölçülmedi).
 `2` kullanım hatası ya da kaynakta dizin bağlantısı var ·
 `3` dosya sistemi yazmaya izin vermedi (paket üretilmedi) ya da beklenmeyen hata (hüküm yok).
 
+**İngilizce takma adlar (yalnız komut adı; bayraklar Türkçe)** — Türkçe ad kanoniktir; takma ad AYNI alt
+komuttur ve aynı çıkış kodunu verir (ör. `gate --kok=<proje> --siki` ≡ `kapi --kok=<proje> --siki`):
+
+| Türkçe (kanonik) | İngilizce takma ad |
+|---|---|
+| `kur` | `init` |
+| `devral` | `adopt` |
+| `bloklastir` | `mark-blocks` |
+| `bolum-kur` | `add-sections` |
+| `not` | `note` |
+| `derle` | `compile` |
+| `emekli` | `retire` |
+| `karar` | `decide` |
+| `muhur` | `seal` |
+| `korunan` | `protect` |
+| `kapi` | `gate` |
+| `isir` | `bite` |
+| `surum` | `version` |
+| `skill-kur` | `install-skill` |
+| `paket` | `package` |
+| `hook` | — (takma ad yok) |
+
 **Yardımcı komutlar**
 
 ```bash

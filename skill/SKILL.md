@@ -191,6 +191,8 @@ hafiza.py karar  --baslik "..." [--yerine <no>]
 hafiza.py emekli <bas>-<son> --not "neden"
 ```
 
+İngilizce takma adlar (yalnız komut adı; bayraklar Türkçe; Türkçe ad kanonik; asıl tablo README'de, bu satır onun KOPYASIDIR — ikisi `faz0/readme_mutanti.py` KAPI-4 ile ölçülür): `init` `adopt` `mark-blocks` `add-sections` `note` `compile` `retire` `decide` `seal` `protect` `gate` `bite` `version` `install-skill` `package`.
+
 Yardımcılar (günlük akışın parçası değil, ama işe yarar):
 
 ```

@@ -7488,6 +7488,36 @@ def _cikti_kodlamasini_guvenceye_al():
                 pass
 
 
+# IS_EMRI_TAKMA_AD_BEYAZ_LISTE.md KALEM 1 (1 Eki 2026, Onur kilidi — Set A): komutlarin Turkce adi KANONIK
+# kalir; Ingilizce TAKMA AD bu sozlukte TEK YERDE durur ve `main()` `add_parser(aliases=...)`i buradan okur.
+# YALNIZ KOMUT ADI: bayraklar Turkce kalir. `hook` takma adsizdir. Bu sozluk bir kapinin BEKLENTISI DEGILDIR:
+# `faz0/readme_mutanti.py` KAPI-4 beklenen eslemeyi README tablosundan ayiklar (paylasilan kural = paylasilan
+# korluk). Degistirmek ADR ister (`denetim/2026-10-01_takma-ad-ve-paket-beyaz-liste.md`).
+_KOMUT_TAKMA_AD = {
+    "kur": "init",
+    "devral": "adopt",
+    "bloklastir": "mark-blocks",
+    "bolum-kur": "add-sections",
+    "not": "note",
+    "derle": "compile",
+    "emekli": "retire",
+    "karar": "decide",
+    "muhur": "seal",
+    "korunan": "protect",
+    "kapi": "gate",
+    "isir": "bite",
+    "surum": "version",
+    "skill-kur": "install-skill",
+    "paket": "package",
+}
+
+
+def _takma_ad(komut):
+    """`add_parser(aliases=...)` icin: komutun Ingilizce takma adi (liste); takma adsiz komutta bos liste."""
+    ad = _KOMUT_TAKMA_AD.get(komut)
+    return [ad] if ad else []
+
+
 def main():
     _cikti_kodlamasini_guvenceye_al()
     # Kirik boru artik YAZMA katmaninda yutulur; komut kendi hukmunu verir.
@@ -7508,28 +7538,28 @@ def main():
     ap.add_argument("--kok", help="proje koku (yoksa HAFIZA_KOK ya da .hafizarc aranir)")
     alt = ap.add_subparsers(dest="komut", required=True)
 
-    p = alt.add_parser("kur", help="duzeni kurar (idempotent)")
+    p = alt.add_parser("kur", aliases=_takma_ad("kur"), help="duzeni kurar (idempotent)")
     p.add_argument("--kok"); p.add_argument("--ad")
     p.add_argument("--yine-de", dest="yine_de", action="store_true",
                    help="baska aracin defteri taninsa bile kur (zincire duser)")
     p.set_defaults(fn=cmd_kur)
 
-    p = alt.add_parser("devral", help="ilerlemis/mevcut sistemi olan projeyi v2'ye devralir")
+    p = alt.add_parser("devral", aliases=_takma_ad("devral"), help="ilerlemis/mevcut sistemi olan projeyi v2'ye devralir")
     p.add_argument("--kok"); p.add_argument("--ad"); p.add_argument("--canli")
     p.add_argument("--kesif", action="store_true", help="KURU PROVA: envanteri ve rol eslemesini basar, TEK BAYT yazmaz")
     p.add_argument("--esle", help="rol kilidi: canli=<dosya>[,kural=<dosya>,gunluk=…,indeks=…,disarida=…]")
     p.set_defaults(fn=cmd_devral)
 
-    p = alt.add_parser("bloklastir", help="devralinan bolumleri geriye donuk blok isaretine alir")
+    p = alt.add_parser("bloklastir", aliases=_takma_ad("bloklastir"), help="devralinan bolumleri geriye donuk blok isaretine alir")
     p.add_argument("--kok"); p.add_argument("--uygula", action="store_true")
     p.set_defaults(fn=cmd_bloklastir)
 
-    p = alt.add_parser("bolum-kur", help="devral sonrasi eksik zorunlu bolumleri (derle+H6 icin) canliya ekler")
+    p = alt.add_parser("bolum-kur", aliases=_takma_ad("bolum-kur"), help="devral sonrasi eksik zorunlu bolumleri (derle+H6 icin) canliya ekler")
     p.add_argument("--kok")
     p.add_argument("--dene", action="store_true", help="KURU PROVA: ne ekleyecegini basar, TEK BAYT yazmaz")
     p.set_defaults(fn=cmd_bolum_kur)
 
-    p = alt.add_parser("not", help="gunluk/ altina fragman yazar")
+    p = alt.add_parser("not", aliases=_takma_ad("not"), help="gunluk/ altina fragman yazar")
     p.add_argument("--kok"); p.add_argument("--konu", required=True)
     p.add_argument("--tur", default="durum")
     p.add_argument("--metin"); p.add_argument("--oturum")
@@ -7537,59 +7567,60 @@ def main():
                    help="konu sozlukte yoksa: aciklamasiyla birlikte ekler")
     p.set_defaults(fn=cmd_not)
 
-    p = alt.add_parser("derle", help="fragmanlari canliya isler, sonra arsive tasir")
+    p = alt.add_parser("derle", aliases=_takma_ad("derle"), help="fragmanlari canliya isler, sonra arsive tasir")
     p.add_argument("--kok")
     p.add_argument("--bos-serbest", dest="bos_serbest", action="store_true",
                    help="hic fragman yoksa hata verme (bilincli bos tur)")
     p.set_defaults(fn=cmd_derle)
 
-    p = alt.add_parser("emekli", help="canlidan arsive byte-birebir tasir (geri alinabilir)")
+    p = alt.add_parser("emekli", aliases=_takma_ad("emekli"), help="canlidan arsive byte-birebir tasir (geri alinabilir)")
     p.add_argument("--kok"); p.add_argument("aralik")
     p.add_argument("--hedef"); p.add_argument("--not", dest="not_")
     p.set_defaults(fn=cmd_emekli)
 
-    p = alt.add_parser("karar", help="yeni ADR acar")
+    p = alt.add_parser("karar", aliases=_takma_ad("karar"), help="yeni ADR acar")
     p.add_argument("--kok"); p.add_argument("--baslik", required=True)
     p.add_argument("--konu"); p.add_argument("--yerine")
     p.set_defaults(fn=cmd_karar)
 
-    p = alt.add_parser("muhur", help="defter degisikligini zincire muhurler")
+    p = alt.add_parser("muhur", aliases=_takma_ad("muhur"), help="defter degisikligini zincire muhurler")
     p.add_argument("--kok"); p.add_argument("gerekce")
     p.set_defaults(fn=cmd_muhur)
 
-    p = alt.add_parser("korunan", help="bir blogu KORUNAN ilan eder (H8)")
+    p = alt.add_parser("korunan", aliases=_takma_ad("korunan"), help="bir blogu KORUNAN ilan eder (H8)")
     p.add_argument("--kok"); p.add_argument("--dosya", required=True)
     p.add_argument("--bas", required=True); p.add_argument("--son", required=True)
     p.add_argument("--gerekce", required=True)
     p.set_defaults(fn=cmd_korunan)
 
-    p = alt.add_parser("kapi", help="H0..H16 kapilarini kosar")
+    p = alt.add_parser("kapi", aliases=_takma_ad("kapi"), help="H0..H16 kapilarini kosar")
     p.add_argument("--kok"); p.add_argument("--siki", action="store_true")
     p.add_argument("--kapsam-zorla", dest="kapsam_zorla", action="store_true",
                    help="OLCULEMEDI varsa exit 5 (CI icin; hukum yine YESIL SINIRLI)")
     p.set_defaults(fn=cmd_kapi)
 
-    p = alt.add_parser("isir", help="kapilarin isirdigini mutantla kanitlar")
+    p = alt.add_parser("isir", aliases=_takma_ad("isir"), help="kapilarin isirdigini mutantla kanitlar")
     p.add_argument("--kok"); p.set_defaults(fn=cmd_isir)
 
-    p = alt.add_parser("surum", help="motorun surumunu ve KENDI SHA256'sini basar")
+    p = alt.add_parser("surum", aliases=_takma_ad("surum"), help="motorun surumunu ve KENDI SHA256'sini basar")
     p.set_defaults(fn=cmd_surum)
 
-    p = alt.add_parser("skill-kur", help="skill'i Claude Code'un skill klasorune KOPYALAR + olcer "
-                                         "(var olan farkliysa durur)",
+    p = alt.add_parser("skill-kur", aliases=_takma_ad("skill-kur"),
+                       help="skill'i Claude Code'un skill klasorune KOPYALAR + olcer (var olan farkliysa durur)",
                        epilog=_SKILL_KUR_KODLAR, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--proje", help="kisisel yerine <kok>/.claude/skills/ altina kur")
     p.add_argument("--guncelle", action="store_true",
                    help="var olan FARKLI kurulumu <.claude>/hafiza-kur-yedek/ altina TASIR (silmez), sonra kurar")
     p.set_defaults(fn=cmd_skill_kur)
 
-    p = alt.add_parser("paket", help="claude.ai / Cowork icin hafiza-kur.skill paketini URETIR + olcer "
-                                     "(stdlib zipfile, determinist; bash/zip gerekmez)",
+    p = alt.add_parser("paket", aliases=_takma_ad("paket"),
+                       help="claude.ai / Cowork icin hafiza-kur.skill paketini URETIR + olcer "
+                            "(stdlib zipfile, determinist; bash/zip gerekmez)",
                        epilog=_PAKET_KODLAR, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--cikti", help="paketin yolu (varsayilan: <depo>/hafiza-kur.skill)")
     p.set_defaults(fn=cmd_paket)
 
-    p = alt.add_parser("hook", help="git pre-commit kapisini kurar")
+    p = alt.add_parser("hook", aliases=_takma_ad("hook"), help="git pre-commit kapisini kurar")
     p.add_argument("--kok")
     p.add_argument("--kur", action="store_true", help="(varsayilan davranis)")
     p.add_argument("--zorla", action="store_true", help="var olan hook'un uzerine yaz")
