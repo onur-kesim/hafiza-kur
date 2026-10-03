@@ -67,14 +67,27 @@ eşiklerini TAŞIMAMALI — sayıyı basar, hükmü çağıran (anayasa) verir. 
   komut ve iş listesi AYNI (63 iş tanımı; matris açılımıyla 189 iş AYNEN).
 
 ## Ölçüm (3 Eki 2026; Windows py3.12 + WSL Ubuntu py3.14)
-- Mutant: **10/10 ISIRDI** (iş emri 9 istemişti; M-S10 ek), temiz kolda 0 yanlış-pozitif, belirlenimlilik sınaması (iki ayrı kuruluş aynı sonuç). Kaynak taraması
+- Mutant: **10/10 ISIRDI** (bu commit anında; sonradan 12/12 — bkz. "Düzeltme" bölümü) (iş emri 9 istemişti; M-S10 ek), temiz kolda 0 yanlış-pozitif, belirlenimlilik sınaması (iki ayrı kuruluş aynı sonuç). Kaynak taraması
   temiz; M-S9'da yalnız tarama ısırıyor, fixture sapması yok. `/root/.claude/projects` yedek yolu aracın kendisinde durur ve harness'in HOME değişimiyle izole olmaz:
   orada transcript varsa F9 `SINIRLI` diye ATLANIR (sahte hata yerine).
 - K3 taraması (büyük-küçük harfe duyarlı): yalnız mutantın tarama sözcüğü satırı; eşik biçimli sayı 0.
 - Bu oturumun transcript'inde araç N'si ile bağımsız Python hesabı aynı değeri verdi (Windows, 735.668 → 746.028 ölçüm anları).
-- **K4 (`capraz.yml` 88 adım, taban↔yeni) YARIM — bu commit anında KOŞUYOR:** taban `839f2ab` ve yeni `1e76a2e` (mutantın eski hali; sonradan yalnız
-  mutant dosyası + bir yorum satırı değişti) için Windows ve Linux bataryaları ayrık süreçlerde koşuyor; sonuç, ardından DELTA (son ağaç `4933a3d`'de
-  `oturum_sagligi`, `ci_kapsam`, `ci_adim_muafiyeti` işleri) bu satıra YAZILACAK. Bağlam sınırı (anayasa §3) bu oturumda devri gerektirdi; yöntem `DURUM.md`'de.
+- **K4 KAPANDI (3 Eki 2026; `capraz.yml` 88 adım `ci_yerel.py turet` ile YML'den, matris çözülerek türetildi; taban `839f2ab1` ↔ yeni `7508042`, adım 38 ayrıca
+  `54404ab`'da; Windows py3.12/3.14 + WSL Ubuntu py3.14, ikisinde de 4 batarya eşzamanlı, 3 işçi):** exit/durum FARKI **Linux 0 · Windows 1.** Fark: adım 54 (`paketle.sh`)
+  taban 0 / yeni 126; log: `/WindowsApps/python3: Invalid argument` (Store takma-adı; **nedeni ÖLÇÜLEMEDİ** — bağımsız turun 24-300 çağrılık stres denemelerinde 0 hata). Regresyon DEĞİL:
+  `paketle.sh` ve `skill/` iki ağaçta bayt-bayt aynı, üretilen `.skill` 8/8 koşuda aynı (`46805C56…`), boş makinede taban 3 + yeni 3 solo koşu exit 0.
+  Koşmayan (iki tarafta aynı): Linux 6 (41 sudo · 42 pip · 43-46 araç kurulu değil), Windows 2 (41, 42).
+  **İKİ TARAFTA AYNI sıfırdan-farklı exit — "fark yok" bunların GEÇTİĞİ demek DEĞİL, ÖLÇÜLEMEDİ sayılır:** Windows `t_y42` zinciri 6·7·13·14·16 ve 58 (`readme_kapisi` KAPI-2'nin içindeki
+  `t_y42`) `WinError 1314` ile çöküyor · Windows 15 (ortam probu, exit 1) · Windows 43-46 (yerel ruff/mypy/bandit sürümü CI'dan farklı, lint bulgusu, exit 1) · Linux 15 (Windows probu:
+  `OLCULEMEDI platform win32 degil`, exit 2 — "82 koştu" içinde ölçüm OLMAYAN 1 adım var) · Linux 6·13 (`t_y42`) ve 58 (aynı sebeple: yük altında F-1 KALDI).
+  Ayrıca macOS · py3.11/3.13 (yerel 3.12/3.14) · gerçek `jq` (adım 38 SINIRLI) ÖLÇÜLEMEDİ.
+  **Yük gürültüsü hükmü (Linux `t_y42`):** 4 batarya eşzamanlıyken F-1 KALDI + B-6 YAVAŞ 4/4 (taban da aynı). Boş makinede F-1 GEÇTİ: kalıcı kayıtlı 4/4 koşu `58 geçti · 0 kaldı · 0 yavaş`
+  (B-6 6,1-6,4 sn; `~/k5/f1solo_out_*`, yük ortalaması ~1) + bağımsız doğrulayıcıların 7 koşusu (F-1 hep GEÇTİ; 3'ü 58/58, 4'ü ana makine CPU'su %35-65'teyken 57 geçti + 1 YAVAŞ — B-6 hız notudur,
+  doğruluk hükmü değil, yük-duyarlıdır). İlk "58/58 ×4" kaydım kayboldu (WSL yeniden başladı); bu yeniden üretim onun yerine geçer.
+  Adım 38: taban eski mutantı (7 hal) koşar, yeni 12/12 (Win + Linux, `54404ab`) — beklenen fark. Log-metni farkları (maskeli): dizin adı uzunluğu (7, 14) · pid (15) ·
+  rastgele `mkdtemp` adı (66, 68) · determinizm gözlem sayısı (76). **Liste sınırları (bağımsız tur):** `runs-on` yok sayılır (gerçek Windows 80 / Ubuntu 87 adım; Windows listesinde
+  41-48, Linux listesinde 15 o OS'ta CI'da koşmaz) · `uses:`/`needs`/hata sonrası atlama modellenmez · `kanit` işinin iki python bacağı aynı kopyayı paylaşır.
+  **Ham veri:** `C:/dev/k5/cikti_k4*` (Win taban/yeni/delta/solo) · `~/k5/cikti_k4*`, `~/k5/f1solo_*` (WSL).
 
 ## Bedeller ve sınırlar (gizlenmez)
 - **Gerçek `jq` ile çapraz kontrol bu makinede ÖLÇÜLEMEDİ** (Windows ve WSL'de jq yok). Harness'in jq yolu yalnız BAĞIMSIZ semantikli bir
@@ -84,3 +97,23 @@ eşiklerini TAŞIMAMALI — sayıyı basar, hükmü çağıran (anayasa) verir. 
   yeniden doğarsa (README, SKILL, YAML) onu bu mutant yakalamaz — o yüzden bu ADR eşik/renk yazmamayı tek kural olarak kilitler.
 - Anayasanın kendisi bu işin kapsamı DIŞINDADIR (Onur'da): N tanımı orada değişirse bu araç ve mutantı birlikte güncellenmelidir.
 - `faz0/FAZC_*_RAPOR.md` aracın eski halini anlatır; tarihçedir, DOKUNULMADI.
+
+## Düzeltme — mutantın determinizm karşılaştırması (3 Eki 2026, Cowork bağımsız tur 17:4x; commit `7508042` + `54404ab`)
+**Bulgu:** yeni mutant ESKİ araca (`839f2ab1`) karşı koşunca 13/13 halde sapmayı yakalıyordu ama `OLCULEMEDI: duzenek determinist degil`
+(exit 2) basıyordu; doğrusu `SONUC: HATALI` (exit 1). **Kök:** `main()`'deki `bir != iki`, `haller_olc` sonuç METİNLERİNİ karşılaştırıyordu;
+metinler `%r` ve `out[:40]` ile koşuya özgü geçici yolu (`t1`/`t2`) taşıyabiliyor. **Yol uzunluğu bir ölçüm eksenidir:** aynı eski araç
+Linux/WSL'de (kısa kök, fark pencerede) exit 2, Windows'ta (uzun kök, fark `[:40]` dışında) exit 1 veriyordu.
+**Seçim:** kök yolunu NORMALİZE etmek değil, karşılaştırmayı hal → sapma VAR/YOK kümesine indirmek (`hukmu_ayrisan`). Normalizasyon yolun her
+biçimiyle (ham · repr · json · realpath · kesik pencere) yarışmaktır; hüküm tüketicileri zaten yalnız VAR/YOK okur. Bağımsız turun BEYANI (ham veri saklanmadı, yeniden üretilmedi): 18.689
+rastgele (bir, iki) çiftinde eski/yeni "TEMİZ mi" ayrımı 0, tek kayma OLCULEMEDI(2) → HATALI(1) yönünde; V2 turu aynı sonucu iki ayrı koşumla canlı üretti (aşağıda).
+**Kollar (her düzeltmeye ayrı mutant; `temiz_kol()` ana akışla AYNI hüküm kodunu koşar):**
+- **M-S11** yol basan araç → temiz kol `HATALI` + exit 1 (OLCULEMEDI/exit 2 DEĞİL). İki biçim: (a) eski aracın başlığı gibi TAM yol — yalnız kısa
+  kökte (Linux `/tmp`) pencereye ulaşır, Windows/macOS'ta BOŞ; (b) yolun son iki parçası — her kökte ısırır.
+- **M-S12** (istenenin ÜSTÜNDE, bilinçli) hükmü YALNIZ BİR koşuda (t2 ya da t1) değişen araç → `OLCULEMEDI` + exit 2: karşılaştırma gevşetildiği
+  için bekçinin HÂLÂ ısırdığının pozitif kontrolü. İşaret aracın kendi dizinine çapalı.
+**KIRMIZI → YEŞİL (Windows py3.12 + WSL py3.14):** düzeltilmemiş mutant + eski araç Linux'ta exit 2 → düzeltilmiş exit 1 (13 yanlış-pozitif);
+Windows'ta ikisi de exit 1. Düzeltilmemiş + mevcut araç: M-S11 KACTI (Linux a ve b exit 2; Windows a exit 1, b exit 2); düzeltilmiş: 12 ısırdı — 0 kaçtı iki
+platformda. Meta: bekçi öldürülünce (`ayrisan = []`) M-S12 KACTI (TEMİZ exit 0); bekçi TEK YÖNLÜ yapılınca t1 sabotajında KACTI; atasında `t2` adlı dizin olan
+TEMP'te commit 3 sürümü yanlış KACTI veriyordu, 54404ab 12/12.
+**Sınır:** macOS ve py3.11/3.13 ÖLÇÜLEMEDİ; gerçek jq yok (jq çapraz kolu SINIRLI). Commit 3 mesajındaki "52,9 sn" yalnız bir Windows koşusunun süresiydi
+(düzeltildi, `54404ab` mesajı). `capraz.yml` adım adı "(dokuz mutant)" BAYAT (artık 12) — bilinen açık, bu işe dahil değil.

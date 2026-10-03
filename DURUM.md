@@ -2,15 +2,15 @@
 **BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #118 `839f2ab1`: 189/189 — Cowork 3 Eki ölçtü**)
 Son güncelleme: 3 Eki 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
-## DEVİR — O6 (Code) · 3 Eki 2026 · bağlam 826k (anayasa §3 hükmü: devir) 
-**Durum:** `4933a3d` araç yalnız N basar + mutant 10/10 (13 hal; M-S10 ek) + `capraz.yml` yalnız yorum/ad; commit 2 = ADR + bu DEVİR. origin `839f2ab1`,
-PUSH YOK. `hafiza.py`/`skill/`/`faz0/` DEĞİŞMEDİ. ADR: `denetim/2026-10-03_oturum-sagligi-anayasa-tek-kaynak.md`.
-**YARIM K4:** `capraz.yml` 88 adım taban(`839f2ab`)↔yeni(`1e76a2e`: mutantın eski hali) bataryaları AYRIK süreçlerde KOŞUYOR:
-Win `C:\dev\k5\p_t3b_{taban,yeni}_win(.txt)`, Linux `~/k5/p_t3b_{taban,yeni}_lin(.txt)`; bitince `OZET` satırı. **Sıradaki ilk iş:** ① OZET'ler var mı bak ② `python
-C:\dev\k5\arac\karsilastir.py <taban_dizin> <yeni_dizin>` (Win; Linux'ta sonuc.json'ı kopyala) — FARK 0 beklenir ③ DELTA son ağaçta (`4933a3d`): `ci_paralel.py` ile
-`oturum_sagligi`, `ci_kapsam`, `ci_adim_muafiyeti` işleri Win+Linux (`ci_yerel.py turet` ile adım listesi) ④ sonucu ADR'deki BATARYA satırına yaz, DURUM'u kapat,
-`git log --oneline -3` ⑤ Cowork: canlı araç N == jq N; `TASLAK_*`+BEKLEYEN arşiv.
-**AÇIK:** gerçek jq çapraz kontrolü bu makinede YOK (CI ubuntu) · macOS · py3.11/3.13 · `capraz.yml` adları BAYAT · yeni oturum = YENİ kimlik, ilk iş N ölç.
+## DEVİR — O6 (Code) · K4 O7'de KAPANDI · 3 Eki 2026
+**Durum:** `7508042` mutant determinizmi hal→VAR/YOK (normalize DEĞİL) + M-S11/M-S12 · `54404ab` bağımsız tur bulguları.
+origin `839f2ab1`, PUSH YOK. `hafiza.py`/`skill/`/`faz0/` DEĞİŞMEDİ. ADR: `denetim/2026-10-03_oturum-sagligi-anayasa-tek-kaynak.md` (Düzeltme + K4).
+**K4 (88 adım YML'den türetildi; taban `839f2ab1` ↔ yeni `7508042`, adım 38 `54404ab`'da):** exit FARKI Linux 0 · Windows 1 (adım 54 `paketle.sh` 126, Store `python3`
+takma-adı, nedeni ÖLÇÜLEMEDİ; solo 6/6 exit 0, `.skill` SHA 8/8 aynı ⇒ regresyon DEĞİL). Koşmayan: Linux 6 · Win 2. İki tarafta AYNI sıfırdan-farklı = ÖLÇÜLEMEDİ: Win 6·7·13·14·16·58
+(`t_y42` WinError 1314) · Win 15, 43-46 · Linux 6·13·58 (yük altında F-1) · Linux 15 (Windows probu). Boş makinede F-1 GEÇTİ (kalıcı 4/4 58/58); B-6 hız notu yük-duyarlı.
+Ham: `C:/dev/k5/cikti_k4*`, `~/k5/{cikti_k4*,f1solo_*}`.
+**Sıradaki ilk iş:** Cowork: canlı araç N == jq N · `TASLAK_*`+BEKLEYEN arşiv · push Onur'da.
+**AÇIK:** gerçek jq YOK (adım 38 SINIRLI) · macOS · py3.11/3.13 · `capraz.yml` adım adı "dokuz mutant" BAYAT (artık 12) · liste `runs-on`'u yok sayar · yeni oturum = YENİ kimlik, ilk iş N ölç.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 K4 (39→55/67) TAMAM; kalan 12 kör nokta (H0 3911·H4·H1-KOVA×2·H5·H12 4968·H13×2·H2·H17·H-LINK·H10 4716) + **25 Ağu
