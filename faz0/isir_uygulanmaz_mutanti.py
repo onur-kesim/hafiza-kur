@@ -176,7 +176,7 @@ def main():
         if k2 != 0:
             bulgu.append("KOL 2: isir exit %d (0 bekleniyordu)" % k2)
         m = _KOSULAN_ORAN.search(c2)
-        if not m or m.group(1) != "69" or m.group(2) != "69":
+        if not m or m.group(1) != "81" or m.group(2) != "81":
             bulgu.append("KOL 2: '81/81 kosulan mutant' degil (%s)" % (m.group(0) if m else "YOK"))
         if not _ISIRDI_H9.search(c2):
             bulgu.append("KOL 2: M-H9 ISIRDI degil")
