@@ -864,15 +864,16 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
-  # 2b-14) OTURUM SAGLIGI OLCERI — `araclar/oturum_sagligi.py` ISIRIYOR mu?
-  #     Bu arac urunun parcasi DEGILDIR; oturum yonetimi icindir. Ama o da bir
-  #     kapidir ve ayni doktrine tabidir: esik asildiginda hukum DEGISMELI,
-  #     olculemeyen hal YESIL SAYILMAMALIDIR. Mutant sentetik transcript uretir
-  #     (gercek oturuma bagimli DEGILDIR) ve alti kusuru enjekte eder.
-  #     🔴 Aracin KENDISI CI'da kosulmaz: CI runner'inda Claude transcript'i
-  #     yoktur, arac dogru davranip OLCULEMEDI/exit 2 dondururdu ve is sahte
-  #     kirmizi yanardi. Olculen sey ARACIN SOZLESMESIDIR, ortam degil.
-  #     `continue-on-error` YOK.
+  # 2b-14) OTURUM SAGLIGI OLCERI — `araclar/oturum_sagligi.py` DOGRU N'yi basiyor mu?
+  #     Bu arac urunun parcasi DEGILDIR; oturum yonetimi icindir. Ama o da bir kapidir ve ayni doktrine
+  #     tabidir. Arac yalniz N basar (global anayasa §3 tanimi: son ana-dongu assistant kaydinin
+  #     input + cache_read + cache_creation degeri); renk/esik orada yasar, bu dosyada ve aracta YOKTUR.
+  #     Mutant SENTETIK transcript uretir (gercek oturuma bagimli DEGILDIR): BEKLENEN N elle yazili,
+  #     dokuz kusur tek tek enjekte edilir (sonuncusu kaynak taramasidir), `jq` varsa anayasa jq'su ile
+  #     capraz kontrol yapilir, yoksa satir OLCULEMEDI der ve sonuc SINIRLI olur.
+  #     🔴 Aracin KENDISI CI'da kosulmaz: CI runner'inda Claude transcript'i yoktur, arac dogru
+  #     davranip OLCULEMEDI/exit 2 dondururdu ve is sahte basarisiz olurdu. Olculen sey ARACIN
+  #     SOZLESMESIDIR, ortam degil. `continue-on-error` YOK.
   # ---------------------------------------------------------------------------
   oturum_sagligi:
     name: oturum sagligi olceri (${{ matrix.os }})
@@ -887,7 +888,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: olcerin kendisi isiriyor mu (alti mutant)
+      - name: olcerin kendisi isiriyor mu (dokuz mutant)
         shell: bash
         run: python araclar/oturum_sagligi_mutanti.py 2>&1 | tee saglik-mutant.txt
       - name: saglik mutanti ciktisi (artefakt)
