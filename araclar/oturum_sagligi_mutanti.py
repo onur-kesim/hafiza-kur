@@ -25,8 +25,9 @@ MUTANTLAR    her biri KENDI ekseninde, ayri ayri sayilir; hedef hal(ler) BEKLENE
 TEMIZ KOL KOLLARI  aracin icine degil, temiz kolun KENDI hukmune sabotaj (git yok, sabit sabotaj):
   M-S11 yol basan arac -> temiz kol HATALI + exit 1 verir, OLCULEMEDI/exit 2 DEGIL (iki bicim: TAM yol · yolun son
         iki parcasi; sonuc metinleri `[:40]` ile kesildigi icin yalniz ikincisi kok uzunlugundan bagimsiz isirir) ·
-  M-S12 hukmu t2 kosusunda degisen arac -> OLCULEMEDI + exit 2 (determinizm bekcisi yasiyor; M-S11 duzeltmesinin
-        pozitif kontrolu: karsilastirma METINDEN HUKME indi, gevsetilen kontrol hala isiriyor mu)
+  M-S12 hukmu yalniz t2 ya da yalniz t1 kosusunda degisen arac -> OLCULEMEDI + exit 2 (determinizm bekcisi yasiyor; M-S11
+        duzeltmesinin pozitif kontrolu: karsilastirma METINDEN HUKME indi, gevsetilen kontrol IKI YONDE de isiriyor mu;
+        sabotaj isareti aracin kendi dizinine capalidir)
 DETERMINIZM  temiz kol iki kosu (t1/t2) yapar; karsilastirilan sey hal -> sapma VAR/YOK'tur, sonuc METNI degil —
              metin kosuya ozgu gecici yolu tasiyabilir ve yol basan bir arac regresyonu sahte OLCULEMEDI olurdu
 CAPRAZ       `jq` varsa her fixture'da anayasadaki jq suzgeci == arac N (POSIX'te F6 icin anayasanin TAM komutu);
@@ -243,7 +244,7 @@ def hukmu_ayrisan(bir, iki):
 
 def temiz_kol(arac, kaynak, taban):
     """Temiz kol HUKMU: (kod, satirlar). kod 0 temiz · 1 HATALI · 2 OLCULEMEDI; `satirlar` sirasiyla basilacak metin.
-    main (gercek arac) ve M-S11 (yol sabotaji kolu) AYNI fonksiyonu kosar: kolun hukmu gercek kolun hukmuyle ayni koddan gelir."""
+    main (gercek arac) ve temiz_kol_kolu (M-S11/M-S12) AYNI fonksiyonu kosar: kolun hukmu gercek kolun hukmuyle ayni koddan gelir."""
     bir = haller_olc(arac, os.path.join(taban, "t1"))
     iki = haller_olc(arac, os.path.join(taban, "t2"))
     ayrisan = hukmu_ayrisan(bir, iki)
@@ -326,9 +327,19 @@ M_S9 = ("M-S9", "renk/esik tablosu kaynaga GERI GIRER (davranis ayni, yalniz KAY
 #   M-S11  yol basan arac -> HATALI + exit 1 (OLCULEMEDI/exit 2 DEGIL). Iki bicim: (a) eski aracin basligi gibi TAM yol;
 #          (b) yolun yalniz son iki parcasi. Sonuc metinleri `[:40]` ile kesildiginden TAM yol ancak kisa kokte (Linux
 #          /tmp) penceredeki t1/t2 farkina ulasir; (b) kok uzunlugundan BAGIMSIZ ulasir (yol uzunlugu bir olcum eksenidir).
-#   M-S12  hukmu t2 kosusunda DEGISEN arac -> OLCULEMEDI + exit 2: M-S11'in duzeltmesi karsilastirmayi METINDEN
-#          HUKME indirdi; bekci YASIYOR mu (gevsetilen kontrolun hala isirdigi) pozitif kontroluyle olculur.
+#   M-S12  hukmu YALNIZ BIR kosuda (t2 ya da t1) DEGISEN arac -> OLCULEMEDI + exit 2: M-S11'in duzeltmesi karsilastirmayi
+#          METINDEN HUKME indirdi; bekci YASIYOR mu (gevsetilen kontrolun hala isirdigi) pozitif kontroluyle olculur.
+#          Iki yon ayri: tek yonlu zayiflamis bir bekci (yalniz t2'yi goren) t1 sabotajinda KACAR. Isaret aracin KENDI
+#          dizinine (`<kok>/<taraf>/`) capalidir: atada `t2` adli bir dizin, t1 kosusunu da saptirmaz.
 PRINT_N = "        print(n)\n"
+
+
+def sapma_yalniz(taraf):
+    """`<kok>/<taraf>/` altinda kosan arac N'yi yanlis (+1) basar; kok = aracin kendi dizini (`<kok>/oturum_sagligi.py`)."""
+    return ('        print(n + int(yol.startswith(os.path.dirname(os.path.abspath(__file__)) + os.sep + "%s" + os.sep)))\n'
+            % taraf)
+
+
 TEMIZ_KOL_KOLLARI = [
     ("M-S11", "yol basan arac HATALI + exit 1 vermeli",
      [("a", "TAM yol (eski aracin basligi gibi)", '        print("OTURUM SAGLIGI: %s" % yol)\n' + PRINT_N),
@@ -336,7 +347,8 @@ TEMIZ_KOL_KOLLARI = [
        '        print("%s/%s" % (os.path.basename(os.path.dirname(yol)), os.path.basename(yol)))\n' + PRINT_N)],
      1, "SONUC: HATALI"),
     ("M-S12", "hukmu kosuya gore degisen arac OLCULEMEDI + exit 2 vermeli (determinizm bekcisi yasiyor)",
-     [("t2", "yalniz t2 kosusunda N yanlis", '        print(n + int((os.sep + "t2" + os.sep) in yol))\n')],
+     [("t2", "yalniz t2 kosusunda N yanlis", sapma_yalniz("t2")),
+      ("t1", "yalniz t1 kosusunda N yanlis", sapma_yalniz("t1"))],
      2, "OLCULEMEDI: duzenek determinist degil"),
 ]
 HUKUM_ADI = {0: "TEMIZ", 1: "HATALI", 2: "OLCULEMEDI"}
