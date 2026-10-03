@@ -1,29 +1,28 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #118 `839f2ab1`: 189/189 — Cowork 3 Eki ölçtü**)
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #119 `320bf1d`: 189/189 — Cowork ölçtü**)
 Son güncelleme: 3 Eki 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
-## DEVİR — O6 (Code) · K4 O7'de KAPANDI · 3 Eki 2026
-**Durum:** `7508042` mutant determinizmi hal→VAR/YOK (normalize DEĞİL) + M-S11/M-S12 · `54404ab` bağımsız tur bulguları.
-origin `839f2ab1`, PUSH YOK. `hafiza.py`/`skill/`/`faz0/` DEĞİŞMEDİ. ADR: `denetim/2026-10-03_oturum-sagligi-anayasa-tek-kaynak.md` (Düzeltme + K4).
-**K4 (88 adım YML'den türetildi; taban `839f2ab1` ↔ yeni `7508042`, adım 38 `54404ab`'da):** exit FARKI Linux 0 · Windows 1 (adım 54 `paketle.sh` 126, Store `python3`
-takma-adı, nedeni ÖLÇÜLEMEDİ; solo 6/6 exit 0, `.skill` SHA 8/8 aynı ⇒ regresyon DEĞİL). Koşmayan: Linux 6 · Win 2. İki tarafta AYNI sıfırdan-farklı = ÖLÇÜLEMEDİ: Win 6·7·13·14·16·58
-(`t_y42` WinError 1314) · Win 15, 43-46 · Linux 6·13·58 (yük altında F-1) · Linux 15 (Windows probu). Boş makinede F-1 GEÇTİ (kalıcı 4/4 58/58); B-6 hız notu yük-duyarlı.
-Ham: `C:/dev/k5/cikti_k4*`, `~/k5/{cikti_k4*,f1solo_*}`.
-**Sıradaki ilk iş:** Cowork: canlı araç N == jq N · `TASLAK_*`+BEKLEYEN arşiv · push Onur'da.
-**AÇIK:** gerçek jq YOK (adım 38 SINIRLI) · macOS · py3.11/3.13 · `capraz.yml` adım adı "dokuz mutant" BAYAT (artık 12) · liste `runs-on`'u yok sayar · yeni oturum = YENİ kimlik, ilk iş N ölç.
+## DEVİR — O7 (Code) · KALAN 12 KÖR NOKTA · 4 Eki 2026
+**Durum:** motor `82044F18…` 402.893 B → `C2ECB013…` 414.185 B · `cmd_isir` içine 12 mutant (`m_*` + `_baglanti_kos`) · kapı bölgesi (1-5332) `cmp` bayt-AYNI ·
+CC çapası 30, `ihlal` 9, CC>20 kümesi 7 AYNEN. Taban `320bf1d` (CI #119). PUSH YOK.
+**Ölçüldü (Win py3.12 + WSL `olcum`):** `sabotaj.py` bayraksız **67/67, KAPSAMSIZ 0** (iki platformda; taban 55/12) · köşegen 12/12, köşegen dışı kaçış 0 · K2: önceki 55 aynen,
+düşen ad 0. `isir`: taze git'li **79/79 + 2 SINANMADI** (exit 2) · derle **81/81** · git'siz derle **78/78 + 3 UYGULANMAZ**. M-HLINK/M-H2d Windows'ta ISIRDI (M-H2d ek maliyet <0,1 sn, +6 MB tmp).
+**Sıradaki ilk iş:** push Onur'da → Cowork: `ls-remote` → CI → bağımsız sabotaj 67/67 → paket v5 (claude.ai). **AÇIK:** gerçek jq YOK · macOS · py3.11/3.13 · Win `t_y42` WinError 1314 (ÖLÇÜLEMEDİ) ·
+`capraz.yml` adım adı "dokuz mutant" BAYAT (artık 12) · yeni oturum = YENİ kimlik, ilk iş N ölç.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
-K4 (39→55/67) TAMAM; kalan 12 kör nokta (H0 3911·H4·H1-KOVA×2·H5·H12 4968·H13×2·H2·H17·H-LINK·H10 4716) + **25 Ağu
+K4 (39→55→**67/67**) TAMAM, kalan kör nokta **0** (KAPSAMSIZ 0); **25 Ağu
 yazısı** KAPSAM DIŞI (İş Portföyü'nde kapanır); **Deneme**: BEŞLİ PAKET kapandı, başlaması Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
+**K4 + oturum_sagligi** (3 Eki; `320bf1d`): mutant determinizmi hal→VAR/YOK + M-S11/S12 · exit farkı Linux 0/Win 1 (adım 54 Store `python3` flake, regresyon DEĞİL) · ÖLÇÜLEMEDİ: Win `t_y42` 1314, macOS, py3.11/3.13, jq · ADR `denetim/2026-10-03_oturum-sagligi-anayasa-tek-kaynak.md`.
 **Takma ad + BEYAZ LİSTE** (2 Eki; CI #118 189/189): 15 takma ad + KAPI-4 · `paket`/`skill-kur` beyaz liste + `DISARIDA`.
 **ÜRÜN HAZIRLIĞI** (30 Eyl; push edildi, CI #117 189/189; claude.ai yükleme K7 HÂLÂ yok): `paket` (stdlib zipfile, SAKLANMIŞ giriş) · açıklama 475 + (v) ayağı ·
 `skill-kur` exit 3 · sabotaj 55/67. **AÇIK:** harf-büyüklüğü çakışan adlar · `name:` ön-madde YAML'ı ölçülmez · `--guncelle`+izin hatasında boş yedek
 dizini · DETERMİNİZM yalnız aynı makinede (platformlar-arası SHA elle). ·
-**Eski (git geçmişinde):** `skill-kur` (`72a4a8b`, CI #116 184/184) · isir 29→55/67 (H6/H8/H11/H16 + TEK TANIK; `cmd_isir` çıpası 26→**30**, Onur
-kilidi) · ŞIK B/A · ayrisma · devral GİRİŞ KAPISI · `bolum-kur` · B4-3/B4-4 · devral/H4/H12/H14/BEŞLİ PAKET/gitfile (4-6 Eyl, CI #96-99).
+**Eski (git geçmişinde):** `skill-kur` (CI #116) · isir 29→55/67 (`cmd_isir` çıpası 26→**30**, Onur kilidi) · ŞIK B/A · ayrisma · devral
+GİRİŞ KAPISI · `bolum-kur` · B4-3/B4-4 · H4/H12/H14/BEŞLİ PAKET/gitfile (4-6 Eyl, CI #96-99).
 
 ## Bilinen sınırlar (ölçülmüş)
 - 🔴 **"GERÇEK ORTAMDA OLMAZ" DEMEDEN ÖNCE ORTAMI ÖLÇ (6 Eyl):** M-Y2 kusuru "hiçbir runner'da bu TMPDIR yok" diye

@@ -6,8 +6,8 @@ NEDEN VAR (olculdu 14 Agu 2026)
   Madde 5: "25 Agu yazisinin okuru, depoya gelip README ile sistemi kendi basina
   deneyebilir." Okurun yapacagi sey README'nin "Kanitini kendin kos" blogudur ve
   o blok SAYISAL BEYANLAR tasiyor:
-      python3 hafiza.py isir --kok=deneme   # taze projede: 67/67 + 2 SINANMADI, exit 2
-      python3 hafiza.py isir --kok=deneme   # derle sonrasi: 69/69, exit 0
+      python3 hafiza.py isir --kok=deneme   # taze projede: 79/79 + 2 SINANMADI, exit 2
+      python3 hafiza.py isir --kok=deneme   # derle sonrasi: 81/81, exit 0
   Bu beyanlari HICBIR kapi olcmuyordu. Ustelik ikincisi (`derle` sonrasi isir=0)
   `DURUM.md`in "olculmuyor" diye yazdigi bosluğun ta kendisiydi: README onu IDDIA
   ediyor, hicbir sey dogrulamiyordu. Bir okur yanlis sayiyla karsilassa projenin
@@ -583,20 +583,20 @@ def kapi2_gercek(adimlar, kaynak_scripts, kanit_onbellek=None):
 # --------------------------------------------------------------- MUTANTLAR
 def m1_beyan_silinir(s):
     """`exit 2` beyani yorumdan silinir -> KAPI-1 isirmali (KAPI-2 o beyani olcmez)."""
-    yeni = s.replace("# taze projede: 67/67 + 2 SINANMADI, exit 2",
+    yeni = s.replace("# taze projede: 79/79 + 2 SINANMADI, exit 2",
                      "# taze projede", 1)
     return yeni if yeni != s else None
 
 
 def m2_oran_bozulur(s):
     """README yanlis mutant orani yazar -> KAPI-2 isirmali."""
-    yeni = s.replace("67/67 + 2 SINANMADI", "66/66 + 2 SINANMADI", 1)
+    yeni = s.replace("79/79 + 2 SINANMADI", "78/78 + 2 SINANMADI", 1)
     return yeni if yeni != s else None
 
 
 def m3_cikis_kodu_bozulur(s):
     """README yanlis cikis kodu yazar -> KAPI-2 isirmali (oranlar dogru kalir)."""
-    yeni = s.replace("# derle sonrası: 69/69, exit 0", "# derle sonrası: 69/69, exit 3", 1)
+    yeni = s.replace("# derle sonrası: 81/81, exit 0", "# derle sonrası: 81/81, exit 3", 1)
     return yeni if yeni != s else None
 
 

@@ -144,7 +144,18 @@ SABOTAJ_KIMLIK = "M-H1"          # sabote edilen fail(): bu mutantin parcasiyla 
 # tuple'inin 4. ogesindedir (mutant_git kalibi).
 TEK_TANIK_HEDEF = {"M-Hcy": ("H-", "_kapi_govde", 1), "M-H0k": ("H0", "_kapi_h0", 1),
                    "M-H10t": ("H10", "_h10_sozluk", 1), "M-H12c": ("H12", "_h12_sapma_hukmu", 1),
-                   "M-H14e": ("H14", "_h14_hukum", 1), "M-H9": ("H9", "_kapi_h9", 1)}
+                   "M-H14e": ("H14", "_h14_hukum", 1), "M-H9": ("H9", "_kapi_h9", 1),
+                   # KALAN 12 KOR NOKTA (besli-paket/IS_EMRI_KALAN12_KOR_NOKTA.md, 3 Eki 2026): AYNI
+                   # sozlesme (tamamlik istenmez; her parca [etiket] altinda TAM 1 fail()'e uyar ve o
+                   # fail() beklenen KONUMDA durur). Etiket icindeki sira, ust fonksiyondaki fail()
+                   # cagrilarinin kaynak sirasidir (1'den): ayni etiketli kardes fail()'ler (H0 3906/3911,
+                   # H1-KOVA 4065/4086/4095, H13 5016/5022/5030) yalniz KONUMLA ayirt edilir.
+                   "M-H0x": ("H0", "_kapi_h0", 2), "M-H1kv": ("H1-KOVA", "_h1_kova", 1),
+                   "M-H1ks": ("H1-KOVA", "_h1_kova", 3), "M-H4k": ("H4", "_h4_hukum", 2),
+                   "M-H5r": ("H5", "_kapi_h5", 1), "M-H10g": ("H10", "_h10_cit", 2),
+                   "M-H12s": ("H12", "_h12_tazelik", 4), "M-H13s": ("H13", "_kapi_h13", 2),
+                   "M-H13p": ("H13", "_kapi_h13", 3), "M-H2d": ("H2", "_kapi_h15", 1),
+                   "M-H17b": ("H17", "_kapi_h17", 1), "M-HLINK": ("H-LINK", "_kapi_govde", 1)}
 JUNCTION_KIMLIK = "M-H16k"
 JUNCTION_FONKSIYON = "m_h16k"
 JUNCTION_ESKI = "os.symlink(dis, d, target_is_directory=True)"
@@ -235,15 +246,18 @@ def motor_tablolari(kaynak):
         for kw in v.keywords:
             if kw.arg == "siki" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
                 siki_adlar.append(k.value)
-    sg = _atama(fn, "sinamalar_git")
-    if not isinstance(sg, ast.List):
-        raise Olculemedi("`sinamalar_git` bir liste literali degil")
     git_parca = {}                                   # ad -> (kapi, parca)
-    for e in sg.elts:
-        if (isinstance(e, ast.Tuple) and len(e.elts) == 4
-                and all(isinstance(e.elts[i], ast.Constant) and isinstance(e.elts[i].value, str)
-                        for i in (0, 1, 3))):
-            git_parca[e.elts[0].value] = (e.elts[1].value, e.elts[3].value)
+    # `sinamalar_git` (mutant_git) ve `sinamalar_baglanti` (M-HLINK: MutantUygulanmaz'i da
+    # yakalayan kosucu) AYNI 4'lu bicimdedir: (ad, kapi, fn, parca).
+    for liste_ad in ("sinamalar_git", "sinamalar_baglanti"):
+        sg = _atama(fn, liste_ad)
+        if not isinstance(sg, ast.List):
+            raise Olculemedi("`%s` bir liste literali degil" % liste_ad)
+        for e in sg.elts:
+            if (isinstance(e, ast.Tuple) and len(e.elts) == 4
+                    and all(isinstance(e.elts[i], ast.Constant) and isinstance(e.elts[i].value, str)
+                            for i in (0, 1, 3))):
+                git_parca[e.elts[0].value] = (e.elts[1].value, e.elts[3].value)
     return parca, sinamalar, siki_adlar, git_parca
 
 
@@ -657,14 +671,17 @@ def main():
     _tum_pozisyon_kimlik = [a for _, hd in POZISYON_GRUPLARI for a in hd]
     # M-H9 mutant_git'tir: bu betigin sablonu git'SIZ kurulur -> UYGULANMAZ (gercek
     # davranisi sabotaj.py #4629 KAPSAMLI + isir_uygulanmaz_mutanti KOL 2 olcer).
-    _tek_mutant = [x for x in TEK_TANIK_HEDEF if x != "M-H9"]
+    # M-HLINK de benzeri: hardlink kurulamayan bir dosya sisteminde UYGULANMAZ olabilir (sebep basilir,
+    # sahte KACTI/ISIRDI yok); hardlink kurulan ortamda ISIRDI beklenir.
+    _tek_mutant = [x for x in TEK_TANIK_HEDEF if x not in ("M-H9", "M-HLINK")]
     beklenen = {
         "KOL 0": ("H1'in yedi, H11/H6/H8/H16'nin TUM ve tek tanik mutantlari ISIRDI "
                   "(M-H9: git'siz sablonda UYGULANMAZ), exit 0",
                   lambda k, h: k == 0 and all(h.get(x) == "ISIRDI"
                                               for x in list(HEDEF_EKSEN) + _tum_pozisyon_kimlik
                                               + _tek_mutant)
-                  and h.get("M-H9") in ("ISIRDI", "UYGULANMAZ")),
+                  and h.get("M-H9") in ("ISIRDI", "UYGULANMAZ")
+                  and h.get("M-HLINK") in ("ISIRDI", "UYGULANMAZ")),
         "KOL a": ("M-H1 ISIRDI (maskeleme URETILDI)",
                   lambda k, h: h.get("M-H1") == "ISIRDI"),
         "KOL a1": ("M-H1 ve M-H1b KACTI (B tek basina yeter)",

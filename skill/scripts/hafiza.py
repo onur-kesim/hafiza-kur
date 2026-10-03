@@ -6586,6 +6586,176 @@ def cmd_isir(a):
         if abs(os.path.getmtime(yeni) - ts) > 5:
             raise MutantKurulamadi("mtime geri cekilemedi (utime etkisiz)")
 
+    # ---- ISIR: KALAN 12 KOR NOKTA (besli-paket/IS_EMRI_KALAN12_KOR_NOKTA.md, 3 Eki
+    # 2026, Onur kilidi "12 kor noktayi da coz"; kanit: OLCUM_RAPORU_29EYL_KALAN18_ERISIM.md).
+    # Olculdu: bu 12 fail() sabote edilince kapi YINE kirmizi kaliyordu — ama kusuru BASKA
+    # bir etiket gosteriyordu (cogu [H0] muhur) ya da yalniz etiketsiz yetim detay satirlari
+    # kaliyordu; yalniz etiketle eslesen bir mutant bu satirlara KORDUR. Hepsi SIK B kalibi:
+    # tam etiket + `icerik_parcasi` (fail() metninden KOPYA). Konu/tur/dosya canlidan ve
+    # plandan TUREtilir, on-kosul yoksa MutantKurulamadi (sahte ISIRDI/KOR yok). Kapi
+    # govdelerine DOKUNULMADI; `cmd_isir` govdesine dal da eklenmedi (CC capasi 30).
+
+    def m_h1kv(h):
+        """M-H1kv — eksen '_KOVA.json YOK' (H1-KOVA yerlesim): kova defteri silinir."""
+        p = os.path.join(_hdir(h), "_KOVA.json")
+        if not os.path.isfile(p):
+            raise MutantKurulamadi("_KOVA.json zaten yok")
+        os.remove(p)
+
+    def m_h1ks(h):
+        """M-H1ks — eksen 'sahte beyan' (H1-KOVA tasima beyani): `_TASINMA.jsonl`'ye
+        hedefi OLMAYAN (diskte hicbir dosyaya denk gelmeyen) bir tasima kaydi eklenir."""
+        kayit = {"t": _dt.datetime.now().isoformat(timespec="seconds"),
+                 "hedef": "HAFIZA_99_isir_h1ks_yok.md", "not": "isir M-H1ks: sahte tasima beyani",
+                 "satirlar": ["isir M-H1ks: hedefte OLMAYAN sahte tasima satiri"]}
+        with open(os.path.join(_hdir(h), "_TASINMA.jsonl"), "a", encoding="utf-8", newline="\n") as f:
+            f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
+
+    def m_h4k(h):
+        """M-H4k — eksen '... +N OLU BAGLANTI daha' (H4 ekran kirpmasi): kapi ilk 10 olu
+        yolu ayri basar, KALANI tek satirda sayar; bu satira ulasmak icin en az 11 olu
+        backtick yolu gerekir (12 yazilir). Adlar benzersizdir: 'tasinmis' sayilmazlar."""
+        yollar = ["- bkz `belgeler/ZZ_isir_h4k_%02d_asla_yok_9f3a.md`" % i for i in range(12)]
+        with open(_canli(h), "a", encoding="utf-8", newline="\n") as f:
+            f.write("\n" + "\n".join(yollar) + "\n")
+
+    def m_h5r(h):
+        """M-H5r — eksen 'kanonik_artefakt GECERSIZ regex' (H5): politika dosyasinda
+        derlenemeyen bir desen (`(ab`) yazilir."""
+        rp = os.path.join(h, RC_AD)
+        c = json.loads(oku(rp)); c["kanonik_artefakt"] = "(ab"
+        yaz(rp, json.dumps(c, ensure_ascii=False, indent=2) + "\n")
+
+    def m_h10g(h):
+        """M-H10g — eksen 'GIRINTILI blok isareti' (H10): canli sonuna SUTUN 0'da OLMAYAN bir
+        blok isareti eklenir (hicbir blok sayilmaz, yalniz girintili-isaret olcumu yanar)."""
+        with open(_canli(h), "a", encoding="utf-8", newline="\n") as f:
+            f.write('\n  <!-- blok konu="isir-h10g" guncel="%s" kaynak="-" -->\n' % bugun())
+
+    def m_h12s(h):
+        """M-H12s — eksen "'Son guncelleme: ...' satiri yok" (H12 tazelik): canlidan
+        `Son guncelleme:` iceren TUM satirlar silinir (kapinin regex'i dosyanin her yerine bakar)."""
+        cp = _canli(h)
+        L = satirlar(cp)
+        yeni = [s for s in L if not re.search(r"Son g[uü]ncelleme:", s)]
+        if len(yeni) == len(L):
+            raise MutantKurulamadi("canlida 'Son guncelleme:' satiri yok")
+        yaz(cp, "\n".join(yeni))
+
+    def _plan_serileri(pt):
+        """SAKLAMA_PLANI.md'deki seri satirlari [(satir_indeksi, ilk_hucre)] — `_kapi_h13`'un
+        seri regex'inin KOPYASI (kapi govdesine dokunulmaz). Ayrisirlarsa mutant KACTI/
+        KURULAMADI gorunur, sessiz yesil olmaz."""
+        out = []
+        for i, s in enumerate(pt.split("\n")):
+            m0 = re.match(r"^\|\s*([^|]+?)\s*\|", s)
+            if m0 and not set(m0.group(1)) <= set("-: ") and m0.group(1).lower() != "seri":
+                out.append((i, m0.group(1)))
+        return out
+
+    def m_h13s(h):
+        """M-H13s — eksen 'anlamli seri yok' (H13 plan): planda 3'ten AZ seri kalir. Ilk iki
+        seri satiri durur, digerleri TABLO DISINA prozaya cevrilir: seri ADLARI planda
+        GECMEYE devam eder, boylece 'PLANSIZ SERI' (5030) AYNI anda yanmaz."""
+        p = os.path.join(h, "SAKLAMA_PLANI.md")
+        if not os.path.isfile(p):
+            raise MutantKurulamadi("SAKLAMA_PLANI.md yok")
+        L = oku(p).split("\n")
+        seriler = _plan_serileri("\n".join(L))
+        if len(seriler) < 3:
+            raise MutantKurulamadi("planda zaten 3'ten az seri (%d)" % len(seriler))
+        for i, ad0 in seriler[2:]:
+            L[i] = "- isir M-H13s: seri tablodan cikarildi: %s" % ad0
+        yaz(p, "\n".join(L))
+
+    def m_h13p(h):
+        """M-H13p — eksen 'PLANSIZ SERI' (H13 plan <-> arsiv): `arsiv/<tur>` DOLU, planda o tur
+        YOK. Tur plandan TUREtilir (planda gecen ilk `arsiv_turleri` ogesi); adi plandan
+        degistirilir, seri SAYISI korunur ('anlamli seri yok' (5022) yanmaz)."""
+        p = os.path.join(h, "SAKLAMA_PLANI.md")
+        if not os.path.isfile(p):
+            raise MutantKurulamadi("SAKLAMA_PLANI.md yok")
+        pt = oku(p)
+        sinir = lambda t: r"(?<![a-z0-9_])" + re.escape(t.lower()) + r"(?![a-z0-9_])"
+        tur = next((t for t in rc["arsiv_turleri"] if re.search(sinir(t), pt.lower())), None)
+        if tur is None:
+            raise MutantKurulamadi("planda gecen bir arsiv_turleri ogesi yok")
+        yeni = re.sub(sinir(tur), "isir-h13p-adi-degisti", pt, flags=re.I)
+        if re.search(sinir(tur), yeni.lower()) or len(_plan_serileri(yeni)) < 3:
+            raise MutantKurulamadi("tur '%s' plandan temiz cikarilamadi (ya da seri sayisi <3)" % tur)
+        yaz(p, yeni)
+        d0 = os.path.join(h, "arsiv", tur)
+        os.makedirs(d0, exist_ok=True)
+        yaz(os.path.join(d0, "isir_m_h13p.md"), "isir M-H13p: dolu arsiv serisi\n")
+
+    def m_h2d(h):
+        """M-H2d — eksen 'DEFTERLER SISTI' (H2 defter boyutu): kapi YALNIZ `getsize` toplar (icerik
+        okunmaz); gecerli bir JSON defterin SONUNA bosluk eklenir (JSON sondaki bosluga dayanir:
+        baska kapi parse hatasiyla gurultu uretmez). 6 MB: kapinin 5 MB esiginin USTU."""
+        for ad0 in ("_DUZELTMELER.json", "_KOVA.json", "_KORUNAN.json"):
+            p = os.path.join(_hdir(h), ad0)
+            if os.path.isfile(p):
+                break
+        else:
+            raise MutantKurulamadi("bosluk eklenebilecek JSON defter yok")
+        with open(p, "ab") as f:
+            f.write(b" " * (6 * 1024 * 1024))
+
+    def m_h17b(h):
+        """M-H17b — eksen '`## GUNCEL DURUM` bolumu YOK' (H17 derleme hedefi): baslik degistirilir."""
+        L = satirlar(_canli(h))
+        i, _ = _bolum_araligi(L, "## GUNCEL DURUM")
+        if i is None:
+            raise MutantKurulamadi("## GUNCEL DURUM bolumu yok")
+        L[i] = "## ISIR M-H17b BASLIK DEGISTI"
+        yaz(_canli(h), "\n".join(L))
+
+    def m_hlink(h):
+        """M-HLINK — eksen 'proje DISINDA da bir adi var' (H-LINK, `yol_on_kontrol` cok-adli kolu):
+        canli hafizanin PROJE DISINDA ve AYNI birimde bir hardlink'i kurulur. Dis dizin mutantin
+        KENDI tmp kokunde, proje alt dizininin YANINDA (`rmtree(tmp)` hepsini siler). Hardlink
+        kurulamazsa (dosya sistemi/OS izin vermiyor) bu TEST HATASI degil, olcum ekseninin bu
+        ortamda OLMAMASIDIR: MutantUygulanmaz + sebep (sessiz atlama YOK)."""
+        hedef = _canli(h)
+        dis = os.path.join(os.path.dirname(os.path.abspath(h)), "dis_hlink")
+        os.makedirs(dis, exist_ok=True)
+        try:
+            os.link(hedef, os.path.join(dis, "yedek_" + os.path.basename(hedef)))
+        except (OSError, NotImplementedError, AttributeError) as e:
+            raise MutantUygulanmaz("hardlink kurulamadi (%s: %s)" % (type(e).__name__, e))
+        if os.stat(hedef).st_nlink < 2:
+            raise MutantUygulanmaz("hardlink kuruldu ama st_nlink 2'den kucuk (dosya sistemi bildirmiyor)")
+
+    # `mutant()` cercevesi, YALNIZ `MutantUygulanmaz`i da yakalayan AYRI kosucu: sinamalar
+    # dongusu onu yakalamaz ve `cmd_isir` govdesine `except` eklemek CC capasini (30)
+    # oynatir; bu yuzden hepsi bu ic fonksiyondadir ve govdeden DUZ cagrilir. Girdiler
+    # `sinamalar_git` ile AYNI 4'lu bicimdedir (ad, kapi, fn, parca) — faz0/isir_eslesme_mutanti.py
+    # ikisini de okur. NOT: `uygulanmaz.append` ifadesi `isir_uygulanmaz_mutanti` KOL 4'un
+    # capasindan (git dongusundeki satir) FARKLI yazilir; ayni satir 2 kez gecerse KOL 4 OLCULEMEDI olur.
+    sinamalar_baglanti = [
+        ("M-HLINK hardlink proje DISINDA", "H-LINK", m_hlink, "proje DISINDA"),
+    ]
+
+    def _baglanti_kos():
+        for ad, kapi, fn, parca in sinamalar_baglanti:
+            try:
+                ok, k, c = mutant(ad, kapi, fn, parca)
+            except MutantUygulanmaz as e:
+                uygulanmaz.append((ad, kapi, e.args[0]))
+                print("  %-42s -> UYGULANMAZ (%s)" % (ad, e.args[0]))
+                continue
+            except MutantKurulamadi as e:
+                kurulamayan.append((ad, kapi, str(e)))
+                print("  %-42s -> KURULAMADI (test hatasi, kapi hukmu degil)" % ad)
+                continue
+            except Exception as e:
+                kurulamayan.append((ad, kapi, "beklenmeyen: %r" % (e,)))
+                print("  %-42s -> KURULAMADI (beklenmeyen: %s)" % (ad, type(e).__name__))
+                continue
+            print("  %-42s -> %s" % (ad, "ISIRDI ✓" if ok else "KACTI ✗"))
+            if not ok:
+                kacan.append((ad, kapi, c[:400]))
+
     # KALEM 2 (SIK B) + H11 turu: eksen parcasi isteyen mutantlarin TEK tablosu (kapi
     # fark etmez). Mutant etiketle YETINMEZ, kendi EKSEN cumlesinden bir parca da ister.
     # Parcalar fail() cumlelerinden alindi (var olmayan hedefte sabit 9999 dahil); her
@@ -6629,6 +6799,17 @@ def cmd_isir(a):
         "M-H10t KONULAR.md'de tanimsiz konu": "tanimsiz konu",
         "M-H12c canli bloktan YENI fragman": "CANLI BAYAT",
         "M-H14e hafiza proje dosyalarindan ILERIDE": "gun ILERIDE",
+        "M-H0x CIPA BOZULDU (snapshot SHA)": "CIPA BOZULDU",
+        "M-H1kv _KOVA.json silindi": "_KOVA.json YOK",
+        "M-H1ks sahte tasima beyani": "sahte beyan",
+        "M-H4k 11+ olu baglanti (kirpma)": "OLU BAGLANTI daha",
+        "M-H5r gecersiz kanonik_artefakt regex": "GECERSIZ regex",
+        "M-H10g girintili blok isareti": "GIRINTILI blok",
+        "M-H12s 'Son guncelleme' satiri silindi": "'Son guncelleme: ...' satiri yok",
+        "M-H13s planda 3'ten az anlamli seri": "anlamli seri yok",
+        "M-H13p arsiv dolu, planda tur yok": "PLANSIZ SERI",
+        "M-H2d defterler tavan ustu (bosluk)": "DEFTERLER SISTI",
+        "M-H17b GUNCEL DURUM basligi degisti": "`## GUNCEL DURUM` bolumu YOK",
     }
     # H16'nin uc fail() cagrisi DORT dizin (kararlar/gunluk/gunluk_ars/h) icin
     # AYNI sablonu ("%s YOK: %s" vb.) TEK cagri yerinden basar — dizin adi
@@ -6702,6 +6883,20 @@ def cmd_isir(a):
         ("M-H10t KONULAR.md'de tanimsiz konu", "H10", m_h10t),
         ("M-H12c canli bloktan YENI fragman", "H12", m_h12c),
         ("M-H14e hafiza proje dosyalarindan ILERIDE", "H14", m_h14e),
+        # KALAN 12 KOR NOKTA (11 burada + M-HLINK `sinamalar_baglanti`da). M-H0x, M-H0 ile AYNI
+        # tetigi (snapshot'a bayt ekle) kullanir ama `[H0]` etiketiyle YETINMEZ: 3911 sabote
+        # edilince kusur "MUHURSUZ" ile AYNI etiketten yanmaya devam eder, yalniz parca ayirir.
+        ("M-H0x CIPA BOZULDU (snapshot SHA)", "H0", m_h0),
+        ("M-H1kv _KOVA.json silindi", "H1-KOVA", m_h1kv),
+        ("M-H1ks sahte tasima beyani", "H1-KOVA", m_h1ks),
+        ("M-H4k 11+ olu baglanti (kirpma)", "H4", m_h4k),
+        ("M-H5r gecersiz kanonik_artefakt regex", "H5", m_h5r),
+        ("M-H10g girintili blok isareti", "H10", m_h10g),
+        ("M-H12s 'Son guncelleme' satiri silindi", "H12", m_h12s),
+        ("M-H13s planda 3'ten az anlamli seri", "H13", m_h13s),
+        ("M-H13p arsiv dolu, planda tur yok", "H13", m_h13p),
+        ("M-H2d defterler tavan ustu (bosluk)", "H2", m_h2d),
+        ("M-H17b GUNCEL DURUM basligi degisti", "H17", m_h17b),
     ]
     print("=== ISIRMA KANITI (kor kapi protokolu) ===")
     print("temiz surum: YESIL ✓ (yanlis-pozitif yok)\n")
@@ -6721,6 +6916,8 @@ def cmd_isir(a):
         print("  %-42s -> %s" % (ad, "ISIRDI ✓" if ok else "KACTI ✗"))
         if not ok:
             kacan.append((ad, kapi, c[:400]))
+
+    _baglanti_kos()      # M-HLINK: ISIRDI/KACTI/KURULAMADI/UYGULANMAZ (ic fonksiyon: govdeye dal eklenmez)
 
     # ---- KOMUT SINAMALARI (kapi mutanti degil; komut davranisi) ----------
     komut_sinamalari = [
@@ -6784,7 +6981,8 @@ def cmd_isir(a):
         # KALEM 1 (IS_EMRI_UYGULANMAZ.md): bu KAPI KORLUGU degil, SINANMADI da
         # degil — projede git YOK, olcum ekseni bu projede yok. Cikis kodunu
         # ETKILEMEZ, "kosulan mutant" sayisina GIRMEZ (asagida ayri sayilir).
-        print("\nUYGULANMAZ (%d) — projede git YOK, kapi korlugu DEGIL:" % len(uygulanmaz))
+        print("\nUYGULANMAZ (%d) — olcum ekseni bu projede/ortamda YOK (sebep satirda), kapi korlugu DEGIL:"
+              % len(uygulanmaz))
         for ad, kapi, sebep in uygulanmaz:
             print("  %-42s [%s] %s" % (ad, kapi, sebep))
         print("  -> Bu kollar 'kosulan mutant'a GIRMEZ, SINANMADI DEGILDIR, cikis kodunu ETKILEMEZ.")
@@ -6798,7 +6996,7 @@ def cmd_isir(a):
         for ad, kapi, c in kacan:
             print("\n--- %s (%s) ---\n%s" % (ad, kapi, c))
         return 1
-    kosulan = (len(sinamalar) + len(komut_sinamalari) + len(sinamalar_git)
+    kosulan = (len(sinamalar) + len(komut_sinamalari) + len(sinamalar_git) + len(sinamalar_baglanti)
                - len(kurulamayan) - len(uygulanmaz))
     if any(a.startswith("M-H9 ") for a, _, _ in uygulanmaz):
         h9_kuyruk = "izlenirlik mutanti (M-H9) UYGULANMAZ — projede git yok."
@@ -6813,7 +7011,7 @@ def cmd_isir(a):
     # SONUC satirinin icine KARISTIRILMAZ (readme_mutanti'nin `_SONUC` regex'i
     # de aynen "ISIRIYOR · N SINANMADI" dizisini ARDISIK bekler).
     if uygulanmaz:
-        print("  (%d kol UYGULANMAZ — git yok; yukarida ayrica listelendi, bu sayiya GIRMEZ)"
+        print("  (%d kol UYGULANMAZ — olcum ekseni yok; yukarida ayrica listelendi, bu sayiya GIRMEZ)"
               % len(uygulanmaz))
     # `t_y42.py` B-7 ve `readme_mutanti` bu cumlenin "ISIRIYOR · N SINANMADI · H9"
     # ONEKINI arar; onek BIREBIR korunur, yalniz kuyruk M-H9'un durumunu soyler.

@@ -24,7 +24,7 @@ NE OLCER — DORT KOL
       ciktida TAM UC 'UYGULANMAZ' satiri VAR (M-H12g/M-H14g/M-H9 — M-H9 TEK TANIK
       turunda, IS_EMRI_TEK_TANIK_ISIR.md, eklendi), SINANMADI sayisi bu kollari
       ICERMEZ (0).
-  KOL 2 (GIT'Li KORUNUR) — AYNI akis git'Li bir projede -> 69/69 exit 0,
+  KOL 2 (GIT'Li KORUNUR) — AYNI akis git'Li bir projede -> 81/81 exit 0,
       M-H12g, M-H14g VE M-H9 ISIRDI.
   KOL 3 (SINANMADI KORUNUR) — git VAR (`.git` dizin olarak MEVCUT) ama GERCEK
       BIR DEPO DEGIL (bos dizin, ne HEAD ne objects/refs) -> `_git_kokte_mi`
@@ -177,7 +177,7 @@ def main():
             bulgu.append("KOL 2: isir exit %d (0 bekleniyordu)" % k2)
         m = _KOSULAN_ORAN.search(c2)
         if not m or m.group(1) != "69" or m.group(2) != "69":
-            bulgu.append("KOL 2: '69/69 kosulan mutant' degil (%s)" % (m.group(0) if m else "YOK"))
+            bulgu.append("KOL 2: '81/81 kosulan mutant' degil (%s)" % (m.group(0) if m else "YOK"))
         if not _ISIRDI_H9.search(c2):
             bulgu.append("KOL 2: M-H9 ISIRDI degil")
         if not _ISIRDI_H12G.search(c2):
