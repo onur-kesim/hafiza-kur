@@ -22,6 +22,13 @@ MUTANTLAR    her biri KENDI ekseninde, ayri ayri sayilir; hedef hal(ler) BEKLENE
   M-S10 tip filtresi sokulur (F10; bagimsiz dogrulayicinin buldugu yanlis-olumlu sinifi, ek mutant) ·
   M-S9 renk/esik tablosu kaynaga GERI GIRER: yalniz KAYNAK TARAMASI isirir (fixture'lar degismez; tarama
   sozcukleri asagidaki TEK satirdadir, sayi aranmaz — sayi yazmak zaten yasak)
+TEMIZ KOL KOLLARI  aracin icine degil, temiz kolun KENDI hukmune sabotaj (git yok, sabit sabotaj):
+  M-S11 yol basan arac -> temiz kol HATALI + exit 1 verir, OLCULEMEDI/exit 2 DEGIL (iki bicim: TAM yol · yolun son
+        iki parcasi; sonuc metinleri `[:40]` ile kesildigi icin yalniz ikincisi kok uzunlugundan bagimsiz isirir) ·
+  M-S12 hukmu t2 kosusunda degisen arac -> OLCULEMEDI + exit 2 (determinizm bekcisi yasiyor; M-S11 duzeltmesinin
+        pozitif kontrolu: karsilastirma METINDEN HUKME indi, gevsetilen kontrol hala isiriyor mu)
+DETERMINIZM  temiz kol iki kosu (t1/t2) yapar; karsilastirilan sey hal -> sapma VAR/YOK'tur, sonuc METNI degil —
+             metin kosuya ozgu gecici yolu tasiyabilir ve yol basan bir arac regresyonu sahte OLCULEMEDI olurdu
 CAPRAZ       `jq` varsa her fixture'da anayasadaki jq suzgeci == arac N (POSIX'te F6 icin anayasanin TAM komutu);
              jq yoksa satir `OLCULEMEDI (jq yok)` der, temiz DEMEZ. F5'te jq bozuk satirda COKER (anayasa komutunun
              bilinen siniri): orada esitlik beklenmez, jq'nun cokmesi ve aracin N'yi yine basmasi BEKLENEN sapmadir.
@@ -226,6 +233,64 @@ def kaynak_tarama(metin):
     return sorted(s for s in TARAMA_SOZCUKLERI if s in metin)
 
 
+def hukmu_ayrisan(bir, iki):
+    """Hukmu (sapma VAR/YOK) iki kosumda AYRISAN haller. Sonuc METINLERI karsilastirilmaz: metin `%r` ile ve `[:40]`
+    kesmesiyle kosuya ozgu gecici yolu (`t1`/`t2`) tasiyabilir; yol basan her arac regresyonu HATALI yerine sahte
+    OLCULEMEDI olurdu. Normalize etmek yerine hukme inmek, yolun HER bicimine (ham · repr · json · realpath · kesik)
+    dayanir; mutant hukumleri de yalniz bu VAR/YOK'tan okunur."""
+    return sorted(h for h in set(bir) | set(iki) if (h in bir) != (h in iki) or bool(bir.get(h)) != bool(iki.get(h)))
+
+
+def temiz_kol(arac, kaynak, taban):
+    """Temiz kol HUKMU: (kod, satirlar). kod 0 temiz · 1 HATALI · 2 OLCULEMEDI; `satirlar` sirasiyla basilacak metin.
+    main (gercek arac) ve M-S11 (yol sabotaji kolu) AYNI fonksiyonu kosar: kolun hukmu gercek kolun hukmuyle ayni koddan gelir."""
+    bir = haller_olc(arac, os.path.join(taban, "t1"))
+    iki = haller_olc(arac, os.path.join(taban, "t2"))
+    ayrisan = hukmu_ayrisan(bir, iki)
+    if ayrisan:
+        return 2, ["OLCULEMEDI: duzenek determinist degil — hukmu iki kosumda ayrisan hal: %s." % ",".join(ayrisan)]
+    sapan = {h: s for h, s in bir.items() if s}
+    taramada = kaynak_tarama(kaynak)
+    satirlar = ["  temiz kol: %d hal (%d fixture + %d olculemedi hali) · BEKLENEN N elle yazili · yanlis-pozitif: %d"
+                % (len(bir), len(bir) - len(OLCULEMEDI_HALLERI), len(OLCULEMEDI_HALLERI), len(sapan))]
+    if sapan or taramada:
+        for h, s in sorted(sapan.items()):
+            satirlar.append("  ! %s: %s" % (h, "; ".join(s)[:300]))
+        if taramada:
+            satirlar.append("  ! kaynak taramasi temiz degil: %s" % ", ".join(taramada))
+        satirlar.append("\nSONUC: HATALI — temiz aracta yanlis-pozitif; mutant hukumleri anlamsiz.")
+        return 1, satirlar
+    satirlar.append("  kaynak taramasi: temiz (renk/esik sozcugu yok)")
+    if KOK_TRANSCRIPT_VAR:
+        satirlar.append("  F9: ATLANDI (SINIRLI) — /root/.claude altinda transcript var; arac /root'u da arar, en-yeni-mtime hali izole edilemez")
+    return 0, satirlar
+
+
+def temiz_kol_kolu(kaynak, sabotajlar, bekleneni, onek):
+    """M-S11/M-S12: (isirdi | None, ayrinti). None = sabotaj kurulamadi (OLCULEMEDI). Isirdi = HER bicimde temiz kol
+    `bekleneni` (exit kodu) ve `onek` ile baslayan hukum satirini verdi; baska kod ya da satir KACTI'dir.
+    Her sabotaj KENDI mkdtemp kokunde kosar: t1/t2 gercek temiz kolla AYNI derinlikte (`<kok>/t1`). Tabana gomulu
+    (`<taban>/M-S11a/t1`) kurulsaydi yol bir seviye uzar ve (a) hicbir platformda `[:40]` penceresine ulasmazdi."""
+    ayrinti, isirdi = [], True
+    for harf, _aciklama, yeni in sabotajlar:
+        metin, hata = mutant_metni(kaynak, [(PRINT_N, yeni)])
+        if hata:
+            return None, "%s: %s" % (harf, hata)
+        kok = tempfile.mkdtemp(prefix="sagmut_")
+        try:
+            sab = os.path.join(kok, "oturum_sagligi.py")
+            with open(sab, "w", encoding="utf-8", newline="\n") as f:
+                f.write(metin)
+            kod, satirlar = temiz_kol(sab, metin, kok)
+        finally:
+            shutil.rmtree(kok, ignore_errors=True)
+        tuttu = kod == bekleneni and any(s.lstrip("\n").startswith(onek) for s in satirlar)
+        isirdi = isirdi and tuttu
+        ayrinti.append("%s: exit %d %s%s" % (harf, kod, HUKUM_ADI.get(kod, "?"),
+                                           "" if tuttu else " (%s + exit %d bekleniyordu)" % (HUKUM_ADI[bekleneni], bekleneni)))
+    return isirdi, " · ".join(ayrinti)
+
+
 # ------------------------------------------------------------------ mutantlar
 # (ad, aciklama, [(eski, yeni)], hedef haller) — `eski` aracta TAM 1 kez gecmeli
 SON_U = "            son = u\n"
@@ -255,6 +320,26 @@ MUTANTLAR.append(
        "            if not isinstance(o, dict):" + chr(10))], ["F10"]))
 # M-S9 kaynak mutanti: tabloyu aracin SONUNA ekler (davranis degismez); yalniz tarama gorur
 M_S9 = ("M-S9", "renk/esik tablosu kaynaga GERI GIRER (davranis ayni, yalniz KAYNAK TARAMASI gorur)")
+# TEMIZ KOL KOLLARI (M-S11, M-S12): aracin ICINE degil, temiz kolun KENDI hukmune sabotaj. Sabittir: git yok, eski
+# surume bagimlilik yok. Her sabotaj `print(n)` satirini degistirir; (ad, aciklama, [(harf, aciklama, yeni satir)],
+# BEKLENEN kod, hukum satirinin on eki).
+#   M-S11  yol basan arac -> HATALI + exit 1 (OLCULEMEDI/exit 2 DEGIL). Iki bicim: (a) eski aracin basligi gibi TAM yol;
+#          (b) yolun yalniz son iki parcasi. Sonuc metinleri `[:40]` ile kesildiginden TAM yol ancak kisa kokte (Linux
+#          /tmp) penceredeki t1/t2 farkina ulasir; (b) kok uzunlugundan BAGIMSIZ ulasir (yol uzunlugu bir olcum eksenidir).
+#   M-S12  hukmu t2 kosusunda DEGISEN arac -> OLCULEMEDI + exit 2: M-S11'in duzeltmesi karsilastirmayi METINDEN
+#          HUKME indirdi; bekci YASIYOR mu (gevsetilen kontrolun hala isirdigi) pozitif kontroluyle olculur.
+PRINT_N = "        print(n)\n"
+TEMIZ_KOL_KOLLARI = [
+    ("M-S11", "yol basan arac HATALI + exit 1 vermeli",
+     [("a", "TAM yol (eski aracin basligi gibi)", '        print("OTURUM SAGLIGI: %s" % yol)\n' + PRINT_N),
+      ("b", "yolun yalniz SON IKI parcasi (kok uzunlugundan bagimsiz)",
+       '        print("%s/%s" % (os.path.basename(os.path.dirname(yol)), os.path.basename(yol)))\n' + PRINT_N)],
+     1, "SONUC: HATALI"),
+    ("M-S12", "hukmu kosuya gore degisen arac OLCULEMEDI + exit 2 vermeli (determinizm bekcisi yasiyor)",
+     [("t2", "yalniz t2 kosusunda N yanlis", '        print(n + int((os.sep + "t2" + os.sep) in yol))\n')],
+     2, "OLCULEMEDI: duzenek determinist degil"),
+]
+HUKUM_ADI = {0: "TEMIZ", 1: "HATALI", 2: "OLCULEMEDI"}
 
 
 def mutant_metni(kaynak, degisimler):
@@ -325,25 +410,10 @@ def main():
     print("OTURUM SAGLIGI MUTANTI — olcerin kendisi isiriyor mu?")
     print(CIZGI)
     try:
-        bir = haller_olc(ARAC, os.path.join(taban, "t1"))
-        iki = haller_olc(ARAC, os.path.join(taban, "t2"))
-        if bir != iki:
-            print("OLCULEMEDI: duzenek determinist degil.")
-            return 2
-        sapan = {h: s for h, s in bir.items() if s}
-        taramada = kaynak_tarama(kaynak)
-        print("  temiz kol: %d hal (%d fixture + %d olculemedi hali) · BEKLENEN N elle yazili · yanlis-pozitif: %d"
-              % (len(bir), len(bir) - len(OLCULEMEDI_HALLERI), len(OLCULEMEDI_HALLERI), len(sapan)))
-        if sapan or taramada:
-            for h, s in sorted(sapan.items()):
-                print("  ! %s: %s" % (h, "; ".join(s)[:300]))
-            if taramada:
-                print("  ! kaynak taramasi temiz degil: %s" % ", ".join(taramada))
-            print("\nSONUC: HATALI — temiz aracta yanlis-pozitif; mutant hukumleri anlamsiz.")
-            return 1
-        print("  kaynak taramasi: temiz (renk/esik sozcugu yok)")
-        if KOK_TRANSCRIPT_VAR:
-            print("  F9: ATLANDI (SINIRLI) — /root/.claude altinda transcript var; arac /root'u da arar, en-yeni-mtime hali izole edilemez")
+        kod, temiz = temiz_kol(ARAC, kaynak, taban)
+        print("\n".join(temiz))
+        if kod:
+            return kod
         satirlar, jq_sapma, jq_olculemedi = capraz_kontrol(ARAC, os.path.join(taban, "t3"))
         print("  jq capraz kontrol:")
         print("\n".join(satirlar))
@@ -389,10 +459,23 @@ def main():
         else:
             kacti.append(ad9)
             print("  !  %-5s KACTI   tarama bulunan=%s fixture sapmasi=%s -> %s" % (ad9, bulunan or "yok", davranis or "yok", acik9))
+        # M-S11/M-S12: temiz kolun KENDI hukmune sabotaj (yol basan arac · hukmu degisen arac)
+        for ad, aciklama, sabotajlar, bekleneni, onek in TEMIZ_KOL_KOLLARI:
+            isirdi_kol, ayrinti = temiz_kol_kolu(kaynak, sabotajlar, bekleneni, onek)
+            if isirdi_kol is None:
+                print("  ?  %-5s OLCULEMEDI  %s" % (ad, ayrinti))
+                return 2
+            if isirdi_kol:
+                isirdi.append(ad)
+                print("  +  %-5s ISIRDI  hedef TEMIZ KOL HUKMU · %s" % (ad, ayrinti))
+            else:
+                kacti.append(ad)
+                print("  !  %-5s KACTI   hedef TEMIZ KOL HUKMU · %s -> %s" % (ad, ayrinti, aciklama))
+            sys.stdout.flush()
     finally:
         shutil.rmtree(taban, ignore_errors=True)
     print(CIZGI)
-    toplam = len(MUTANTLAR) + 1
+    toplam = len(MUTANTLAR) + 1 + len(TEMIZ_KOL_KOLLARI)
     print("SONUC: %d isirdi - %d kacti (toplam %d)%s" % (len(isirdi), len(kacti), toplam,
                                                       " · jq capraz kontrol OLCULEMEDI (SINIRLI)" if jq_olculemedi else ""))
     if kacti:
