@@ -1,18 +1,16 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #117 `8aab8197`: 189/189 — Cowork 1 Eki ölçtü**)
-Son güncelleme: 2 Eki 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #118 `839f2ab1`: 189/189 — Cowork 3 Eki ölçtü**)
+Son güncelleme: 3 Eki 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
-## SON İŞ — İngilizce takma ad + BEYAZ LİSTE · 2 Eki 2026 (Code) · 3 COMMIT, PUSH YOK
-**Durum:** `d5beb8d` KALEM 1 (15 takma ad + `readme_mutanti` KAPI-4, 16/16 mutant) · `006e84c` KALEM 2 (BEYAZ LİSTE + `DISARIDA
-BIRAKILDI`; `skill-kur` dizin bağlantısını REDDEDER) · bu commit = KALEM 3. origin hâlâ `8aab8197`. Motor `7f37417b`→`82044f18` (398.865→402.893 B). ADR: `denetim/2026-10-01_takma-ad-ve-paket-beyaz-liste.md`.
-**Ölçüldü (WSL `olcum` py3.14 + Win py3.12; TABANDA da):** `capraz.yml` 88 adım, iş başına taze kopya, paralel — Linux 81/82
-koşan exit 0 · Win 75/86 (11 ortam sınıfı) · taban↔yeni exit farkı SIFIR · isir 67/67+2 · 69/69 · git'siz 66/66+3 ·
-sabotaj 55/67 AYNEN · t_y42 57+1 YAVAŞ (B-6 8 sn hız notu; TABAN AYNI) · CC>20 7→7, ihlal 9→9 · kapı bölgesi bayt-AYNI. Bağımsız tur ×2: bulgular
-aynı commit'lerde kapandı (ADR'de).
-**Sıradaki ilk iş:** ① Onur push → `git ls-remote` ② CI tamamı `completed` (TAHMİN 189) ③ Cowork/Chrome: yeni `.skill`'i claude.ai'ye
-yükle (10 dosya, açıklama 475) ④ ev dizini ESKİ kurulum: `skill-kur` sızıntıyı CATISMA gösterir ⇒ `--guncelle`.
-**ÖLÇÜLEMEDİ/AÇIK:** macOS · py3.11/3.13 · `capraz.yml` adları BAYAT ("uc kapi + dokuz mutant" ⇒ 4 kapı+16 mutant; paket 8, skill-kur 9 kol/10
-mutant): kısıt gereği DEĞİŞMEDİ, Cowork tek satır · `readme_kapisi` yerelde ~27 dk (yük altında; CI limiti 20 dk, #117 yeşildi) ⇒ CI'da ölç.
+## DEVİR — O6 (Code) · 3 Eki 2026 · bağlam 826k (anayasa §3 hükmü: devir) 
+**Durum:** `4933a3d` araç yalnız N basar + mutant 10/10 (13 hal; M-S10 ek) + `capraz.yml` yalnız yorum/ad; commit 2 = ADR + bu DEVİR. origin `839f2ab1`,
+PUSH YOK. `hafiza.py`/`skill/`/`faz0/` DEĞİŞMEDİ. ADR: `denetim/2026-10-03_oturum-sagligi-anayasa-tek-kaynak.md`.
+**YARIM K4:** `capraz.yml` 88 adım taban(`839f2ab`)↔yeni(`1e76a2e`: mutantın eski hali) bataryaları AYRIK süreçlerde KOŞUYOR:
+Win `C:\dev\k5\p_t3b_{taban,yeni}_win(.txt)`, Linux `~/k5/p_t3b_{taban,yeni}_lin(.txt)`; bitince `OZET` satırı. **Sıradaki ilk iş:** ① OZET'ler var mı bak ② `python
+C:\dev\k5\arac\karsilastir.py <taban_dizin> <yeni_dizin>` (Win; Linux'ta sonuc.json'ı kopyala) — FARK 0 beklenir ③ DELTA son ağaçta (`4933a3d`): `ci_paralel.py` ile
+`oturum_sagligi`, `ci_kapsam`, `ci_adim_muafiyeti` işleri Win+Linux (`ci_yerel.py turet` ile adım listesi) ④ sonucu ADR'deki BATARYA satırına yaz, DURUM'u kapat,
+`git log --oneline -3` ⑤ Cowork: canlı araç N == jq N; `TASLAK_*`+BEKLEYEN arşiv.
+**AÇIK:** gerçek jq çapraz kontrolü bu makinede YOK (CI ubuntu) · macOS · py3.11/3.13 · `capraz.yml` adları BAYAT · yeni oturum = YENİ kimlik, ilk iş N ölç.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 K4 (39→55/67) TAMAM; kalan 12 kör nokta (H0 3911·H4·H1-KOVA×2·H5·H12 4968·H13×2·H2·H17·H-LINK·H10 4716) + **25 Ağu
@@ -20,11 +18,10 @@ yazısı** KAPSAM DIŞI (İş Portföyü'nde kapanır); **Deneme**: BEŞLİ PAKE
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**O5 (1 Eki):** ÜRÜN HAZIRLIĞI push edildi, CI #117 189/189; claude.ai yükleme (K7) HÂLÂ yok.
-**ÜRÜN HAZIRLIĞI** (30 Eyl): `paket` (stdlib zipfile, SAKLANMIŞ giriş) · açıklama 713→475 + (v) ayağı · README Kurulum · `skill-kur` exit 3 ·
-Win+WSL `capraz.yml` bataryası TABANLA karşılaştırıldı · sabotaj 55/67 AYNEN · kapı bölgesi bayt-AYNI · bağımsız tur (6) düzeltildi.
-**AÇIK:** harf-büyüklüğü çakışan adlar · `name:` ön-madde YAML'ı ölçülmez · `--guncelle`+izin hatasında boş yedek dizini (tabanda da) ·
-DETERMİNİZM yalnız aynı makinede (platformlar-arası SHA elle). ·
+**Takma ad + BEYAZ LİSTE** (2 Eki; CI #118 189/189): 15 takma ad + KAPI-4 · `paket`/`skill-kur` beyaz liste + `DISARIDA`.
+**ÜRÜN HAZIRLIĞI** (30 Eyl; push edildi, CI #117 189/189; claude.ai yükleme K7 HÂLÂ yok): `paket` (stdlib zipfile, SAKLANMIŞ giriş) · açıklama 475 + (v) ayağı ·
+`skill-kur` exit 3 · sabotaj 55/67. **AÇIK:** harf-büyüklüğü çakışan adlar · `name:` ön-madde YAML'ı ölçülmez · `--guncelle`+izin hatasında boş yedek
+dizini · DETERMİNİZM yalnız aynı makinede (platformlar-arası SHA elle). ·
 **Eski (git geçmişinde):** `skill-kur` (`72a4a8b`, CI #116 184/184) · isir 29→55/67 (H6/H8/H11/H16 + TEK TANIK; `cmd_isir` çıpası 26→**30**, Onur
 kilidi) · ŞIK B/A · ayrisma · devral GİRİŞ KAPISI · `bolum-kur` · B4-3/B4-4 · devral/H4/H12/H14/BEŞLİ PAKET/gitfile (4-6 Eyl, CI #96-99).
 
@@ -39,6 +36,8 @@ kilidi) · ŞIK B/A · ayrisma · devral GİRİŞ KAPISI · `bolum-kur` · B4-3/
   girmez.** Bilinçli ÖLÇÜM işleri: `win_kill_probu` · `boru_probu` · `ortam` · `kalite` · `kanit`.
 - 🔴 **PAYLAŞILAN KURAL = PAYLAŞILAN KÖRLÜK (paket↔KAPI-2, 1 Eki):** ikisi AYNI süzgeçten türediği için `deneme_x` sızıntısını İKİSİ DE göremedi
   (`os.walk` dersinin kardeşi). KAPI-4 beklentisi bu yüzden README'den (motordan DEĞİL).
+- 🔴 **Aynı politika iki yerde = belge-bayatlama sınıfı — aracın ölçtüğü BÜYÜKLÜK de ayrışmıştı (3 Eki):** `oturum_sagligi` kümülatif toplam
+  ölçüyordu, anayasa N'si son mesajın bağlamı; şimdi araç yalnız N basar, renk/eşik YALNIZ anayasada (ADR 2026-10-03).
 - 🔴 **KAPI NEYİ ÖLÇTÜĞÜNÜ ÖLÇEMEZ** (§8): VARLIĞI ölçen kapı SAYIYI ölçmez · iki büyüklük EŞİTSE hangisinin
   ölçüldüğü ÖLÇÜLEMEZ · `M-A8`i kıran KESMEYDİ. **YOL UZUNLUĞU BİR ÖLÇÜM EKSENİDİR** (sabit `[:N]` kesmeleri).
 - 🔴 **ÖLÇÜM ALETİ DE YALAN SÖYLER — DOKUZ VAKA:** boru sonrası `$?` · uydurma `d[rol]` · argümansız araç · eşitlik
