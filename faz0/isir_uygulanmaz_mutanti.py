@@ -64,8 +64,9 @@ B1 — SAHTE "KAPI KOR" (Onur kilidi 4 Eki 2026, besli-paket/IS_EMRI_KUTUDAN_B1B
   `--esle` olur (OLC); KATMAN 2 devral yine de durur ve sinamanin KENDI olctugu durma imzasi yoksa
   MutantKurulamadi (KORU: KURULAMADI, exit 2 — asla KACTI/1; doktrin 2). Fixture Momentum SEKLINDEDIR
   (devral --esle -> bolum-kur -> not -> derle -> git commit) ve duz devralin GERCEKTEN durdugu
-  ON-KOSULDA kanitlanir (yoksa kol anlamsiz). Alti `isir`den bes tanesi es zamanli kosar.
-  KOL 9  (OLC) — temiz motor: M-DEVIR ve M-KILITK ISIRDI, ciktida KACTI yok.
+  ON-KOSULDA kanitlanir (yoksa kol anlamsiz). Bes `isir` (KOL 9-13) es zamanli kosar.
+  KOL 9  (OLC) — temiz motor: M-DEVIR ve M-KILITK ISIRDI, ciktida KACTI yok; KURULAMAYAN kume yalniz {M-H1s}
+      olabilir (ONCEDEN VAR: `kapi --siki` bolum-kur basliklarini BEYANSIZ sayiyor -> isir exit 2, exit 0 DEGIL).
   KOL 10 (KATMAN 2 BAGIMSIZ) — katman 1 kapatilir (duz devral): ikisi KURULAMADI + exit 2; KACTI/1 ASLA.
   KOL 11 (KOLUN KENDISI ISIRIYOR) — iki katman da kapatilir: bugunku sahte KOR GERI GELIR (ikisi KACTI,
       exit 1) — KOL 9'un yesili fixture'in bu sinifi GERCEKTEN urettigi bir projede alinmistir.
@@ -427,7 +428,6 @@ _ANKOR_B1_KILIT = ('    for _k in agactaki_kilitler(kok):\n'
                    '        _kp = os.path.join(kok, *_k.split("/"))\n')
 _B1_HUKUM = re.compile(r"^\s*(M-DEVIR|M-KILITK)\b.*->\s*(ISIRDI|KACTI|KURULAMADI)", re.M)
 _B1_KOR = re.compile(r"SONUC:\s*(\d+) KAPI KOR")
-_B1_KURULAMAYAN = re.compile(r"KURULAMAYAN MUTANT \((\d+)\)")
 
 # KOL 14 — `_isir_devral_argv` vaka tablosu (surec disi cocuk; motor importlib ile yuklenir)
 _B1_COCUK = '''
@@ -509,6 +509,19 @@ def _b1_degistir(s, ankor, yerine, taban, ad):
         return mp, f.read()
 
 
+def _b1_kurulamayan_adlar(c):
+    """isir ciktisindaki `KURULAMAYAN MUTANT (n)` bolumunun mutant adlari (satirin ilk sozcugu: M-H1s ...)."""
+    adlar, ic = [], False
+    for s in c.splitlines():
+        if s.startswith("KURULAMAYAN MUTANT"):
+            ic = True
+        elif ic:
+            if s.startswith("  ->") or not s.strip():
+                break
+            adlar.append(s.split()[0])
+    return adlar
+
+
 def _b1_birim(motor, taban):
     """KOL 14: motorun `_isir_devral_argv` vaka tablosunu cocuk surecte olc; JSON liste doner."""
     d = tempfile.mkdtemp(prefix="b1u_", dir=taban)
@@ -548,8 +561,9 @@ def _b1_kollari(yol, s, taban):
         print("  B1 kollari OLCULEMEDI: zaman asimi (%s sn)" % e.timeout)
         return 2, kacan
     ozet = lambda v: "M-DEVIR=%s · M-KILITK=%s" % (v.get("M-DEVIR", "YOK"), v.get("M-KILITK", "YOK"))
-    kur9 = _B1_KURULAMAYAN.search(c9)
-    print("  KOL 9  (temiz motor)              : isir exit=%d · %s · KURULAMAYAN=%s" % (k9, ozet(v9), kur9.group(1) if kur9 else "0"))
+    kur9 = _b1_kurulamayan_adlar(c9)
+    print("  KOL 9  (temiz motor)              : isir exit=%d · %s · KURULAMAYAN=%s"
+          % (k9, ozet(v9), ",".join(kur9) or "yok"))
     print("  KOL 10 (katman 1 KAPALI)          : isir exit=%d · %s" % (k10, ozet(v10)))
     print("  KOL 11 (katman 1+2 KAPALI)        : isir exit=%d · %s" % (k11, ozet(v11)))
     print("  KOL 12 (devral CAPA DEVRI KAPALI) : isir exit=%d · %s" % (k12, ozet(v12)))
@@ -557,8 +571,11 @@ def _b1_kollari(yol, s, taban):
     print("  KOL 14 (tureme birimi)            : temiz=%s · virgul korumasi KAPALI=%s"
           % ("TUTUYOR" if u_temiz == _B1_BEKLENEN else "TUTMUYOR", "tablo BOZULDU" if u_sabotaj != _B1_BEKLENEN else "tablo AYNI"))
     for kol, ok, ne in (
-            ("KOL 9", v9 == {"M-DEVIR": "ISIRDI", "M-KILITK": "ISIRDI"} and k9 != 1 and not _B1_KOR.search(c9),
-             "temiz motorda M-DEVIR/M-KILITK ISIRDI olmali, KAPI KOR olmamali (%s, exit %d)" % (ozet(v9), k9)),
+            ("KOL 9", v9 == {"M-DEVIR": "ISIRDI", "M-KILITK": "ISIRDI"} and k9 != 1 and not _B1_KOR.search(c9)
+             and set(kur9) <= {"M-H1s"},
+             "temiz motorda M-DEVIR/M-KILITK ISIRDI olmali, KAPI KOR olmamali, KURULAMAYAN yalniz {M-H1s} (ONCEDEN VAR: "
+             "`kapi --siki` bolum-kur basliklarini BEYANSIZ sayiyor) olabilir (%s, exit %d, KURULAMAYAN=%s)"
+             % (ozet(v9), k9, ",".join(kur9) or "yok")),
             ("KOL 10", v10 == {"M-DEVIR": "KURULAMADI", "M-KILITK": "KURULAMADI"} and k10 == 2 and not _B1_KOR.search(c10),
              "katman 1 kapaliyken ikisi KURULAMADI + exit 2 olmali, KACTI/1 ASLA (%s, exit %d)" % (ozet(v10), k10)),
             ("KOL 11", v11 == {"M-DEVIR": "KACTI", "M-KILITK": "KACTI"} and k11 == 1 and _B1_KOR.search(c11) is not None,
@@ -697,7 +714,7 @@ def main():
             return 2
         kacan += w1_kacan
 
-        # ---- KOL 9-11: B1 sahte KAPI KOR (isir M-DEVIR / M-KILITK) --------------------
+        # ---- KOL 9-14: B1 sahte KAPI KOR (isir M-DEVIR / M-KILITK) --------------------
         kod, b1_kacan = _b1_kollari(yol, s, taban)
         if kod == 2:
             return 2
@@ -706,7 +723,7 @@ def main():
         if kacan:
             print("SONUC: KAPI KOR — kol/mutant beklendigi gibi olculmedi: %s" % ", ".join(kacan))
             return 1
-        print("SONUC: YESIL — on bir kol da BEKLENDIGI GIBI, mutantlar AYRI eksenlerde ISIRDI.")
+        print("SONUC: YESIL — on dort kol da BEKLENDIGI GIBI, mutantlar AYRI eksenlerde ISIRDI.")
         return 0
     finally:
         _sil(taban)

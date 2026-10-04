@@ -52,11 +52,16 @@ ilan edilmiştir.
 listesinden gelir. **Kullanılan her tür `SAKLAMA_PLANI.md`'de geçmelidir** (H13).
 
 Taze `kur` ve `devral`, H16'nın denetlediği dört dizinin (`kararlar/` · `gunluk/` ·
-`arsiv/hafiza/gunluk/` · `arsiv/hafiza/`) **her birine boş bir `.gitkeep`** yazar: git boş dizin
+`<hafıza dizini>/gunluk/` · `<hafıza dizini>/`; hafıza dizini `arsiv/hafiza`, v1 izli bir projeyi
+devralınca `arsiv/hafiza/v2`) **her birine boş bir `.gitkeep`** yazar: git boş dizin
 taşımaz, `derle` fragmanları arşive taşıyınca `gunluk/` boşalır ve projeyi klonlayan ikinci
 makinede `kapi` `[H16] gunluk YOK` / `kararlar YOK` derdi. `.gitkeep` fragman/ADR/arşiv dosyası
 sayılmaz. **Mevcut kurulu projeye YAZILMAZ** (`kapi` eksik `.gitkeep`'i bulgu yapmaz; onarmak ayrı
-karardır); `arsiv/<tür>/` dizinlerine de yazılmaz.
+karardır); `arsiv/<tür>/` dizinlerine de yazılmaz. **Sınır (ölçüldü):** Windows'ta Git'in
+varsayılanı `core.autocrlf=true` iken (`.gitattributes` yoksa) klon, `.gitkeep` olsa bile CRLF'ye
+döner ve `kapi` H0'da (çıpa/mühür) KIRMIZI yanar; klonu `git clone -c core.autocrlf=false` ile ya da
+projeye `* -text` içeren bir `.gitattributes` koyarak al. Proje `.gitignore`'u `gunluk/` ya da
+`kararlar/` dizinini yoksayıyorsa `.gitkeep` izlenmez ve klonda `[H16] ... YOK` döner.
 
 Hukuk/strateji projesi için tipik türler: `dilekce`, `karar`, `mutalaa`, `delil`,
 `yazisma`, `taslak`. Araştırma projesi için: `kaynak`, `veri`, `analiz`, `taslak`.

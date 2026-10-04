@@ -11,13 +11,13 @@ NEDEN VAR (olculdu 4 Eki 2026, Momentum kopyasi, OLCUM_RAPORU_04EKIM_DENEME_V7.m
   yazar; idempotent, var olana dokunmaz. MEVCUT kurulu projede `kapi` eksik `.gitkeep`i bulgu YAPMAZ ve
   tekrar `kur` onu ONARMAZ (onarmak AYRI karar — bu pakette YOK).
 
-NE OLCER — YEDI KOL (her biri temiz motorda YESIL olmali)
+NE OLCER — SEKIZ KOL (her biri temiz motorda YESIL olmali)
   KOL 1 (KUR AKISI) — kur -> not -> derle -> git commit -> `git clone` -> klonda `kapi`: dort `.gitkeep` git'te
       IZLENIYOR (0 bayt) ve klonda `[H16]` bulgusu YOK, `SONUC: YESIL`, exit 0.
   KOL 2 (DEVRAL AKISI) — Momentum SEKLI (CLAUDE.md + DURUM.md; devral --esle -> bolum-kur -> not -> derle -> commit
       -> klon -> kapi): ayni uc beklenti.
-  KOL 3 (GERIYE UYUM) — taze kur'dan sonra dort `.gitkeep` SILINIR (mevcut kurulu proje gibi): (a) `kapi` YESIL,
-      eksik `.gitkeep` bulgu DEGIL; (b) ikinci `kur` (idempotent tazeleme) `.gitkeep` YAZMAZ.
+  KOL 3 (GERIYE UYUM) — taze kur + commit'ten sonra dort `.gitkeep` SILINIR (mevcut kurulu proje gibi): (a) `kapi`
+      TAM YESIL (SINIRLI degil), eksik `.gitkeep` bulgu DEGIL; (b) ikinci `kur` (idempotent tazeleme) `.gitkeep` YAZMAZ.
   KOL 4 (VAR OLANA DOKUNMA) — `kararlar/.gitkeep` kullanici icerigiyle ONCEDEN var: taze `kur` onu EZMEZ, diger
       uc dizine bos `.gitkeep` yazar.
   KOL 5 (YARIM KURULUM YOK) — `gunluk/` yazilamaz (chmod 555) iken taze `kur`: `.gitkeep` best-effort, kurulum TAM
@@ -30,21 +30,25 @@ NE OLCER — YEDI KOL (her biri temiz motorda YESIL olmali)
   KOL 7 (H12 GIT TARIHI) — bayat damga + ESKI tarihli commit; sonra YALNIZ `arsiv/hafiza/.gitkeep` degisip BUGUN
       commit'lenir: H12 cumlesi `canli hafiza N gundur guncellenmemis` KALIR; `defterler git'te ... commit'lenmis`
       YANLIS teshisine donusmez (`y.h` bir DIZIN pathspec'i; `.gitkeep` icindedir — OLCULDU).
+  KOL 8 (DEVRAL v1 IZLI) — `arsiv/hafiza/` (v1 defterler) ZATEN varken devral v2 ad alanini (`arsiv/hafiza/v2`) acar;
+      hafiza dizini artik v2'dir: `.gitkeep` `arsiv/hafiza/v2` + `arsiv/hafiza/v2/gunluk` + `gunluk` + `kararlar`a
+      yazilir, v1 dizinine DEGIL; klonda `kapi` YESIL.
   Klon, `git -c core.autocrlf=false clone` ile yapilir: Windows'un varsayilani (`autocrlf=true`) checkout'ta CRLF
   uretir ve `.gitkeep` olsa bile `kapi` H0'da KIRMIZI olur (OLCULDU) — bu ayri bir sinif; mutant H16'yi olcmeli.
 
-ON SABOTAJ (her duzeltmeye AYRI; her biri BEKLENEN kolu — ve yalniz onu — KIRMIZI yakmali)
-  M-1 yazim kapanir (hic `.gitkeep` yazilmaz)     -> KOL 1, 2, 4 (+5 POSIX'te) KIRMIZI (klonda `[H16] ... YOK` GERI GELIR)
+ON BIR SABOTAJ (her duzeltmeye AYRI; her biri BEKLENEN kolu — ve yalniz onu — KIRMIZI yakmali)
+  M-1 yazim kapanir (hic `.gitkeep` yazilmaz)     -> KOL 1, 2, 4, 8 (+5 POSIX'te) KIRMIZI (klonda `[H16] ... YOK` GERI GELIR)
   M-2 `kur` cagri yeri kapanir                    -> KOL 1, 4 (+5 POSIX'te) KIRMIZI (devral akisi YESIL kalir)
-  M-3 `devral` cagri yeri kapanir                 -> KOL 2 KIRMIZI (kur akisi YESIL kalir)
+  M-3 `devral` cagri yeri kapanir                 -> KOL 2, 8 KIRMIZI (iki devral akisi; kur akisi YESIL kalir)
   M-4 tekrar `kur` da yazar (onarim)              -> KOL 3 KIRMIZI (geriye uyum bozulur)
   M-5 `xb` -> `wb` (var olani ezer)               -> KOL 4 KIRMIZI
   M-6 `kapi` eksik `.gitkeep`i bulgu yapar        -> KOL 3 KIRMIZI
-  M-7 hafiza dizini dortlunun disinda kalir       -> KOL 1, 2, 4 KIRMIZI (H16 onu klonda GOZLEMEZ: dizin hep dolu —
+  M-7 hafiza dizini dortlunun disinda kalir       -> KOL 1, 2, 4, 8 KIRMIZI (H16 onu klonda GOZLEMEZ: dizin hep dolu —
                                                      bu kol MULK kontroluyle isirir)
   M-8 yazim hatasi FATAL olur (UYARI kalkar)      -> KOL 5 KIRMIZI (UYGULANMAZ ise bu sabotaj da UYGULANMAZ)
   M-9 H4 havuzu `.gitkeep`i ad sayar              -> KOL 6 KIRMIZI
   M-10 H12 git tarihi `.gitkeep`i defter sayar    -> KOL 7 KIRMIZI
+  M-11 hafiza dizini sabit `arsiv/hafiza`         -> KOL 8 KIRMIZI (v2 ad alani yok sayilir; KOL 1/2/4 AYIRAMAZ)
 
 CIKIS KODU  0 temiz kollar YESIL VE her sabotaj beklenen kolu kirmizi yakti · 1 temiz kol KIRMIZI ya da sabotaj
             KACTI/yanlis kolu yakti · 2 OLCULEMEDI (git yok, motor okunamadi, capa tutmadi, kurulum basarisiz)
@@ -77,6 +81,7 @@ _cikti_kodlamasini_guvenceye_al()
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
 DORT = ["kararlar", "gunluk", "arsiv/hafiza/gunluk", "arsiv/hafiza"]     # H16'nin dort dizini (hafiza dizini: arsiv/hafiza)
+DORT_V2 = ["kararlar", "gunluk", "arsiv/hafiza/v2/gunluk", "arsiv/hafiza/v2"]   # v1 izli devralda hafiza dizini: v2
 GITKEEP = ".gitkeep"
 KULLANICI_ICERIK = "KULLANICI-ICERIGI-EZILMEMELI"
 
@@ -167,9 +172,10 @@ def _klon_olc(motor, kaynak, klon):
     return izlenen, sifir, k, h16, sonuc
 
 
-def _klon_yesil(sonuc_tuple):
+def _klon_yesil(sonuc_tuple, dortlu=None):
     izlenen, sifir, k, h16, sonuc = sonuc_tuple
-    return izlenen == sorted(d + "/" + GITKEEP for d in DORT) and sifir and k == 0 and not h16 and "YESIL" in sonuc
+    beklenen = sorted(d + "/" + GITKEEP for d in (dortlu or DORT))
+    return izlenen == beklenen and sifir and k == 0 and not h16 and "YESIL" in sonuc
 
 
 def kol1(motor, taban):
@@ -182,9 +188,39 @@ def kol2(motor, taban):
     return _klon_olc(motor, kaynak, os.path.join(taban, "k2_klon"))
 
 
+def _devral_v1_fixture(motor, kok):
+    """v1 IZLI proje: `arsiv/hafiza/` (v1 defterler) ZATEN var -> devral v2 ad alanini (`arsiv/hafiza/v2`) acar;
+    hafiza dizini (y.h) artik `arsiv/hafiza/v2`dir. `canli` PROJE_HAFIZA.md (tablo taniyor, --esle gerekmez)."""
+    os.makedirs(os.path.join(kok, "arsiv", "hafiza"), exist_ok=True)
+    bugun = datetime.date.today().isoformat()
+    _yaz_satirlar(os.path.join(kok, "PROJE_HAFIZA.md"),
+                  ["# GK v1 fixture - HAFIZA", "> Son guncelleme: " + bugun, "", "## Genel",
+                   "- birinci ornek durum satiri uzun ve benzersizdir", "",
+                   "## Bilinen sinirlar", "- birinci ornek sinir satiri uzun ve benzersizdir"])
+    _yaz_satirlar(os.path.join(kok, "CLAUDE.md"),
+                  ["# GK v1 fixture - PROJE ESASLARI", "", "## Kurallar",
+                   "- birinci ornek kural satiri uzun ve benzersizdir"])
+    _yaz_satirlar(os.path.join(kok, "arsiv", "hafiza", "_KAYNAK.md"), ["# eski v1 kaynak", "- eski v1 kaynak satiri uzun ve benzersizdir"])
+    _yaz_satirlar(os.path.join(kok, "arsiv", "hafiza", "HAFIZA_01.md"), ["# eski v1 arsiv 01", "- eski v1 arsiv satiri uzun ve benzersizdir"])
+    for arglar in (["devral", "--ad", "GKV1"],
+                   ["bolum-kur"],
+                   ["not", "--konu=genel-durum", "--tur=durum", "--metin=gitkeep mutanti ilk kayit"],
+                   ["derle"]):
+        _adim(motor, arglar, kok, tolere=(arglar[0] in ("devral", "bolum-kur", "derle")))
+    return kok
+
+
+def kol8(motor, taban):
+    """DEVRAL v1 IZLI: hafiza dizini `arsiv/hafiza/v2`dir; `.gitkeep` o v2 yollarina yazilir (v1 dizinine DEGIL)."""
+    kaynak = _devral_v1_fixture(motor, os.path.join(taban, "k8"))
+    return _klon_olc(motor, kaynak, os.path.join(taban, "k8_klon"))
+
+
 def kol3(motor, taban):
-    """GERIYE UYUM: dort `.gitkeep` silinir; (a) kapi YESIL (b) ikinci kur yazmaz. Doner (a_ok, b_ok, ayrinti)."""
+    """GERIYE UYUM: git'li projede dort `.gitkeep` silinir; (a) kapi TAM YESIL (SINIRLI degil: git VAR) (b) ikinci kur
+    yazmaz. Doner (a_ok, b_ok, ayrinti)."""
     kok = _kur_fixture(motor, os.path.join(taban, "k3"))
+    _commit(kok)                       # silinen .gitkeep'ler izlenenken silinir -> git ' D' gorur, kapi yine de YESIL olmali
     silinen = 0
     for d in DORT:
         p = os.path.join(kok, *d.split("/"), GITKEEP)
@@ -192,7 +228,7 @@ def kol3(motor, taban):
             os.remove(p)
             silinen += 1
     k, c = kos(motor, ["kapi"], kok)
-    a_ok = k == 0 and "YESIL" in c and GITKEEP not in c
+    a_ok = k == 0 and "SONUC: YESIL" in c and "SINIRLI" not in c and GITKEEP not in c
     _adim(motor, ["kur", "--ad", "GKMUT"], kok)
     yazilan = [d for d in DORT if os.path.lexists(os.path.join(kok, *d.split("/"), GITKEEP))]
     b_ok = not yazilan
@@ -306,7 +342,7 @@ def kol5(motor, taban):
 
 
 def tum_kollar(motor, taban):
-    """Bes kolu bir motorda kos. Doner {kol: (yesil_mi | None=UYGULANMAZ, ayrinti)}."""
+    """Sekiz kolu bir motorda kos. Doner {kol: (yesil_mi | None=UYGULANMAZ, ayrinti)}."""
     out = {}
     for ad, fn in (("KOL 1", kol1), ("KOL 2", kol2)):
         t = fn(motor, os.path.join(taban, ad.replace(" ", "")))
@@ -322,6 +358,10 @@ def tum_kollar(motor, taban):
         out["KOL 5"] = (None, "UYGULANMAZ (Windows ya da root: dizin izin engeli olusturulamaz)")
     out["KOL 6"] = kol6(motor, os.path.join(taban, "KOL6"))
     out["KOL 7"] = kol7(motor, os.path.join(taban, "KOL7"))
+    t8 = kol8(motor, os.path.join(taban, "KOL8"))
+    out["KOL 8"] = (_klon_yesil(t8, DORT_V2), "izlenen=%s · klon kapi exit=%d · %s%s"
+                    % (",".join(x[:-len(GITKEEP) - 1] or "." for x in t8[0]), t8[2], t8[4][:40],
+                       (" · " + "; ".join(t8[3])[:70]) if t8[3] else ""))
     return out
 
 
@@ -331,13 +371,13 @@ def tum_kollar(motor, taban):
 SABOTAJLAR = [
     ("M-1 yazim kapanir (hic .gitkeep yazilmaz)",
      '            with open(os.path.join(d, ".gitkeep"), "xb"):\n                pass\n', '            pass\n',
-     {"KOL 1", "KOL 2", "KOL 4", "KOL 5"}),
+     {"KOL 1", "KOL 2", "KOL 4", "KOL 5", "KOL 8"}),
     ("M-2 kur cagri yeri kapanir",
      '        zincir_halka(y, "GENESIS", "kurulum" + ek)\n        _gitkeep_yaz(y)\n',
      '        zincir_halka(y, "GENESIS", "kurulum" + ek)\n', {"KOL 1", "KOL 4", "KOL 5"}),
     ("M-3 devral cagri yeri kapanir",
      '    print("  cipa + defterler + zincir kuruldu (%s)" % hdir_rel)\n    _gitkeep_yaz(y)\n',
-     '    print("  cipa + defterler + zincir kuruldu (%s)" % hdir_rel)\n', {"KOL 2"}),
+     '    print("  cipa + defterler + zincir kuruldu (%s)" % hdir_rel)\n', {"KOL 2", "KOL 8"}),
     ("M-4 tekrar kur da yazar (onarim)",
      '        zincir_halka(y, "KURULUM", "hafiza.py kur (idempotent tazeleme)" + ek)\n',
      '        _gitkeep_yaz(y)\n        zincir_halka(y, "KURULUM", "hafiza.py kur (idempotent tazeleme)" + ek)\n', {"KOL 3"}),
@@ -353,7 +393,7 @@ SABOTAJLAR = [
     # bu kol klon hukmuyle degil, dort `.gitkeep`in IZLENDIGI MULK kontroluyle isirir.
     ("M-7 hafiza dizini dortlunun disinda kalir",
      '    for d in (y.kararlar, y.gunluk, y.gunluk_ars, y.h):\n', '    for d in (y.kararlar, y.gunluk, y.gunluk_ars):\n',
-     {"KOL 1", "KOL 2", "KOL 4"}),
+     {"KOL 1", "KOL 2", "KOL 4", "KOL 8"}),
     ("M-8 yazim hatasi FATAL olur (UYARI kalkar)",
      '        except OSError as e:\n'
      '            print("UYARI: .gitkeep yazilamadi (%s): %s — taze klonda [H16] bu dizin icin YOK cikabilir"\n'
@@ -363,6 +403,11 @@ SABOTAJLAR = [
      '            if f == ".gitkeep":\n                continue\n', '            pass\n', {"KOL 6"}),
     ("M-10 H12 git tarihi .gitkeep'i defter sayar",
      '    yollar += [":(exclude,glob)**/.gitkeep"]\n', '    pass\n', {"KOL 7"}),
+    # v1 izli devralda y.h = arsiv/hafiza/v2; sabit `arsiv/hafiza` yazan bir motor KOL 1/2/4'te (y.h == arsiv/hafiza)
+    # AYNI sonucu verir — yalniz KOL 8 ayirir.
+    ("M-11 hafiza dizini sabit arsiv/hafiza (v2 yok sayilir)",
+     '    for d in (y.kararlar, y.gunluk, y.gunluk_ars, y.h):\n',
+     '    for d in (y.kararlar, y.gunluk, y.gunluk_ars, os.path.join(y.kok, "arsiv", "hafiza")):\n', {"KOL 8"}),
 ]
 
 

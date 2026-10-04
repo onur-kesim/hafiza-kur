@@ -5456,7 +5456,7 @@ def _isir_devral_argv(r):
     SAF fonksiyon (dosya/surec yok). Kenar: `--esle` degerini VIRGULLE boler, oysa virgullu bir ad
     TABLO TARAFINDAN mesru taninabilir (OLCULDU: `A,B_HAFIZA.md` duz devralda exit 0) — saf turetme
     calisan bir projeyi BOZARDI. Virgullu `canli`da `--esle` HIC verilmez (duz devral; durursa katman 2
-    KURULAMADI der); virgullu `kural` atlanir (rol olculen kola etki etmez); bos deger verilmez.
+    KURULAMADI der); virgullu `kural` atlanir (rol olculen kola etki etmez); bos `kural` verilmez.
     Dosya VARLIGI sorulmaz (`cli_yol_coz` yalniz kok icinde kalmayi ister)."""
     canli, kural = r.get("canli") or "", r.get("kural_evi_dosya") or ""
     if "," in canli:
