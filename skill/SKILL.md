@@ -287,7 +287,10 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
 > **`isir` çıkış kodları:** `0` hepsi ısırdı · `1` **KAPI KÖR** · `2` ölçülemeyen mutant
 > (testin ön-koşulu yok — kapı hükmü DEĞİL) · `4` temiz sürüm zaten FAIL. Sayı bağlamsız
 > beyan edilmez: `derle` koşulmuş projede **81/81**, taze `kur` projesinde
-> **79/79 + 2 KURULAMADI** (ikisi de sağlıklı). Çıktıda mutant başına `KURULAMADI`,
+> **79/79 + 2 KURULAMADI** (ikisi de sağlıklı; iki sayı da **git'li** proje içindir —
+> git'siz projede M-H12g/M-H14g/M-H9 `UYGULANMAZ` sayılır, `hook --kur` kurulu olması
+> sayıyı DEĞİŞTİRMEZ: mutant kopyasındaki git çağrıları boş bir `core.hooksPath` ile
+> koşar). Çıktıda mutant başına `KURULAMADI`,
 > özet satırında aynı şey için `SINANMADI` yazıyor — iki kelime tek anlamdadır.
 
 ---

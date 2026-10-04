@@ -5464,11 +5464,24 @@ def cmd_isir(a):
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
+    def _git_hooksuz(h):
+        """Y3 (Onur kilidi 4 Eki 2026): mutant kopyasindaki HER git cagrisinin ON EKI.
+        Kopya `.git`i KULLANICININ hook'larini da tasir (`hook --kur`un pre-commit'i
+        dahil); `git commit` onlari kosturur, hook kopyada KIRMIZI kapiyi gorup commit'i
+        durdurur ve kurulum KURULAMADI olur — mutantlar kapiyi sinamadan once hook'a
+        takilir (olculdu: hook'lu projede isir 81/81 degil, KURULAMADI'li). `--no-verify`
+        yetmez (post-commit gibi hook'lari atlamaz); kum havuzundaki BOS dizin
+        `core.hooksPath` ile gosterilir (komut satiri `-c` repo ayarini ezer).
+        Kullanicinin asil deposuna dokunulmaz: ayar yalniz bu komutun ortaminda."""
+        bos = os.path.join(os.path.dirname(h), "bos_hooks")
+        os.makedirs(bos, exist_ok=True)
+        return ["git", "-c", "core.hooksPath=" + bos, "-C", h]
+
     def _git_kimlik_kur(h):
         """mutant_git kopyalarinda commit atabilmek icin YEREL git kimligi — KURULU
         makine ayarina DOKUNMADAN, yalniz bu tek kullanimlik tmp kopyada."""
-        subprocess.run(["git", "-C", h, "config", "user.email", "t@t"], capture_output=True)
-        subprocess.run(["git", "-C", h, "config", "user.name", "t"], capture_output=True)
+        subprocess.run(_git_hooksuz(h) + ["config", "user.email", "t@t"], capture_output=True)
+        subprocess.run(_git_hooksuz(h) + ["config", "user.name", "t"], capture_output=True)
         return dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t",
                     GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
 
@@ -5489,9 +5502,9 @@ def cmd_isir(a):
         if not degisti:
             raise MutantKurulamadi("'Son guncelleme' satiri yok")
         yaz(cp, "\n".join(L))
-        subprocess.run(["git", "-C", h, "add", "-A"], capture_output=True)
+        subprocess.run(_git_hooksuz(h) + ["add", "-A"], capture_output=True)
         rc_commit = subprocess.run(
-            ["git", "-C", h, "commit", "-q", "-m", "damga eskitildi, defter commit'lendi (mutant_git)"],
+            _git_hooksuz(h) + ["commit", "-q", "-m", "damga eskitildi, defter commit'lendi (mutant_git)"],
             capture_output=True, env=ort)
         if rc_commit.returncode != 0:
             raise MutantKurulamadi("git commit basarisiz: %s"
@@ -5525,24 +5538,24 @@ def cmd_isir(a):
         if not os.path.isfile(zincir):
             raise MutantKurulamadi("_ZINCIR.jsonl yok")
         rel = _rel(zincir, h)
-        r = subprocess.run(["git", "-C", h, "add", "-A"], capture_output=True)
+        r = subprocess.run(_git_hooksuz(h) + ["add", "-A"], capture_output=True)
         if r.returncode != 0:
             raise MutantKurulamadi("git add basarisiz: %s"
                                     % r.stderr.decode("utf-8", "replace")[:120])
-        if subprocess.run(["git", "-C", h, "ls-files", "--error-unmatch", rel],
+        if subprocess.run(_git_hooksuz(h) + ["ls-files", "--error-unmatch", rel],
                           capture_output=True).returncode == 0:
-            r = subprocess.run(["git", "-C", h, "rm", "--cached", "-q", "--", rel],
+            r = subprocess.run(_git_hooksuz(h) + ["rm", "--cached", "-q", "--", rel],
                                capture_output=True)
             if r.returncode != 0:
                 raise MutantKurulamadi("zincir index'ten cikarilamadi: %s"
                                         % r.stderr.decode("utf-8", "replace")[:120])
-        r = subprocess.run(["git", "-C", h, "commit", "-q", "--allow-empty", "-m",
-                            "isir M-H9: zincir index'ten cikarildi (mutant_git)"],
+        r = subprocess.run(_git_hooksuz(h) + ["commit", "-q", "--allow-empty", "-m",
+                                              "isir M-H9: zincir index'ten cikarildi (mutant_git)"],
                            capture_output=True, env=ort)
         if r.returncode != 0:
             raise MutantKurulamadi("git commit basarisiz: %s"
                                     % r.stderr.decode("utf-8", "replace")[:150])
-        if subprocess.run(["git", "-C", h, "ls-files", "--error-unmatch", rel],
+        if subprocess.run(_git_hooksuz(h) + ["ls-files", "--error-unmatch", rel],
                           capture_output=True).returncode == 0:
             raise MutantKurulamadi("zincir HALA izleniyor (kurulum etkisiz)")
 
@@ -6059,7 +6072,7 @@ def cmd_isir(a):
         ort = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t",
                    GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
         def g(*args):
-            return subprocess.run(["git", "-C", h] + list(args), capture_output=True, env=ort)
+            return subprocess.run(_git_hooksuz(h) + list(args), capture_output=True, env=ort)
         if g("init", "-q").returncode != 0:
             raise MutantKurulamadi("git init basarisiz")
         g("config", "user.email", "t@t"); g("config", "user.name", "t")
@@ -6069,7 +6082,7 @@ def cmd_isir(a):
             raise MutantKurulamadi("git commit basarisiz")
         # commit'i geriye al, sonra COMMITLENMEMIS bir degisiklik birak
         eski = (_dt.datetime.now() - _dt.timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%S")
-        subprocess.run(["git", "-C", h, "commit", "-q", "--amend", "--no-edit", "--date=" + eski],
+        subprocess.run(_git_hooksuz(h) + ["commit", "-q", "--amend", "--no-edit", "--date=" + eski],
                        capture_output=True,
                        env=dict(ort, GIT_AUTHOR_DATE=eski, GIT_COMMITTER_DATE=eski))
         yaz(os.path.join(h, "çalışma_notları.md"), "ilk icerik\nBUGUN eklendi, commit YOK\n")

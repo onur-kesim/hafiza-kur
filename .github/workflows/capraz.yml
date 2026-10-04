@@ -2130,6 +2130,10 @@ jobs:
   #     5. kol GITFILE kolu: `--separate-git-dir` agacinda hook, git'in
   #     BILDIRDIGI hooks dizinine yazilmali — `.git`i elle dizin sanmak 4 Eyl
   #     2026'da ISIRAN korlugun ta kendisiydi.
+  #     6./7. kol (Y3, Onur kilidi 4 Eki 2026): `isir` HOOK'LU projede 81/81 vermeli
+  #     (mutant kopyasindaki `git commit` kullanicinin pre-commit'ine takilip
+  #     M-H12g/M-H14g/M-H9'u KURULAMADI yapiyordu: 78/78 + 3, exit 2) ve `core.hooksPath`
+  #     eki sokulunce AYNI projede TAM bu uc KURULAMADI geri gelmeli (M-Y3).
   #     🔴 UC PLATFORM, `continue-on-error` YOK — BILINCLI: `sh` hook'larinin
   #     Windows'ta kosup kosmadigi HENUZ OLCULMEDI. Mutant, hook kosmayan bir
   #     ortamda BEKLENMEDIK degil OLCULEMEDI doner (exit 2) ve o platformda is

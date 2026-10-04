@@ -21,7 +21,7 @@ NEDEN VAR (BELGE-KOD CELISKISI, olculdu 6 Eylul 2026)
    (b) VAR OLAN HOOK EZILMEZ. Baskasinin hook'unu sessizce degistirmek, aracin
        "hicbir satir silinmez, tasinir" ilkesiyle carpisir.
 
-NE OLCER (BES KOL)
+NE OLCER (BES KOL; Y3'UN IKI KOLU asagida)
   Sabotaj, yazilan hook govdesindeki `exit 1`i `exit 0`a cevirir: hook KOSAR,
   kirmiziyi BASAR, ama commit'i DURDURMAZ — "gorunurde calisan, fiilen etkisiz
   koruma" sinifi. (chmod'u dusuren bir sabotaj SECILMEDI: executable biti
@@ -44,7 +44,23 @@ NE OLCER (BES KOL)
   olculemedi de FAIL degildir". O halde 2. kol da OLCULEMEDI'ye duser: pozitif
   kontrolu olmayan bir mutant, kendi basina hukum veremez.
 
-CIKIS KODLARI: 0 bes kol da beklendigi gibi · 1 BEKLENMEDIK · 2 OLCULEMEDI ·
+Y3 — `isir` HOOK'LU PROJEDE (Onur kilidi 4 Eki 2026) · IKI KOL DAHA
+  `hook --kur`un pre-commit'i, `isir`in mutant kopyasina `.git` ile GIDER ve kopyadaki
+  `git commit`i durdurur: M-H12g/M-H14g/M-H9 KURULAMADI olur, `isir` hook'lu projede
+  81/81 yerine 78/78 + 3 SINANMADI (exit 2) verir (olculdu 4 Eki, Windows + Linux;
+  commit'siz projede yalniz M-H12g/M-H14g — hook kapiyi "henuz commit yok" dalinda
+  gecirir). Duzeltme: mutant kopyasindaki HER git cagrisi kum havuzundaki BOS bir
+  `core.hooksPath` ile kosar (motor: `cmd_isir._git_hooksuz`).
+  6. ISIR HOOK'LU  : git'li, commit'li, `derle` kosulmus, hook KURULU projede `isir` ->
+                     exit 0 ve `81/81` (hook'suz projedekiyle AYNI). Hook'un bu
+                     projede gercekten KOSTUGU, `isir`den sonra ayri bir kirmizi-kapi
+                     commit denemesiyle ispatlanir; kosmuyorsa kol OLCULEMEDI'dir.
+  7. M-Y3 MUTANT   : motorda `core.hooksPath` eki SOKULUR (`_git_hooksuz` duz
+                     `["git", "-C", h]` doner) -> AYNI proje `isir` exit 2 ve TAM
+                     {M-H12g, M-H14g, M-H9} KURULAMADI (78/78 + 3) verir (⇒ ISIRDI).
+                     81/81 verirse mutant KACTI: 6. kol hook'u HIC olcmuyordur.
+
+CIKIS KODLARI: 0 yedi kol da beklendigi gibi · 1 BEKLENMEDIK · 2 OLCULEMEDI ·
 3 ARAC KUSURU
 """
 import hashlib
@@ -91,6 +107,14 @@ _SABOTAJLI = '''  echo "HAFIZA KAPISI KIRMIZI — commit durduruldu."
 }'''
 
 
+# Y3 sabotaji: `cmd_isir._git_hooksuz`un `core.hooksPath` eki SOKULUR.
+_Y3_DUZELTILMIS = '        return ["git", "-c", "core.hooksPath=" + bos, "-C", h]'
+_Y3_SABOTAJLI = '        return ["git", "-C", h]'
+_ISIR_SONUC = re.compile(r"^SONUC: (\d+)/(\d+) kosulan mutant ISIRIYOR.*?(\d+) SINANMADI", re.M)
+_ISIR_KURULAMADI = re.compile(r"^  (M-\S+)\s.*-> KURULAMADI", re.M)
+_Y3_BEKLENEN_KURULAMAYAN = ["M-H12g", "M-H14g", "M-H9"]
+
+
 class AracKusuru(Exception):
     pass
 
@@ -99,14 +123,15 @@ def _kayit(ad, durum, ayrinti):
     SONUC.append((ad, durum, ayrinti))
 
 
-def _sabotajli_motor(hedef):
+def _sabotajli_motor(hedef, duzeltilmis=_DUZELTILMIS, sabotajli=_SABOTAJLI,
+                     yer="HOOK_GOVDESI"):
     metin = open(MOTOR, encoding="utf-8").read()
-    n = metin.count(_DUZELTILMIS)
+    n = metin.count(duzeltilmis)
     if n != 1:
         raise AracKusuru("sabotaj hedefi %d kez gecti (1 olmali). Motor degistiyse "
-                         "SABOTAJ DA DEGISMELIDIR (hafiza.py HOOK_GOVDESI)." % n)
+                         "SABOTAJ DA DEGISMELIDIR (hafiza.py %s)." % (n, yer))
     with open(hedef, "w", encoding="utf-8", newline="\n") as f:
-        f.write(metin.replace(_DUZELTILMIS, _SABOTAJLI, 1))
+        f.write(metin.replace(duzeltilmis, sabotajli, 1))
     return hedef
 
 
@@ -257,6 +282,72 @@ def _kol_gitfile(motor, kok, gitdir, ad):
     _kayit(ad, BEKLENMEDIK, "hook %r yazildi, beklenen %r" % (hedef, gercek))
 
 
+def _hookta_isir(proje_motoru, isir_motoru, kok):
+    """Y3 projesi: git'li, COMMIT'li, `derle` kosulmus ve hook KURULU; `isir` kosulur.
+    Doner: (isir_exit, isir_cikti). Proje ve hook `proje_motoru` ile kurulur (hook'un
+    gomulu motor yolu = gercek motor), `isir` `isir_motoru` ile kosar (mutantta sabotajli).
+    `isir` projeyi DEGISTIRMEZ (kopya uzerinde calisir)."""
+    _kum_havuzu(proje_motoru, kok)
+    for arglar in (["not", "--kok=" + kok, "--konu=genel-durum", "--metin=hook isir"],
+                   ["derle", "--kok=" + kok]):
+        rc, c, e = _kos(proje_motoru, arglar)
+        if rc != 0:
+            raise AracKusuru("%s basarisiz (exit=%s): %s" % (arglar[0], rc, (c + e)[-300:]))
+    _git(kok, "add", "-A")
+    _git(kok, "commit", "-q", "-m", "derle sonrasi (hook'tan ONCE)")
+    rc, c, e = _kos(proje_motoru, ["hook", "--kur", "--kok=" + kok])
+    if rc != 0:
+        raise AracKusuru("hook kurulamadi (exit=%s): %s" % (rc, (c + e)[-300:]))
+    rc, c, e = _kos(isir_motoru, ["isir", "--kok=" + kok], saniye=900)
+    if rc is None:
+        raise AracKusuru("isir ZAMAN ASIMI (900 sn)")
+    return rc, c + e
+
+
+def _hook_kosuyor_mu(motor, kok):
+    """Hook BU projede gercekten kosuyor mu? Kapi kirmiziya cevrilir, commit DENENIR;
+    commit reddedilirse hook kosuyordur. `isir`den SONRA cagrilir (projeyi kirletir)."""
+    _kapiyi_kirmizi_yap(kok)
+    if not _kapi_kirmizi_mi(motor, kok):
+        raise AracKusuru("kapi KIRMIZI yapilamadi (hook-kosuyor-mu sinamasi kurulamadi)")
+    kabul, _ = _commit_dene(kok)
+    return not kabul
+
+
+def _isir_ozeti(rc, cikti):
+    """(bicim, kurulamayanlar, ozet): `isir` ciktisindan hukum parcalari."""
+    m = _ISIR_SONUC.search(cikti)
+    kur = sorted(set(_ISIR_KURULAMADI.findall(cikti)))
+    bicim = "%s/%s + %s SINANMADI" % (m.group(1), m.group(2), m.group(3)) if m else "SONUC satiri YOK"
+    return m, kur, "isir exit=%s · %s · KURULAMADI=%s" % (rc, bicim, ",".join(kur) or "yok")
+
+
+def _kol_isir_hookta(proje_motoru, isir_motoru, kok, ad, mutant):
+    rc, cikti = _hookta_isir(proje_motoru, isir_motoru, kok)
+    m, kur, ozet = _isir_ozeti(rc, cikti)
+    if not mutant:
+        sonuc_tamam = (rc == 0 and m is not None and m.group(1) == "81" == m.group(2)
+                       and m.group(3) == "0" and not kur)
+        beklenmedik = "hook'lu projede isir 81/81 DEGIL: " + ozet
+    else:
+        sonuc_tamam = (rc == 2 and m is not None and m.group(1) == m.group(2)
+                       and kur == sorted(_Y3_BEKLENEN_KURULAMAYAN))
+        if rc == 0 and m is not None and m.group(1) == "81":
+            beklenmedik = ("M-Y3 KACTI: `core.hooksPath` eki sokulunce de isir 81/81 — "
+                           "6. kol hook'un etkisini HIC OLCMUYOR: " + ozet)
+        else:
+            beklenmedik = ("sabotajda beklenen 78/78 + TAM {M-H12g, M-H14g, M-H9} "
+                           "KURULAMADI (exit 2) degil: " + ozet)
+    if not sonuc_tamam:
+        return _kayit(ad, BEKLENMEDIK, beklenmedik)
+    # Sonuc beklenen gibi — AMA hook bu ortamda KOSMUYORSA sonuc bir ISPAT degildir.
+    if not _hook_kosuyor_mu(proje_motoru, kok):
+        return _kayit(ad, OLCULEMEDI,
+                      "sonuc beklenen gibi ama hook bu projede KOSMUYOR (kirmizi kapida commit "
+                      "GECTI) — PLATFORM SINIRI, hukum VERILMEZ: " + ozet)
+    _kayit(ad, BEKLENDIGI_GIBI, ("hook KOSARKEN " if not mutant else "sabotajda ISIRDI: ") + ozet)
+
+
 def main():
     if not os.path.isfile(MOTOR):
         print("ARAC KUSURU: motor yok: %s" % MOTOR)
@@ -274,6 +365,10 @@ def main():
             _kol_yesil(MOTOR, os.path.join(gecici, "d"), "4. YANLIS-POZITIF")
             _kol_gitfile(MOTOR, os.path.join(gecici, "e"),
                          os.path.join(gecici, "e_gitdir"), "5. GITFILE")
+            _kol_isir_hookta(MOTOR, MOTOR, os.path.join(gecici, "f"), "6. ISIR HOOK'LU", False)
+            sab_y3 = _sabotajli_motor(os.path.join(gecici, "sab_y3.py"), _Y3_DUZELTILMIS,
+                                      _Y3_SABOTAJLI, "cmd_isir._git_hooksuz")
+            _kol_isir_hookta(MOTOR, sab_y3, os.path.join(gecici, "g"), "7. M-Y3 MUTANT", True)
         except AracKusuru as ex:
             print("ARAC KUSURU: %s" % ex)
             return 3
