@@ -6604,12 +6604,22 @@ def cmd_isir(a):
 
     def m_h1ks(h):
         """M-H1ks — eksen 'sahte beyan' (H1-KOVA tasima beyani): `_TASINMA.jsonl`'ye
-        hedefi OLMAYAN (diskte hicbir dosyaya denk gelmeyen) bir tasima kaydi eklenir."""
+        hedefi OLMAYAN (diskte hicbir dosyaya denk gelmeyen) bir tasima kaydi eklenir.
+        Defter satir sonuyla BITMIYORSA (elle duzeltilmis saglikli proje) kayit once yeni
+        satir alir: yoksa son satira YAPISIR, defter bozulur ve kapi [H1-KOVA]'ya hic
+        ulasmaz (bagimsiz turda SAHTE KACTI uretti, olculdu)."""
+        yol = os.path.join(_hdir(h), "_TASINMA.jsonl")
+        hedef_ad = "HAFIZA_99_isir_h1ks_yok.md"
+        if os.path.exists(os.path.join(_hdir(h), hedef_ad)):
+            raise MutantKurulamadi("%s diskte ZATEN var — 'hedefi olmayan' kayit kurulamaz" % hedef_ad)
+        ham = open(yol, "rb").read() if os.path.isfile(yol) else b""
         kayit = {"t": _dt.datetime.now().isoformat(timespec="seconds"),
-                 "hedef": "HAFIZA_99_isir_h1ks_yok.md", "not": "isir M-H1ks: sahte tasima beyani",
+                 "hedef": hedef_ad, "not": "isir M-H1ks: sahte tasima beyani",
                  "satirlar": ["isir M-H1ks: hedefte OLMAYAN sahte tasima satiri"]}
-        with open(os.path.join(_hdir(h), "_TASINMA.jsonl"), "a", encoding="utf-8", newline="\n") as f:
-            f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
+        with open(yol, "ab") as f:
+            if ham and not ham.endswith(b"\n"):
+                f.write(b"\n")
+            f.write(json.dumps(kayit, ensure_ascii=False).encode("utf-8") + b"\n")
 
     def m_h4k(h):
         """M-H4k — eksen '... +N OLU BAGLANTI daha' (H4 ekran kirpmasi): kapi ilk 10 olu
@@ -6670,20 +6680,26 @@ def cmd_isir(a):
 
     def m_h13p(h):
         """M-H13p — eksen 'PLANSIZ SERI' (H13 plan <-> arsiv): `arsiv/<tur>` DOLU, planda o tur
-        YOK. Tur plandan TUREtilir (planda gecen ilk `arsiv_turleri` ogesi); adi plandan
-        degistirilir, seri SAYISI korunur ('anlamli seri yok' (5022) yanmaz)."""
+        YOK. Tur `arsiv_turleri`nden PLANDA GECMEYEN ilk ogedir (plana dokunulmaz); hepsi
+        planda geciyorsa ilkinin adi plandan degistirilir (seri SAYISI korunur: 'anlamli seri yok'
+        (5022) yanmaz). `arsiv_turleri` BOS ise bu eksen projede YOKTUR (kapi dongusu hic donmez):
+        MutantUygulanmaz — KURULAMADI degil, cikis kodu degismez (bagimsiz turda olculdu: eski
+        hali planda tur gecmeyen SAGLIKLI projede isir exit 0 -> 2 yapiyordu)."""
+        turler = rc["arsiv_turleri"]
+        if not turler:
+            raise MutantUygulanmaz("arsiv_turleri bos — 'PLANSIZ SERI' ekseni bu projede yok")
         p = os.path.join(h, "SAKLAMA_PLANI.md")
         if not os.path.isfile(p):
             raise MutantKurulamadi("SAKLAMA_PLANI.md yok")
         pt = oku(p)
         sinir = lambda t: r"(?<![a-z0-9_])" + re.escape(t.lower()) + r"(?![a-z0-9_])"
-        tur = next((t for t in rc["arsiv_turleri"] if re.search(sinir(t), pt.lower())), None)
+        tur = next((t for t in turler if not re.search(sinir(t), pt.lower())), None)
         if tur is None:
-            raise MutantKurulamadi("planda gecen bir arsiv_turleri ogesi yok")
-        yeni = re.sub(sinir(tur), "isir-h13p-adi-degisti", pt, flags=re.I)
-        if re.search(sinir(tur), yeni.lower()) or len(_plan_serileri(yeni)) < 3:
-            raise MutantKurulamadi("tur '%s' plandan temiz cikarilamadi (ya da seri sayisi <3)" % tur)
-        yaz(p, yeni)
+            tur = turler[0]
+            yeni = re.sub(sinir(tur), "isir-h13p-adi-degisti", pt, flags=re.I)
+            if re.search(sinir(tur), yeni.lower()) or len(_plan_serileri(yeni)) < 3:
+                raise MutantKurulamadi("tur '%s' plandan temiz cikarilamadi (ya da seri sayisi <3)" % tur)
+            yaz(p, yeni)
         d0 = os.path.join(h, "arsiv", tur)
         os.makedirs(d0, exist_ok=True)
         yaz(os.path.join(d0, "isir_m_h13p.md"), "isir M-H13p: dolu arsiv serisi\n")
@@ -6702,12 +6718,17 @@ def cmd_isir(a):
             f.write(b" " * (6 * 1024 * 1024))
 
     def m_h17b(h):
-        """M-H17b — eksen '`## GUNCEL DURUM` bolumu YOK' (H17 derleme hedefi): baslik degistirilir."""
+        """M-H17b — eksen '`## GUNCEL DURUM` bolumu YOK' (H17 derleme hedefi): baslik degistirilir.
+        Kapi `#` ile baslayan HERHANGI eslesen satiri yeterli sayar (kod citi icindeki ornek ve
+        '## GUNCEL DURUM ARSIVI' gibi alt-dizge eslesmeleri dahil): kapinin yukleminin AYNISIYLA
+        TUM eslesen satirlar degistirilir; yalniz ilki degistirilince saglikli projede SAHTE
+        KACTI uretiyordu (bagimsiz turda olculdu)."""
         L = satirlar(_canli(h))
-        i, _ = _bolum_araligi(L, "## GUNCEL DURUM")
-        if i is None:
+        idx = [i for i, s in enumerate(L) if s.startswith("#") and bas_eslesir(s, "## GUNCEL DURUM")]
+        if not idx:
             raise MutantKurulamadi("## GUNCEL DURUM bolumu yok")
-        L[i] = "## ISIR M-H17b BASLIK DEGISTI"
+        for i in idx:
+            L[i] = "## ISIR M-H17b BASLIK DEGISTI"
         yaz(_canli(h), "\n".join(L))
 
     def m_hlink(h):
@@ -6722,22 +6743,25 @@ def cmd_isir(a):
         try:
             os.link(hedef, os.path.join(dis, "yedek_" + os.path.basename(hedef)))
         except (OSError, NotImplementedError, AttributeError) as e:
-            raise MutantUygulanmaz("hardlink kurulamadi (%s: %s)" % (type(e).__name__, e))
+            raise MutantUygulanmaz("hardlink kurulamadi (%s: %s)" % (type(e).__name__, e)) from e
         if os.stat(hedef).st_nlink < 2:
             raise MutantUygulanmaz("hardlink kuruldu ama st_nlink 2'den kucuk (dosya sistemi bildirmiyor)")
 
-    # `mutant()` cercevesi, YALNIZ `MutantUygulanmaz`i da yakalayan AYRI kosucu: sinamalar
-    # dongusu onu yakalamaz ve `cmd_isir` govdesine `except` eklemek CC capasini (30)
-    # oynatir; bu yuzden hepsi bu ic fonksiyondadir ve govdeden DUZ cagrilir. Girdiler
-    # `sinamalar_git` ile AYNI 4'lu bicimdedir (ad, kapi, fn, parca) — faz0/isir_eslesme_mutanti.py
-    # ikisini de okur. NOT: `uygulanmaz.append` ifadesi `isir_uygulanmaz_mutanti` KOL 4'un
-    # capasindan (git dongusundeki satir) FARKLI yazilir; ayni satir 2 kez gecerse KOL 4 OLCULEMEDI olur.
-    sinamalar_baglanti = [
+    # `mutant()` cercevesi, YALNIZ `MutantUygulanmaz`i da yakalayan AYRI kosucu: ekseni projede/
+    # ortamda OLMAYABILEN mutantlar (M-HLINK: dosya sistemi hardlink vermeyebilir; M-H13p:
+    # `arsiv_turleri` bos olabilir). `sinamalar` dongusu MutantUygulanmaz'i yakalamaz ve
+    # `cmd_isir` govdesine `except` eklemek CC capasini (30) oynatir; bu yuzden hepsi bu ic
+    # fonksiyondadir ve govdeden DUZ cagrilir. Girdiler `sinamalar_git` ile AYNI 4'lu bicimdedir
+    # (ad, kapi, fn, parca) — faz0/isir_eslesme_mutanti.py ikisini de okur. NOT: `uygulanmaz.append`
+    # ifadesi `isir_uygulanmaz_mutanti` KOL 4'un capasindan (git dongusundeki satir) FARKLI
+    # yazilir; ayni satir 2 kez gecerse KOL 4 OLCULEMEDI olur.
+    sinamalar_ortam = [
         ("M-HLINK hardlink proje DISINDA", "H-LINK", m_hlink, "proje DISINDA"),
+        ("M-H13p arsiv dolu, planda tur yok", "H13", m_h13p, "PLANSIZ SERI"),
     ]
 
-    def _baglanti_kos():
-        for ad, kapi, fn, parca in sinamalar_baglanti:
+    def _ortam_kos():
+        for ad, kapi, fn, parca in sinamalar_ortam:
             try:
                 ok, k, c = mutant(ad, kapi, fn, parca)
             except MutantUygulanmaz as e:
@@ -6807,7 +6831,6 @@ def cmd_isir(a):
         "M-H10g girintili blok isareti": "GIRINTILI blok",
         "M-H12s 'Son guncelleme' satiri silindi": "'Son guncelleme: ...' satiri yok",
         "M-H13s planda 3'ten az anlamli seri": "anlamli seri yok",
-        "M-H13p arsiv dolu, planda tur yok": "PLANSIZ SERI",
         "M-H2d defterler tavan ustu (bosluk)": "DEFTERLER SISTI",
         "M-H17b GUNCEL DURUM basligi degisti": "`## GUNCEL DURUM` bolumu YOK",
     }
@@ -6894,7 +6917,6 @@ def cmd_isir(a):
         ("M-H10g girintili blok isareti", "H10", m_h10g),
         ("M-H12s 'Son guncelleme' satiri silindi", "H12", m_h12s),
         ("M-H13s planda 3'ten az anlamli seri", "H13", m_h13s),
-        ("M-H13p arsiv dolu, planda tur yok", "H13", m_h13p),
         ("M-H2d defterler tavan ustu (bosluk)", "H2", m_h2d),
         ("M-H17b GUNCEL DURUM basligi degisti", "H17", m_h17b),
     ]
@@ -6917,7 +6939,7 @@ def cmd_isir(a):
         if not ok:
             kacan.append((ad, kapi, c[:400]))
 
-    _baglanti_kos()      # M-HLINK: ISIRDI/KACTI/KURULAMADI/UYGULANMAZ (ic fonksiyon: govdeye dal eklenmez)
+    _ortam_kos()         # M-HLINK, M-H13p: ISIRDI/KACTI/KURULAMADI/UYGULANMAZ (ic fonksiyon: govdeye dal eklenmez)
 
     # ---- KOMUT SINAMALARI (kapi mutanti degil; komut davranisi) ----------
     komut_sinamalari = [
@@ -6996,7 +7018,7 @@ def cmd_isir(a):
         for ad, kapi, c in kacan:
             print("\n--- %s (%s) ---\n%s" % (ad, kapi, c))
         return 1
-    kosulan = (len(sinamalar) + len(komut_sinamalari) + len(sinamalar_git) + len(sinamalar_baglanti)
+    kosulan = (len(sinamalar) + len(komut_sinamalari) + len(sinamalar_git) + len(sinamalar_ortam)
                - len(kurulamayan) - len(uygulanmaz))
     if any(a.startswith("M-H9 ") for a, _, _ in uygulanmaz):
         h9_kuyruk = "izlenirlik mutanti (M-H9) UYGULANMAZ — projede git yok."

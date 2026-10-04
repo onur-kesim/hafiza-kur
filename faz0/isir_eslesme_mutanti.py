@@ -247,9 +247,9 @@ def motor_tablolari(kaynak):
             if kw.arg == "siki" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
                 siki_adlar.append(k.value)
     git_parca = {}                                   # ad -> (kapi, parca)
-    # `sinamalar_git` (mutant_git) ve `sinamalar_baglanti` (M-HLINK: MutantUygulanmaz'i da
+    # `sinamalar_git` (mutant_git) ve `sinamalar_ortam` (M-HLINK, M-H13p: MutantUygulanmaz'i da
     # yakalayan kosucu) AYNI 4'lu bicimdedir: (ad, kapi, fn, parca).
-    for liste_ad in ("sinamalar_git", "sinamalar_baglanti"):
+    for liste_ad in ("sinamalar_git", "sinamalar_ortam"):
         sg = _atama(fn, liste_ad)
         if not isinstance(sg, ast.List):
             raise Olculemedi("`%s` bir liste literali degil" % liste_ad)
@@ -671,9 +671,9 @@ def main():
     _tum_pozisyon_kimlik = [a for _, hd in POZISYON_GRUPLARI for a in hd]
     # M-H9 mutant_git'tir: bu betigin sablonu git'SIZ kurulur -> UYGULANMAZ (gercek
     # davranisi sabotaj.py #4629 KAPSAMLI + isir_uygulanmaz_mutanti KOL 2 olcer).
-    # M-HLINK de benzeri: hardlink kurulamayan bir dosya sisteminde UYGULANMAZ olabilir (sebep basilir,
-    # sahte KACTI/ISIRDI yok); hardlink kurulan ortamda ISIRDI beklenir.
-    _tek_mutant = [x for x in TEK_TANIK_HEDEF if x not in ("M-H9", "M-HLINK")]
+    # M-HLINK ve M-H13p de benzeri: hardlink kurulamayan bir dosya sisteminde / `arsiv_turleri` bos bir projede
+    # UYGULANMAZ olabilir (sebep basilir, sahte KACTI/ISIRDI yok); bu betigin sablonunda ISIRDI beklenir.
+    _tek_mutant = [x for x in TEK_TANIK_HEDEF if x not in ("M-H9", "M-HLINK", "M-H13p")]
     beklenen = {
         "KOL 0": ("H1'in yedi, H11/H6/H8/H16'nin TUM ve tek tanik mutantlari ISIRDI "
                   "(M-H9: git'siz sablonda UYGULANMAZ), exit 0",
@@ -681,7 +681,8 @@ def main():
                                               for x in list(HEDEF_EKSEN) + _tum_pozisyon_kimlik
                                               + _tek_mutant)
                   and h.get("M-H9") in ("ISIRDI", "UYGULANMAZ")
-                  and h.get("M-HLINK") in ("ISIRDI", "UYGULANMAZ")),
+                  and h.get("M-HLINK") in ("ISIRDI", "UYGULANMAZ")
+                  and h.get("M-H13p") in ("ISIRDI", "UYGULANMAZ")),
         "KOL a": ("M-H1 ISIRDI (maskeleme URETILDI)",
                   lambda k, h: h.get("M-H1") == "ISIRDI"),
         "KOL a1": ("M-H1 ve M-H1b KACTI (B tek basina yeter)",

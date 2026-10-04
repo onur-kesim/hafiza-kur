@@ -1,14 +1,13 @@
 # DURUM — hafiza-kur
 **BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (**CI #119 `320bf1d`: 189/189 — Cowork ölçtü**)
-Son güncelleme: 3 Eki 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+Son güncelleme: 4 Eki 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## DEVİR — O7 (Code) · KALAN 12 KÖR NOKTA · 4 Eki 2026
-**Durum:** motor `82044F18…` 402.893 B → `C2ECB013…` 414.185 B · `cmd_isir` içine 12 mutant (`m_*` + `_baglanti_kos`) · kapı bölgesi (1-5332) `cmp` bayt-AYNI ·
-CC çapası 30, `ihlal` 9, CC>20 kümesi 7 AYNEN. Taban `320bf1d` (CI #119). PUSH YOK.
-**Ölçüldü (Win py3.12 + WSL `olcum`):** `sabotaj.py` bayraksız **67/67, KAPSAMSIZ 0** (iki platformda; taban 55/12) · köşegen 12/12, köşegen dışı kaçış 0 · K2: önceki 55 aynen,
-düşen ad 0. `isir`: taze git'li **79/79 + 2 SINANMADI** (exit 2) · derle **81/81** · git'siz derle **78/78 + 3 UYGULANMAZ**. M-HLINK/M-H2d Windows'ta ISIRDI (M-H2d ek maliyet <0,1 sn, +6 MB tmp).
-**Sıradaki ilk iş:** push Onur'da → Cowork: `ls-remote` → CI → bağımsız sabotaj 67/67 → paket v5 (claude.ai). **AÇIK:** gerçek jq YOK · macOS · py3.11/3.13 · Win `t_y42` WinError 1314 (ÖLÇÜLEMEDİ) ·
-`capraz.yml` adım adı "dokuz mutant" BAYAT (artık 12) · yeni oturum = YENİ kimlik, ilk iş N ölç.
+**Durum:** motor `82044F18…` 402.893 B → `1E63E03C…` 415710 B · `cmd_isir` içine 12 mutant (`m_*` + `_ortam_kos`) · kapı bölgesi (1-5332) `cmp` bayt-AYNI ·
+CC çapası 30, `ihlal` 9, CC>20 kümesi 7 AYNEN. Taban `320bf1d` (CI #119). PUSH YOK. Bağımsız tur (16 ajan) 3 SAHTE-KACTI/exit 2 kusuru buldu (M-H17b · M-H1ks · M-H13p),
+düzeltildi; **K1/K2/K3/K4/K6 DÜZELTİLMİŞ motorda YENİDEN ölçülüyor — sonuç sonraki commit'te** (ilk motorda: 67/67, köşegen 12/12, isir 79/81/78).
+**Sıradaki ilk iş:** push Onur'da → Cowork: `ls-remote` → CI → bağımsız sabotaj 67/67 → paket v5. **AÇIK:** gerçek jq YOK · macOS · py3.11/3.13 · Win `t_y42` WinError 1314 ·
+`capraz.yml` adım adları BAYAT ("dokuz mutant") · hardlink'siz FS'te M-HLINK UYGULANMAZ (sabit sayılar 1 eksik) · M-H10c kod çitli sağlıklı projede KACTI (ÖNCEDEN VAR, taban aynı) · yeni oturum = YENİ kimlik.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 K4 (39→55→**67/67**) TAMAM, kalan kör nokta **0** (KAPSAMSIZ 0); **25 Ağu
@@ -62,9 +61,7 @@ GİRİŞ KAPISI · `bolum-kur` · B4-3/B4-4 · H4/H12/H14/BEŞLİ PAKET/gitfile 
 - 🔴 **BAĞLI KLASÖRDE KOŞMAYANLAR:** `hafiza.py` (H9 `git status` → kalıcı `.git/index.lock`) · `t_y42.py` (150 sn'de
   bitmiyor) ⇒ bulut konteynerde ya da WSL `olcum`da koşulur. Mount `unlink` vermiyor — `_to_delete/`ye TAŞI.
   ✏️ `.github/workflows/*` `device_bash` ile YAZILIR; `device_commit_files` REDDEDER.
-- 🟡 Beyan/mtime çelişkisini ölçen kapı YOK · `ruff/mypy/bandit` YALNIZ `hafiza.py`'yi tarar · `readme_mutanti`
-  ANLATIMI ölçmez (KAPI-3 kod KÜMESİNİ ölçer, anlamını değil) · `paketten_kos` belgenin ANLAMINI değil GEÇTİĞİNİ ölçer ·
-  `derle` sonrası ikinci `isir` ölçülmüyor · `isir`da **M-H9 mutantı YOK** · KALEM 3'ün iki hüküm cümlesi (sat.
-  4626/4897) `isir` kataloğunda KARŞILIKSIZ (Onur kilidi: kapatılmaz) · kilit inode yarışı daraltıldı, kapatılmadı ·
-  zincir anahtarsız (bilinçli) · `PROJE_RADAR.jsonl` YOK ⇒ radar HÜKÜM VEREMİYOR.
+- 🟡 Beyan/mtime çelişkisini ölçen kapı YOK · `ruff/mypy/bandit` YALNIZ `hafiza.py`'yi tarar · `readme_mutanti` ANLATIMI ölçmez (KAPI-3 kod
+  KÜMESİNİ ölçer, anlamını değil) · `paketten_kos` belgenin ANLAMINI değil GEÇTİĞİNİ ölçer · kilit inode yarışı daraltıldı, kapatılmadı ·
+  zincir anahtarsız (bilinçli). (4 Eki: "M-H9 YOK / ikinci isir ölçülmüyor / PROJE_RADAR YOK / KALEM 3 karşılıksız" bayattı — ölçülüp SİLİNDİ.)
 - 🔴 `rmtree(ignore_errors=True)` 38 dosya/124 yer, `onerror` YOK (5 Eyl, çöplenme) — md.8 ⇒ **KOD DEĞİŞMEZ**.
