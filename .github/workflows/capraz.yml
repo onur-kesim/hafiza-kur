@@ -491,7 +491,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: olcut duzeltmeleri isiriyor mu (yedi mutant)
+      - name: olcut duzeltmeleri isiriyor mu (9 mutant)
         shell: bash
         run: python faz0/altin_olcut_mutanti.py 2>&1 | tee altin-olcut-cikti.txt
       - name: altin olcut mutanti ciktisi (artefakt)
@@ -878,7 +878,8 @@ jobs:
   #     tabidir. Arac yalniz N basar (global anayasa §3 tanimi: son ana-dongu assistant kaydinin
   #     input + cache_read + cache_creation degeri); renk/esik orada yasar, bu dosyada ve aracta YOKTUR.
   #     Mutant SENTETIK transcript uretir (gercek oturuma bagimli DEGILDIR): BEKLENEN N elle yazili,
-  #     dokuz kusur tek tek enjekte edilir (sonuncusu kaynak taramasidir), `jq` varsa anayasa jq'su ile
+  #     12 kusur tek tek enjekte edilir (M-S9 kaynak taramasi · M-S10 tip filtresi · M-S11/M-S12 temiz
+  #     kolun kendi hukmu; ilk dokuzu ilk surumdendir), `jq` varsa anayasa jq'su ile
   #     capraz kontrol yapilir, yoksa satir OLCULEMEDI der ve sonuc SINIRLI olur.
   #     🔴 Aracin KENDISI CI'da kosulmaz: CI runner'inda Claude transcript'i yoktur, arac dogru
   #     davranip OLCULEMEDI/exit 2 dondururdu ve is sahte basarisiz olurdu. Olculen sey ARACIN
@@ -897,7 +898,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: olcerin kendisi isiriyor mu (dokuz mutant)
+      - name: olcerin kendisi isiriyor mu (12 mutant)
         shell: bash
         run: python araclar/oturum_sagligi_mutanti.py 2>&1 | tee saglik-mutant.txt
       - name: saglik mutanti ciktisi (artefakt)
@@ -1320,7 +1321,7 @@ jobs:
   #     macOS'taki bir kirilma ubuntu'nun gercek paketten-kosum olcumunu gizlemesin
   #     (bagimsiz tur 30 Eyl 2026). Paket ARTEFAKTI yalniz ubuntu'dan cikar.
   #     `paket_mutanti` artik BES eksen olcer: KAPI-1 · KAPI-2 · DETERMINIZM · IC OLCUM ·
-  #     BAGLANTI (yedi mutant).
+  #     BAGLANTI (yedi mutant; `paket_mutanti.py` MUTANTLAR listesi bugun 8 — adim adi 8 der).
   # ---------------------------------------------------------------------------
   paket_kapisi:
     name: paket kapisi (uretim + mutant)
@@ -1334,7 +1335,7 @@ jobs:
       - name: paketle.sh (motorun paket komutu + KAPI-1 MOTOR BIT-BIT + KAPI-2 ENVANTER)
         shell: bash
         run: bash paketle.sh 2>&1 | tee paket-kapisi-cikti.txt
-      - name: iki kapi + determinizm + yedi mutant
+      - name: iki kapi + determinizm + 8 mutant
         shell: bash
         run: python faz0/paket_mutanti.py 2>&1 | tee -a paket-kapisi-cikti.txt
       - name: paket (artefakt — asagidaki is bunu kurar)
@@ -1373,7 +1374,7 @@ jobs:
       - name: paketle.sh (motorun paket komutu + KAPI-1 MOTOR BIT-BIT + KAPI-2 ENVANTER)
         shell: bash
         run: bash paketle.sh 2>&1 | tee paket-kapisi-cikti.txt
-      - name: iki kapi + determinizm + yedi mutant
+      - name: iki kapi + determinizm + 8 mutant
         shell: bash
         run: python faz0/paket_mutanti.py 2>&1 | tee -a paket-kapisi-cikti.txt
       - name: paket kapisi ciktisi (artefakt)
@@ -1479,6 +1480,8 @@ jobs:
   #     `git` ister. Blokta TANIMADIGI bir satir gorurse OLCULEMEDI der (exit 2) —
   #     README'ye yeni adim eklenip kapinin sessizce yok saymasi ENGELLENIR.
   #     UC PLATFORM ve `continue-on-error` YOK.
+  #     GUNCEL (4 Eki 2026, `readme_mutanti.py` MUTANTLAR listesi): KAPI-4 (takma ad) sonradan eklendi ->
+  #     DORT kapi, 16 mutant (M-1..M-9 + M-AD-1..M-AD-7); adim adi bunu sayar, yukaridaki "UC/DORT" dogus halidir.
   # ---------------------------------------------------------------------------
   readme_kapisi:
     name: README kanit blogu (${{ matrix.os }})
@@ -1493,7 +1496,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: uc kapi + dokuz mutant
+      - name: dort kapi + 16 mutant
         shell: bash
         run: python faz0/readme_mutanti.py 2>&1 | tee readme-kapisi-cikti.txt
       - name: README kapisi ciktisi (artefakt)
@@ -2851,7 +2854,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: skill-kur KOPYALIYOR ve OLCUYOR mu (8 kol + 8 mutant, sahte HOME)
+      - name: skill-kur KOPYALIYOR ve OLCUYOR mu (9 kol + 10 mutant, sahte HOME)
         shell: bash
         run: python faz0/skill_kur_mutanti.py ${{ matrix.bayrak }} 2>&1 | tee skill-kur-cikti.txt
       - name: skill kur olceri ciktisi (artefakt)
