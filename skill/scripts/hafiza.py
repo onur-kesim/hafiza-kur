@@ -4323,6 +4323,12 @@ def _h4_havuz(kok):
         d0[:] = [d for d in d0 if d not in haric_sabit
                  and _rel(os.path.join(r0, d), kok) not in haric_git]
         for f in f0:
+            # B2 (4 Eki 2026): `.gitkeep` git'in bos-dizin YER TUTUCUSUDUR, bir dosya ADI degil. Havuza girerse
+            # `](yol/.gitkeep)` gibi GERCEKTEN olmayan bir hedef "ayni adla baska yerde var" diye TASINMIS sayilir
+            # (FAIL -> YESIL; OLCULDU). Bu satir asagidaki `_rel_f` .. `havuz.setdefault` BLOGUNUN USTUNDEDIR
+            # (h4_gitignore_mutanti o blogun bitisikligine capa atar).
+            if f == ".gitkeep":
+                continue
             # besli-paket KALEM B (6 Eyl 2026, Onur kilidi 20:30): KALEM 2
             # yalniz DIZIN ekseninde suzuyordu — `_h4_git_yoksayilanlar`in
             # dondurdugu bir DOSYA (izlenen bir dizinin icindeki tek bir

@@ -11,7 +11,7 @@ NEDEN VAR (olculdu 4 Eki 2026, Momentum kopyasi, OLCUM_RAPORU_04EKIM_DENEME_V7.m
   yazar; idempotent, var olana dokunmaz. MEVCUT kurulu projede `kapi` eksik `.gitkeep`i bulgu YAPMAZ ve
   tekrar `kur` onu ONARMAZ (onarmak AYRI karar — bu pakette YOK).
 
-NE OLCER — BES KOL (her biri temiz motorda YESIL olmali)
+NE OLCER — ALTI KOL (her biri temiz motorda YESIL olmali)
   KOL 1 (KUR AKISI) — kur -> not -> derle -> git commit -> `git clone` -> klonda `kapi`: dort `.gitkeep` git'te
       IZLENIYOR (0 bayt) ve klonda `[H16]` bulgusu YOK, `SONUC: YESIL`, exit 0.
   KOL 2 (DEVRAL AKISI) — Momentum SEKLI (CLAUDE.md + DURUM.md; devral --esle -> bolum-kur -> not -> derle -> commit
@@ -24,10 +24,13 @@ NE OLCER — BES KOL (her biri temiz motorda YESIL olmali)
       (`.hafizarc` + zincir + cipa), exit 0, stderr'de UYARI; tekrar `kur` "VERI KAYBI" diye REDDETMEZ (OLCULDU:
       erken/fatal yazim `.hafizarc` yazilmis YARIM kurulum birakiyordu). YALNIZ POSIX non-root (Windows'ta dizin
       chmod'u etkisiz, root izni asar) — aksi halde UYGULANMAZ, kapi korlugu degildir.
+  KOL 6 (H4 HAVUZU) — `.gitkeep` bir dosya ADI sayilmaz: GERCEKTEN olmayan `.gitkeep` hedefli markdown linki
+      (`[x](arsiv/olmayan/.gitkeep)`) `[H4] OLU BAGLANTI` KALIR. Havuza girerse "ayni adla baska yerde var" diye
+      TASINMIS sayilir ve FAIL -> YESIL olur (OLCULDU).
   Klon, `git -c core.autocrlf=false clone` ile yapilir: Windows'un varsayilani (`autocrlf=true`) checkout'ta CRLF
   uretir ve `.gitkeep` olsa bile `kapi` H0'da KIRMIZI olur (OLCULDU) — bu ayri bir sinif; mutant H16'yi olcmeli.
 
-SEKIZ SABOTAJ (her duzeltmeye AYRI; her biri BEKLENEN kolu — ve yalniz onu — KIRMIZI yakmali)
+DOKUZ SABOTAJ (her duzeltmeye AYRI; her biri BEKLENEN kolu — ve yalniz onu — KIRMIZI yakmali)
   M-1 yazim kapanir (hic `.gitkeep` yazilmaz)     -> KOL 1, 2, 4 (+5 POSIX'te) KIRMIZI (klonda `[H16] ... YOK` GERI GELIR)
   M-2 `kur` cagri yeri kapanir                    -> KOL 1, 4 (+5 POSIX'te) KIRMIZI (devral akisi YESIL kalir)
   M-3 `devral` cagri yeri kapanir                 -> KOL 2 KIRMIZI (kur akisi YESIL kalir)
@@ -37,6 +40,7 @@ SEKIZ SABOTAJ (her duzeltmeye AYRI; her biri BEKLENEN kolu — ve yalniz onu —
   M-7 hafiza dizini dortlunun disinda kalir       -> KOL 1, 2, 4 KIRMIZI (H16 onu klonda GOZLEMEZ: dizin hep dolu —
                                                      bu kol MULK kontroluyle isirir)
   M-8 yazim hatasi FATAL olur (UYARI kalkar)      -> KOL 5 KIRMIZI (UYGULANMAZ ise bu sabotaj da UYGULANMAZ)
+  M-9 H4 havuzu `.gitkeep`i ad sayar              -> KOL 6 KIRMIZI
 
 CIKIS KODU  0 temiz kollar YESIL VE her sabotaj beklenen kolu kirmizi yakti · 1 temiz kol KIRMIZI ya da sabotaj
             KACTI/yanlis kolu yakti · 2 OLCULEMEDI (git yok, motor okunamadi, capa tutmadi, kurulum basarisiz)
@@ -207,6 +211,20 @@ def kol4(motor, taban):
     return icerik == KULLANICI_ICERIK and bos, "kararlar/.gitkeep icerigi=%r · diger uc bos yazildi=%s" % (icerik, bos)
 
 
+def kol6(motor, taban):
+    """H4 HAVUZU: `.gitkeep` bir dosya ADI sayilmaz — GERCEKTEN olmayan `.gitkeep` hedefli markdown linki OLU kalir.
+    (Havuza girerse 'ayni adla baska yerde var' diye TASINMIS sayilir: FAIL -> YESIL, OLCULDU.)"""
+    kok = os.path.join(taban, "k6")
+    os.makedirs(kok)
+    _adim(motor, ["kur", "--ad", "GKMUT"], kok)
+    _adim(motor, ["not", "--konu=genel-durum", "--metin=bkz [yok](arsiv/olmayan/.gitkeep) isaretli baglanti"], kok)
+    _adim(motor, ["derle"], kok, tolere=True)       # H4 bulgusu yuzunden exit 1 donebilir; hukmu asagidaki kapi verir
+    k, c = kos(motor, ["kapi"], kok)
+    h4 = [s.strip() for s in c.splitlines() if "H4" in s]
+    olu = k == 1 and any("[H4] OLU BAGLANTI" in s and "arsiv/olmayan/.gitkeep" in s for s in h4)
+    return olu, "kapi exit=%d · %s" % (k, "; ".join(x[:90] for x in h4[:2]) or "H4 satiri YOK")
+
+
 def kol5_uygulanabilir():
     """Dizin yazma izni: Windows'ta chmod dizinde etkisiz, root izin engelini asar -> KOL 5 UYGULANMAZ."""
     return os.name != "nt" and not (hasattr(os, "geteuid") and os.geteuid() == 0)
@@ -255,6 +273,7 @@ def tum_kollar(motor, taban):
         out["KOL 5"] = kol5(motor, os.path.join(taban, "KOL5"))
     else:
         out["KOL 5"] = (None, "UYGULANMAZ (Windows ya da root: dizin izin engeli olusturulamaz)")
+    out["KOL 6"] = kol6(motor, os.path.join(taban, "KOL6"))
     return out
 
 
@@ -292,6 +311,8 @@ SABOTAJLAR = [
      '            print("UYARI: .gitkeep yazilamadi (%s): %s — taze klonda [H16] bu dizin icin YOK cikabilir"\n'
      '                  % (_rel(d, y.kok), e), file=sys.stderr)\n',
      '        except OSError:\n            raise\n', {"KOL 5"}),
+    ("M-9 H4 havuzu .gitkeep'i ad sayar",
+     '            if f == ".gitkeep":\n                continue\n', '            pass\n', {"KOL 6"}),
 ]
 
 

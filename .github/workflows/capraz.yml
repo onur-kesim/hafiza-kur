@@ -2880,8 +2880,10 @@ jobs:
   #     `git ls-files kararlar gunluk` = 0). 189/189 CI bunu GORMEDI: hicbir fixture kur -> commit ->
   #     KLON -> kapi zincirini kosmuyordu. `kur` (taze kurulum) ve `devral` H16'nin dort dizinine bos
   #     `.gitkeep` yazar; mevcut kurulu projede `kapi` eksik `.gitkeep`i bulgu YAPMAZ, tekrar `kur`
-  #     onu ONARMAZ. BES KOL (kur akisi · devral akisi · geriye uyum · var olana dokunma · yarim
-  #     kurulum yok) + SEKIZ SABOTAJ (her biri BEKLENEN kolu ve yalniz onu kirmizi yakmali).
+  #     onu ONARMAZ. ALTI KOL (kur akisi · devral akisi · geriye uyum · var olana dokunma · yarim
+  #     kurulum yok · H4 havuzu) + DOKUZ SABOTAJ (her biri BEKLENEN kolu ve yalniz onu kirmizi yakmali).
+  #     H4 havuzu: `.gitkeep` bir dosya ADI sayilmaz — yoksa GERCEKTEN olmayan bir `.gitkeep` hedefli
+  #     markdown linki "ayni adla baska yerde var" diye TASINMIS sayilir (FAIL -> YESIL, OLCULDU).
   #     Klon `git -c core.autocrlf=false clone` ile yapilir: Windows'un varsayilani checkout'ta CRLF
   #     uretir ve `.gitkeep` olsa bile H0'da KIRMIZI olur (OLCULDU) — mutant H16'yi olcmeli.
   #     KOL 5 (yazilamaz dizin) yalniz POSIX non-root'ta olculur; Windows'ta UYGULANMAZ.
@@ -2901,7 +2903,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: taze kurulum/devir klonda kapi YESIL mi (bes kol + sekiz sabotaj, hukum gevsemez)
+      - name: taze kurulum/devir klonda kapi YESIL mi (alti kol + dokuz sabotaj, hukum gevsemez)
         shell: bash
         run: python faz0/gitkeep_mutanti.py 2>&1 | tee gitkeep-cikti.txt
       - name: gitkeep mutanti ciktisi (artefakt)
