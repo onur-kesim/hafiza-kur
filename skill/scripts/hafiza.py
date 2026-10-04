@@ -4976,6 +4976,10 @@ def _h12_hafiza_git_tarihi(y, rc):
     if not _git_kokte_mi(kok):
         return None
     yollar = [_rel(y.canli, kok), _rel(y.h, kok)] + list(rc.get("ek_arsiv_dosyalari") or [])
+    # B2 (4 Eki 2026): `.gitkeep` DEFTER DEGILDIR. `y.h` bir DIZIN pathspec'i oldugu icin icindeki `.gitkeep`e
+    # dokunan bir commit (onarim, yeniden yazim) "defterlere dokunan son commit" sayiliyor ve H12 cumlesini
+    # YANLIS teshise ceviriyordu (hukum FAIL kalir, mesaj "defterler git'te ... commit'lenmis" derdi; OLCULDU).
+    yollar += [":(exclude,glob)**/.gitkeep"]
     try:
         r = subprocess.run(["git", "-C", kok, "log", "-1", "--format=%ct", "--"] + yollar,
                            capture_output=True, text=True, encoding="utf-8", errors="replace",

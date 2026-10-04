@@ -11,7 +11,7 @@ NEDEN VAR (olculdu 4 Eki 2026, Momentum kopyasi, OLCUM_RAPORU_04EKIM_DENEME_V7.m
   yazar; idempotent, var olana dokunmaz. MEVCUT kurulu projede `kapi` eksik `.gitkeep`i bulgu YAPMAZ ve
   tekrar `kur` onu ONARMAZ (onarmak AYRI karar — bu pakette YOK).
 
-NE OLCER — ALTI KOL (her biri temiz motorda YESIL olmali)
+NE OLCER — YEDI KOL (her biri temiz motorda YESIL olmali)
   KOL 1 (KUR AKISI) — kur -> not -> derle -> git commit -> `git clone` -> klonda `kapi`: dort `.gitkeep` git'te
       IZLENIYOR (0 bayt) ve klonda `[H16]` bulgusu YOK, `SONUC: YESIL`, exit 0.
   KOL 2 (DEVRAL AKISI) — Momentum SEKLI (CLAUDE.md + DURUM.md; devral --esle -> bolum-kur -> not -> derle -> commit
@@ -27,10 +27,13 @@ NE OLCER — ALTI KOL (her biri temiz motorda YESIL olmali)
   KOL 6 (H4 HAVUZU) — `.gitkeep` bir dosya ADI sayilmaz: GERCEKTEN olmayan `.gitkeep` hedefli markdown linki
       (`[x](arsiv/olmayan/.gitkeep)`) `[H4] OLU BAGLANTI` KALIR. Havuza girerse "ayni adla baska yerde var" diye
       TASINMIS sayilir ve FAIL -> YESIL olur (OLCULDU).
+  KOL 7 (H12 GIT TARIHI) — bayat damga + ESKI tarihli commit; sonra YALNIZ `arsiv/hafiza/.gitkeep` degisip BUGUN
+      commit'lenir: H12 cumlesi `canli hafiza N gundur guncellenmemis` KALIR; `defterler git'te ... commit'lenmis`
+      YANLIS teshisine donusmez (`y.h` bir DIZIN pathspec'i; `.gitkeep` icindedir — OLCULDU).
   Klon, `git -c core.autocrlf=false clone` ile yapilir: Windows'un varsayilani (`autocrlf=true`) checkout'ta CRLF
   uretir ve `.gitkeep` olsa bile `kapi` H0'da KIRMIZI olur (OLCULDU) — bu ayri bir sinif; mutant H16'yi olcmeli.
 
-DOKUZ SABOTAJ (her duzeltmeye AYRI; her biri BEKLENEN kolu — ve yalniz onu — KIRMIZI yakmali)
+ON SABOTAJ (her duzeltmeye AYRI; her biri BEKLENEN kolu — ve yalniz onu — KIRMIZI yakmali)
   M-1 yazim kapanir (hic `.gitkeep` yazilmaz)     -> KOL 1, 2, 4 (+5 POSIX'te) KIRMIZI (klonda `[H16] ... YOK` GERI GELIR)
   M-2 `kur` cagri yeri kapanir                    -> KOL 1, 4 (+5 POSIX'te) KIRMIZI (devral akisi YESIL kalir)
   M-3 `devral` cagri yeri kapanir                 -> KOL 2 KIRMIZI (kur akisi YESIL kalir)
@@ -41,6 +44,7 @@ DOKUZ SABOTAJ (her duzeltmeye AYRI; her biri BEKLENEN kolu — ve yalniz onu —
                                                      bu kol MULK kontroluyle isirir)
   M-8 yazim hatasi FATAL olur (UYARI kalkar)      -> KOL 5 KIRMIZI (UYGULANMAZ ise bu sabotaj da UYGULANMAZ)
   M-9 H4 havuzu `.gitkeep`i ad sayar              -> KOL 6 KIRMIZI
+  M-10 H12 git tarihi `.gitkeep`i defter sayar    -> KOL 7 KIRMIZI
 
 CIKIS KODU  0 temiz kollar YESIL VE her sabotaj beklenen kolu kirmizi yakti · 1 temiz kol KIRMIZI ya da sabotaj
             KACTI/yanlis kolu yakti · 2 OLCULEMEDI (git yok, motor okunamadi, capa tutmadi, kurulum basarisiz)
@@ -225,6 +229,49 @@ def kol6(motor, taban):
     return olu, "kapi exit=%d · %s" % (k, "; ".join(x[:90] for x in h4[:2]) or "H4 satiri YOK")
 
 
+def _commit_tarihli(kok, mesaj, tarih=None):
+    """`git add -A` + commit; `tarih` (YYYY-MM-DD) verilirse commit o tarihle atilir (yazar + islemci)."""
+    ortam = dict(os.environ)
+    if tarih:
+        ortam["GIT_AUTHOR_DATE"] = ortam["GIT_COMMITTER_DATE"] = tarih + "T12:00:00"
+    for arg in (["add", "-A"],
+                ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false",
+                 "commit", "-q", "-m", mesaj]):
+        r = subprocess.run(["git", "-C", kok] + arg, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", env=ortam)
+        if r.returncode != 0:
+            raise Kurulamadi("git %s basarisiz: %s" % (arg[-1] if arg[0] != "-c" else "commit", (r.stderr or "").strip()[:120]))
+
+
+def kol7(motor, taban):
+    """H12 GIT TARIHI: yalniz `.gitkeep`e dokunan SONRAKI bir commit 'defterlere dokunan son commit' SAYILMAZ —
+    H12 cumlesi YANLIS teshise ('defterler git'te ... commit'lenmis') donusmez. Bayat damga + ESKI tarihli commit; sonra
+    YALNIZ `arsiv/hafiza/.gitkeep` degisir ve BUGUN commit'lenir. (`y.h` bir DIZIN pathspec'idir: `.gitkeep` icindedir.)"""
+    kok = os.path.join(taban, "k7")
+    os.makedirs(kok)
+    rc, c = git(kok, "init", "-q")
+    if rc != 0:
+        raise Kurulamadi("git init basarisiz: %s" % c.strip()[:120])
+    _adim(motor, ["kur", "--ad", "GKMUT"], kok)
+    _adim(motor, ["not", "--konu=genel-durum", "--metin=gitkeep mutanti ilk kayit"], kok)
+    _adim(motor, ["derle"], kok, tolere=True)
+    eski = (datetime.date.today() - datetime.timedelta(days=90)).isoformat()
+    cp = os.path.join(kok, "PROJE_HAFIZA.md")
+    s = io.open(cp, encoding="utf-8", newline="").read()
+    yeni, n = re.subn(r"(Son guncelleme:\s*)\d{4}-\d{2}-\d{2}", r"\g<1>" + eski, s, count=1)
+    if n != 1:
+        raise Kurulamadi("KOL 7: canlida 'Son guncelleme: <tarih>' damgasi bulunamadi")
+    io.open(cp, "w", encoding="utf-8", newline="").write(yeni)
+    _commit_tarihli(kok, "eski tarihli kurulum", eski)
+    with io.open(os.path.join(kok, "arsiv", "hafiza", GITKEEP), "w", encoding="utf-8", newline="\n") as f:
+        f.write("x")                                   # yalniz `.gitkeep` degisir -> BUGUN commit'lenir
+    _commit_tarihli(kok, "yalniz .gitkeep degisti")
+    k, c = kos(motor, ["kapi"], kok)
+    h12 = [x.strip() for x in c.splitlines() if "[H12]" in x]
+    ok = any("guncellenmemis" in x for x in h12) and not any("commit'lenmis" in x for x in h12)
+    return ok, "kapi exit=%d · %s" % (k, "; ".join(x[:110] for x in h12[:2]) or "H12 satiri YOK")
+
+
 def kol5_uygulanabilir():
     """Dizin yazma izni: Windows'ta chmod dizinde etkisiz, root izin engelini asar -> KOL 5 UYGULANMAZ."""
     return os.name != "nt" and not (hasattr(os, "geteuid") and os.geteuid() == 0)
@@ -274,6 +321,7 @@ def tum_kollar(motor, taban):
     else:
         out["KOL 5"] = (None, "UYGULANMAZ (Windows ya da root: dizin izin engeli olusturulamaz)")
     out["KOL 6"] = kol6(motor, os.path.join(taban, "KOL6"))
+    out["KOL 7"] = kol7(motor, os.path.join(taban, "KOL7"))
     return out
 
 
@@ -313,6 +361,8 @@ SABOTAJLAR = [
      '        except OSError:\n            raise\n', {"KOL 5"}),
     ("M-9 H4 havuzu .gitkeep'i ad sayar",
      '            if f == ".gitkeep":\n                continue\n', '            pass\n', {"KOL 6"}),
+    ("M-10 H12 git tarihi .gitkeep'i defter sayar",
+     '    yollar += [":(exclude,glob)**/.gitkeep"]\n', '    pass\n', {"KOL 7"}),
 ]
 
 
