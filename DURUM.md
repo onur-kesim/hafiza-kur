@@ -1,25 +1,25 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (CI #120 `cd19032` 189/189 Cowork ölçtü; O8 PUSH'SUZ)
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (CI #121 `9725b05` 189/189; O9 PUSH'SUZ)
 Son güncelleme: 4 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
-## DEVİR — O8 (Code) · ÜÇ DERİNLİK SAVUNMASI Y3→Y1→Y2 · 4 Eki 2026
-**Durum:** taban `cd19032`; 3 commit, PUSH YOK: `64bff2c` Y3 · `f930ab0` Y1 · `936cd9e` Y2. Motor `1E63E03C…` 415.710 B → `4E23ED9A…` 418.182 B. Çapa `cmd_isir` 30 · `cmd_devral` 99 ·
-CC>20 7 · `ihlal` 9 · iş 189 AYNEN; **`cmd_kapi` CC 19→20 = TAVAN (radon da 20): yeni dal helper ister** · `_kapi_govde` 80 satır TAVANDA.
-**Y3 (KESİN):** hook'lu projede `isir` mutant kopyası kullanıcı pre-commit'ine takılıyordu (commit'li 78/78+3, commit'siz 79/79+2): `_git_hooksuz` = boş `core.hooksPath`; `hook_mutanti` kol 6/7.
-**Y1:** erken dönüş `O.append("KAPILAR KOSMADI…")` → fail ölse de `YESIL (SINIRLI)`. **Y2:** ilk `[`'ten önceki 6-boşluklu detay → `+ M ETIKETSIZ detay`. Kanıt `hukum_kapisi.py --kanit` 12/12.
-**Ölçüldü (SON motor):** sabotaj **67/67, KAPSAMSIZ 0** Win+Linux, taban↔yeni kayıt FARK 0 · `isir` 79/79+2 · 81/81 · hook'lu 81/81 · git'siz 78/78+3 · `kapi` 83 koşum: fark YALNIZ M-H6y/M-Hcy (+1 `?`) ·
-`altin_cikti` 24/24 · `t_y42` Linux solo 58/58 ×4 · K4 Linux 88 adım: 87 aynı + 1 yük flake, K4 Win 88 adım: 11 sıfır-dışı exit TABANDA AYNI (1314 sınıfı), 2 yeni adım YEŞİL · kalite: `ruff` gerçek-hata 69→59, stil +3 · bağımsız tur 4/4 DOĞRULANDI.
-**Sıradaki:** push Onur'da → Cowork: `ls-remote` → CI → sabotaj 67/67 → paket v5. **AÇIK:** jq YOK · macOS · py3.11/3.13 · Win `t_y42` 1314 (ÖLÇÜLEMEDİ) · `capraz.yml` adları BAYAT · hardlink'siz FS: M-HLINK UYGULANMAZ ·
-M-H10c kod çitli projede KACTI (ÖNCEDEN VAR) · Y1 SINIRLI cümlesi "olculen her sey gecti" · yeni oturum = YENİ kimlik.
+## DEVİR — O9 (Code) · W1-W3 · 4 Eki 2026
+**Durum:** taban `9725b05` (push EDİLDİ 4 Eki 14:13 `cd19032..9725b05` · CI #121 189/189 · claude.ai **v6** SHA `766E1396…`). 4 commit, PUSH YOK: `eaf4270` W1 · `0bb782f` W1b · `404d6a6` W2 · W3.
+Motor `4E23ED9A…` 418.182 B → `5AB269F2…` 419.232 B. Çapa `cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · iş 189 AYNEN; **`cmd_kapi` CC 20 = TAVAN (radon da 20): yeni dal helper ister** · `_kapi_govde` 80 satır TAVANDA.
+**Ölçüldü (SON motor):** sabotaj **67/67, KAPSAMSIZ 0** Win+Linux (kayıt bayt-aynı) · `isir` 79/79+2 · 81/81 · git'siz 78/78+3 · `hook_mutanti` 7/7 (Win %TEMP% artık **9→0**) ·
+`hukum_kapisi --kanit` 12/12 · `altin_cikti` 24/24 · `t_y42` Linux solo 58/58 ×2 · K4 Linux 90/90 aynı exit.
+**Sıradaki:** push Onur'da → Cowork bağımsız ölçer. **AÇIK:** jq YOK · macOS · py3.11/3.13 (`onerror` dalı yalnız sürüm yamasıyla sınandı) · Win `t_y42` 1314 (ÖLÇÜLEMEDİ) · hardlink'siz FS: M-HLINK UYGULANMAZ ·
+M-H10c kod çitli projede KACTI (ÖNCEDEN VAR) · Y1 SINIRLI cümlesi "olculen her sey gecti" (CC tavan) · yeni oturum = YENİ kimlik.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 K4 (39→55→**67/67**) TAMAM, kalan kör nokta **0**; **25 Ağu yazısı** KAPSAM DIŞI; **Deneme**: BEŞLİ PAKET kapandı, başlaması Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**KALAN 12 KÖR NOKTA** (O7, 4 Eki; `cd19032`): `cmd_isir` +12 mutant · sabotaj 55→**67/67**. **K4 + oturum_sagligi** (3 Eki): ADR `denetim/2026-10-03_oturum-sagligi-anayasa-tek-kaynak.md`. **Takma ad + BEYAZ LİSTE** (2 Eki; CI #118).
+**W1/W2 geçici dizin sızıntısı + bayat adlar** (O9, 4 Eki): `isir` kopyaları Win'de salt-okunur `.git/objects` yüzünden SESSİZCE kalıyordu (koşum başına 9 artık, %TEMP%'te 9.179) → `_gecici_sil` (5 yer) · `isir_uygulanmaz_mutanti` KOL 5-8 · `hook_mutanti` kendi `hkm_*`ini siler · `capraz.yml` 7 ad.
+**Y3·Y1·Y2 derinlik savunması** (O8; `64bff2c` `f930ab0` `936cd9e`; CI #121): hook'lu `isir` 81/81 (`_git_hooksuz`) · erken dönüş SINIRLI · `+ M ETIKETSIZ detay` · `--kanit` 12/12.
+**KALAN 12 KÖR NOKTA** (O7, 4 Eki): `cmd_isir` +12 mutant · sabotaj 55→**67/67** · **K4 + oturum_sagligi** (3 Eki; ADR `denetim/2026-10-03_oturum-sagligi-*`) · **Takma ad + BEYAZ LİSTE** (2 Eki).
 **ÜRÜN HAZIRLIĞI** (30 Eyl, CI #117; yükleme K7 HÂLÂ yok). **AÇIK:** harf-büyüklüğü çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
-**Eski:** git geçmişinde (`skill-kur` · isir 29→55/67, `cmd_isir` çıpası 26→**30** Onur kilidi · devral · `bolum-kur` · B4 · H4/H12/H14/gitfile).
+**Eski:** git geçmişinde (`skill-kur` · isir 29→55/67, `cmd_isir` çıpası 26→**30** Onur kilidi · devral · B4 · H4/H12/H14).
 
 ## Bilinen sınırlar (ölçülmüş)
 - 🔴 **"GERÇEK ORTAMDA OLMAZ" DEMEDEN ÖNCE ORTAMI ÖLÇ (6 Eyl):** M-Y2 kusuru "hiçbir runner'da bu TMPDIR yok" diye
@@ -61,5 +61,5 @@ K4 (39→55→**67/67**) TAMAM, kalan kör nokta **0**; **25 Ağu yazısı** KAP
 - 🟡 Beyan/mtime çelişkisini ölçen kapı YOK · `ruff/mypy/bandit` YALNIZ `hafiza.py`'yi tarar · `readme_mutanti` ANLATIMI ölçmez (KAPI-3 kod
   KÜMESİNİ ölçer, anlamını değil) · `paketten_kos` belgenin ANLAMINI değil GEÇTİĞİNİ ölçer · kilit inode yarışı daraltıldı, kapatılmadı ·
   zincir anahtarsız (bilinçli).
-- 🔴 `rmtree(ignore_errors=True)` 38 dosya/124 yer, `onerror` YOK (5 Eyl, çöplenme) — md.8 ⇒ **KOD DEĞİŞMEZ**.
-- 🟡 **Y2 sınırı (4 Eki):** başka başlığın ALTINA düşen yetim detay ayırt EDİLEMEZ (yalnız "ilk `[`'ten önce"). **Y3:** hook'lu `isir` iskeleti COMMIT'Lİ proje ister (commit'sizde hook H9'u geçirir). Win'de yükte sabotaj `isir`i 300 sn aşar ⇒ solo koş.
+- 🔴 `rmtree(ignore_errors=True)`: motorda 5 yer W1'de `_gecici_sil`e döndü (4 Eki); faz0'daki ~90 çağrı (geliştirici aracı) KAPSAM DIŞI — Win'de salt-okunur `.git` artığı bırakır (`hook_mutanti` hariç).
+- 🟡 **Y2 sınırı:** başka başlığın ALTINA düşen yetim detay ayırt EDİLEMEZ. **Y3:** hook'lu `isir` iskeleti COMMIT'Lİ proje ister. Win'de yükte `sabotaj.py`nin `isir`i 300 sn aşar ⇒ solo koş; izole TEMP kısa yolda olmalı (260).
