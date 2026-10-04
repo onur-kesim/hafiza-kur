@@ -67,6 +67,7 @@ import hashlib
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -348,6 +349,31 @@ def _kol_isir_hookta(proje_motoru, isir_motoru, kok, ad, mutant):
     _kayit(ad, BEKLENDIGI_GIBI, ("hook KOSARKEN " if not mutant else "sabotajda ISIRDI: ") + ozet)
 
 
+def _sil(yol):
+    """Betigin KENDI gecici dizinini (`hkm_*`) SIL — git objeleri Windows'ta salt-okunur oldugu icin
+    `rmtree(ignore_errors=True)` hepsini %TEMP%'te birakiyordu (W1, olculdu 4 Eki 2026: kosum basina 1
+    `hkm_*` + 8 `hafiza_isir_*`). Hata gelince girdiyi yazilabilir yapip yeniden dener; yine olmazsa stderr'e
+    TEK satir. Kokun USTUNE ve sembolik baglantiya chmod YOK. Motorun `_gecici_sil`inden BAGIMSIZ kopya."""
+    yol = os.path.normpath(yol)
+
+    def onar(fonk, p, *_):
+        hedef = [p] if not os.path.islink(p) else []
+        if os.path.dirname(p).startswith(yol):
+            hedef.append(os.path.dirname(p))
+        for h in hedef:
+            try:
+                os.chmod(h, stat.S_IRWXU)
+            except OSError:
+                pass
+        try:
+            fonk(p)
+        except OSError:
+            pass
+    shutil.rmtree(yol, **({"onexc": onar} if sys.version_info >= (3, 12) else {"onerror": onar}))
+    if os.path.lexists(yol):
+        print("GECICI DIZIN SILINEMEDI: %s" % yol, file=sys.stderr)
+
+
 def main():
     if not os.path.isfile(MOTOR):
         print("ARAC KUSURU: motor yok: %s" % MOTOR)
@@ -373,7 +399,7 @@ def main():
             print("ARAC KUSURU: %s" % ex)
             return 3
     finally:
-        shutil.rmtree(gecici, ignore_errors=True)
+        _sil(gecici)
 
     print("=" * 82)
     print("HOOK MUTANTI — kurulan pre-commit kirmizi kapida commit'i durduruyor mu?")
