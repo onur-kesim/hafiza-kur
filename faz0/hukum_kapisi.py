@@ -28,22 +28,27 @@ BEKLENEN HUKUMLER
   Desenler kasten ASCII'dir: koruma `errors="replace"` ile devreye girdiginde
   '-' ayraci '?' olarak basilabilir; kapi bu yuzden ayracin kendisine bakmaz.
 
-KANIT KOLLARI (`--kanit`, Y1, Onur kilidi 4 Eki 2026) — `kapi`nin KENDI hukmu
+KANIT KOLLARI (`--kanit`, Y1/Y2, Onur kilidi 4 Eki 2026) — `kapi`nin KENDI hukmu
   Bu kapi yukarida kosucularin hukmunun BASILIP basilmadigina bakar. `kapi` komutunun
-  KENDI hukmu de sessiz yalan soyleyebiliyordu (olculdu 29 Eyl,
+  KENDI hukmu da iki yerde sessiz yalan soyleyebiliyordu (olculdu 29 Eyl,
   OLCUM_RAPORU_29EYL_KALAN18_ERISIM.md §3): bir `fail()` basligi olurse
     Y1  erken donus (H6 `HAFIZA DIZINI YOK` / H- `CANLI HAFIZA YOK`) "hicbir kapi
-        kosmadi" demesine ragmen hukum duz `YESIL` ciktisi veriyordu (exit 0).
-  Her vaka icin UC parca (log gerekmez, `--kanit` tek basina kosar):
+        kosmadi" demesine ragmen hukum duz `YESIL` ciktisi veriyordu (exit 0);
+    Y2  ilk `[` basligindan ONCE dizilen detay satirlari (basligi olmayan) `FAIL (0
+        bulgu)` diye basiliyordu — detay gorunuyor, sayim yalan.
+  Her duzeltme icin DORT parca (log gerekmez, `--kanit` tek basina kosar):
     POZITIF KONTROL : sabotajsiz motor + vaka -> ESKI davranis (FAIL, etiketli, SONUC
-                      satiri eskisiyle ayni bicimde).
+                      satiri eskisiyle ayni bicimde, `ETIKETSIZ` yok).
     KOL             : basligi `None` yapilmis motor (faz0/sabotaj.py'nin yontemi) + ayni
-                      vaka -> `YESIL (SINIRLI)` exit 0, `--kapsam-zorla` exit 5.
-    MUTANT          : duzeltmenin KENDISI sokulur (`O.append` satiri) -> ayni vaka eski
-                      belirtiyi gostermeli (duz `YESIL`), yani KOL bu mutanti GORUR
-                      (ISIRDI).
-  Vakalar: Y1-a canli hafiza silinmis (H- basligi `None`) · Y1-b hafiza dizini silinmis
-  (H6 basligi `None`).
+                      vaka -> Y1: `YESIL (SINIRLI)` exit 0, `--kapsam-zorla` exit 5 ·
+                      Y2: SONUC'ta `ETIKETSIZ detay`, exit 1.
+    MUTANT          : duzeltmenin KENDISI sokulur (Y1: `O.append` satiri, Y2: yetim
+                      sayimi) -> ayni vaka eski belirtiyi gostermeli (duz `YESIL` /
+                      `FAIL (N bulgu)`), yani KOL bu mutanti GORUR (ISIRDI).
+  Vakalar: Y1-a canli hafiza silinmis · Y1-b hafiza dizini silinmis · Y2-a proje disi
+  hardlink (H-LINK basligi `None`) · Y2-b girintili blok isareti (H10 basligi `None`).
+  Bilinen sinir (DURUM.md): baska bir basligin ALTINA dusen yetim detay ayirt EDILEMEZ;
+  yalniz "ilk basliktan once" olculur.
 
 KULLANIM
   python3 faz0/hukum_kapisi.py hukum.log
@@ -51,11 +56,12 @@ KULLANIM
   python3 faz0/hukum_kapisi.py --kanit
 
 CIKIS KODLARI
-  0  beklenen her hukum BASILDI  (--kanit: her satir BEKLENDIGI GIBI)
+  0  beklenen her hukum BASILDI  (--kanit: on iki satirin hepsi BEKLENDIGI GIBI)
   1  en az bir hukum KAYIP -> olcum kayboldu, is KIRMIZI  (--kanit: BEKLENMEDIK)
   2  kullanim hatasi / log okunamadi  (--kanit: OLCULEMEDI / ARAC KUSURU)
 """
 import ast
+import datetime
 import os
 import re
 import shutil
@@ -153,8 +159,11 @@ _Y1_H6 = ('        O.append("KAPILAR KOSMADI: arsiv dizini cozulemedi (erken don
           + ' sonraki tum kapilar OLCULMEDI")\n')
 _Y1_H = ('        O.append("KAPILAR KOSMADI: canli hafiza dosyasi cozulemedi (erken donus) '
          + _TIRE + ' sonraki tum kapilar OLCULMEDI")\n')
+_Y2_SAYIM = '        _ey = len(list(filter(lambda x: x.startswith("      "), F[:_ilk])))\n'
+_Y2_SOKULMUS = '        _ey = 0\n'
 
 _ESKI_SONUC = re.compile(r"^SONUC: FAIL \(\d+ bulgu\)$")
+_YENI_SONUC = re.compile(r"^SONUC: FAIL \(\d+ bulgu \+ \d+ ETIKETSIZ detay", re.M)
 
 
 class AracKusuru(Exception):
@@ -256,10 +265,29 @@ def _s_dizin_sil(p):
     shutil.rmtree(os.path.join(p, "arsiv", "hafiza"))
 
 
+def _s_hardlink(p):
+    dis = os.path.join(os.path.dirname(p), "dis_" + os.path.basename(p))
+    os.makedirs(dis, exist_ok=True)
+    try:
+        os.link(_canli(p), os.path.join(dis, "yedek_PROJE_HAFIZA.md"))
+    except (OSError, NotImplementedError, AttributeError) as e:
+        raise Kurulamadi("hardlink kurulamadi (%s: %s)" % (type(e).__name__, e))
+    if os.stat(_canli(p)).st_nlink < 2:
+        raise Kurulamadi("hardlink kuruldu ama st_nlink 2'den kucuk (dosya sistemi bildirmiyor)")
+
+
+def _s_girintili(p):
+    with open(_canli(p), "a", encoding="utf-8", newline="\n") as f:
+        f.write('\n  <!-- blok konu="kanit-y2b" guncel="%s" kaynak="-" -->\n'
+                % datetime.date.today().isoformat())
+
+
 # (ad, vaka kurucu, fonksiyon, fail etiketi, mesaj parcasi, tur, MUTANTIN sokecegi satir)
 KANIT_VAKALARI = [
     ("Y1-a canli hafiza SILINMIS", _s_canli_sil, "_kapi_govde", "H-", None, "y1", _Y1_H),
     ("Y1-b hafiza DIZINI silinmis", _s_dizin_sil, "_kapi_govde", "H6", None, "y1", _Y1_H6),
+    ("Y2-a proje DISI hardlink", _s_hardlink, "_kapi_govde", "H-LINK", None, "y2", _Y2_SAYIM),
+    ("Y2-b girintili blok isareti", _s_girintili, "_h10_cit", "H10", "GIRINTILI", "y2", _Y2_SAYIM),
 ]
 
 
@@ -272,18 +300,24 @@ def _proje(yer, ad, sablon, kurucu):
 
 def _pozitif_tamam(etiket, rc, c):
     s = _sonuc_satiri(c)
-    return rc == 1 and ("[%s]" % etiket) in c and bool(_ESKI_SONUC.match(s))
+    return (rc == 1 and ("[%s]" % etiket) in c and bool(_ESKI_SONUC.match(s))
+            and "ETIKETSIZ" not in c)
 
 
 def _kol_tamam(tur, motor, p):
     """Duzeltilmis motor + basligi `None` vaka: (tamam, eski_belirti, ayrinti)."""
     rc, c = _kos(motor, ["kapi"], p)
     s = _sonuc_satiri(c)
-    rz, _ = _kos(motor, ["kapi", "--kapsam-zorla"], p)
-    tamam = (rc == 0 and s.startswith("SONUC: YESIL (SINIRLI)") and "KAPILAR KOSMADI" in c
-             and rz == 5)
-    eski = rc == 0 and s.startswith("SONUC: YESIL ") and "SINIRLI" not in s
-    return tamam, eski, "exit=%s/%s · %s" % (rc, rz, s[:70])
+    if tur == "y1":
+        rz, _ = _kos(motor, ["kapi", "--kapsam-zorla"], p)
+        tamam = (rc == 0 and s.startswith("SONUC: YESIL (SINIRLI)") and "KAPILAR KOSMADI" in c
+                 and rz == 5)
+        eski = rc == 0 and s.startswith("SONUC: YESIL ") and "SINIRLI" not in s
+        return tamam, eski, "exit=%s/%s · %s" % (rc, rz, s[:70])
+    tamam = (rc == 1 and bool(_YENI_SONUC.search(c)) and "[?] ETIKETSIZ DETAY" in c)
+    eski = (rc == 1 and bool(_ESKI_SONUC.match(s)) and "ETIKETSIZ" not in c
+            and bool(re.search(r"^ {8}\S", c, re.M)))
+    return tamam, eski, "exit=%s · %s" % (rc, s[:70])
 
 
 def _vaka(gecici, sablon, kaynak, vaka):
@@ -313,7 +347,8 @@ def _vaka(gecici, sablon, kaynak, vaka):
     satir.append((ad + " / KOL", BEKLENDIGI_GIBI if tamam else BEKLENMEDIK,
                   ayr if tamam else "duzeltme belirtisi YOK: " + ayr))
     # 3) MUTANT — duzeltmenin kendisi sokulur: KOL bunu GORMELI
-    mut = _degistir(sab, hedef, "", ad)
+    yerine = _Y2_SOKULMUS if tur == "y2" else ""
+    mut = _degistir(sab, hedef, yerine, ad)
     m_mut = _yaz(os.path.join(yer, "mutant.py"), mut)
     tamam, eski, ayr = _kol_tamam(tur, m_mut, _proje(yer, "mutant", sablon, kurucu))
     if tamam:
@@ -347,7 +382,7 @@ def kanit_main():
     finally:
         shutil.rmtree(gecici, ignore_errors=True)
     print("=" * 78)
-    print("HUKUM KAPISI --kanit — `kapi`nin KENDI hukmu (Y1: erken donus)")
+    print("HUKUM KAPISI --kanit — `kapi`nin KENDI hukmu (Y1: erken donus, Y2: etiketsiz detay)")
     print("=" * 78)
     for ad, durum, ayr in kayit:
         print("  %-44s %-16s %s" % (ad, durum, ayr))

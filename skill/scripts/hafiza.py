@@ -3760,7 +3760,20 @@ def cmd_kapi(a):
     for o in O:
         print("  ? " + o)
     if F:
-        print("\nSONUC: FAIL (%d bulgu)" % len([x for x in F if x.startswith("[")]))
+        # Y2 (Onur kilidi 4 Eki 2026): ILK `[` basligindan ONCE dizilen 6-bosluklu detay satirlarinin
+        # BASLIGI yok (fail() basligi olmedi/sayim tutarsiz): bulgu SAYILMAZ ama sessiz de KALMAZ.
+        # Bilinen sinir: baska bir basligin ALTINA dusen yetim ayirt EDILEMEZ (yalniz "ilk basliktan
+        # once" olculur). Etiketsiz YOKSA SONUC satiri BIREBIR eskisi.
+        _ilk = (list(map(lambda x: x.startswith("["), F)) + [True]).index(True)
+        _ey = len(list(filter(lambda x: x.startswith("      "), F[:_ilk])))
+        _n = len([x for x in F if x.startswith("[")])
+        if _ey:
+            print("\nSONUC: FAIL (%d bulgu + %d ETIKETSIZ detay — sayim tutarsiz, motor kusuru)"
+                  % (_n, _ey))
+            print("  [?] ETIKETSIZ DETAY: ilk bulgu basligindan ONCE %d detay satiri var — hicbir "
+                  "basliga baglanamadi:" % _ey)
+        else:
+            print("\nSONUC: FAIL (%d bulgu)" % _n)
         for f in F:
             print("  " + f)
         # A-2 (PAKETLEME SONRASI IC DENETIM, v2.4.1): "olcum YARIDA KESILDI" bir

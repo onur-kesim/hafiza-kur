@@ -114,10 +114,11 @@ jobs:
         shell: bash
         run: python faz0/hukum_kapisi.py hukum.log
 
-      # `kapi`nin KENDI hukmu (Y1/Y2, Onur kilidi 4 Eki 2026): erken donus (H6/H-) "hicbir
-      # kapi kosmadi" derken duz YESIL basabiliyordu. Her vaka icin pozitif kontrol + kol +
+      # `kapi`nin KENDI hukmu (Y1/Y2, Onur kilidi 4 Eki 2026): Y1 erken donus (H6/H-) "hicbir
+      # kapi kosmadi" derken duz YESIL basabiliyordu; Y2 ilk basliktan ONCE dizilen detay
+      # satirlari `FAIL (0 bulgu)` diye basiliyordu. Her vaka icin pozitif kontrol + kol +
       # mutant; `continue-on-error` YOK (bir kol kirilirsa is KIRMIZI).
-      - name: HUKUM KAPISI --kanit — kapinin KENDI hukmu (Y1 erken donus)
+      - name: HUKUM KAPISI --kanit — kapinin KENDI hukmu (Y1 erken donus, Y2 etiketsiz detay)
         if: always()
         shell: bash
         run: python faz0/hukum_kapisi.py --kanit
