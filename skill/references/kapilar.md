@@ -325,6 +325,12 @@ kapı mutantı değildir, çünkü ölçtükleri şey bir kapının hükmü değ
 | M-DEVIR | `.hafizarc` silinip `devral` koşulduğunda yeniden çapalama **gizlenebiliyor mu** |
 | M-KILITK | kilit **KAPSAMI**: `kur` ve `devral` tek-yazar kilidini alıyor mu |
 
+M-DEVIR ve M-KILITK `devral`ı **kayıtlı rol eşlemesiyle** (`.hafizarc`ın `canli` + `kural_evi_dosya`'sı, `--esle` olarak) çağırır:
+`canli` rolü otomatik tanınmayan bir projede (`CLAUDE.md` + `DURUM.md`) düz `devral` rol
+kontrolünde `DEVIR DURDU` der ve sınamanın ölçtüğü kola hiç varılmaz. `devral` yine de
+sınamanın **kendi ölçtüğü durma imzası** olmadan durursa (M-KILITK için kilit mesajı; M-DEVIR için
+hiçbir durma) sonuç KAÇTI/`KAPI KÖR` **değil**, `KURULAMADI`dır (çıkış kodu 2).
+
 > **Neden ayrı kategori:** M-AKLAMA önce bir kapı mutantı olarak yazılmıştı ve
 > sabotaj altında bile ısırıyordu — çünkü kapı zaten "zincir yok" diyordu; ölçtüğü
 > sınıf aklamanın kendisi değildi. Aklama bir **yazma-tarafı** davranışıdır; ölçütü

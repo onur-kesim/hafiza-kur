@@ -5413,6 +5413,23 @@ class MutantUygulanmaz(Exception):
     (git VAR ama kurulum yine de bozuksa) BIREBIR korunur, iki hal KARISTIRILMAZ."""
 
 
+def _isir_devral_argv(r):
+    """B1 KATMAN 1: `isir`in M-DEVIR / M-KILITK sinamalari `devral`i bu argumanlarla cagirir — kopyadaki
+    `.hafizarc`in KAYITLI rol eslemesi (`canli` + `kural_evi_dosya`, `rc_oku` ciktisi) `--esle` olur.
+    SAF fonksiyon (dosya/surec yok). Kenar: `--esle` degerini VIRGULLE boler, oysa virgullu bir ad
+    TABLO TARAFINDAN mesru taninabilir (OLCULDU: `A,B_HAFIZA.md` duz devralda exit 0) — saf turetme
+    calisan bir projeyi BOZARDI. Virgullu `canli`da `--esle` HIC verilmez (duz devral; durursa katman 2
+    KURULAMADI der); virgullu `kural` atlanir (rol olculen kola etki etmez); bos deger verilmez.
+    Dosya VARLIGI sorulmaz (`cli_yol_coz` yalniz kok icinde kalmayi ister)."""
+    canli, kural = r.get("canli") or "", r.get("kural_evi_dosya") or ""
+    if "," in canli:
+        return ["devral"]
+    esle = "canli=" + canli
+    if kural and "," not in kural:
+        esle += ",kural=" + kural
+    return ["devral", "--esle=" + esle]
+
+
 def cmd_isir(a):
     """KOR KAPI PROTOKOLU: her kapi icin bilerek bir mutant kur, kapinin ISIRDIGINI kanitla.
     Kirli kopyada YAKALAMALI, temiz surumde YAKALAMAMALI. Isirmayan kapi = OLCUM YOK."""
@@ -5613,6 +5630,34 @@ def cmd_isir(a):
                            errors="replace", env=dict(os.environ, PYTHONIOENCODING="utf-8"))
         return r.returncode, (r.stdout or "") + (r.stderr or "")
 
+    def _devral_kos(alt, r2, kanit=None):
+        """M-DEVIR / M-KILITK ORTAK `devral` cagrisi (B1, Onur kilidi 4 Eki 2026).
+
+        OLCULDU (Momentum kopyasi, OLCUM_RAPORU_04EKIM_DENEME_V7.md): `canli` rolu
+        otomatik taninmayan bir projede (CLAUDE.md + DURUM.md; DURUM.md `gunluk`
+        sayilir) `--esle`siz devral rol kontrolunde `DEVIR DURDU` ile DURUYOR, iki
+        mutantin olctugu kola hic varilmiyor ve `isir` sahte "KAPI KOR" (exit 1)
+        veriyordu; ayni adimlar `--esle`li 3/3 kayda gecti. Iki katman:
+        KATMAN 1 (OLC): roller kopyadaki `.hafizarc`in KAYITLI eslemesinden turetilen
+        `--esle` ile verilir (`_isir_devral_argv`) — kapi bu proje seklinde de
+        GERCEKTEN sinanir.
+        KATMAN 2 (KORU): devral yine de durursa (exit != 0) ve sinamanin KENDI olctugu
+        durma imzasi (`kanit`; M-KILITK icin kilit mesaji, M-DEVIR icin YOK) ciktida
+        YOKSA, olculen kola VARILAMAMISTIR: bu KOR degil KURULAMADI'dir (cikis kodu 2;
+        doktrin 2 — olculemeyen KOR ilan edilmez). Yuklem BILINCLI `DEVIR DURDU` alt
+        dizesinden GENISTIR: OLCULDU (15 vaka), o alt dize 10 on-kosul durmasinin
+        yalniz 5'ini yakaliyordu (--esle ayristirma, agactaki baska `.kilit`, salt-okunur
+        canli, yapi durmasi kaciyordu); `exit != 0` 10/10, olculen vakalarin HICBIRINI
+        (temiz, sabotajli, beklenen kilit durmasi) maskelemiyordu. Bedeli (gizlenmez):
+        yazim basladiktan SONRA gercek bir devral coksmesi KACTI yerine KURULAMADI olur
+        — komut yuksek sesle dustu, ilk `HATA:` satiri asagida AYNEN basilir."""
+        k, c = _komut(alt, *_isir_devral_argv(r2))
+        if k != 0 and (kanit is None or kanit not in c):
+            raise MutantKurulamadi("devral olculen basamaga varmadan durdu (exit %d): %s"
+                                   % (k, next((s for s in c.splitlines()
+                                               if s.startswith("HATA:")), "")[:140]))
+        return k, c
+
     def komut_sinamasi(ad, dene):
         """FABLE 3. TUR: B-2/B-3 ve B-5 birer KAPI olcumu degil, KOMUT DAVRANISIDIR
         (kok disina yazma reddediliyor mu; kilit sahipligi doguru mu). Kapi mutanti
@@ -5727,7 +5772,7 @@ def cmd_isir(a):
             elif hazirla == "tasi":
                 shutil.move(y2.h, y2.h + "_yedek")
             os.remove(os.path.join(alt, RC_AD))
-            k1, c1 = _komut(alt, "devral")
+            k1, c1 = _devral_kos(alt, r2)
             canli = oku(os.path.join(alt, r2["canli"])) if os.path.isfile(
                 os.path.join(alt, r2["canli"])) else ""
             r3 = rc_oku(alt) if os.path.isfile(os.path.join(alt, RC_AD)) else None
@@ -5806,7 +5851,7 @@ def cmd_isir(a):
             "pid=999999 · BASKA surecin kilidi · komut: derle\n")
         cp = os.path.join(alt, r2["canli"])
         once = sha_dosya(cp) if os.path.isfile(cp) else ""
-        k1, c1 = _komut(alt, "devral")
+        k1, c1 = _devral_kos(alt, r2, "BASKA BIR YAZMA ISLEMI SURUYOR")
         sonra = sha_dosya(cp) if os.path.isfile(cp) else ""
         d_durdu = (k1 != 0) and ("BASKA BIR YAZMA ISLEMI SURUYOR" in c1)
         d_yazmadi = (once == sonra)

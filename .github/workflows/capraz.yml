@@ -2345,6 +2345,13 @@ jobs:
   #     kullanir; kollar IZOLE TMPDIR/TEMP/TMP ile uctan uca artik 0'i, onarim +
   #     tek stderr uyarisini ve 5 cagri yerini olcer; uc mutant AYRI ayri ISIRIR.
   #     6 `isir` kosumu: sure 20 -> 30 dk.
+  #     B1 (Onur kilidi 4 Eki 2026, KOL 9-11): `isir` iki SAHTE "KAPI KOR" verdi (M-DEVIR +
+  #     M-KILITK, exit 1): iki komut sinamasi `devral`i `--esle`siz cagiriyordu ve `canli` rolu
+  #     otomatik taninmayan projede (CLAUDE.md + DURUM.md) devral `DEVIR DURDU` ile duruyordu —
+  #     189/189 CI bunu GORMEDI (fixture'larda duz devral basarili). Motorun `_devral_kos`u:
+  #     roller `.hafizarc`in kayitli eslemesinden `--esle` olur (KOL 9) VE rol/on-kosul durmasi
+  #     KURULAMADI'dir, KACTI/1 degil (KOL 10, katman 1 kapaliyken); iki katman da kapaninca
+  #     bugunku sahte KOR GERI GELIR (KOL 11 — kolun kendisi isiriyor). 3 `isir` es zamanli.
   #     🔴 UC PLATFORM, `continue-on-error` YOK.
   # ---------------------------------------------------------------------------
   isir_uygulanmaz_mutanti:
@@ -2360,7 +2367,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: git'siz projede isir exit 0 mi + gecici dizin temizligi (sekiz kol, hukum gevsemez)
+      - name: git'siz projede isir exit 0 mi + gecici dizin temizligi + sahte KAPI KOR (on bir kol, hukum gevsemez)
         shell: bash
         run: python faz0/isir_uygulanmaz_mutanti.py 2>&1 | tee isir-uygulanmaz-cikti.txt
       - name: isir uygulanmaz mutanti ciktisi (artefakt)
