@@ -3,11 +3,13 @@
 Son güncelleme: 4 Eki 2026 · bu dosya ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
 
 ## DEVİR — O7 (Code) · KALAN 12 KÖR NOKTA · 4 Eki 2026
-**Durum:** motor `82044F18…` 402.893 B → `1E63E03C…` 415710 B · `cmd_isir` içine 12 mutant (`m_*` + `_ortam_kos`) · kapı bölgesi (1-5332) `cmp` bayt-AYNI ·
-CC çapası 30, `ihlal` 9, CC>20 kümesi 7 AYNEN. Taban `320bf1d` (CI #119). PUSH YOK. Bağımsız tur (16 ajan) 3 SAHTE-KACTI/exit 2 kusuru buldu (M-H17b · M-H1ks · M-H13p),
-düzeltildi; **K1/K2/K3/K4/K6 DÜZELTİLMİŞ motorda YENİDEN ölçülüyor — sonuç sonraki commit'te** (ilk motorda: 67/67, köşegen 12/12, isir 79/81/78).
-**Sıradaki ilk iş:** push Onur'da → Cowork: `ls-remote` → CI → bağımsız sabotaj 67/67 → paket v5. **AÇIK:** gerçek jq YOK · macOS · py3.11/3.13 · Win `t_y42` WinError 1314 ·
-`capraz.yml` adım adları BAYAT ("dokuz mutant") · hardlink'siz FS'te M-HLINK UYGULANMAZ (sabit sayılar 1 eksik) · M-H10c kod çitli sağlıklı projede KACTI (ÖNCEDEN VAR, taban aynı) · yeni oturum = YENİ kimlik.
+**Durum:** motor `82044F18…` 402.893 B → `1E63E03C…` 415.710 B · `cmd_isir` +12 mutant (`m_*`, `_ortam_kos`) · kapı bölgesi (1-5332) `cmp` bayt-AYNI · CC çapası 30,
+`ihlal` 9, CC>20 kümesi 7 AYNEN. Taban `320bf1d` (CI #119). PUSH YOK. Bağımsız tur (16 ajan) 3 sahte-KACTI/exit 2 kusuru buldu (M-H17b·M-H1ks·M-H13p), düzeltildi.
+**Ölçüldü (SON motor, Win py3.12 + WSL `olcum`):** sabotaj bayraksız **67/67, KAPSAMSIZ 0** (iki platform; taban 55/12) · köşegen 12/12, dışı 0 · K2 düşen 0 · `isir` taze **79/79 + 2 SINANMADI** ·
+derle **81/81** · git'siz **78/78 + 3 UYGULANMAZ** · K3 Linux: `t_y42` 58/58 + 5 betik exit 0 · K5 Win M-HLINK/M-H2d ISIRDI · K6 (88 adım, taban↔yeni): exit FARKI Win **0**, Linux 2
+(adım 6/13 `t_y42`, ZIT yönlü yük flake'i; boş makinede solo taban ×2 + yeni ×2 = 58/58).
+**Sıradaki:** push Onur'da → Cowork: `ls-remote` → CI → sabotaj 67/67 → paket v5. **AÇIK:** jq YOK · macOS · py3.11/3.13 · Win `t_y42` 1314 (ÖLÇÜLEMEDİ) · `capraz.yml` adları BAYAT
+("dokuz mutant") · hardlink'siz FS'te M-HLINK UYGULANMAZ (sayılar 1 eksik) · M-H10c kod çitli sağlıklı projede KACTI (ÖNCEDEN VAR) · yeni oturum = YENİ kimlik.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 K4 (39→55→**67/67**) TAMAM, kalan kör nokta **0** (KAPSAMSIZ 0); **25 Ağu
@@ -15,7 +17,7 @@ yazısı** KAPSAM DIŞI (İş Portföyü'nde kapanır); **Deneme**: BEŞLİ PAKE
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**K4 + oturum_sagligi** (3 Eki; `320bf1d`): mutant determinizmi hal→VAR/YOK + M-S11/S12 · exit farkı Linux 0/Win 1 (adım 54 Store `python3` flake, regresyon DEĞİL) · ÖLÇÜLEMEDİ: Win `t_y42` 1314, macOS, py3.11/3.13, jq · ADR `denetim/2026-10-03_oturum-sagligi-anayasa-tek-kaynak.md`.
+**K4 + oturum_sagligi** (3 Eki; `320bf1d`): mutant determinizmi hal→VAR/YOK + M-S11/S12 · exit farkı Linux 0/Win 1 (adım 54 Store `python3` flake, regresyon DEĞİL) · ADR `denetim/2026-10-03_oturum-sagligi-anayasa-tek-kaynak.md`.
 **Takma ad + BEYAZ LİSTE** (2 Eki; CI #118 189/189): 15 takma ad + KAPI-4 · `paket`/`skill-kur` beyaz liste + `DISARIDA`.
 **ÜRÜN HAZIRLIĞI** (30 Eyl; push edildi, CI #117 189/189; claude.ai yükleme K7 HÂLÂ yok): `paket` (stdlib zipfile, SAKLANMIŞ giriş) · açıklama 475 + (v) ayağı ·
 `skill-kur` exit 3 · sabotaj 55/67. **AÇIK:** harf-büyüklüğü çakışan adlar · `name:` ön-madde YAML'ı ölçülmez · `--guncelle`+izin hatasında boş yedek
