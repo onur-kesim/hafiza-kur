@@ -1735,6 +1735,31 @@ def _kur_yabanci_defter_kontrolu(a, kok):
           % (len(taninan), dokum, kok, kok))
 
 
+def _gitkeep_yaz(y):
+    """B2 (Onur kilidi 4 Eki 2026, besli-paket/IS_EMRI_KUTUDAN_B1B2.md): git BOS DIZIN TASIMAZ.
+    `derle` fragmanlari arsive tasiyinca `gunluk/` bos kaliyor (ADR yoksa `kararlar/` de) ve taze
+    `git clone`da `kapi` ilk acilista `[H16] gunluk YOK` / `kararlar YOK` ile KIRMIZI yaniyor (OLCULDU:
+    Momentum kopyasi, `git ls-files kararlar gunluk` = 0). H16'nin denetledigi DORT dizinin (kararlar ·
+    gunluk · gunluk_ars · hafiza dizini) HER BIRINE bos `.gitkeep` yazilir; idempotent — var olana
+    DOKUNULMAZ. YALNIZ taze `kur` (zincirin GENESIS dali) ve `devral` cagirir: mevcut kurulu projeyi
+    onarmak AYRI karardir, `kapi` eksik `.gitkeep`i bulgu YAPMAZ. `arsiv/<tur>` dizinlerine YAZILMAZ
+    (H13 ve devral plani o dizinlerin icini sayar). `.gitkeep` hicbir sayimda fragman/ADR/arsiv dosyasi
+    sayilmaz: sayimlar `.md` / `HAFIZA_*.md` / `NNNN-*.md` suzer.
+    YERLESIM: tum defterler/zincir YAZILDIKTAN SONRA cagrilir (OLCULDU: erken yazim izin hatasinda
+    `.hafizarc` yazilmis YARIM kurulum birakiyor ve tekrar `kur` "VERI KAYBI" diye reddediyor) ve hata
+    FATAL DEGIL — kurulum zaten tamamdir; yazilamayan dizin icin UYARI basilir. `open(..., "xb")` var
+    olani EZMEZ (yaris dahil)."""
+    for d in (y.kararlar, y.gunluk, y.gunluk_ars, y.h):
+        try:
+            with open(os.path.join(d, ".gitkeep"), "xb"):
+                pass
+        except FileExistsError:
+            pass
+        except OSError as e:
+            print("UYARI: .gitkeep yazilamadi (%s): %s — taze klonda [H16] bu dizin icin YOK cikabilir"
+                  % (_rel(d, y.kok), e), file=sys.stderr)
+
+
 def _kur_rc(a, kok):
     ad = a.ad or os.path.basename(kok.rstrip(os.sep)) or "PROJE"
     rc_p = os.path.join(kok, RC_AD)
@@ -1823,6 +1848,7 @@ def _kur_halka(y, yabanci=None):
             len(yabanci), ", ".join(r for r, _ in yabanci[:4]))
     if not os.path.isfile(y.zincir):
         zincir_halka(y, "GENESIS", "kurulum" + ek)
+        _gitkeep_yaz(y)
     else:
         zincir_halka(y, "KURULUM", "hafiza.py kur (idempotent tazeleme)" + ek)
 
@@ -3486,6 +3512,7 @@ def cmd_devral(a):
     zincir_halka(y, "DEVIR", _dnot,
                  ek={"onceki_kurulum_izi": tum_izler[:20]} if tum_izler else None)
     print("  cipa + defterler + zincir kuruldu (%s)" % hdir_rel)
+    _gitkeep_yaz(y)
 
     print("\n=== DEVIR RAPORU — kapi (salt okuma) ===")
     kod, cikti = _kapi_metni(kok)

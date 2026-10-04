@@ -51,6 +51,13 @@ ilan edilmiştir.
 `arsiv/` alt türleri projeye göre değişir; `.hafizarc` içindeki `arsiv_turleri`
 listesinden gelir. **Kullanılan her tür `SAKLAMA_PLANI.md`'de geçmelidir** (H13).
 
+Taze `kur` ve `devral`, H16'nın denetlediği dört dizinin (`kararlar/` · `gunluk/` ·
+`arsiv/hafiza/gunluk/` · `arsiv/hafiza/`) **her birine boş bir `.gitkeep`** yazar: git boş dizin
+taşımaz, `derle` fragmanları arşive taşıyınca `gunluk/` boşalır ve projeyi klonlayan ikinci
+makinede `kapi` `[H16] gunluk YOK` / `kararlar YOK` derdi. `.gitkeep` fragman/ADR/arşiv dosyası
+sayılmaz. **Mevcut kurulu projeye YAZILMAZ** (`kapi` eksik `.gitkeep`'i bulgu yapmaz; onarmak ayrı
+karardır); `arsiv/<tür>/` dizinlerine de yazılmaz.
+
 Hukuk/strateji projesi için tipik türler: `dilekce`, `karar`, `mutalaa`, `delil`,
 `yazisma`, `taslak`. Araştırma projesi için: `kaynak`, `veri`, `analiz`, `taslak`.
 

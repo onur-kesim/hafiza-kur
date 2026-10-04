@@ -2871,3 +2871,43 @@ jobs:
           name: skill-kur-${{ matrix.os }}
           path: skill-kur-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-42) GITKEEP MUTANTI — besli-paket/IS_EMRI_KUTUDAN_B1B2.md B2 (Onur kilidi 4 Eki 2026):
+  #     git BOS DIZIN TASIMAZ. `derle` fragmanlari arsive tasiyinca `gunluk/` bos kaliyor (ADR yoksa
+  #     `kararlar/` de) ve kurulu + commit'li projeyi `git clone` eden ikinci makinede `kapi` ilk
+  #     acilista `[H16] kararlar YOK` / `[H16] gunluk YOK` ile KIRMIZI yaniyordu (Momentum kopyasi,
+  #     `git ls-files kararlar gunluk` = 0). 189/189 CI bunu GORMEDI: hicbir fixture kur -> commit ->
+  #     KLON -> kapi zincirini kosmuyordu. `kur` (taze kurulum) ve `devral` H16'nin dort dizinine bos
+  #     `.gitkeep` yazar; mevcut kurulu projede `kapi` eksik `.gitkeep`i bulgu YAPMAZ, tekrar `kur`
+  #     onu ONARMAZ. BES KOL (kur akisi · devral akisi · geriye uyum · var olana dokunma · yarim
+  #     kurulum yok) + SEKIZ SABOTAJ (her biri BEKLENEN kolu ve yalniz onu kirmizi yakmali).
+  #     Klon `git -c core.autocrlf=false clone` ile yapilir: Windows'un varsayilani checkout'ta CRLF
+  #     uretir ve `.gitkeep` olsa bile H0'da KIRMIZI olur (OLCULDU) — mutant H16'yi olcmeli.
+  #     KOL 5 (yazilamaz dizin) yalniz POSIX non-root'ta olculur; Windows'ta UYGULANMAZ.
+  #     `faz0/ci_kapsam_kapisi.py`nin MUAFIYETSIZ kapsaminda: yeni `*_mutanti.py` icin is ZORUNLU.
+  #     🔴 UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  gitkeep_mutanti:
+    name: gitkeep mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: taze kurulum/devir klonda kapi YESIL mi (bes kol + sekiz sabotaj, hukum gevsemez)
+        shell: bash
+        run: python faz0/gitkeep_mutanti.py 2>&1 | tee gitkeep-cikti.txt
+      - name: gitkeep mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitkeep-${{ matrix.os }}
+          path: gitkeep-cikti.txt
+          if-no-files-found: warn

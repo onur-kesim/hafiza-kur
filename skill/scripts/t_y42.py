@@ -189,11 +189,13 @@ def t_y7():
         kos(["not", "--konu=genel-durum", "--metin=Birinci olcum kaydedildi burada."], kok)
         kos(["derle"], kok)
         ars = os.path.join(hd(kok), "gunluk")
-        once = sorted(os.listdir(ars))
+        # B2 (4 Eki 2026): `kur` artik `.gitkeep` yazar ve '.' < '2' oldugu icin `sorted(...)[0]` o olurdu —
+        # "ilk fragman birebir" yarisi bos dosyayi bos dosyayla kiyaslayip SESSIZCE KOR kalirdi. Yalniz fragmanlar.
+        once = sorted(f for f in os.listdir(ars) if f.endswith(".md"))
         ilk_icerik = oku(os.path.join(ars, once[0]))
         kos(["not", "--konu=genel-durum", "--metin=Ikinci olcum kaydedildi burada."], kok)
         kos(["derle"], kok)
-        sonra = sorted(os.listdir(ars))
+        sonra = sorted(f for f in os.listdir(ars) if f.endswith(".md"))
         korundu = (len(sonra) == len(once) + 1
                    and oku(os.path.join(ars, once[0])) == ilk_icerik)
         kayit("Y-7  ayni-dakika+ayni-konu fragman arsivi EZMIYOR",
@@ -1250,7 +1252,8 @@ def t_h3():
                               text=True, encoding="utf-8", errors="replace",
                               env=dict(os.environ, PYTHONIOENCODING="utf-8"))
         pr.stdout.readline(); pr.stdout.close(); pr.wait()
-        kalan = len(os.listdir(os.path.join(kok, "gunluk")))
+        # B2 (4 Eki 2026): `.gitkeep` fragman DEGILDIR — yalniz `.md` fragmanlar sayilir.
+        kalan = len([f for f in os.listdir(os.path.join(kok, "gunluk")) if f.endswith(".md")])
         k, c = kos(["kapi"], kok)
         kilit = os.path.exists(os.path.join(hd(kok), ".kilit"))
         kayit("Y-3  derle | head YARIM is birakmiyor (is bitiyor, kapi yesil, kilit yok)",
