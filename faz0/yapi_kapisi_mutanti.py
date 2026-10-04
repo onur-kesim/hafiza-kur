@@ -321,6 +321,13 @@ _KACIS_DALI = ('        elif kok_disina_mi(y.kok, d):\n'
               '            fail("H16", "%s PROJE DISINA BAGLI: %s -> %s" '
               '% (ad, d, os.path.realpath(d)))')
 
+# Y1 (Onur kilidi 4 Eki 2026): H6 erken donusunun `O.append` satiri — motorla BIREBIR
+# (cmd_kapi'nin `YESIL` demesini engelleyen ayri tanik; bu mutant yalniz SIRAYI oynatir).
+_H6_Y1_SATIRLARI = (
+    '        O.append("KAPILAR KOSMADI: arsiv dizini cozulemedi (erken donus) — '
+    'sonraki tum kapilar OLCULMEDI")\n'
+)
+
 _H6_BLOK_VE_CAGRI = (
     '    if not os.path.isdir(y.h):\n'
     '        # KALEM C (Onur kilidi 18 Agu 2026, H16-DUZELTME-BRIEF.md §3): "YOK"/\n'
@@ -331,6 +338,7 @@ _H6_BLOK_VE_CAGRI = (
     '                    "da sil." % y.h)\n'
     '                   if os.path.lexists(y.h) else\n'
     '                   "HAFIZA DIZINI YOK: %s — arsiv tabani kayip." % y.h)\n'
+    + _H6_Y1_SATIRLARI +
     '        return\n'
     '    _kapi_h16(F, N, O, y)'
 )
@@ -393,6 +401,7 @@ def m_y7_sinir_kaymasi(s):
         '                    "da sil." % y.h)\n'
         '                   if os.path.lexists(y.h) else\n'
         '                   "HAFIZA DIZINI YOK: %s — arsiv tabani kayip." % y.h)\n'
+        + _H6_Y1_SATIRLARI +
         '        return'
     )
     return s.replace(_H6_BLOK_VE_CAGRI, yeni, 1) if _tek_yerde(s, _H6_BLOK_VE_CAGRI) else None

@@ -3796,6 +3796,11 @@ def cmd_kapi(a):
 
 _KAPI_KOK = [""]
 
+# Y1 (Onur kilidi 4 Eki 2026): `_kapi_govde`nin iki erken donusu (H6 `HAFIZA DIZINI YOK`, H-
+# `CANLI HAFIZA YOK`) "hicbir kapi kosmadi" demektir; hukum, o `fail()` satiri (kusurla/sabotajla)
+# olmese bile duz YESIL kalamaz — `O.append` AYRI tanik, fail() metnini TEKRARLAMAZ (ayni parca
+# olursa sabotaj olcumu orter). Gercek motorda fail de yanar: FAIL, exit 1 (degismez). Gerekce
+# burada (govdenin disinda): `_kapi_govde` 80 satir tavaninda, ek satir `ihlal`i 9'dan oynatir.
 def _kapi_govde(a, F, N, O):
     kok = kok_bul(a.kok); _KAPI_KOK[0] = kok
     rc = rc_oku(kok); y = Y(kok, rc)
@@ -3825,11 +3830,13 @@ def _kapi_govde(a, F, N, O):
                     "da sil." % y.h)
                    if os.path.lexists(y.h) else
                    "HAFIZA DIZINI YOK: %s — arsiv tabani kayip." % y.h)
+        O.append("KAPILAR KOSMADI: arsiv dizini cozulemedi (erken donus) — sonraki tum kapilar OLCULMEDI")
         return
     _kapi_h16(F, N, O, y)
 
     if not os.path.isfile(y.canli):
         fail("H-", "CANLI HAFIZA YOK: %s — hicbir kapi olculemez." % y.canli)
+        O.append("KAPILAR KOSMADI: canli hafiza dosyasi cozulemedi (erken donus) — sonraki tum kapilar OLCULMEDI")
         return
 
     # ---- KAPILAR -------------------------------------------------------

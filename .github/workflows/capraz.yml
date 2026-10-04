@@ -114,6 +114,14 @@ jobs:
         shell: bash
         run: python faz0/hukum_kapisi.py hukum.log
 
+      # `kapi`nin KENDI hukmu (Y1/Y2, Onur kilidi 4 Eki 2026): erken donus (H6/H-) "hicbir
+      # kapi kosmadi" derken duz YESIL basabiliyordu. Her vaka icin pozitif kontrol + kol +
+      # mutant; `continue-on-error` YOK (bir kol kirilirsa is KIRMIZI).
+      - name: HUKUM KAPISI --kanit — kapinin KENDI hukmu (Y1 erken donus)
+        if: always()
+        shell: bash
+        run: python faz0/hukum_kapisi.py --kanit
+
       - name: kirik liste artefakti
         if: always()
         uses: actions/upload-artifact@v4
