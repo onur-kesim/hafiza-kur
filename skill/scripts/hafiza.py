@@ -5372,6 +5372,32 @@ def _kapi_metni(kok, siki=False):
                        capture_output=True, text=True, encoding="utf-8", errors="replace", env=ortam)
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
+def _gecici_sil(yol):
+    """W1 (Onur kilidi 4 Eki 2026): gecici dizini SIL. `rmtree(..., ignore_errors=True)` Windows'ta salt-okunur
+    dosyayi (git objeleri 0444) ve POSIX'te yazilamaz alt dizini SESSIZCE birakiyordu (olculdu: tek
+    `hook_mutanti` kosumu Windows'ta 9 artik, %TEMP%'te 9.179 birikmis). Hata gelince girdiyi (ve KOKUN
+    ICINDEYSE ustunu) yazilabilir yapip bir kez yeniden dener; yine silinemezse stderr'e TEK satir.
+    stdout'a YAZMAZ, cikis kodu sozlesmesi DEGISMEZ. Kokun USTUNE ve sembolik baglantiya chmod YOK."""
+    yol = os.path.normpath(os.fspath(yol))
+
+    def onar(fonk, p, *_):
+        hedef = [p] if not os.path.islink(p) else []
+        if os.path.dirname(p).startswith(yol):
+            hedef.append(os.path.dirname(p))
+        for h in hedef:
+            try:
+                os.chmod(h, stat.S_IRWXU)
+            except OSError:
+                pass
+        try:
+            fonk(p)
+        except OSError:
+            pass
+    shutil.rmtree(yol, **({"onexc": onar} if sys.version_info >= (3, 12) else {"onerror": onar}))
+    if os.path.lexists(yol):
+        print("GECICI DIZIN SILINEMEDI: %s" % yol, file=sys.stderr)
+
+
 class MutantKurulamadi(Exception):
     """Mutantin KENDISI kurulamadi (ör. beklenen bölüm yok). Bu, kapinin kör oldugu
     anlamina GELMEZ — testin kendi hatasidir ve AYRI raporlanir.
@@ -5433,7 +5459,7 @@ def cmd_isir(a):
             parca_ok = (icerik_parcasi is None) or (icerik_parcasi in c)
             return (yakalandi and parca_ok), k, c
         finally:
-            shutil.rmtree(tmp, ignore_errors=True)
+            _gecici_sil(tmp)
 
     def mutant_git(ad, kapi, degistir, icerik_parcasi=None):
         """KALEM 1 (IS_EMRI_ISIR_GIT_VE_ORTAM_KAPISI.md, 7 Eyl 2026): `mutant()`e
@@ -5482,7 +5508,7 @@ def cmd_isir(a):
             parca_ok = (icerik_parcasi is None) or (icerik_parcasi in c)
             return (etiketli and parca_ok), k, c
         finally:
-            shutil.rmtree(tmp, ignore_errors=True)
+            _gecici_sil(tmp)
 
     def _git_hooksuz(h):
         """Y3 (Onur kilidi 4 Eki 2026): mutant kopyasindaki HER git cagrisinin ON EKI.
@@ -5602,7 +5628,7 @@ def cmd_isir(a):
                     ValueError, IndexError) as e:
                 raise MutantKurulamadi("%s: %s" % (type(e).__name__, e))
         finally:
-            shutil.rmtree(tmp, ignore_errors=True)
+            _gecici_sil(tmp)
 
     def k_kacis(hedef, tmp):
         """M-KACIS — B-2/B-3: CLI yol argumani proje agacinin DISINA cikabiliyor mu?"""
@@ -5697,7 +5723,7 @@ def cmd_isir(a):
             r2 = rc_oku(alt)
             y2 = Y(alt, r2)
             if hazirla == "sil":
-                shutil.rmtree(y2.h, ignore_errors=True)
+                _gecici_sil(y2.h)
             elif hazirla == "tasi":
                 shutil.move(y2.h, y2.h + "_yedek")
             os.remove(os.path.join(alt, RC_AD))
@@ -7287,7 +7313,7 @@ def _skill_kur_yerlestir(kd, hedef, taban, sha_k, var):
             return 1, None
         return 0, yedek
     finally:
-        shutil.rmtree(gecici, ignore_errors=True)
+        _gecici_sil(gecici)
 
 
 def _skill_kur_cakisma(kd, hedef, sha_k, guncelle):

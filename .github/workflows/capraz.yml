@@ -2336,12 +2336,18 @@ jobs:
   #     kapi korlugu DEGIL, cikis kodunu ETKILEMEZ, "kosulan"a GIRMEZ). Git
   #     VARKEN kurulum yine de bozulursa SINANMADI + exit 2 BIREBIR korunur —
   #     UYGULANMAZ bir KACIS KAPISI DEGILDIR (bu betigin 3. kolu bunu olcer).
+  #     W1 (Onur kilidi 4 Eki 2026, KOL 5-8): `isir`in gecici kopyalari Windows'ta
+  #     salt-okunur git objeleri yuzunden SESSIZCE kaliyordu (`ignore_errors=True`;
+  #     tek `hook_mutanti` kosumu 9 artik, %TEMP%'te 9.179). Motor `_gecici_sil`
+  #     kullanir; kollar IZOLE TMPDIR/TEMP/TMP ile uctan uca artik 0'i, onarim +
+  #     tek stderr uyarisini ve 5 cagri yerini olcer; uc mutant AYRI ayri ISIRIR.
+  #     6 `isir` kosumu: sure 20 -> 30 dk.
   #     🔴 UC PLATFORM, `continue-on-error` YOK.
   # ---------------------------------------------------------------------------
   isir_uygulanmaz_mutanti:
     name: isir uygulanmaz mutanti (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -2351,7 +2357,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: git'siz projede isir exit 0 mi donuyor (dort kol, hukum gevsemez)
+      - name: git'siz projede isir exit 0 mi + gecici dizin temizligi (sekiz kol, hukum gevsemez)
         shell: bash
         run: python faz0/isir_uygulanmaz_mutanti.py 2>&1 | tee isir-uygulanmaz-cikti.txt
       - name: isir uygulanmaz mutanti ciktisi (artefakt)
