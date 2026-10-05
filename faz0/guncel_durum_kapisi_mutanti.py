@@ -56,6 +56,20 @@ K-SATIR (H18) — besli-paket/IS_EMRI_KSATIR_KARARYOLU.md (5 Eki 2026, Onur kili
     gitsiz   .git YOKKEN ayni sonuc; iki kosum bayt-ayni (determinizm)
     aralik   yol:N-M penceresi [N-2, M+2]; satir dosya disi -> OLCULEMEDI [SATIR_DISI]
   H18 `isir` kataloguna GIRMEZ (79/79 · 81/81 sayilari sabit); bu betik onu isirtir.
+
+K-YOL (devral karar dizini) — AYNI betige ek kollar (besli-paket/IS_EMRI_KSATIR_KARARYOLU.md, Onur kilidi)
+  Olculen (Momentum): `docs/ADR/` dolu, DURUM.md'de ADR atfi 0, kor okumada KARAR sorulari 0/4. `devral`
+  projenin MEVCUT karar dizinini (docs/ADR · docs/adr · docs/decisions · adr · doc/adr; harf duyarsiz) bulur,
+  canliya `sahip="hafiza-kur"` blogu (konu `karar-kaynagi`: dizin + dosya SAYISI + dosya ADLARI + ilk `# `
+  basligi <=80 kr) yazar, `.hafizarc`a `karar_dizini` kaydeder, ozet satirini basar; `derle` blogu her
+  fragman-isleyen kosuda DISKTEN yeniden uretir (dizin silinirse 'YOK (kayitli: ...)' der). DOSYALARA DOKUNULMAZ.
+  ALTI KOL: ykontrol (ADR'siz: 'bulunamadi', anahtar/blok/konu YOK) · yadr (YOZET · YRC · YBLOK · YSAYIM · YMASKE ·
+  YKONU · YBACKTICK · YDOKUNMA [bayt-bayt, fikstur iceriginden], devral SONRASI derle zinciri: YYENILE ·
+  IDEMPOTANS · YKAYIP, her adimda kapi + kapi --siki) · ysahiplik (sahip=proje blok korunur) · ycase (`Docs/Adr`
+  gercek yazimla) · ycok (cok aday: ILK kaydedilir, digeri 'baska aday' GORUNUR; baslik yokken blok dosyanin
+  USTUNDE: YYER) · ykesif (`--kesif` raporlar, diske HIC yazmaz). 15 sabotaj, her biri kendi etiketini ateslemeli.
+  SINIR (gizlenmez): kurulu proje (`.hafizarc` var) devral'i REDDEDER; karar dizini yalniz devral anindaki ADR'li
+  proje icin kaydedilir. Momentum'da desene uyan 5 dosya + `.gitkeep` var; `.gitkeep` ADR degildir, sayilmaz.
   TERIM: is emri "(iii) sabotajda (ii) KACTI gorunmeli" der; bu betigin sozlugunde o durum ISIRDI'dir
   (kol sabotajli motorda KIRMIZI yanar = kapi kor DEGIL). KACTI = sabotaj kolu kirmizi YAKMADI = kapi KOR.
 
@@ -70,7 +84,9 @@ CIKIS KODU  0 tum kollar temiz (uc + yedi K-SATIR) VE tum mutantlar/sabotajlar I
             okunamadi, kurulum basarisiz — kapi hukmu DEGIL)
 """
 import ast
+import hashlib
 import io
+import json
 import os
 import re
 import shutil
@@ -462,22 +478,260 @@ def ks_aralik(motor, taban):
     return []
 
 
-def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
-    """Tum K-SATIR kollari (ya da `yalniz` verilen KOL fonksiyonlari) -> [(etiket, mesaj)]."""
-    kollar = (("dongu", lambda: ks_dongu(motor, taban, tag + "d")),
-              ("tanimsiz", lambda: ks_tanimsiz(motor, os.path.join(taban, tag + "t"))),
-              ("sahiplik", lambda: ks_sahiplik(motor, os.path.join(taban, tag + "s"))),
-              ("kume", lambda: ks_kume(motor_metin)),
-              ("cokkopya", lambda: ks_cokkopya(motor, os.path.join(taban, tag + "c"))),
-              ("gitsiz", lambda: ks_gitsiz(motor, os.path.join(taban, tag + "g"))),
-              ("aralik", lambda: ks_aralik(motor, os.path.join(taban, tag + "a"))))
+# ===================================================================== K-YOL (devral karar dizini)
+# besli-paket/IS_EMRI_KSATIR_KARARYOLU.md (5 Eki 2026, Onur kilidi "devral ADR yolunu tasir"). OLCULDU
+# (Momentum): `docs/ADR/` dolu, DURUM.md'de ADR atfi 0, kor okumada KARAR sorulari 0/4. `devral` projenin
+# MEVCUT karar dizinini bulur, canliya YOL tasiyan `sahip="hafiza-kur"` blogu (konu `karar-kaynagi`) yazar,
+# `.hafizarc`a `karar_dizini` kaydeder; `derle` blogu diskten yeniden uretir. Dosyalara DOKUNULMAZ.
+DURUM_ILK = "# DURUM.md\n\n## Kalici dersler\n- ders 1\n"
+# derle dongusunun ve H6/H17'nin ISTEDIGI bolumleri devral ANINDA zaten tasiyan canli: `bolum-kur` GEREKMEZ
+# (`kapi --siki` bolum-kur basliklarini BEYANSIZ sayar — DURUM.md bilinen sinirlar; o sinir K-YOL'un DEGIL).
+DURUM_BOLUMLU = ("# DURUM.md\n\n## GUNCEL DURUM\n- durum\n\n## SABIT CERCEVE\n- ders 1\n\n"
+                 "## ARSIV DIZINI\n")
+ADR_DOSYALARI = {
+    "docs/ADR/0001-ilk.md": "# ADR 0001 — Ilk karar\n\ngovde bir\n",
+    "docs/ADR/0002-ikinci.md": "# ADR 0002 — Ikinci karar\n",
+    "docs/ADR/ADR-003-ucuncu.md": "# Ucuncu karar\n",
+    "docs/ADR/0004-asla-kural.md": "# ASLA yapilmayacaklar listesi\n",
+    "docs/ADR/0005-backtick.md": "# ADR `yok_dosya.py` baslik\n",
+    "docs/ADR/README.md": "# ADR dizini\n",
+    "docs/ADR/.gitkeep": "",
+    "docs/ADR/arsiv/0009-eski.md": "# eski karar\n",
+}
+BLOK_KARAR = re.compile(r'<!-- blok konu="karar-kaynagi"([^>]*)-->\n(.*?)\n<!-- /blok -->', re.S)
+KARAR_OZET = re.compile(r"  karar dizini      : (.+)")
+ARANAN = "bulunamadi (aranan: docs/ADR, docs/adr, docs/decisions, adr, doc/adr)"
+
+
+def hal_yol(motor, kok, dosyalar, canli=DURUM_ILK):
+    """git + DURUM.md + dosyalar + commit; sonra `devral --esle canli=DURUM.md`. DONER (rc, cikti)."""
+    os.makedirs(kok, exist_ok=True)
+    if subprocess.run(["git", "init", "-q", kok], capture_output=True).returncode != 0:
+        raise Kurulamadi("git init basarisiz")
+    _yaz(os.path.join(kok, "DURUM.md"), canli)
+    for ad, icerik in dosyalar.items():
+        _yaz(os.path.join(kok, *ad.split("/")), icerik)
+    _commit(kok, "ilk")
+    return kos(motor, ["devral", "--esle=canli=DURUM.md", "--ad", "YOL"], kok)
+
+
+def _rc_oku(kok):
+    with io.open(os.path.join(kok, ".hafizarc"), encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _agac_sha(kok, alt):
+    out = {}
+    for r0, _d, f0 in os.walk(os.path.join(kok, *alt.split("/"))):
+        for f in f0:
+            with open(os.path.join(r0, f), "rb") as h:
+                out[os.path.relpath(os.path.join(r0, f), kok).replace("\\", "/")] = hashlib.sha256(h.read()).hexdigest()
+    return out
+
+
+def _kapi_etiketi(c):
+    """`kapi` kirmizisini HANGI kapinin yaktigina gore etiketle (her sabotaj kendi eksenini ateslesin)."""
+    for tag, et in (("[H10]", "YKONU"), ("[H4]", "YBACKTICK"), ("[H7]", "YMASKE"), ("[H11]", "YH11")):
+        if tag in c:
+            return et
+    return "YKAPI"
+
+
+def _kapilar_yesil(motor, kok, ek=""):
+    """kapi + kapi --siki: (etiket, mesaj) listesi (BOS = ikisi de exit 0)."""
     b = []
-    for ad, kol in kollar:
+    rc, c = kos(motor, ["kapi"], kok)
+    if rc != 0:
+        b.append((_kapi_etiketi(c), "kapi exit %s%s: %s" % (rc, ek, " | ".join(
+            x.strip() for x in c.splitlines() if x.strip().startswith("[H"))[:200])))
+    rc2, c2 = kos(motor, ["kapi", "--siki"], kok)
+    if rc2 != 0 and rc == 0:
+        b.append(("MUHASEBE", "kapi --siki exit %s%s" % (rc2, ek)))
+    return b
+
+
+def ky_kontrol(motor, taban):
+    """YANLIS ALARM: dizin VAR ama ADR desenli dosya YOK (README.md + .gitkeep) -> 'bulunamadi', blok/anahtar YOK."""
+    b = []
+    kok = os.path.join(taban, "ky_k")
+    rc, c = hal_yol(motor, kok, {"docs/ADR/README.md": "# ADR\n", "docs/ADR/.gitkeep": ""})
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    m = KARAR_OZET.search(c)
+    if not m or m.group(1).strip() != ARANAN:
+        b.append(("YKONTROL", "ADR'siz projede ozet satiri %r (beklenen %r)" % (m and m.group(1), ARANAN)))
+    if "karar_dizini" in _rc_oku(kok) or "karar-kaynagi" in _canli_devral(kok) or _konu_var(kok, "karar-kaynagi"):
+        b.append(("YKONTROL", "ADR'siz projede .hafizarc anahtari / blok / konu satiri YAZILMIS"))
+    return b
+
+
+def _canli_devral(kok):
+    with io.open(os.path.join(kok, "DURUM.md"), encoding="utf-8") as f:
+        return f.read()
+
+
+def _konu_var(kok, konu):
+    with io.open(os.path.join(kok, "KONULAR.md"), encoding="utf-8") as f:
+        return re.search(r"^\|\s*%s\s*\|" % re.escape(konu), f.read(), re.M) is not None
+
+
+def ky_adr(motor, taban, tag="ky_a"):
+    """YBLOK/YRC/YOZET/YSAYIM/YMASKE/YKONU/YBACKTICK/YDOKUNMA + devral SONRASI derle zinciri:
+    YYENILE · IDEMPOTANS · YKAYIP (+ MUHASEBE). Tek fikstur."""
+    b = []
+    kok = os.path.join(taban, tag)
+    rc, c = hal_yol(motor, kok, ADR_DOSYALARI, DURUM_BOLUMLU)
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    # Beklenen ozet motordan DEGIL fikstur iceriginden (paylasilan kural = paylasilan korluk): devral
+    # sirasinda dokunulursa bile yakalanir.
+    sha0 = {ad: hashlib.sha256(ic.encode("utf-8")).hexdigest() for ad, ic in ADR_DOSYALARI.items()}
+    m = KARAR_OZET.search(c)
+    if not m or m.group(1).strip() != "docs/ADR (5 dosya)":
+        b.append(("YOZET", "devral ozet satiri %r (beklenen 'docs/ADR (5 dosya)')" % (m and m.group(1),)))
+    if _rc_oku(kok).get("karar_dizini") != "docs/ADR":
+        b.append(("YRC", ".hafizarc karar_dizini = %r (beklenen 'docs/ADR')" % _rc_oku(kok).get("karar_dizini")))
+    blok = BLOK_KARAR.search(_canli_devral(kok))
+    govde = blok.group(2) if blok else ""
+    if not blok or 'sahip="hafiza-kur"' not in blok.group(1) or "docs/ADR (5 dosya)" not in govde:
+        b.append(("YBLOK", "canlida sahip=hafiza-kur 'karar-kaynagi' blogu (docs/ADR + 5 dosya) YOK"))
+    elif not all(x in govde for x in ("0001-ilk.md — ADR 0001 — Ilk karar", "0002-ikinci.md", "0005-backtick.md",
+                                      "ADR-003-ucuncu.md")):
+        b.append(("YBLOK", "blokta beklenen dosya adi/baslik satirlari eksik: %r" % govde[:300]))
+    if blok and any(x in govde for x in (".gitkeep", "README.md", "0009-eski")):
+        b.append(("YSAYIM", ".gitkeep / README.md / alt dizin dosyasi sayilmis: %r" % govde[:300]))
+    if blok and "ASLA" in govde:
+        b.append(("YMASKE", "kalici-kural isareti tasiyan baslik blokta GORUNUYOR"))
+    if not _konu_var(kok, "karar-kaynagi"):
+        b.append(("YKONU", "KONULAR.md'de 'karar-kaynagi' satiri YOK"))
+    _commit(kok, "devral")
+    b += _kapilar_yesil(motor, kok)
+    # ---- YENILE: yeni ADR dosyasi + motorun kendi karari -> derle blogu diskten yeniden uretir ----------
+    _yaz(os.path.join(kok, "docs", "ADR", "0006-yeni.md"), "# ADR 0006 — Yeni karar\n")
+    sha0["docs/ADR/0006-yeni.md"] = hashlib.sha256(b"# ADR 0006 \xe2\x80\x94 Yeni karar\n").hexdigest()
+    rc, c = kos(motor, ["karar", "--baslik", "Motor karari"], kok)
+    if rc != 0:
+        raise Kurulamadi("karar basarisiz: %s" % c.strip().split("\n")[-1][:160])
+    _commit(kok, "yeni adr")
+    rc, c = notdemle(motor, kok, "sonraki-adim")
+    blok = BLOK_KARAR.search(_canli_devral(kok))
+    govde = blok.group(2) if blok else ""
+    if (rc != 0 or "docs/ADR (6 dosya)" not in govde or "0006-yeni.md" not in govde
+            or "motorun kendi karar dizini" not in govde or "0001-motor-karari.md" not in govde
+            or _arsiv(kok).count('konu="karar-kaynagi"') != 1):
+        b.append(("YYENILE", "derle blogu diskten yeniden URETMEDI (exit=%s, arsivde eski blok=%d): %r"
+                  % (rc, _arsiv(kok).count('konu="karar-kaynagi"'), govde[:200])))
+    b += _kapilar_yesil(motor, kok, " (yenileme sonrasi)")
+    # ---- IDEMPOTANS: degisiklik YOK -> blok yeniden yazilmaz, arsive kopya girmez ---------------------
+    _commit(kok, "yenilendi")
+    rc, c = notdemle(motor, kok, "acik-kararlar", "ikinci derle ayni karar dizini ile")
+    if "'karar-kaynagi' blogu" in c or _arsiv(kok).count('konu="karar-kaynagi"') != 1:
+        b.append(("IDEMPOTANS", "ayni karar dizini ile derle blogu YENIDEN yazdi (arsivde=%d)"
+                  % _arsiv(kok).count('konu="karar-kaynagi"')))
+    # ---- DOKUNMA: ADR dosyalari bayt-bayt ayni -----------------------------------------------------
+    if _agac_sha(kok, "docs/ADR") != sha0:
+        b.append(("YDOKUNMA", "docs/ADR dosyalari DEGISTI (devral/derle projenin kendi dosyasina dokunmamali)"))
+    # ---- KAYIP: dizin silindi -> blok 'YOK (kayitli: docs/ADR)' der, SESSIZCE dusmez -----------------
+    _commit(kok, "idempotans")
+    _sil(os.path.join(kok, "docs", "ADR"))
+    _commit(kok, "dizin silindi")
+    rc, c = notdemle(motor, kok, "sonraki-adim", "dizin silindikten sonra derle")
+    blok = BLOK_KARAR.search(_canli_devral(kok))
+    govde = blok.group(2) if blok else ""
+    if rc != 0 or "YOK (kayitli: docs/ADR)" not in govde or "0001-ilk.md" in govde:
+        b.append(("YKAYIP", "dizin silindi ama blok 'YOK (kayitli: docs/ADR)' DEMEDI (exit=%s): %r" % (rc, govde[:200])))
+    b += _kapilar_yesil(motor, kok, " (dizin silindikten sonra)")
+    return b
+
+
+def ky_sahiplik(motor, taban):
+    """SAHIPLIK: ayni konuda sahip=proje blogu varsa devral ONA DOKUNMAZ, ikinci blok ACMAZ."""
+    canli = ("# DURUM.md\n\n## Kalici dersler\n"
+             '<!-- blok konu="karar-kaynagi" guncel="2026-01-01" kaynak="-" sahip="proje" -->\n'
+             "KULLANICI karar notu dokunulmamali\n<!-- /blok -->\n")
+    kok = os.path.join(taban, "ky_s")
+    rc, c = hal_yol(motor, kok, {"docs/ADR/0001-ilk.md": "# ADR 0001 — Ilk\n"}, canli)
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    bloklar = BLOK_KARAR.findall(_canli_devral(kok))
+    if (len(bloklar) != 1 or 'sahip="proje"' not in bloklar[0][0]
+            or "KULLANICI karar notu dokunulmamali" not in bloklar[0][1]
+            or "Motor (devral/derle)" in _canli_devral(kok)):
+        return [("SAHIPLIK", "sahip=proje 'karar-kaynagi' blogu korunmadi (blok sayisi=%d)" % len(bloklar))]
+    return []
+
+
+def ky_case(motor, taban):
+    """BUYUK/KUCUK HARF: `Docs/Adr` bulunur ve diskteki GERCEK yazimiyla kaydedilir (platformdan bagimsiz)."""
+    kok = os.path.join(taban, "ky_c")
+    rc, c = hal_yol(motor, kok, {"Docs/Adr/0001-ilk.md": "# ADR 0001 — Ilk\n"})
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    m = KARAR_OZET.search(c)
+    if _rc_oku(kok).get("karar_dizini") != "Docs/Adr" or not m or m.group(1).strip() != "Docs/Adr (1 dosya)":
+        return [("YCASE", "Docs/Adr bulunamadi/gercek yazimla kaydedilmedi: rc=%r ozet=%r"
+                 % (_rc_oku(kok).get("karar_dizini"), m and m.group(1)))]
+    return []
+
+
+def ky_cok(motor, taban):
+    """COK ADAY: docs/ADR ve adr ikisi de ADR tasiyor -> ILK aday kaydedilir, digeri GORUNUR ('baska aday')."""
+    kok = os.path.join(taban, "ky_m")
+    rc, c = hal_yol(motor, kok, {"docs/ADR/0001-a.md": "# a\n", "adr/0001-b.md": "# b\n"})
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    m = KARAR_OZET.search(c)
+    if _rc_oku(kok).get("karar_dizini") != "docs/ADR" or not m \
+            or m.group(1).strip() != "docs/ADR (1 dosya) · baska aday: adr":
+        return [("YCOK", "birden cok aday: rc=%r ozet=%r" % (_rc_oku(kok).get("karar_dizini"), m and m.group(1)))]
+    satirlar_ = _canli_devral(kok).split("\n")
+    ilk_bas = next((i for i, x in enumerate(satirlar_) if x.startswith("## ")), len(satirlar_))
+    blok_i = next((i for i, x in enumerate(satirlar_) if x.startswith('<!-- blok konu="karar-kaynagi"')), None)
+    if blok_i is None or blok_i > ilk_bas:
+        return [("YYER", "`## GUNCEL DURUM` YOKKEN blok dosyanin USTUNDE (ilk bolumden once) degil: blok satiri=%r, "
+                 "ilk bolum=%d" % (blok_i, ilk_bas))]
+    return []
+
+
+def ky_kesif(motor, taban):
+    """KESIF (kuru prova): `devral --kesif` karar dizinini RAPORLAR ve diske HIC yazmaz."""
+    kok = os.path.join(taban, "ky_e")
+    os.makedirs(kok, exist_ok=True)
+    _yaz(os.path.join(kok, "DURUM.md"), DURUM_ILK)
+    for ad, icerik in ADR_DOSYALARI.items():
+        _yaz(os.path.join(kok, *ad.split("/")), icerik)
+    onceki = _agac_sha(kok, ".")
+    rc, c = kos(motor, ["devral", "--kesif", "--esle=canli=DURUM.md"], kok)
+    m = KARAR_OZET.search(c)
+    if rc != 0 or not m or m.group(1).strip() != "docs/ADR (5 dosya)" or _agac_sha(kok, ".") != onceki \
+            or os.path.exists(os.path.join(kok, ".hafizarc")):
+        return [("YKESIF", "devral --kesif: exit=%s ozet=%r yazim=%s" % (
+            rc, m and m.group(1), _agac_sha(kok, ".") != onceki or os.path.exists(os.path.join(kok, ".hafizarc"))))]
+    return []
+
+
+def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
+    """K-SATIR + K-YOL kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
+    kollar = (("K-SATIR", "dongu", lambda: ks_dongu(motor, taban, tag + "d")),
+              ("K-SATIR", "tanimsiz", lambda: ks_tanimsiz(motor, os.path.join(taban, tag + "t"))),
+              ("K-SATIR", "sahiplik", lambda: ks_sahiplik(motor, os.path.join(taban, tag + "s"))),
+              ("K-SATIR", "kume", lambda: ks_kume(motor_metin)),
+              ("K-SATIR", "cokkopya", lambda: ks_cokkopya(motor, os.path.join(taban, tag + "c"))),
+              ("K-SATIR", "gitsiz", lambda: ks_gitsiz(motor, os.path.join(taban, tag + "g"))),
+              ("K-SATIR", "aralik", lambda: ks_aralik(motor, os.path.join(taban, tag + "a"))),
+              ("K-YOL", "ykontrol", lambda: ky_kontrol(motor, os.path.join(taban, tag + "yk"))),
+              ("K-YOL", "yadr", lambda: ky_adr(motor, os.path.join(taban, tag + "ya"))),
+              ("K-YOL", "ysahiplik", lambda: ky_sahiplik(motor, os.path.join(taban, tag + "ys"))),
+              ("K-YOL", "ycase", lambda: ky_case(motor, os.path.join(taban, tag + "yc"))),
+              ("K-YOL", "ycok", lambda: ky_cok(motor, os.path.join(taban, tag + "ym"))),
+              ("K-YOL", "ykesif", lambda: ky_kesif(motor, os.path.join(taban, tag + "ye"))))
+    b = []
+    for grup, ad, kol in kollar:
         if yalniz is None or ad in yalniz:
             sonuc = kol()
             if yaz_:
-                print("  K-SATIR/%-9s: %s" % (ad, "TEMIZ" if not sonuc else
-                                                "BEKLENMEDIK (%s)" % ", ".join(sorted({e for e, _ in sonuc}))))
+                print("  %s/%-9s: %s" % (grup, ad, "TEMIZ" if not sonuc else
+                                         "BEKLENMEDIK (%s)" % ", ".join(sorted({e for e, _ in sonuc}))))
             b += sonuc
     return b
 
@@ -495,17 +749,17 @@ KS_SABOTAJLAR = (
      '    if not tanimlar:\n        return "OLCULEMEDI", "TANIMLAYICI_YOK"\n',
      '    if not tanimlar:\n        return "KAYMA", "0"      # MUTANT\n', ("tanimsiz",)),
     ("M-S4 derle blogu yazmaz", 'BLOK',
-     '    return _motor_blogu_esitle(y, rc, L, ertele, eklenen, _ATIF_KONU, _ATIF_KONU_ACIKLAMA,\n'
-     '                               _atif_blok_govdesi(kayma))\n',
-     '    return L      # MUTANT\n', ("dongu",)),
+     '    L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _ATIF_KONU, _ATIF_KONU_ACIKLAMA,\n'
+     '                            _atif_blok_govdesi(kayma))\n',
+     '    pass      # MUTANT\n', ("dongu",)),
     ("M-S5 H18 bulgusu F'ye girer (exit degisir)", 'EXIT',
      '    _kapi_h18(N, kok, y)\n', '    _kapi_h18(F, kok, y)      # MUTANT\n', ("dongu",)),
     ("M-S6 sahip=proje blogu ezilir", 'SAHIPLIK',
      '    if bul == "BOZUK" or (bul and bul[2].get("sahip") != "hafiza-kur"):\n        return L\n',
-     '    if bul == "BOZUK":\n        return L      # MUTANT\n', ("sahiplik",)),
+     '    if bul == "BOZUK":\n        return L      # MUTANT\n', ("sahiplik", "ysahiplik")),
     ("M-S7 ayni icerikte blok yeniden yazilir", 'IDEMPOTANS',
      '    if bul and govde is not None and _motor_blok_ayni(L, bul, govde):\n        return L\n',
-     '    if False:      # MUTANT\n        return L\n', ("dongu",)),
+     '    if False:      # MUTANT\n        return L\n', ("dongu", "yadr")),
     ("M-S8 giderilen kaymada blok KALIR", 'KALDIRMA',
      '    if not kayma:\n        return None\n',
      '    if not kayma:\n        return ["> kayma yok"]      # MUTANT\n', ("dongu",)),
@@ -527,6 +781,54 @@ KS_SABOTAJLAR = (
     ("M-S12 yol:N-M araligi yok sayilir", 'ARALIK',
      '        out.append((no, t, m.group(1), bas, int(m.group(3) or bas), tan))\n',
      '        out.append((no, t, m.group(1), bas, bas, tan))      # MUTANT\n', ("aralik",)),
+    # ---- K-YOL ----------------------------------------------------------------------------------
+    ("M-Y1 karar dizini KESFI kapali", 'YBLOK',
+     '    out, gorulen = [], set()\n    for aday in _KARAR_ADAYLARI:\n',
+     '    out, gorulen = [], set()\n    for aday in ():      # MUTANT\n', ("yadr",)),
+    ("M-Y2 bos dizin (ADR'siz) 'bulundu' sayilir", 'YKONTROL',
+     '        if adlar and not kok_disina_mi(kok, os.path.join(kok, *rel.split("/"))):\n',
+     '        if not kok_disina_mi(kok, os.path.join(kok, *rel.split("/"))):      # MUTANT\n', ("ykontrol",)),
+    ("M-Y3 .hafizarc'a yol YAZILMAZ", 'YRC',
+     "    rc.update(_devral_karar_rc(karar_dizini))   # K-YOL: ADR'siz projede BOS -> .hafizarc bayt-bayt eskisi\n",
+     '    pass      # MUTANT\n', ("yadr",)),
+    ("M-Y4 silinen dizinde blok SESSIZCE kalir", 'YKAYIP',
+     '    govde = _karar_blok_govdesi(y, kd) if kd else None\n    if govde is not None:\n',
+     '    govde = _karar_blok_govdesi(y, kd) if (kd and os.path.isdir(os.path.join(y.kok, *kd.split("/")))) '
+     'else None      # MUTANT\n    if govde is not None:\n', ("yadr",)),
+    ("M-Y5 devral ozet satiri basilmaz", 'YOZET',
+     '    karar_dizini = devir_karar_ozeti(kok)       # K-YOL: projenin KENDI karar dizini (dosyalara dokunulmaz)\n',
+     '    karar_dizini = (_karar_dizinleri(kok) or [("", [])])[0][0]      # MUTANT\n', ("yadr",)),
+    ("M-Y6 konu KONULAR.md'ye eklenmez", 'YKONU',
+     '    _devral_karar_konusu(y, rc)                 # K-YOL: DEVIR halkasindan ONCE (politika dosyasi yukte)\n',
+     '    pass      # MUTANT\n', ("yadr",)),
+    ("M-Y7 kural isaretli baslik maskelenmez", 'YMASKE',
+     '    ok = [s for s in govde if not kural_isareti_var(s, rc["kural_isaretleri"])]\n',
+     '    ok = list(govde)      # MUTANT\n', ("yadr",)),
+    ("M-Y8 baslikta backtick etkisizlestirilmez", 'YBACKTICK',
+     '            t = unicodedata.normalize("NFC", m.group(1)).replace("`", "\'").replace("](", "] (")\n',
+     '            t = unicodedata.normalize("NFC", m.group(1))      # MUTANT\n', ("yadr",)),
+    ("M-Y9 derle blogu diskten yenilemez", 'YYENILE',
+     '    if govde is not None:\n        L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _KARAR_KONU, _KARAR_KONU_ACIKLAMA, govde)\n',
+     '    if False:      # MUTANT\n        L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _KARAR_KONU, _KARAR_KONU_ACIKLAMA, govde)\n',
+     ("yadr",)),
+    ("M-Y10 ADR dosyalarina DOKUNULUR", 'YDOKUNMA',
+     '    out = ["- %s%s" % (ad, _karar_baslik(os.path.join(d, ad))) for ad in adlar[:_KARAR_LISTE_TAVAN]]\n',
+     '    out = ["- %s%s" % (ad, _karar_baslik(os.path.join(d, ad))) for ad in adlar[:_KARAR_LISTE_TAVAN]]\n'
+     '    for ad in adlar:\n        with open(os.path.join(d, ad), "ab") as f:\n            f.write(b"\\n")      # MUTANT\n',
+     ("yadr",)),
+    ("M-Y11 dizin adi harf-duyarli aranir", 'YCASE',
+     '                        if x.lower() == parca.lower() and os.path.isdir(os.path.join(yol, x)))\n',
+     '                        if x == parca and os.path.isdir(os.path.join(yol, x)))      # MUTANT\n', ("ycase",)),
+    ("M-Y12 cok adayda SON aday secilir", 'YCOK',
+     '    rel, adlar = bulunan[0]\n', '    rel, adlar = bulunan[-1]      # MUTANT\n', ("ycok",)),
+    ("M-Y13 --kesif karar dizinini raporlamaz", 'YKESIF',
+     '        devir_karar_ozeti(kok)\n', '        pass      # MUTANT\n', ("ykesif",)),
+    ("M-Y14 ADR deseni .gitkeep/README'yi de sayar", 'YSAYIM',
+     '_KARAR_AD = re.compile(r"^(?:\\d{4}-.+|ADR-.+)\\.md$", re.I)\n',
+     '_KARAR_AD = re.compile(r".+", re.I)      # MUTANT\n', ("yadr",)),
+    ("M-Y15 baslik yokken blok DOSYA SONUNA yazilir", 'YYER',
+     '    k = 1 if (L and L[0].startswith("# ")) else 0\n    while k < len(L) and L[k].startswith(">"):\n'
+     '        k += 1\n    return k\n', '    return len(L)      # MUTANT\n', ("ycok",)),
 )
 
 
@@ -705,7 +1007,7 @@ def main():
             kacan.append("M-C")
 
         # ---- K-SATIR sabotajlari -------------------------------------------
-        print("\n--- K-SATIR SABOTAJLARI (her biri YALNIZ kendi ekseninde ISIRMALI) ---")
+        print("\n--- K-SATIR / K-YOL SABOTAJLARI (her biri YALNIZ kendi ekseninde ISIRMALI) ---")
         ks_kacan, ks_hata = ks_sabotajlar(s, taban)
         if ks_hata:
             print(CIZGI)
@@ -717,8 +1019,8 @@ def main():
         if kacan:
             print("SONUC: KAPI KOR — %s beklendigi gibi olculmedi." % ", ".join(kacan))
             return 1
-        print("SONUC: YESIL — uc kol + yedi K-SATIR kolu temiz, uc mutant + %d K-SATIR sabotaji AYRI "
-              "eksende ISIRDI." % len(KS_SABOTAJLAR))
+        print("SONUC: YESIL — uc kol + yedi K-SATIR + alti K-YOL kolu temiz, uc mutant + %d K-SATIR/K-YOL "
+              "sabotaji AYRI eksende ISIRDI." % len(KS_SABOTAJLAR))
         return 0
     finally:
         _sil(taban)

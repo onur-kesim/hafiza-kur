@@ -79,6 +79,14 @@ python3 skill/scripts/hafiza.py isir  --kok=<proje>   # kapıların ısırdığ�
 
 İlerlemiş bir projede `kur` **değil** `devral` kullan. Ayrıntı: `skill/SKILL.md`.
 
+`devral`, projenin **kendi karar dizinini** (`docs/ADR` · `docs/adr` · `docs/decisions` · `adr` ·
+`doc/adr`; içinde `NNNN-*.md` ya da `ADR-*.md` varsa) bulursa canlıya **yol taşıyan** bir blok yazar
+(`konu="karar-kaynagi"`, `sahip="hafiza-kur"`: dizin, dosya sayısı, adlar, ilk başlık) ve yolu
+`.hafizarc`a (`karar_dizini`) kaydeder; `derle` bloğu diskten yeniden üretir (dizin silinirse
+"YOK (kayıtlı: …)" der, sessizce düşmez). Dosyalara **dokunulmaz**, taşınmaz, kopyalanmaz. Motorun kendi
+`kararlar/` dizini de doluysa ikisi birlikte listelenir; hangisinin otorite olduğuna motor karar
+vermez. Kurulu bir projede (`.hafizarc` var) `devral` zaten durur: yol yalnız devir anında kaydedilir.
+
 **Çıkış kodları** — `kapi`: `0` yeşil · `1` kırmızı · `2` kullanım hatası ·
 `3` ölçüm yapılamadı, hüküm yok · `5` **yalnız `--kapsam-zorla` ile**: hüküm
 yeşil ama kapsam eksik (`?` ile işaretli en az bir şey ölçülmedi).

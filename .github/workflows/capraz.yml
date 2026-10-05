@@ -2397,11 +2397,14 @@ jobs:
   #     UYARIDIR (exit degismez): `isir` kataloguna GIRMEZ (79/79 · 81/81
   #     sayilari sabit), bu betik onu isirtir. Yeni faz0 dosyasi ACILMADI
   #     (AMAC KAPISI): `ci_kapsam_kapisi` ayni isi gorur.
+  #     K-YOL (ayni is emri): `devral` projenin karar dizinini (docs/ADR ...)
+  #     bulur, canliya `karar-kaynagi` blogu + `.hafizarc`a yol yazar; ALTI kol
+  #     + 15 sabotaj eklendi (toplam 27). Sure ~4 dk yerelde -> timeout 30.
   # ---------------------------------------------------------------------------
   guncel_durum_kapisi_mutanti:
     name: guncel durum kapisi mutanti (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -2411,7 +2414,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: bolum yoksa kapi her kosumda bulgu veriyor mu, derle exit 2 mi + H18 satir atfi kaymasi (uc kol + yedi K-SATIR kolu, 12 sabotaj, hukum gevsemez)
+      - name: bolum yoksa kapi her kosumda bulgu veriyor mu, derle exit 2 mi + H18 satir atfi kaymasi + K-YOL devral karar dizini (uc kol + yedi K-SATIR + alti K-YOL kolu, 27 sabotaj, hukum gevsemez)
         shell: bash
         run: python faz0/guncel_durum_kapisi_mutanti.py 2>&1 | tee guncel-durum-kapisi-cikti.txt
       - name: guncel durum kapisi mutanti ciktisi (artefakt)

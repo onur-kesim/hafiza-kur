@@ -3190,6 +3190,7 @@ def cmd_devral(a):
         # sorusudur ve yazma yolu zaten kapalidir.
         print("=== DEVIR — kesif (KURU PROVA: hicbir sey yazilmaz) ===")
         devir_kesif_bas(kok, envanter, olculemedi)
+        devir_karar_ozeti(kok)
         if adaylar:
             print("  secilecek canli   : %s" % adaylar[0])
         else:
@@ -3312,6 +3313,7 @@ def cmd_devral(a):
                 if not (rel == hdir_rel or rel.startswith(hdir_rel + "/")):
                     ek.append(rel)
     print("  devralinan arsiv  : %d dosya" % len(ek))
+    karar_dizini = devir_karar_ozeti(kok)       # K-YOL: projenin KENDI karar dizini (dosyalara dokunulmaz)
 
     # 6) kural evi tahmini: kural isareti ZATEN gecen bolumler
     isaretler = VARSAYILAN_RC["kural_isaretleri"]
@@ -3365,6 +3367,7 @@ def cmd_devral(a):
         "hafiza_dizini": hdir_rel,
         "ek_arsiv_dosyalari": sorted(ek),
     }
+    rc.update(_devral_karar_rc(karar_dizini))   # K-YOL: ADR'siz projede BOS -> .hafizarc bayt-bayt eskisi
     y = Y(kok, rc)
     # `devral` yol tiplerini hic dogrulamiyordu (bagimsiz denetim: canli dosya DIZIN ya da
     # link dongusu -> ham IsADirectoryError/OSError).
@@ -3456,6 +3459,7 @@ def cmd_devral(a):
     # 26 Eyl (devral GIRIS KAPISI, KALEM 1): son soz DISKINDIR — yeni acilan canlida
     # yukaridaki liste bos kaliyordu. Zincir halkasindan ONCE (bkz. yardimci).
     _devral_zorunlu_diskten(kok, canli_p, rc)
+    _devral_karar_blogu(y, rc, canli_p)         # K-YOL: cipa'dan ONCE (devir tabanina girer)
 
     for p0, ilk in [(y.duzelt, '{\n  "duzeltmeler": []\n}\n'),
                     (y.yeni, ";; Beyan edilen YENI satirlar (yorum oneki \';;\')\n"),
@@ -3507,6 +3511,7 @@ def cmd_devral(a):
         yaz(y.konular, SAB_KONULAR)
     if not os.path.isfile(y.kural):
         yaz(y.kural, "# %s — KALICI PROTOKOL\n> Bu dosya her oturumda yüklenir.\n" % rc["ad"])
+    _devral_karar_konusu(y, rc)                 # K-YOL: DEVIR halkasindan ONCE (politika dosyasi yukte)
     _dnot = "ilerlemis proje devralindi (%s)" % hdir_rel
     if tum_izler:
         _dnot += (" — DIKKAT: bu dizinde ONCEKI bir kurulumun %d izi vardi; "
@@ -5675,10 +5680,175 @@ def _atif_blok_govdesi(kayma):
 
 
 def _derle_motor_bloklari(y, rc, L, ertele, eklenen):
-    """`cmd_derle`nin TEK cagri noktasi (dal eklemez: `cmd_derle` CC'si degismez)."""
+    """`cmd_derle`nin TEK cagri noktasi (dal eklemez: `cmd_derle` CC'si degismez). Iki motor blogu:
+    `atif-kaymasi` (K-SATIR) ve — `.hafizarc`ta `karar_dizini` KAYITLIYSA — `karar-kaynagi` (K-YOL)."""
     _n, kayma, _olc = _atif_tara(y.kok, L)
-    return _motor_blogu_esitle(y, rc, L, ertele, eklenen, _ATIF_KONU, _ATIF_KONU_ACIKLAMA,
-                               _atif_blok_govdesi(kayma))
+    L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _ATIF_KONU, _ATIF_KONU_ACIKLAMA,
+                            _atif_blok_govdesi(kayma))
+    kd = _karar_dizini_rc(rc)
+    govde = _karar_blok_govdesi(y, kd) if kd else None
+    if govde is not None:
+        L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _KARAR_KONU, _KARAR_KONU_ACIKLAMA, govde)
+    return L
+
+
+# ---------------------------------------------------------------- K-YOL (devral karar dizini)
+# KALEM K-YOL (besli-paket/IS_EMRI_KSATIR_KARARYOLU.md, 5 Eki 2026, Onur kilidi "devral ADR yolunu
+# tasir"). OLCULDU (Momentum): `docs/ADR/` dolu, DURUM.md'de ADR atfi 0, kor okumada KARAR sorulari 0/4.
+# `devral`, projenin MEVCUT karar dizinini bulur; canliya YOL tasiyan bir blok yazar (`sahip="hafiza-kur"`,
+# konu `karar-kaynagi`: dizin + dosya sayisi + dosya ADLARI + baslik). Dosyalara DOKUNULMAZ, tasinmaz,
+# kopyalanmaz. Yol `.hafizarc`ta `karar_dizini` anahtarina yazilir (DEVIR halkasindan ONCE: politika
+# dosyasi); `derle` blogu her fragman-isleyen kosuda DISKTEN yeniden uretir. Motorun kendi `kararlar/`i
+# de varsa ikisi de listelenir; hangisinin otorite oldugunu motor KARARLASTIRMAZ. Blok satirlari
+# backtick'siz (H4 aday saymaz) ve `kararlar/` + rakam kalibi tasimaz (H11 canli-link kontrolu).
+_KARAR_ADAYLARI = ("docs/ADR", "docs/adr", "docs/decisions", "adr", "doc/adr")
+_KARAR_AD = re.compile(r"^(?:\d{4}-.+|ADR-.+)\.md$", re.I)
+_KARAR_KONU = "karar-kaynagi"
+_KARAR_KONU_ACIKLAMA = "projenin kendi karar dizini (devral buldu; derle diskten yeniden uretir, elle duzenleme)"
+_KARAR_LISTE_TAVAN = 40
+
+
+def _karar_dizin_coz(kok, aday):
+    """'docs/ADR' -> diskteki GERCEK yazimiyla kok-goreli yol ('Docs/Adr' olabilir) ya da None. Her bilesen
+    BUYUK/KUCUK HARF DUYARSIZ aranir ve `os.listdir` adlari karsilastirilir (Windows/macOS'ta `isdir`
+    zaten duyarsiz, Linux'ta duyarli: tek davranis); birden cok yazim varsa SIRALI ilki."""
+    yol, out = kok, []
+    for parca in aday.split("/"):
+        try:
+            ad = sorted(x for x in os.listdir(yol)
+                        if x.lower() == parca.lower() and os.path.isdir(os.path.join(yol, x)))
+        except OSError:
+            return None
+        if not ad:
+            return None
+        yol = os.path.join(yol, ad[0])
+        out.append(ad[0])
+    return "/".join(out)
+
+
+def _karar_adlari(kok, rel):
+    """Dizindeki ADR desenli (`NNNN-*.md` / `ADR-*.md`, harf duyarsiz) DUZENLI dosya adlari, SIRALI.
+    `.gitkeep`, `README.md`, alt dizinler sayilmaz."""
+    d = os.path.join(kok, *rel.split("/"))
+    try:
+        ad = [x for x in os.listdir(d) if _KARAR_AD.match(x) and duzenli_dosya(os.path.join(d, x))]
+    except OSError:
+        return []
+    return sorted(ad, key=lambda x: (x.lower(), x))
+
+
+def _karar_dizinleri(kok):
+    """[(rel, [adlar])] — ADR desenli >=1 dosya tasiyan adaylar, ADAY SIRASIYLA, tekil (ayni dizin iki
+    adayla bulunmaz); proje DISINA bagli (symlink/junction) dizin ELENIR (disaridan okuma YASAK)."""
+    out, gorulen = [], set()
+    for aday in _KARAR_ADAYLARI:
+        rel = _karar_dizin_coz(kok, aday)
+        if rel is None or rel.lower() in gorulen:
+            continue
+        gorulen.add(rel.lower())
+        adlar = _karar_adlari(kok, rel)
+        if adlar and not kok_disina_mi(kok, os.path.join(kok, *rel.split("/"))):
+            out.append((rel, adlar))
+    return out
+
+
+def devir_karar_ozeti(kok):
+    """Devral ozet satiri (`--kesif` ve yazan yol AYNI metni basar) -> secilen dizin ya da ''.
+    Satir rol desenlerine (`canli : ...`) UYMAZ; yol kok-goreli ve sirali: iki havuzda ayni cikti."""
+    bulunan = _karar_dizinleri(kok)
+    if not bulunan:
+        print("  karar dizini      : bulunamadi (aranan: %s)" % ", ".join(_KARAR_ADAYLARI))
+        return ""
+    rel, adlar = bulunan[0]
+    diger = "".join(" · baska aday: %s" % r for r, _ in bulunan[1:])
+    print("  karar dizini      : %s (%d dosya)%s" % (rel, len(adlar), diger))
+    return rel
+
+
+def _devral_karar_rc(rel):
+    """`.hafizarc` kaydi: ADR'siz projede BOS sozluk (`.hafizarc` BAYT-BAYT eskisi)."""
+    return {"karar_dizini": rel} if rel else {}
+
+
+def _karar_dizini_rc(rc):
+    """`.hafizarc`taki `karar_dizini` (gecerliyse) ya da ''. Mutlak yol, '..', surucu harfi, NUL REDDEDILIR
+    (rc_oku bilinmeyen anahtari dogrulamaz; dogrulama BURADA)."""
+    v = rc.get("karar_dizini")
+    if not isinstance(v, str) or not v.strip() or "\x00" in v:
+        return ""
+    if v.startswith("/") or ".." in v.split("/") or (len(v) > 1 and v[1] == ":"):
+        return ""
+    return v.strip().strip("/")
+
+
+def _karar_baslik(p):
+    """' — baslik' (dosyanin ilk `# ` satiri, <=80 kr) ya da ''. UTF-8 hatasi ATILMAZ (replace); H4/H11
+    desenlerini tetikleyecek karakterler (backtick, `](`) etkisizlestirilir."""
+    try:
+        with open(p, "rb") as f:
+            satir = f.read(65536).decode("utf-8", "replace").split("\n")[:60]
+    except OSError:
+        return ""
+    for s in satir:
+        m = re.match(r"^#\s+(\S.*)$", s.rstrip("\r"))
+        if m:
+            t = unicodedata.normalize("NFC", m.group(1)).replace("`", "'").replace("](", "] (")
+            t = re.sub(r"\s+", " ", t).strip()[:80].rstrip()
+            return (" — " + t) if t else ""
+    return ""
+
+
+def _karar_satirlari(kok, rel, adlar):
+    """Blok govdesi icin `- ad — baslik` satirlari (en cok _KARAR_LISTE_TAVAN; kirpilan SAYI yazilir)."""
+    d = os.path.join(kok, *rel.split("/"))
+    out = ["- %s%s" % (ad, _karar_baslik(os.path.join(d, ad))) for ad in adlar[:_KARAR_LISTE_TAVAN]]
+    if len(adlar) > _KARAR_LISTE_TAVAN:
+        out.append("- … +%d dosya daha (listelenmedi; dizinde duruyor)" % (len(adlar) - _KARAR_LISTE_TAVAN))
+    return out
+
+
+def _karar_blok_govdesi(y, kd):
+    """Blok govdesi (liste) ya da None (kayitli yol proje DISINA bagli: bloga DOKUNMA). Dizin YOKSA blok
+    'YOK (kayitli: ...)' der — sessizce DUSMEZ. Motorun kendi karar dizini (ADR'li ise) de listelenir."""
+    yol = os.path.join(y.kok, *kd.split("/"))
+    if kok_disina_mi(y.kok, yol):
+        return None
+    g = ["> Motor (devral/derle) uretti: projenin KENDI karar kayitlari asagidaki dizindedir; dosyalara "
+         "dokunulmaz, tasinmaz, kopyalanmaz. Hangisinin otorite oldugunu motor KARARLASTIRMAZ."]
+    if not os.path.isdir(yol):
+        g.append("- karar dizini: YOK (kayitli: %s)" % kd)
+    else:
+        adlar = _karar_adlari(y.kok, kd)
+        g.append("- karar dizini: %s (%d dosya%s)"
+                 % (kd, len(adlar), "" if adlar else " — NNNN-*.md / ADR-*.md desenli dosya yok"))
+        g += _karar_satirlari(y.kok, kd, adlar)
+    motor = adr_listesi(y)
+    if motor:
+        g.append("- motorun kendi karar dizini (otorite sorusu motora bagli DEGIL): %d dosya" % len(motor))
+        g += ["- %s%s" % (k["dosya"], (" — " + k["meta"]["baslik"]) if k["meta"].get("baslik") else "")
+              for k in motor[:_KARAR_LISTE_TAVAN]]
+    return g
+
+
+def _devral_karar_blogu(y, rc, canli_p):
+    """`cmd_devral`in TEK cagri noktasi (dal eklemez). Cipa'dan ONCE: blok devir tabanina girer (beyan
+    gerekmez); sonraki degisimler `derle` log-compaction yoluyla muhasebelenir."""
+    kd = _karar_dizini_rc(rc)
+    govde = _karar_blok_govdesi(y, kd) if kd else None
+    if govde is None:
+        return
+    L = satirlar(canli_p)
+    yeni = _motor_blogu_esitle(y, rc, L, None, None, _KARAR_KONU, _KARAR_KONU_ACIKLAMA, govde, True)
+    if yeni != L:
+        yaz(canli_p, "\n".join(yeni))
+
+
+def _devral_karar_konusu(y, rc):
+    """`karar-kaynagi` konusunu KONULAR.md'ye ekler (H10 sozluk kapisi motorun kendi blogunu reddetmesin).
+    DEVIR halkasindan ONCE cagrilir: politika dosyasi o halkanin yukune girer (ayri halka gerekmez)."""
+    if (_karar_dizini_rc(rc) and os.path.isfile(y.konular)
+            and not re.search(r"^\|\s*%s\s*\|" % _KARAR_KONU, oku(y.konular), re.M)):
+        yaz(y.konular, oku(y.konular).rstrip("\n") + "\n| %s | %s |\n" % (_KARAR_KONU, _KARAR_KONU_ACIKLAMA))
 
 
 # ---------------------------------------------------------------- ISIRMA KANITI
