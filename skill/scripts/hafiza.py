@@ -5738,30 +5738,36 @@ def _karar_adlari(kok, rel):
 
 
 def _karar_dizinleri(kok):
-    """[(rel, [adlar])] — ADR desenli >=1 dosya tasiyan adaylar, ADAY SIRASIYLA, tekil (ayni dizin iki
-    adayla bulunmaz); proje DISINA bagli (symlink/junction) dizin ELENIR (disaridan okuma YASAK)."""
-    out, gorulen = [], set()
+    """([(rel, [adlar])], [atlanan]) — ADR desenli >=1 dosya tasiyan adaylar, ADAY SIRASIYLA, tekil (ayni
+    dizin iki adayla bulunmaz). Proje DISINA bagli (symlink/junction) dizin OKUNMAZ (disaridan okuma
+    YASAK) ama SESSIZCE de dusmez: `atlanan` listesine girer ve ozet satirinda gorunur."""
+    out, gorulen, atlanan = [], set(), []
     for aday in _KARAR_ADAYLARI:
         rel = _karar_dizin_coz(kok, aday)
         if rel is None or rel.lower() in gorulen:
             continue
         gorulen.add(rel.lower())
         adlar = _karar_adlari(kok, rel)
-        if adlar and not kok_disina_mi(kok, os.path.join(kok, *rel.split("/"))):
-            out.append((rel, adlar))
-    return out
+        if not adlar:
+            continue
+        if kok_disina_mi(kok, os.path.join(kok, *rel.split("/"))):
+            atlanan.append(rel)
+            continue
+        out.append((rel, adlar))
+    return out, atlanan
 
 
 def devir_karar_ozeti(kok):
     """Devral ozet satiri (`--kesif` ve yazan yol AYNI metni basar) -> secilen dizin ya da ''.
     Satir rol desenlerine (`canli : ...`) UYMAZ; yol kok-goreli ve sirali: iki havuzda ayni cikti."""
-    bulunan = _karar_dizinleri(kok)
+    bulunan, atlanan = _karar_dizinleri(kok)
+    atla = "".join(" · ATLANDI (proje DISINA bagli, okunmadi): %s" % r for r in atlanan)
     if not bulunan:
-        print("  karar dizini      : bulunamadi (aranan: %s)" % ", ".join(_KARAR_ADAYLARI))
+        print("  karar dizini      : bulunamadi (aranan: %s)%s" % (", ".join(_KARAR_ADAYLARI), atla))
         return ""
     rel, adlar = bulunan[0]
     diger = "".join(" · baska aday: %s" % r for r, _ in bulunan[1:])
-    print("  karar dizini      : %s (%d dosya)%s" % (rel, len(adlar), diger))
+    print("  karar dizini      : %s (%d dosya)%s%s" % (rel, len(adlar), diger, atla))
     return rel
 
 
