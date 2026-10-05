@@ -5804,10 +5804,43 @@ def _karar_baslik(p):
     return ""
 
 
+# KALEM K-DURUM (besli-paket/IS_EMRI_ADRDURUM_GECIS_ISARETCI.md, 6 Eki 2026, Onur kilidi). OLCULDU (Momentum kor
+# okuma R1, iki tekrar YANLIS): blok TASLAK bir ADR'ye (`Durum: TASLAK v6 — KILITLI DEGIL`) kilitli olanlarla AYNI
+# agirlikta yol veriyordu; okuyucu taslagi karar sandi. Motor durumu YORUMLAMAZ, siralamaz, otorite SECMEZ: yalniz
+# dosyanin KENDI beyanini tasir. Anahtar ilk 30 satirda `Durum`/`Status` (harf duyarsiz; satir basi `-`/`*`/`>`/`**`
+# suslerinden bagimsiz) ya da on-bilgide `durum:`/`status:`; yoksa `[durum: BEYANSIZ]` (sessiz bosluk YOK).
+_KARAR_DURUM_ANAHTAR = re.compile(r"^[\s>*+\-]*(?:\*\*|__)?\s*(?:durum|status)\s*(?:\*\*|__)?\s*:(.*)$", re.I)
+_KARAR_DURUM_PENCERE = 30
+_KARAR_DURUM_TAVAN = 60
+
+
+def _karar_durum(p):
+    """' — [durum: DEGER]' — dosyanin ILK 30 satirindaki `Durum`/`Status` beyani (susler atilmis, <=60 kr,
+    kirpilirsa `…` dahil <=60) ya da ' — [durum: BEYANSIZ]'. Okunamayan dosya da BEYANSIZ (sessiz bos yok).
+    H4/H11 desenlerini tetikleyecek karakterler (backtick, `](`) etkisizlestirilir."""
+    try:
+        with open(p, "rb") as f:
+            satir = f.read(65536).decode("utf-8", "replace").split("\n")[:_KARAR_DURUM_PENCERE]
+    except OSError:
+        satir = []
+    for s in satir:
+        m = _KARAR_DURUM_ANAHTAR.match(s.rstrip("\r"))
+        if not m:
+            continue
+        v = unicodedata.normalize("NFC", m.group(1)).replace("**", "").replace("__", "")
+        v = re.sub(r"\s+", " ", v.replace("`", "'").replace("](", "] (")).strip(" *_")
+        if v:
+            if len(v) > _KARAR_DURUM_TAVAN:
+                v = v[:_KARAR_DURUM_TAVAN - 1].rstrip() + "…"
+            return " — [durum: %s]" % v
+    return " — [durum: BEYANSIZ]"
+
+
 def _karar_satirlari(kok, rel, adlar):
-    """Blok govdesi icin `- ad — baslik` satirlari (en cok _KARAR_LISTE_TAVAN; kirpilan SAYI yazilir)."""
+    """Blok govdesi icin `- ad — baslik — [durum: ...]` satirlari (en cok _KARAR_LISTE_TAVAN; kirpilan SAYI yazilir)."""
     d = os.path.join(kok, *rel.split("/"))
-    out = ["- %s%s" % (ad, _karar_baslik(os.path.join(d, ad))) for ad in adlar[:_KARAR_LISTE_TAVAN]]
+    out = ["- %s%s%s" % (ad, _karar_baslik(os.path.join(d, ad)), _karar_durum(os.path.join(d, ad)))
+           for ad in adlar[:_KARAR_LISTE_TAVAN]]
     if len(adlar) > _KARAR_LISTE_TAVAN:
         out.append("- … +%d dosya daha (listelenmedi; dizinde duruyor)" % (len(adlar) - _KARAR_LISTE_TAVAN))
     return out
@@ -5831,7 +5864,8 @@ def _karar_blok_govdesi(y, kd):
     motor = adr_listesi(y)
     if motor:
         g.append("- motorun kendi karar dizini (otorite sorusu motora bagli DEGIL): %d dosya" % len(motor))
-        g += ["- %s%s" % (k["dosya"], (" — " + k["meta"]["baslik"]) if k["meta"].get("baslik") else "")
+        g += ["- %s%s%s" % (k["dosya"], (" — " + k["meta"]["baslik"]) if k["meta"].get("baslik") else "",
+                            _karar_durum(os.path.join(y.kararlar, k["dosya"])))
               for k in motor[:_KARAR_LISTE_TAVAN]]
     return g
 

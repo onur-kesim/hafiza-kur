@@ -73,13 +73,22 @@ K-YOL (devral karar dizini) — AYNI betige ek kollar (besli-paket/IS_EMRI_KSATI
   TERIM: is emri "(iii) sabotajda (ii) KACTI gorunmeli" der; bu betigin sozlugunde o durum ISIRDI'dir
   (kol sabotajli motorda KIRMIZI yanar = kapi kor DEGIL). KACTI = sabotaj kolu kirmizi YAKMADI = kapi KOR.
 
+K-DURUM — AYNI betige ek kol (besli-paket/IS_EMRI_ADRDURUM_GECIS_ISARETCI.md, 6 Eki 2026, Onur kilidi)
+  Olculen (Momentum kor okuma R1, iki tekrar YANLIS): `karar-kaynagi` blogu TASLAK bir ADR'ye (`Durum: TASLAK v6 —
+  KILITLI DEGIL`) kilitlilerle AYNI agirlikta yol veriyordu; okuyucu taslagi karar sandi. Blok artik her ADR satirina
+  dosyanin KENDI beyanini ekler: `- ad — baslik — [durum: DEGER]` (ilk 30 satirdaki `Durum`/`Status`, suslerden
+  bagimsiz, ya da on-bilgi `durum:`; <=60 kr; yoksa `BEYANSIZ`). Motor YORUMLAMAZ/SIRALAMAZ/otorite SECMEZ.
+  BIR KOL (`kdurum`, her biri AYRI etiketli eksen): KDURUM (beyan blokta: `**Durum:**` · on-bilgi · `Status :`) ·
+  KKESME (uzun deger <=60) · KPENCERE (L30 icinde TUTAR, L32 sayilmaz) · KBEYANSIZ (anahtarsiz) · KSILINCE (satir
+  silinince derle BEYANSIZ) · KMOTOR (motorun kendi `kararlar/` listesi de tasir) + kapi/kapi --siki; 5 sabotaj.
+
 NE OLCMEZ
   K4 (H6 arsiv blogu icerik korlugu) BU DOSYADA DEGIL — Onur kilidiyle AYRI
   is emrine ertelendi (SIRADAKI). `devral`in KENDI davranisi (basligi
   eklememesi) burada DOGRU/DEGISMEZ kabul edilir, sinanmaz — sinanan KAPININ
   bunu YAKALAMASIdir.
 
-CIKIS KODU  0 tum kollar temiz (uc + yedi K-SATIR + yedi K-YOL) VE tum mutantlar/sabotajlar ISIRDI · 1 en az bir kol
+CIKIS KODU  0 tum kollar temiz (uc + yedi K-SATIR + yedi K-YOL + bir K-DURUM) VE tum mutantlar/sabotajlar ISIRDI · 1 en az bir kol
             BEKLENMEDIK / mutant KACTI · 2 OLCULEMEDI (git yok, motor
             okunamadi, kurulum basarisiz — kapi hukmu DEGIL)
 """
@@ -748,8 +757,74 @@ def ky_kesif(motor, taban):
     return []
 
 
+# ===================================================================== K-DURUM (ADR durum satiri)
+# besli-paket/IS_EMRI_ADRDURUM_GECIS_ISARETCI.md (6 Eki 2026, Onur kilidi). OLCULDU (Momentum kor okuma R1, iki
+# tekrar YANLIS): blok TASLAK ADR'ye kilitlilerle AYNI agirlikta yol veriyordu. `karar-kaynagi` her ADR'nin KENDI
+# `Durum`/`Status` beyanini (ilk 30 satir; on-bilgi `durum:` dahil) `[durum: ...]` olarak tasir, yoksa `BEYANSIZ`.
+# Beklenti FIKSTUR iceriginden elle yazilidir (paylasilan kural = paylasilan korluk); motor yorumlamaz.
+KD_ADR = {
+    "docs/ADR/0001-kilitli.md": "# ADR 0001 — Kilitli\n\n- **Durum:** ✅ **KİLİTLİ (v3)**\n",
+    "docs/ADR/0002-onbilgi.md": "---\ndurum: kabul\n---\n# ADR 0002 — On bilgi\n",
+    "docs/ADR/0003-taslak.md": "# ADR 0003 — Taslak\n> Status : **Proposed** — KILITLI DEGIL\n",
+    "docs/ADR/0004-uzun.md": "# ADR 0004 — Uzun\nDurum: " + "u" * 80 + "\n",
+    "docs/ADR/0005-beyansiz.md": "# ADR 0005 — Beyansiz\nbir metin, anahtar yok\n",
+    "docs/ADR/0006-pencere-disi.md": "# ADR 0006 — Pencere disi\n" + "x\n" * 30 + "Durum: kabul\n",      # L32
+    "docs/ADR/0007-pencere-ici.md": "# ADR 0007 — Pencere ici\n" + "x\n" * 28 + "Durum: kabul\n",       # L30
+}
+KD_BEKLENEN = (
+    "0001-kilitli.md — ADR 0001 — Kilitli — [durum: ✅ KİLİTLİ (v3)]",
+    "0002-onbilgi.md — ADR 0002 — On bilgi — [durum: kabul]",
+    "0003-taslak.md — ADR 0003 — Taslak — [durum: Proposed — KILITLI DEGIL]",
+    "0004-uzun.md — ADR 0004 — Uzun — [durum: " + "u" * 59 + "…]",
+    "0005-beyansiz.md — ADR 0005 — Beyansiz — [durum: BEYANSIZ]",
+    "0006-pencere-disi.md — ADR 0006 — Pencere disi — [durum: BEYANSIZ]",
+    "0007-pencere-ici.md — ADR 0007 — Pencere ici — [durum: kabul]",
+)
+
+
+def _kd_satirlar(kok):
+    blok = BLOK_KARAR.search(_canli_devral(kok))
+    return [x[2:] for x in (blok.group(2) if blok else "").splitlines() if x.startswith("- ")]
+
+
+def kd_durum(motor, taban):
+    """DEVRAL -> her ADR'nin durumu blokta (KDURUM) · uzun deger <=60 kirpilir (KKESME) · ilk 30 satirdan SONRAKI
+    beyan sayilmaz (KPENCERE) · anahtarsiz `BEYANSIZ` (KBEYANSIZ) · DURUM SATIRI SILININCE derle BEYANSIZ yapar
+    (KSILINCE) · motorun kendi `kararlar/` listesi de tasir (KMOTOR) · kapi + kapi --siki yesil."""
+    b = []
+    kok = os.path.join(taban, "kd")
+    rc, c = hal_yol(motor, kok, KD_ADR, DURUM_BOLUMLU)
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    sat = _kd_satirlar(kok)
+    for beklenen in KD_BEKLENEN:
+        if beklenen not in sat:
+            et = ("KKESME" if "uzun" in beklenen else "KPENCERE" if "pencere-disi" in beklenen else
+                  "KBEYANSIZ" if "BEYANSIZ" in beklenen else "KDURUM")
+            b.append((et, "blokta beklenen satir YOK: %r (blok satirlari: %r)" % (beklenen, sat[:9])))
+    _commit(kok, "devral")
+    b += _kapilar_yesil(motor, kok)
+    # ---- SILINCE: durum satiri silinir -> derle blogu diskten yeniden uretir, BEYANSIZ der -------------
+    _yaz(os.path.join(kok, "docs", "ADR", "0001-kilitli.md"), "# ADR 0001 — Kilitli\n")
+    _commit(kok, "durum silindi")
+    rc, c = notdemle(motor, kok, "sonraki-adim", "durum satiri silindikten sonra derle")
+    sat = _kd_satirlar(kok)
+    if rc != 0 or "0001-kilitli.md — ADR 0001 — Kilitli — [durum: BEYANSIZ]" not in sat:
+        b.append(("KSILINCE", "durum satiri silindi ama blok BEYANSIZ demedi (exit=%s): %r" % (rc, sat[:2])))
+    # ---- MOTOR: motorun kendi kararlar/ dizini de beyani tasir ----------------------------------------
+    rc, c = kos(motor, ["karar", "--baslik", "Motor karari"], kok)
+    if rc != 0:
+        raise Kurulamadi("karar basarisiz: %s" % c.strip().split("\n")[-1][:160])
+    _commit(kok, "motor karari")
+    rc, c = notdemle(motor, kok, "acik-kararlar", "motor karari eklendikten sonra derle")
+    if rc != 0 or "0001-motor-karari.md — Motor karari — [durum: onerildi]" not in _kd_satirlar(kok):
+        b.append(("KMOTOR", "motorun kendi karari blokta durumuyla YOK (exit=%s): %r" % (rc, _kd_satirlar(kok)[-3:])))
+    b += _kapilar_yesil(motor, kok, " (durum silindikten sonra)")
+    return b
+
+
 def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
-    """K-SATIR + K-YOL kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
+    """K-SATIR + K-YOL + K-DURUM kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
     kollar = (("K-SATIR", "dongu", lambda: ks_dongu(motor, taban, tag + "d")),
               ("K-SATIR", "tanimsiz", lambda: ks_tanimsiz(motor, os.path.join(taban, tag + "t"))),
               ("K-SATIR", "sahiplik", lambda: ks_sahiplik(motor, os.path.join(taban, tag + "s"))),
@@ -763,7 +838,8 @@ def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
               ("K-YOL", "ycase", lambda: ky_case(motor, os.path.join(taban, tag + "yc"))),
               ("K-YOL", "ycok", lambda: ky_cok(motor, os.path.join(taban, tag + "ym"))),
               ("K-YOL", "ykesif", lambda: ky_kesif(motor, os.path.join(taban, tag + "ye"))),
-              ("K-YOL", "ykacis", lambda: ky_kacis(motor, os.path.join(taban, tag + "yx"))))
+              ("K-YOL", "ykacis", lambda: ky_kacis(motor, os.path.join(taban, tag + "yx"))),
+              ("K-DURUM", "kdurum", lambda: kd_durum(motor, os.path.join(taban, tag + "kd"))))
     b = []
     for grup, ad, kol in kollar:
         if yalniz is None or ad in yalniz:
@@ -851,8 +927,10 @@ KS_SABOTAJLAR = (
      '    if False:      # MUTANT\n        L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _KARAR_KONU, _KARAR_KONU_ACIKLAMA, govde)\n',
      ("yadr",)),
     ("M-Y10 ADR dosyalarina DOKUNULUR", 'YDOKUNMA',
-     '    out = ["- %s%s" % (ad, _karar_baslik(os.path.join(d, ad))) for ad in adlar[:_KARAR_LISTE_TAVAN]]\n',
-     '    out = ["- %s%s" % (ad, _karar_baslik(os.path.join(d, ad))) for ad in adlar[:_KARAR_LISTE_TAVAN]]\n'
+     '    out = ["- %s%s%s" % (ad, _karar_baslik(os.path.join(d, ad)), _karar_durum(os.path.join(d, ad)))\n'
+     '           for ad in adlar[:_KARAR_LISTE_TAVAN]]\n',
+     '    out = ["- %s%s%s" % (ad, _karar_baslik(os.path.join(d, ad)), _karar_durum(os.path.join(d, ad)))\n'
+     '           for ad in adlar[:_KARAR_LISTE_TAVAN]]\n'
      '    for ad in adlar:\n        with open(os.path.join(d, ad), "ab") as f:\n            f.write(b"\\n")      # MUTANT\n',
      ("yadr",)),
     ("M-Y11 dizin adi harf-duyarli aranir", 'YCASE',
@@ -872,6 +950,22 @@ KS_SABOTAJLAR = (
      '        if kok_disina_mi(kok, os.path.join(kok, *rel.split("/"))):\n            atlanan.append(rel)\n'
      '            continue\n',
      '        if False:      # MUTANT\n            atlanan.append(rel)\n            continue\n', ("ykacis",)),
+    # ---- K-DURUM ----------------------------------------------------------------------------------
+    ("M-D1 durum cikarimi kapali (hep BEYANSIZ)", 'KDURUM',
+     '        m = _KARAR_DURUM_ANAHTAR.match(s.rstrip("\\r"))\n',
+     '        m = None      # MUTANT\n', ("kdurum",)),
+    ("M-D2 beyansiz ADR bos birakilir", 'KBEYANSIZ',
+     '    return " — [durum: BEYANSIZ]"\n', '    return ""      # MUTANT\n', ("kdurum",)),
+    ("M-D3 uzun durum kirpilmaz", 'KKESME',
+     '            if len(v) > _KARAR_DURUM_TAVAN:\n',
+     '            if False:      # MUTANT\n', ("kdurum",)),
+    ("M-D4 ilk 30 satir siniri yok", 'KPENCERE',
+     '.split("\\n")[:_KARAR_DURUM_PENCERE]', '.split("\\n")      # MUTANT', ("kdurum",)),
+    ("M-D5 motorun kendi kararinda durum yok", 'KMOTOR',
+     '        g += ["- %s%s%s" % (k["dosya"], (" — " + k["meta"]["baslik"]) if k["meta"].get("baslik") else "",\n'
+     '                            _karar_durum(os.path.join(y.kararlar, k["dosya"])))\n',
+     '        g += ["- %s%s%s" % (k["dosya"], (" — " + k["meta"]["baslik"]) if k["meta"].get("baslik") else "",\n'
+     '                            "")      # MUTANT\n', ("kdurum",)),
 )
 
 
@@ -1062,8 +1156,8 @@ def main():
         if kacan:
             print("SONUC: KAPI KOR — %s beklendigi gibi olculmedi." % ", ".join(kacan))
             return 1
-        print("SONUC: YESIL — uc kol + yedi K-SATIR + yedi K-YOL kolu temiz, uc mutant + %d K-SATIR/K-YOL "
-              "sabotaji AYRI eksende ISIRDI." % len(KS_SABOTAJLAR))
+        print("SONUC: YESIL — uc kol + yedi K-SATIR + yedi K-YOL + bir K-DURUM kolu temiz, uc mutant + %d "
+              "K-SATIR/K-YOL/K-DURUM sabotaji AYRI eksende ISIRDI." % len(KS_SABOTAJLAR))
         return 0
     finally:
         _sil(taban)

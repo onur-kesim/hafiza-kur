@@ -419,3 +419,19 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   yalnız ASCII ile ölçmek düzeltmenin kendi lehine kurulmuş bir sınavdır — bu araç
   Türkçe hafıza tutuyor. Tavan (H2) zaten bunu 60 KB civarında tutar; ama `devral` ile
   devralınan dev bir hafızada ilk koşum yavaştır — bu bir hata değil, ölçülmüş maliyet.
+- **Canlı defter kod ile ayrışabilir — motor ATIF ve YOL taşır, içeriği DOĞRULAMAZ (H18 · K-YOL · K-DURUM, 5-6 Eki 2026).**
+  **H18** canlının numaralı maddelerindeki backtick'li `yol:N` atfını ölçer: atıftaki satırda
+  maddenin tanımlayıcısı yok ama dosyanın başka yerinde varsa `KAYMA` (UYARI: çıkış kodu
+  DEĞİŞMEZ; `derle` aynı listeyi canlıya `atif-kaymasi` bloğu olarak yazar). **İçerik
+  bayatlığını ÖLÇMEZ** (atıf doğru satırı gösterip maddenin söylediği eskimiş olabilir); kod çiti
+  içindeki madde ayırt edilmez; yalnız `canli` taranır; `isir` kataloğunda DEĞİLDİR.
+  **K-YOL**: `devral` projenin kendi karar dizinini (`docs/ADR` · `docs/adr` · `docs/decisions` ·
+  `adr` · `doc/adr`, harf duyarsız) bulur, canlıya `karar-kaynagi` bloğu (dizin + dosya ADLARI +
+  ilk `# ` başlığı) yazar ve `.hafizarc`a `karar_dizini` kaydeder; dosyalara DOKUNULMAZ. Çok
+  adayda İLK seçilir (diğeri "baska aday" diye görünür); `NNNN-*.md`/`ADR-*.md` sayılır;
+  proje DIŞINA bağlı dizin OKUNMAZ ama "ATLANDI" diye görünür. **K-DURUM**: blok her ADR
+  satırına dosyanın KENDİ beyanını ekler — `- 0003-x.md — başlık — [durum: 🟡 TASLAK v6 — …]`:
+  ilk 30 satırda `Durum`/`Status` (harf duyarsız; `-`/`*`/`>`/`**` süslerinden bağımsız) ya da
+  ön-bilgide `durum:`/`status:`; değer ≤60 karakter; bulunamazsa `[durum: BEYANSIZ]`. Motor
+  durumu YORUMLAMAZ, sıralamaz, otorite SEÇMEZ (hangi belgenin karar olduğu insanındır).
+  Sınır: `## Status` başlığı ALTINDAKİ değer ya da tablo hücresi okunmaz (BEYANSIZ der).
