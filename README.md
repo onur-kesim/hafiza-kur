@@ -255,6 +255,10 @@ Bunlar gizlenmiyor; `skill/SKILL.md` §9'da tam listesi var. En önemlileri:
   ölçülemeyen atıf ÖLÇÜLEMEDİ sayısıyla basılır. Satır doğru ama iddia bayatsa (`:85` hâlâ
   "tutuyor" der) bunu **görmez**. H18 `isir` kataloğunda değildir: uyarıdır, `fail` üretmez;
   `faz0/guncel_durum_kapisi_mutanti.py` onu ısırtır.
+- **Defter↔kod İÇERİK bayatlığı ölçülmez.** Zaman/sıra tabanlı iki aday Momentum'da ölçüldü
+  (5 Eki 2026): isabet A 0/3, B 1/6; motive eden vaka (md.40) iddia doğuşta bayattı (kod 2
+  commit önce değişmişti) — mekanik olarak ayırt edilemiyor. Kanıt: `besli-paket` ölçüm raporu
+  (depoya kopyalanmaz; bu yüzden bu satırın sayıları depodan doğrulanamaz).
 
 ## Denetim
 
