@@ -2336,6 +2336,8 @@ def cmd_derle(a):
             L = L[:i + 1] + [""] + blok + L[i + 1:]
         eklenen_satirlar.extend(blok)
         islenen.append(f)
+    # K-SATIR: motorun kendi blogu (sahip="hafiza-kur"); beyan/arsiv ERTELENIR (asagida, `yaz`dan sonra).
+    L = _derle_motor_bloklari(y, rc, L, ertele, eklenen_satirlar)
     if eklenen_satirlar:
         # KALEM 1: ERTELENIR (bkz. yukarisi).
         ertele.append((_canli_ekle_beyan, (eklenen_satirlar,
@@ -3841,6 +3843,9 @@ _KAPI_KOK = [""]
 # olmese bile duz YESIL kalamaz — `O.append` AYRI tanik, fail() metnini TEKRARLAMAZ (ayni parca
 # olursa sabotaj olcumu orter). Gercek motorda fail de yanar: FAIL, exit 1 (degismez). Gerekce
 # burada (govdenin disinda): `_kapi_govde` 80 satir tavaninda, ek satir `ihlal`i 9'dan oynatir.
+# K-SATIR (5 Eki 2026): H18 cagrisi icin govdeye TEK satir girdi; yerini, govdenin SON satiri olan
+# bos `return` (yorumsuz, deger tasimayan, davranisi OLMAYAN) ve onun bos satiri acti -> govde 80 -> 79
+# satir, tavan ve `ihlal` 9 DEGISMEDI. Tavan YUKSELTILMEDI.
 def _kapi_govde(a, F, N, O):
     kok = kok_bul(a.kok); _KAPI_KOK[0] = kok
     rc = rc_oku(kok); y = Y(kok, rc)
@@ -3919,8 +3924,7 @@ def _kapi_govde(a, F, N, O):
     _kapi_h15(F, N, O, rc, y)
     _kapi_h14(F, N, O, kok, rc, y, t_son)
     _kapi_h17(F, N, O, y)
-
-    return
+    _kapi_h18(N, kok, y)
 
 
 # --------------------------------------------------------- KAPI GOVDELERI
@@ -5389,6 +5393,292 @@ def _kapi_h17(F, N, O, y):
         fail("H17", "`## GUNCEL DURUM` bolumu YOK — `not`/`derle` dongusu "
                     "calisamaz; yazilan fragmanlar canliya GIRMEZ. "
                     "CIKIS YOLU: python hafiza.py bolum-kur --kok=\"%s\"" % y.kok)
+
+
+# ---------------------------------------------------------------- H18 SATIR ATFI KAYMASI
+# KALEM K-SATIR (besli-paket/IS_EMRI_KSATIR_KARARYOLU.md, 5 Eki 2026, Onur kilidi
+# "satir kaymasi IS EMRINE"). OLCULDU (Momentum kopyasi): canli defterde "`SENKRON_SUNUCU_URL`
+# = `main.dart:25`" yaziyordu; L25 bugun bir import, tanim L31-32. Defter ile kod AYRISMISTI ve
+# HICBIR kapi bunu gormedi. H18 yalniz SATIR KAYMASINI olcer; icerik bayatligini OLCMEZ (A/B
+# tazelik adaylari Momentum'da isabet 0/3 ve 1/6 cikti ve KESILDI — README bilinen sinirlar).
+# H14'un `haric` kumesiyle AYNI (iki tanim ayrisamaz: faz0/atif_kaymasi_mutanti.py ESITLIGI sinar).
+_ATIF_HARIC = {".git", "node_modules", "__pycache__", ".venv", "arsiv", "gunluk", "dist", "build"}
+_ATIF_MADDE = re.compile(r"^(\d+)\. ")
+_ATIF_BT = re.compile(r"`([^`\n]+)`")
+_ATIF_YOL = re.compile(r"([\w./\\-]+):(\d+)(?:-(\d+))?")
+_ATIF_TANIM = re.compile(r"[A-Za-z_][A-Za-z0-9_]{3,}")
+_ATIF_DOSYA_TAVAN = 8 * 1024 * 1024
+_ATIF_LISTE_TAVAN = 20
+
+
+def _atif_cikar(L):
+    """[(madde_no, atif_metni, yol, bas, son, tanimlayicilar)] — canli satirlarindan, SIRALI.
+
+    MADDE = numarali satir (`N. ...`) + onu izleyen 4-bosluk girintili devam satirlari; bos ya da
+    girintisiz satir maddeyi KAPATIR (ayni numarali iki liste birbirini EZMEZ). ATIF = maddedeki
+    backtick'li, TAMAMI `yol:N` ya da `yol:N-M` olan belirtec. TANIMLAYICI = ayni maddedeki
+    backtick'li, TAMAMI `[A-Za-z_][A-Za-z0-9_]{3,}` olan belirtec. Kod citi icindeki maddeler
+    AYIRT EDILMEZ (README bilinen sinir). Saf fonksiyon: disk/surec yok."""
+    maddeler, acik = [], None
+    for s in L:
+        m = _ATIF_MADDE.match(s)
+        if m:
+            acik = (int(m.group(1)), [s])
+            maddeler.append(acik)
+        elif acik and s.startswith("    "):
+            acik[1].append(s)
+        else:
+            acik = None
+    out = []
+    for no, sat in maddeler:
+        tok = [t.strip() for t in _ATIF_BT.findall("\n".join(sat))]
+        tan = tuple(sorted({t for t in tok if _ATIF_TANIM.fullmatch(t)}))
+        for t in tok:
+            m = _ATIF_YOL.fullmatch(t)
+            if m:
+                bas = int(m.group(2))
+                out.append((no, t, m.group(1), bas, int(m.group(3) or bas), tan))
+    return out
+
+
+def _atif_indeks(kok):
+    """{taban_ad: [koke gore '/' yollari]} — H14'un `haric` kumesiyle os.walk; GIT'SIZ, SIRALI."""
+    idx = {}
+    for r0, d0, f0 in os.walk(kok):
+        d0[:] = sorted(d for d in d0 if d not in _ATIF_HARIC)
+        for f in sorted(f0):
+            idx.setdefault(f, []).append(_rel(os.path.join(r0, f), kok))
+    return idx
+
+
+def _atif_coz(idx, yol):
+    """Atifin yolu -> eslesen dosyalar (kok-goreli yolun SONEKI: `a/b.py` ve `b.py` ikisi de olur)."""
+    yol = yol.replace("\\", "/")
+    while yol.startswith("./"):
+        yol = yol[2:]
+    return [f for f in idx.get(yol.rsplit("/", 1)[-1], []) if f == yol or f.endswith("/" + yol)]
+
+
+def _atif_satirlar(kok, rel, onbellek):
+    """(satirlar, None) ya da (None, sebep). Duzenli dosya + <=8 MB; UTF-8 hatasi ATILMAZ (replace)."""
+    if rel in onbellek:
+        return onbellek[rel]
+    p = os.path.join(kok, *rel.split("/"))
+    sonuc = (None, "OKUNAMADI")
+    if duzenli_dosya(p):
+        try:
+            if os.path.getsize(p) > _ATIF_DOSYA_TAVAN:
+                sonuc = (None, "BUYUK_DOSYA")
+            else:
+                with open(p, "rb") as f:
+                    sat = f.read().decode("utf-8", "replace").split("\n")
+                sonuc = (sat[:-1] if sat[-1] == "" else sat, None)
+        except OSError:
+            sonuc = (None, "OKUNAMADI")
+    onbellek[rel] = sonuc
+    return sonuc
+
+
+def _atif_hukum(sat, bas, son, tanimlar):
+    """('TUTUYOR', None) | ('KAYMA', 'yer,yer') | ('OLCULEMEDI', sebep).  bas..son 1-tabanli, kapsayici.
+
+    TUTUYOR: [bas-2, son+2] penceresinde maddedeki tanimlayicilardan BIRI var. KAYMA: pencerede yok
+    ama dosyada baska satirda var (ilk 5 satir basilir). Dosyada HIC yoksa ESLESTIRME kurulamaz
+    (atif baska bir seyi anlatiyor olabilir) -> OLCULEMEDI, 'bayat' denmez."""
+    if bas < 1 or son < bas or son > len(sat):
+        return "OLCULEMEDI", "SATIR_DISI"
+    desen = re.compile(r"\b(?:%s)\b" % "|".join(re.escape(t) for t in tanimlar))
+    if any(desen.search(s) for s in sat[max(0, bas - 3):son + 2]):
+        return "TUTUYOR", None
+    yer = [i for i, s in enumerate(sat, 1) if desen.search(s)]
+    if not yer:
+        return "OLCULEMEDI", "DOSYADA_YOK"
+    return "KAYMA", ",".join(str(i) for i in yer[:5]) + (",…" if len(yer) > 5 else "")
+
+
+def _atif_tek(kok, idx, onbellek, yol, bas, son, tanimlar):
+    """Tek atif icin hukum — OLCULEMEDI sebepleri: DOSYA_YOK · DOSYA_COK · TANIMLAYICI_YOK ·
+    OKUNAMADI · BUYUK_DOSYA · SATIR_DISI · DOSYADA_YOK."""
+    aday = _atif_coz(idx, yol)
+    if len(aday) != 1:
+        return "OLCULEMEDI", "DOSYA_YOK" if not aday else "DOSYA_COK"
+    if not tanimlar:
+        return "OLCULEMEDI", "TANIMLAYICI_YOK"
+    sat, sebep = _atif_satirlar(kok, aday[0], onbellek)
+    if sat is None:
+        return "OLCULEMEDI", sebep
+    return _atif_hukum(sat, bas, son, tanimlar)
+
+
+def _atif_tara(kok, L):
+    """(atif_sayisi, ['md.29: main.dart:25 -> 28,32'], {sebep: sayi}) — `kapi` (H18, diskteki canli) ve
+    `derle` (yazacagi YENI canli) AYNI fonksiyonu okur (tek tanim). Dosya agaci YALNIZ atif varsa
+    gezilir; git'e SORULMAZ; ayni disk durumunda ayni cikti (agac ve satirlar sirali)."""
+    atiflar = _atif_cikar(L)
+    if not atiflar:
+        return 0, [], {}
+    idx, onbellek = _atif_indeks(kok), {}
+    kayma, olc = [], {}
+    for no, t, yol, bas, son, tan in atiflar:
+        h, ay = _atif_tek(kok, idx, onbellek, yol, bas, son, tan)
+        if h == "KAYMA":
+            kayma.append("md.%d: %s -> %s" % (no, t, ay))
+        elif h == "OLCULEMEDI":
+            olc[ay] = olc.get(ay, 0) + 1
+    return len(atiflar), kayma, olc
+
+
+def _kapi_h18(N, kok, y):
+    """H18 SATIR ATFI KAYMASI (besli-paket/IS_EMRI_KSATIR_KARARYOLU.md, 5 Eki 2026).
+
+    Canli defterin numarali maddelerindeki backtick'li `yol:N` atfi, ayni maddedeki backtick'li bir
+    tanimlayiciyi N±2 penceresinde TASIMIYORSA ve o tanimlayici dosyada baska satirda VARSA KAYMA'dir.
+    UYARIDIR: yalniz N kanalina yazar — `fail` YOK, cikis kodu DEGISMEZ (hicbir bayrakla da; O'ya
+    da yazilmaz, `--kapsam-zorla` cikisini etkilemez). Cozulemeyen/olculemeyen atif SAYILIR ve
+    sebep sinifiyla BASILIR (gizlenmez). Atif HIC yoksa hicbir satir basmaz (altin cikti BIREBIR).
+    KAPSAM: yalniz `canli`. Kural evi, arsiv, HAFIZA_*.md KAPSAM DISI. Icerik bayatligini OLCMEZ."""
+    n, kayma, olc = _atif_tara(kok, satirlar(y.canli))
+    if not n:
+        return
+    sebep = ""
+    if olc:
+        sebep = " [%s]" % ", ".join("%s:%d" % (k, v) for k, v in sorted(olc.items()))
+    N.append("H18: %d atif · %d KAYMA · %d OLCULEMEDI%s" % (n, len(kayma), sum(olc.values()), sebep))
+    for k in kayma[:_ATIF_LISTE_TAVAN]:
+        N.append("H18: KAYMA " + k)
+    if len(kayma) > _ATIF_LISTE_TAVAN:
+        N.append("H18: … +%d KAYMA daha (ekranda kirpildi, HEPSI sayildi)"
+                 % (len(kayma) - _ATIF_LISTE_TAVAN))
+
+
+# ---------------------------------------------------------------- MOTOR BLOKLARI (derle)
+# K-SATIR (besli-paket/IS_EMRI_KSATIR_KARARYOLU.md): `kapi` ciktisi okuyana ULASMAZ (Momentum kor
+# okumasinda H kolu yalniz DURUM.md'yi okudu) — sinyal DEFTERDE de olmali. `derle`, canliya motorun
+# KENDI blogunu (`sahip="hafiza-kur"`) yazar. Blok, mevcut muhasebe yolundan gecer (yeni kapi/istisna
+# YOK): ilk yazim `_canli_ekle_beyan`, degisim/kaldirma `_arsive_tasi` (log-compaction), yeni konu
+# `KONULAR.md` + zincir halkasi. SAHIPLIK (is emri KISIT 2): ayni konuda `sahip="hafiza-kur"` OLMAYAN
+# (proje'ye ait ya da sahipsiz) bir blok varsa motor ONA TEK KARAKTER YAZMAZ ve ikinci blok acmaz.
+_ATIF_KONU = "atif-kaymasi"
+_ATIF_KONU_ACIKLAMA = "motorun urettigi satir atfi kaymasi listesi (H18; derle yazar, elle duzenleme)"
+
+
+def _motor_blok_bul(L, konu):
+    """None (yok) | 'BOZUK' (kapanmamis / ic ice) | (bas_idx, son_idx, oznitelikler). Kod-disi tarama;
+    `cmd_derle`nin kendi arama kuraliyla AYNI: kapanis, ARADA baska bir blok acilmadan gelmeli."""
+    kod = kod_disi(L)
+    for k, s in enumerate(kod):
+        m = BLOK_BAS.search(s)
+        if m and oznitelik_coz(m.group(1)).get("konu") == konu:
+            j = k + 1
+            while j < len(L) and not BLOK_SON.search(kod[j]) and not BLOK_BAS.search(kod[j]):
+                j += 1
+            if j >= len(L) or BLOK_BAS.search(kod[j]):
+                return "BOZUK"
+            return k, j, oznitelik_coz(m.group(1))
+    return None
+
+
+def _motor_blok_suz(rc, govde):
+    """H7 KORUMASI: kalici-kural isareti tasiyan satir kapiyi (`kalici kural yanlis evde`) KIRMIZI
+    yakardi ve motor KENDI ciktisini reddettirmis olurdu (derle'nin '## ' indirme dersiyle ayni
+    sinif). Proje metninden (madde no, dosya adi, baslik) gelen o satirlar GOSTERILMEZ — SAYISI yazilir."""
+    ok = [s for s in govde if not kural_isareti_var(s, rc["kural_isaretleri"])]
+    if len(ok) < len(govde):
+        sat = "- (%d satir gosterilmedi)" % (len(govde) - len(ok))
+        if not kural_isareti_var(sat, rc["kural_isaretleri"]):
+            ok.append(sat)
+    return ok
+
+
+def _konu_kaydet(y, konu, aciklama):
+    """KONULAR.md'ye satir + zincir halkasi (`not --yeni-konu` ile AYNI beyan: politika dosyasi
+    zincir yukunde; halkasiz ekleme H0 'defter MUHURSUZ degismis' derdi)."""
+    yaz(y.konular, oku(y.konular).rstrip("\n") + "\n| %s | %s |\n" % (konu, aciklama))
+    zincir_halka(y, "KONU", "konu sozluge eklendi: %s — %s" % (konu, aciklama[:80]))
+
+
+def _motor_blok_yeri(L, baslik_yok_ust):
+    """Yeni blogun girecegi satir indeksi: `## GUNCEL DURUM` basliginin HEMEN ALTI (fragman
+    bloklariyla AYNI yer; derle'nin kurulu oldugu bolum). Baslik yoksa ve `baslik_yok_ust` ise (devral,
+    bolum-kur'dan ONCE) ilk `# ` baslik satiri ve ona bitisik `>` satirlarindan SONRA; aksi halde None."""
+    i = _bolum_araligi(L, "## GUNCEL DURUM")[0]
+    if i is not None:
+        return i + 1
+    if not baslik_yok_ust:
+        return None
+    k = 1 if (L and L[0].startswith("# ")) else 0
+    while k < len(L) and L[k].startswith(">"):
+        k += 1
+    return k
+
+
+def _motor_blok_ayni(L, bul, govde):
+    """Mevcut blogun GOVDESI (acilis/kapanis satirlari ve `guncel` damgasi HARIC) `govde` ile ayni mi?"""
+    return [norm(s) for s in L[bul[0] + 1:bul[1]]] == [norm(s) for s in govde]
+
+
+def _motor_blok_kuralli(rc, L, bul):
+    """Mevcut blok kalici-kural isareti tasiyor mu? Tasiyorsa arsive TASINMAZ (`cmd_derle`nin
+    sikistirmasiyla AYNI koruma: kalici kural tasinamaz)."""
+    return any(kural_isareti_var(s, rc["kural_isaretleri"]) for s in L[bul[0]:bul[1] + 1])
+
+
+def _motor_blok_beyan(y, ertele, eklenen, L, bul, yeni, konu, aciklama):
+    """Muhasebe (yazimdan SONRA uygulanir): eski blok -> `_arsive_tasi` (log-compaction), yeni satirlar ->
+    `_canli_ekle_beyan` (cagiranin `eklenen` listesi), yeni konu -> KONULAR.md + zincir halkasi."""
+    if bul:
+        ertele.append((_arsive_tasi, (L[bul[0]:bul[1] + 1],
+                                      "konu '%s' %s — onceki blok emekli (log-compaction)"
+                                      % (konu, "guncellendi" if yeni else "kaldirildi"))))
+    eklenen.extend(yeni)
+    if yeni and os.path.isfile(y.konular) and not re.search(
+            r"^\|\s*%s\s*\|" % re.escape(konu), oku(y.konular), re.M):
+        ertele.append((_konu_kaydet, (konu, aciklama)))
+
+
+def _motor_blogu_esitle(y, rc, L, ertele, eklenen, konu, aciklama, govde, baslik_yok_ust=False):
+    """`govde` None ise blok OLMAMALI, liste ise blok BU govdeyle OLMALI -> yeni `L`. Icerik AYNIYSA
+    hicbir sey degismez (blok ve `guncel` damgasi oldugu gibi: ayni disk durumunda derle tekrari
+    arsive satir YAZMAZ). `ertele` None ise (devral: ilk yazim, cipa'dan ONCE) beyan/arsiv yazilmaz."""
+    bul = _motor_blok_bul(L, konu)
+    if bul == "BOZUK" or (bul and bul[2].get("sahip") != "hafiza-kur"):
+        return L
+    govde = None if govde is None else _motor_blok_suz(rc, govde)
+    if bul and govde is not None and _motor_blok_ayni(L, bul, govde):
+        return L
+    if bul and _motor_blok_kuralli(rc, L, bul):
+        print("ATLANDI (konu '%s' blogunda KALICI KURAL isareti var): motor blogu degistirilmedi" % konu)
+        return L
+    yeni = [] if govde is None else (['<!-- blok konu="%s" guncel="%s" kaynak="-" sahip="hafiza-kur" -->'
+                                      % (konu, bugun())] + govde + ["<!-- /blok -->"])
+    i = _motor_blok_yeri(L, baslik_yok_ust)
+    if not bul and (not yeni or i is None):
+        return L
+    if ertele is not None:
+        _motor_blok_beyan(y, ertele, eklenen, L, bul, yeni, konu, aciklama)
+    L = (L[:bul[0]] + yeni + L[bul[1] + 1:]) if bul else (L[:i] + [""] + yeni + L[i:])
+    print("  NOT: '%s' blogu %s (motor, sahip=hafiza-kur)"
+          % (konu, ("guncellendi" if yeni else "kaldirildi") if bul else "eklendi"))
+    return L
+
+
+def _atif_blok_govdesi(kayma):
+    """KAYMA yoksa None: blok YAZILMAZ (bos blok gurultusu yok), onceki derle'den kalma blok varsa kaldirilir."""
+    if not kayma:
+        return None
+    g = ["> Motor (derle, H18) uretti: asagidaki maddelerde satir atfi (yol:N) KAYMIS olabilir — atiftaki "
+         "satirda maddenin tanimlayicisi yok, dosyanin baska yerinde var. Icerik bayatligini OLCMEZ."]
+    g += ["- " + k for k in kayma[:_ATIF_LISTE_TAVAN]]
+    if len(kayma) > _ATIF_LISTE_TAVAN:
+        g.append("- … +%d KAYMA daha (listelenmedi; hepsi kapi H18 ciktisinda)" % (len(kayma) - _ATIF_LISTE_TAVAN))
+    return g
+
+
+def _derle_motor_bloklari(y, rc, L, ertele, eklenen):
+    """`cmd_derle`nin TEK cagri noktasi (dal eklemez: `cmd_derle` CC'si degismez)."""
+    _n, kayma, _olc = _atif_tara(y.kok, L)
+    return _motor_blogu_esitle(y, rc, L, ertele, eklenen, _ATIF_KONU, _ATIF_KONU_ACIKLAMA,
+                               _atif_blok_govdesi(kayma))
 
 
 # ---------------------------------------------------------------- ISIRMA KANITI

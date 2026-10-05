@@ -48,4 +48,5 @@ K4 TAMAM (67/67), kalan kör nokta **0**; **25 Ağu yazısı** KAPSAM DIŞI; **D
 - 🔴 **BAĞLI KLASÖRDE KOŞMAYANLAR:** `hafiza.py` (H9 → kalıcı `.git/index.lock`) · `t_y42.py` (150 sn'de bitmiyor) ⇒ WSL `olcum`da koşulur.
 - 🟡 Beyan/mtime çelişkisini ölçen kapı YOK · `ruff/mypy/bandit` YALNIZ `hafiza.py`'yi tarar · `readme_mutanti`/`paketten_kos` ANLAMI değil GEÇTİĞİNİ ölçer · kilit inode yarışı daraltıldı, kapatılmadı · zincir anahtarsız (bilinçli).
 - 🔴 `rmtree(ignore_errors=True)`: motorda 5 yer W1'de `_gecici_sil`e döndü (4 Eki); faz0'daki ~90 çağrı (geliştirici aracı) KAPSAM DIŞI — Win'de salt-okunur `.git` artığı bırakır (`hook_mutanti` hariç).
+- 🟡 **H18 satır atfı kayması (5 Eki):** yalnız `canli` · numaralı madde + backtick'li `yol:N` · UYARI (exit değişmez) · içerik bayatlığını ÖLÇMEZ (`:85` TUTUYOR der, iddia bayat olabilir) · kod çiti içi numaralı madde ayırt edilmez · `isir` kataloğunda DEĞİL (faz0 KOL ısırtır).
 - 🟡 **Y2 sınırı:** başka başlığın ALTINA düşen yetim detay ayırt EDİLEMEZ. **Y3:** hook'lu `isir` iskeleti COMMIT'Lİ proje ister. Win'de yükte `sabotaj.py`nin `isir`i 300 sn aşar ⇒ solo koş; izole TEMP kısa yolda olmalı (260).

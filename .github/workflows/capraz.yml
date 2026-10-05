@@ -2391,6 +2391,12 @@ jobs:
   #     KOSUMDA bulgu uretir (fragman sarti yok); `derle` bolum yoksa artik
   #     exit 2 doner (`isir`in "2 = OLCULEMEDI" diliyle AYNI). `devral`a
   #     DOKUNULMADI. 🔴 UC PLATFORM, `continue-on-error` YOK.
+  #     K-SATIR (besli-paket/IS_EMRI_KSATIR_KARARYOLU.md, 5 Eki 2026, Onur
+  #     kilidi): AYNI betige H18 (satir atfi kaymasi) KOLLARI eklendi — yedi
+  #     kol + 12 sabotaj, her sabotaj YALNIZ kendi ekseninde isirir. H18
+  #     UYARIDIR (exit degismez): `isir` kataloguna GIRMEZ (79/79 · 81/81
+  #     sayilari sabit), bu betik onu isirtir. Yeni faz0 dosyasi ACILMADI
+  #     (AMAC KAPISI): `ci_kapsam_kapisi` ayni isi gorur.
   # ---------------------------------------------------------------------------
   guncel_durum_kapisi_mutanti:
     name: guncel durum kapisi mutanti (${{ matrix.os }})
@@ -2405,7 +2411,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: bolum yoksa kapi her kosumda bulgu veriyor mu, derle exit 2 mi (uc kol, hukum gevsemez)
+      - name: bolum yoksa kapi her kosumda bulgu veriyor mu, derle exit 2 mi + H18 satir atfi kaymasi (uc kol + yedi K-SATIR kolu, 12 sabotaj, hukum gevsemez)
         shell: bash
         run: python faz0/guncel_durum_kapisi_mutanti.py 2>&1 | tee guncel-durum-kapisi-cikti.txt
       - name: guncel durum kapisi mutanti ciktisi (artefakt)

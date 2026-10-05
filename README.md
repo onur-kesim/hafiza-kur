@@ -238,6 +238,15 @@ Bunlar gizlenmiyor; `skill/SKILL.md` §9'da tam listesi var. En önemlileri:
   projenin kendi eşiğini aşıyor, beşi CC 20'nin üstünde. 14 Ağu 2026'da bu bölme
   işi KESİLDİ: ölçülebilirliği zayıflatmıyor, yalnız okunabilirliği. Kesim
   gizlenmiyor, burada duruyor.
+- **Satır atfı kayması ölçülür (H18); içerik bayatlığı ölçülmez.** `kapi`, canlı defterin
+  numaralı maddelerindeki backtick'li `yol:N` atfını ölçer: atıftaki satırda (±2) maddenin
+  tanımlayıcısı yoksa ve dosyada başka yerde varsa **KAYMA** der — yalnız uyarıdır, çıkış kodu
+  değişmez; `derle` (fragman işlediği koşuda) aynı listeyi canlıya `sahip="hafiza-kur"` bloğu
+  olarak yazar, KAYMA yoksa blok yazılmaz. **Kapsam yalnız `canlı`dır** (kural evi, arşiv,
+  `HAFIZA_*.md` dışarıda; kod çiti içindeki numaralı maddeler ayırt edilmez). Çözülemeyen ya da
+  ölçülemeyen atıf ÖLÇÜLEMEDİ sayısıyla basılır. Satır doğru ama iddia bayatsa (`:85` hâlâ
+  "tutuyor" der) bunu **görmez**. H18 `isir` kataloğunda değildir: uyarıdır, `fail` üretmez;
+  `faz0/guncel_durum_kapisi_mutanti.py` onu ısırtır.
 
 ## Denetim
 

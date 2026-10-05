@@ -38,20 +38,43 @@ versin" (`devral`a DOKUNULMAZ) · K2 -> "`derle` exit 2 = OLCULEMEDI")
       MUTANT (M-C): KALEM 1'in bulgusunu KOSULSUZ ureten mutant (H17 kosulu
       HER ZAMAN True) — bolum VARKEN de FIRE eder — ISIRIR.
 
+K-SATIR (H18) — besli-paket/IS_EMRI_KSATIR_KARARYOLU.md (5 Eki 2026, Onur kilidi), AYNI BETIGE EK KOLLAR
+  Olculen vaka (Momentum kopyasi): canli defterde "`SENKRON_SUNUCU_URL` = `main.dart:25`", L25 bugun bir
+  import, tanim L31-32 — defter ile kod ayrismisti, hicbir kapi gormedi. H18 numarali maddelerdeki
+  backtick'li `yol:N` atfini olcer; `kapi` uyarir (EXIT DEGISMEZ), `derle` ayni listeyi canliya
+  `sahip="hafiza-kur"` blogu yazar. YEDI KOL (her biri AYRI etiketli eksen) + 12 SABOTAJ, her sabotaj YALNIZ
+  kendi etiketini ateslemeli (baska eksenler kaskad olarak atesleyebilir: BILGI basilir):
+    dongu    KONTROL (kayma yok: H18 TUTUYOR, blok yok) · KAYMA (a.py:3 -> 8) · EXIT (kapi exit 0) · BLOK
+             (derle sahip=hafiza-kur blogu) · MUHASEBE (kapi + kapi --siki exit 0) · IDEMPOTANS (ayni
+             kayma, ikinci derle: blok DEGISMEZ, arsive kopya GIRMEZ) · KALDIRMA (kayma giderildi: blok
+             arsive TASINIR, silinmez)
+    tanimsiz YANLIS ALARM: tanimlayicisiz madde KAYMA degil OLCULEMEDI
+    sahiplik sahip="proje" blogu varken motor ONA DOKUNMAZ, ikinci blok acmaz (is emri KISIT 2)
+    kume     H18 dosya budamasi H14'unkiyle AYNI (motor KAYNAGINDAN ast ile okunur)
+    cokkopya budanan dizinde cift kopya gozardi, budanmayan nokta-dizinde OLCULEMEDI [DOSYA_COK]
+             (beklenti motorun sabitinden DEGIL elle yazili: paylasilan kural = paylasilan korluk)
+    gitsiz   .git YOKKEN ayni sonuc; iki kosum bayt-ayni (determinizm)
+    aralik   yol:N-M penceresi [N-2, M+2]; satir dosya disi -> OLCULEMEDI [SATIR_DISI]
+  H18 `isir` kataloguna GIRMEZ (79/79 · 81/81 sayilari sabit); bu betik onu isirtir.
+  TERIM: is emri "(iii) sabotajda (ii) KACTI gorunmeli" der; bu betigin sozlugunde o durum ISIRDI'dir
+  (kol sabotajli motorda KIRMIZI yanar = kapi kor DEGIL). KACTI = sabotaj kolu kirmizi YAKMADI = kapi KOR.
+
 NE OLCMEZ
   K4 (H6 arsiv blogu icerik korlugu) BU DOSYADA DEGIL — Onur kilidiyle AYRI
   is emrine ertelendi (SIRADAKI). `devral`in KENDI davranisi (basligi
   eklememesi) burada DOGRU/DEGISMEZ kabul edilir, sinanmaz — sinanan KAPININ
   bunu YAKALAMASIdir.
 
-CIKIS KODU  0 uc kol da temiz VE uc mutant da ISIRDI · 1 en az bir kol
+CIKIS KODU  0 tum kollar temiz (uc + yedi K-SATIR) VE tum mutantlar/sabotajlar ISIRDI · 1 en az bir kol
             BEKLENMEDIK / mutant KACTI · 2 OLCULEMEDI (git yok, motor
             okunamadi, kurulum basarisiz — kapi hukmu DEGIL)
 """
+import ast
 import io
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -204,6 +227,334 @@ def _sabotajli_yaz(kaynak, ankor, yeni, hedef_dizin, ad):
     return p, None
 
 
+def _sil(yol):
+    """Gecici dizini SIL: Windows'ta salt-okunur git objeleri `ignore_errors=True` ile SESSIZCE kalirdi
+    (motordaki `_gecici_sil` ile ayni teknik; kosumdan kosuma %TEMP% birikmesin)."""
+    def onar(fonk, p, *_):
+        try:
+            os.chmod(p, stat.S_IRWXU)
+            fonk(p)
+        except OSError:
+            return
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(yol, onexc=onar)
+    else:
+        shutil.rmtree(yol, onerror=onar)
+
+
+# ===================================================================== K-SATIR (H18)
+# besli-paket/IS_EMRI_KSATIR_KARARYOLU.md (5 Eki 2026, Onur kilidi). OLCULDU (Momentum kopyasi): canli
+# defterde "`SENKRON_SUNUCU_URL` = `main.dart:25`" yaziyordu, L25 bugun bir import, tanim L31-32; hicbir
+# kapi gormedi. H18 yalniz `canli`daki numarali maddelerin backtick'li `yol:N` atfini olcer (UYARI: exit
+# degismez); `derle` ayni listeyi canliya `sahip="hafiza-kur"` blogu olarak yazar. HER KOL AYRI ETIKETLI
+# bir eksendir; her sabotaj YALNIZ kendi ekseninin etiketini ateslemelidir (aksi: ORTUSME, kapi kor).
+MADDE = "1. `HEDEF` tanimi = `a.py:3`"
+A_PY = "# c\n# c\nHEDEF = 1\nx = 2\n"            # HEDEF L3
+ONEK5 = "e1\ne2\ne3\ne4\ne5\n"                  # a.py basina 5 satir -> HEDEF L8
+NOT_UZUN = "kol icin yeterince uzun bir not metni"
+H18_SATIRI = re.compile(r"H18: (\d+) atif · (\d+) KAYMA · (\d+) OLCULEMEDI(?: \[([^\]]*)\])?")
+BLOK_ATIF = re.compile(r'<!-- blok konu="atif-kaymasi"([^>]*)-->\n(.*?)\n<!-- /blok -->', re.S)
+
+
+def _yaz(yol, metin):
+    os.makedirs(os.path.dirname(yol) or ".", exist_ok=True)
+    with io.open(yol, "w", encoding="utf-8", newline="\n") as f:
+        f.write(metin)
+
+
+def _commit(kok, mesaj):
+    _git(kok, "add", "-A")
+    subprocess.run(["git", "-C", kok, "-c", "commit.gpgsign=false", "commit", "-q", "--allow-empty",
+                    "-m", mesaj], capture_output=True, env=_GIT_ENV)
+
+
+def hal_satir(motor, kok, madde, dosyalar=None, git=True):
+    """kur + dosyalar + `not` ile canliya madde (+ git commit). Fragman HENUZ derlenmedi."""
+    os.makedirs(kok, exist_ok=True)
+    if git and subprocess.run(["git", "init", "-q", kok], capture_output=True).returncode != 0:
+        raise Kurulamadi("git init basarisiz")
+    rc, c = kos(motor, ["kur", "--ad", "ATIF"], kok)
+    if rc != 0:
+        raise Kurulamadi("kur basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    for ad, icerik in (dosyalar or {"a.py": A_PY}).items():
+        _yaz(os.path.join(kok, *ad.split("/")), icerik)
+    rc, c = kos(motor, ["not", "--konu=genel-durum", "--metin=" + madde], kok)
+    if rc != 0:
+        raise Kurulamadi("not basarisiz: %s" % c.strip().split("\n")[-1][:160])
+    if git:
+        _commit(kok, "ilk")
+    return kok
+
+
+def notdemle(motor, kok, konu, metin=NOT_UZUN):
+    rc, c = kos(motor, ["not", "--konu=" + konu, "--metin=" + metin], kok)
+    if rc != 0:
+        raise Kurulamadi("not basarisiz: %s" % c.strip().split("\n")[-1][:160])
+    return kos(motor, ["derle"], kok)
+
+
+def _canli(kok):
+    with io.open(os.path.join(kok, "PROJE_HAFIZA.md"), encoding="utf-8") as f:
+        return f.read()
+
+
+def _arsiv(kok):
+    d = os.path.join(kok, "arsiv", "hafiza")
+    out = ""
+    for f in sorted(os.listdir(d)):
+        if f.startswith("HAFIZA_") and f.endswith(".md"):
+            with io.open(os.path.join(d, f), encoding="utf-8") as h:
+                out += h.read()
+    return out
+
+
+def _h18(cikti):
+    m = H18_SATIRI.search(cikti)
+    return None if not m else (int(m.group(1)), int(m.group(2)), int(m.group(3)), m.group(4) or "")
+
+
+def ks_dongu(motor, taban, tag):
+    """KONTROL -> KAYMA -> EXIT -> BLOK -> MUHASEBE -> IDEMPOTANS -> KALDIRMA (tek fikstur, yedi eksen).
+    DONER [(etiket, mesaj)] — BOS liste = hepsi beklendigi gibi."""
+    b = []
+    kok = hal_satir(motor, os.path.join(taban, tag), MADDE)
+    rc, c = notdemle(motor, kok, "sonraki-adim", "madde fragmani islensin diye ilk derle")
+    if "DERLENDI: 2 fragman islendi" not in c:      # derle HIC calismadi: kurulum kusuru, eksen degil
+        raise Kurulamadi("ilk derle fragmanlari islemedi (exit %s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    if rc != 0:                                    # derle calisti ama kapi hukmu kirmizi: H18 EXIT'i bozmus
+        b.append(("EXIT", "kayma YOKKEN bile derle/kapi exit %s (0 olmali)" % rc))
+    _commit(kok, "defterler")
+    # KONTROL: kayma YOK -> H18 TUTUYOR (sessiz), blok YOK
+    rc, c = kos(motor, ["kapi"], kok)
+    if _h18(c) != (1, 0, 0, "") or "H18: KAYMA" in c:
+        b.append(("KONTROL", "kayma YOKKEN H18 beklenmedik: %r" % (_h18(c),)))
+    if "atif-kaymasi" in _canli(kok):
+        b.append(("KONTROL", "kayma YOKKEN canliya blok yazilmis"))
+    # KAYMA: a.py basina 5 satir -> HEDEF L3'ten L8'e kaydi
+    _yaz(os.path.join(kok, "a.py"), ONEK5 + A_PY)
+    _commit(kok, "kayma")
+    rc, c = kos(motor, ["kapi"], kok)
+    if rc != 0:
+        b.append(("EXIT", "KAYMA var ama kapi exit %s (0 olmali: uyari, bulgu degil)" % rc))
+    if not re.search(r"H18: KAYMA md\.1: a\.py:3 -> 8(?:\D|$)", c) or (_h18(c) or (0, 0))[1] != 1:
+        b.append(("KAYMA", "KAYMA satiri 'md.1: a.py:3 -> 8' ciktida YOK: %r" % (_h18(c),)))
+    rc, c = notdemle(motor, kok, "acik-kararlar")
+    blok = BLOK_ATIF.search(_canli(kok))
+    if rc != 0 or not blok or 'sahip="hafiza-kur"' not in blok.group(1) \
+            or "md.1: a.py:3 -> 8" not in blok.group(2):
+        b.append(("BLOK", "derle exit=%s; sahip=hafiza-kur 'atif-kaymasi' blogu (md.1: a.py:3 -> 8) YOK" % rc))
+    rc1, _ = kos(motor, ["kapi"], kok)
+    rc2, _ = kos(motor, ["kapi", "--siki"], kok)
+    if rc1 != 0 or rc2 != 0:
+        b.append(("MUHASEBE", "blok yazildiktan sonra kapi exit=%s · kapi --siki exit=%s (0/0 olmali)" % (rc1, rc2)))
+    # IDEMPOTANS: ayni kayma, yeni fragman -> blok DEGISMEZ, arsive kopya GIRMEZ
+    _commit(kok, "blok")
+    rc, c = notdemle(motor, kok, "sonraki-adim", "ikinci derle ayni kayma ile")
+    n_blok = len(re.findall(r'<!-- blok konu="atif-kaymasi"', _canli(kok)))
+    if "'atif-kaymasi' blogu" in c or n_blok != 1 or 'konu="atif-kaymasi"' in _arsiv(kok):
+        b.append(("IDEMPOTANS", "ayni kayma ile derle blogu YENIDEN yazdi (canli blok=%d, arsivde kopya=%s)"
+                  % (n_blok, 'konu="atif-kaymasi"' in _arsiv(kok))))
+    # KALDIRMA: kayma kodda giderildi -> blok arsive TASINIR (silinmez), kapi yesil
+    _commit(kok, "blok2")
+    _yaz(os.path.join(kok, "a.py"), A_PY)
+    _commit(kok, "kayma giderildi")
+    rc, c = notdemle(motor, kok, "acik-kararlar", "kayma giderildikten sonra derle")
+    rc2, _ = kos(motor, ["kapi", "--siki"], kok)
+    if "atif-kaymasi" in _canli(kok) or _arsiv(kok).count('konu="atif-kaymasi"') != 1 or rc != 0 or rc2 != 0:
+        b.append(("KALDIRMA", "kayma giderildi ama blok canlida KALDI / arsive TASINMADI (derle=%s, siki=%s, "
+                  "arsivde=%d)" % (rc, rc2, _arsiv(kok).count('konu="atif-kaymasi"'))))
+    return b
+
+
+def ks_tanimsiz(motor, taban):
+    """YANLIS ALARM ekseni: maddede tanimlayici YOK -> KAYMA degil OLCULEMEDI; blok yazilmaz."""
+    b = []
+    kok = hal_satir(motor, os.path.join(taban, "ks_t"), "1. Yalniz `a.py:3` anildi, tanimlayici yok.",
+                    {"a.py": ONEK5 + A_PY})
+    rc, c = notdemle(motor, kok, "sonraki-adim")
+    rk, ck = kos(motor, ["kapi"], kok)
+    if _h18(ck) != (1, 0, 1, "TANIMLAYICI_YOK:1") or "atif-kaymasi" in _canli(kok) or rk != 0:
+        b.append(("TANIMSIZ", "tanimlayicisiz madde: H18=%r, blok var=%s, exit=%s (beklenen 1 atif · 0 KAYMA · "
+                  "1 OLCULEMEDI [TANIMLAYICI_YOK:1], blok yok, exit 0)"
+                  % (_h18(ck), "atif-kaymasi" in _canli(kok), rk)))
+    return b
+
+
+def ks_sahiplik(motor, taban):
+    """SAHIPLIK: ayni konuda sahip=proje blogu varsa motor ONA DOKUNMAZ ve ikinci blok ACMAZ; sinyal kapi'da kalir."""
+    b = []
+    kok = hal_satir(motor, os.path.join(taban, "ks_s"), MADDE, {"a.py": ONEK5 + A_PY})
+    rc, c = kos(motor, ["not", "--konu=atif-kaymasi", "--yeni-konu=kullanicinin kendi konusu",
+                        "--metin=KULLANICI METNI dokunulmamali"], kok)
+    if rc != 0:
+        raise Kurulamadi("not (atif-kaymasi) basarisiz: %s" % c.strip().split("\n")[-1][:160])
+    rc, c = kos(motor, ["derle"], kok)
+    metin = _canli(kok)
+    bloklar = BLOK_ATIF.findall(metin)
+    rk, ck = kos(motor, ["kapi"], kok)
+    if (rc != 0 or len(bloklar) != 1 or 'sahip="proje"' not in bloklar[0][0]
+            or "KULLANICI METNI dokunulmamali" not in bloklar[0][1] or "Motor (derle, H18)" in metin
+            or rk != 0 or "H18: KAYMA" not in ck):
+        b.append(("SAHIPLIK", "sahip=proje blok korunmadi: derle=%s blok=%d kapi=%s KAYMA-kapida=%s"
+                  % (rc, len(bloklar), rk, "H18: KAYMA" in ck)))
+    return b
+
+
+def ks_kume(motor_metin):
+    """KUME: H18'in dosya agaci budamasi H14'unkiyle AYNI (iki tanim ayrisamaz). Motor KAYNAGINDAN okunur."""
+    h14 = atif = None
+    for d in ast.walk(ast.parse(motor_metin)):
+        if isinstance(d, ast.FunctionDef) and d.name == "_h14_adaylar":
+            for x in ast.walk(d):
+                if (isinstance(x, ast.Assign) and isinstance(x.targets[0], ast.Name)
+                        and x.targets[0].id == "haric"):
+                    h14 = ast.literal_eval(x.value)
+        if isinstance(d, ast.Assign) and isinstance(d.targets[0], ast.Name) and d.targets[0].id == "_ATIF_HARIC":
+            atif = ast.literal_eval(d.value)
+    if h14 is None or atif is None or h14 != atif:
+        return [("KUME", "_ATIF_HARIC (%r) != H14 haric (%r)" % (atif, h14))]
+    return []
+
+
+MADDE2 = "1. `HEDEF` = `a.py:3`\n2. `HEDEF2` = `b.py:3`"
+DOSYA_CIFT = {"a.py": A_PY, "node_modules/a.py": A_PY, "b.py": A_PY.replace("HEDEF", "HEDEF2"),
+              ".dart_tool/b.py": A_PY.replace("HEDEF", "HEDEF2")}
+
+
+def ks_cokkopya(motor, taban):
+    """BUDANAN dizinde cift kopya GOZARDI edilir (node_modules/a.py), BUDANMAYAN nokta-dizinde cift kopya
+    (.dart_tool/b.py) OLCULEMEDI [DOSYA_COK] olur. Beklenti motorun sabitinden DEGIL elle yazilidir
+    (paylasilan kural = paylasilan korluk)."""
+    kok = hal_satir(motor, os.path.join(taban, "ks_c"), MADDE2, DOSYA_CIFT)
+    notdemle(motor, kok, "sonraki-adim")
+    rk, ck = kos(motor, ["kapi"], kok)
+    if _h18(ck) != (2, 0, 1, "DOSYA_COK:1") or rk != 0:
+        return [("COKKOPYA", "H18=%r exit=%s (beklenen 2 atif · 0 KAYMA · 1 OLCULEMEDI [DOSYA_COK:1])"
+                 % (_h18(ck), rk))]
+    return []
+
+
+def ks_gitsiz(motor, taban):
+    """GITSIZ + DETERMINIZM: .git YOKKEN H18 ayni sonucu verir; iki kosum bayt-ayni."""
+    kok = hal_satir(motor, os.path.join(taban, "ks_g"), MADDE2, DOSYA_CIFT, git=False)
+    notdemle(motor, kok, "sonraki-adim")
+    r1, c1 = kos(motor, ["kapi"], kok)
+    r2, c2 = kos(motor, ["kapi"], kok)
+    s1 = [x for x in c1.splitlines() if "H18:" in x]
+    if _h18(c1) != (2, 0, 1, "DOSYA_COK:1") or s1 != [x for x in c2.splitlines() if "H18:" in x]:
+        return [("GITSIZ", "git'siz projede H18=%r (iki kosum ayni=%s); beklenen 2 atif · 0 KAYMA · 1 OLCULEMEDI "
+                 "[DOSYA_COK:1]" % (_h18(c1), s1 == [x for x in c2.splitlines() if "H18:" in x]))]
+    return []
+
+
+A_ARALIK = "# c\n" * 9 + "HEDEF = 1\nx = 2\n"       # HEDEF L10
+MADDE_ARALIK = "1. `HEDEF` = `a.py:5-9`\n2. `HEDEF` = `a.py:99`"
+
+
+def ks_aralik(motor, taban):
+    """yol:N-M penceresi [N-2, M+2]: HEDEF L10, atif 5-9 -> TUTUYOR (N tek basina KAYMA olurdu); a.py:99 -> SATIR_DISI."""
+    kok = hal_satir(motor, os.path.join(taban, "ks_a"), MADDE_ARALIK, {"a.py": A_ARALIK})
+    notdemle(motor, kok, "sonraki-adim")
+    rk, ck = kos(motor, ["kapi"], kok)
+    if _h18(ck) != (2, 0, 1, "SATIR_DISI:1") or rk != 0:
+        return [("ARALIK", "H18=%r exit=%s (beklenen 2 atif · 0 KAYMA · 1 OLCULEMEDI [SATIR_DISI:1])"
+                 % (_h18(ck), rk))]
+    return []
+
+
+def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
+    """Tum K-SATIR kollari (ya da `yalniz` verilen KOL fonksiyonlari) -> [(etiket, mesaj)]."""
+    kollar = (("dongu", lambda: ks_dongu(motor, taban, tag + "d")),
+              ("tanimsiz", lambda: ks_tanimsiz(motor, os.path.join(taban, tag + "t"))),
+              ("sahiplik", lambda: ks_sahiplik(motor, os.path.join(taban, tag + "s"))),
+              ("kume", lambda: ks_kume(motor_metin)),
+              ("cokkopya", lambda: ks_cokkopya(motor, os.path.join(taban, tag + "c"))),
+              ("gitsiz", lambda: ks_gitsiz(motor, os.path.join(taban, tag + "g"))),
+              ("aralik", lambda: ks_aralik(motor, os.path.join(taban, tag + "a"))))
+    b = []
+    for ad, kol in kollar:
+        if yalniz is None or ad in yalniz:
+            sonuc = kol()
+            if yaz_:
+                print("  K-SATIR/%-9s: %s" % (ad, "TEMIZ" if not sonuc else
+                                                "BEKLENMEDIK (%s)" % ", ".join(sorted({e for e, _ in sonuc}))))
+            b += sonuc
+    return b
+
+
+# Her sabotaj YALNIZ kendi ekseninin etiketini ateslemeli (BIREBIR): (ad, ankor, yeni, etiket, kollar).
+# Ankor motorda TAM 1 kez gecmeli (aksi OLCULEMEDI). "ISIRDI" = sabotajli motorda o eksen KIRMIZI.
+KS_SABOTAJLAR = (
+    ("M-S1 atif KAYMASI gorulmez", 'KAYMA',
+     '    return "KAYMA", ",".join(str(i) for i in yer[:5]) + (",…" if len(yer) > 5 else "")\n',
+     '    return "TUTUYOR", None      # MUTANT\n', ("dongu",)),
+    ("M-S2 yanlis alarm (pencere yok sayilir)", 'KONTROL',
+     '    if any(desen.search(s) for s in sat[max(0, bas - 3):son + 2]):\n',
+     '    if False:      # MUTANT\n', ("dongu",)),
+    ("M-S3 tanimlayicisiz madde KAYMA sayilir", 'TANIMSIZ',
+     '    if not tanimlar:\n        return "OLCULEMEDI", "TANIMLAYICI_YOK"\n',
+     '    if not tanimlar:\n        return "KAYMA", "0"      # MUTANT\n', ("tanimsiz",)),
+    ("M-S4 derle blogu yazmaz", 'BLOK',
+     '    return _motor_blogu_esitle(y, rc, L, ertele, eklenen, _ATIF_KONU, _ATIF_KONU_ACIKLAMA,\n'
+     '                               _atif_blok_govdesi(kayma))\n',
+     '    return L      # MUTANT\n', ("dongu",)),
+    ("M-S5 H18 bulgusu F'ye girer (exit degisir)", 'EXIT',
+     '    _kapi_h18(N, kok, y)\n', '    _kapi_h18(F, kok, y)      # MUTANT\n', ("dongu",)),
+    ("M-S6 sahip=proje blogu ezilir", 'SAHIPLIK',
+     '    if bul == "BOZUK" or (bul and bul[2].get("sahip") != "hafiza-kur"):\n        return L\n',
+     '    if bul == "BOZUK":\n        return L      # MUTANT\n', ("sahiplik",)),
+    ("M-S7 ayni icerikte blok yeniden yazilir", 'IDEMPOTANS',
+     '    if bul and govde is not None and _motor_blok_ayni(L, bul, govde):\n        return L\n',
+     '    if False:      # MUTANT\n        return L\n', ("dongu",)),
+    ("M-S8 giderilen kaymada blok KALIR", 'KALDIRMA',
+     '    if not kayma:\n        return None\n',
+     '    if not kayma:\n        return ["> kayma yok"]      # MUTANT\n', ("dongu",)),
+    ("M-S9 budama kumesi H14'unkinden AYRISIR", 'KUME',
+     '_ATIF_HARIC = {".git", "node_modules", "__pycache__", ".venv", "arsiv", "gunluk", "dist", "build"}\n',
+     '_ATIF_HARIC = {".git", "__pycache__", ".venv", "arsiv", "gunluk", "dist", "build"}      # MUTANT\n',
+     ("kume", "cokkopya")),
+    ("M-S10 yeni satirlar BEYAN edilmez", 'MUHASEBE',
+     '    eklenen.extend(yeni)\n', '    pass      # MUTANT\n', ("dongu",)),
+    ("M-S11 dosya agaci git'ten okunur", 'GITSIZ',
+     '    for r0, d0, f0 in os.walk(kok):\n'
+     '        d0[:] = sorted(d for d in d0 if d not in _ATIF_HARIC)\n'
+     '        for f in sorted(f0):\n'
+     '            idx.setdefault(f, []).append(_rel(os.path.join(r0, f), kok))\n',
+     '    for x in subprocess.run(["git", "-C", kok, "ls-files", "-z"],\n'
+     '                            capture_output=True).stdout.decode("utf-8", "replace").split("\\0"):\n'
+     '        if x:\n'
+     '            idx.setdefault(x.rsplit("/", 1)[-1], []).append(x)      # MUTANT\n', ("gitsiz",)),
+    ("M-S12 yol:N-M araligi yok sayilir", 'ARALIK',
+     '        out.append((no, t, m.group(1), bas, int(m.group(3) or bas), tan))\n',
+     '        out.append((no, t, m.group(1), bas, bas, tan))      # MUTANT\n', ("aralik",)),
+)
+
+
+def ks_sabotajlar(s, taban):
+    """K-SATIR sabotajlari: -> (kacan_adlar, olculemedi_mesaji_ya_da_None). Ortusme (baska eksenin de
+    atesledigi) BILGI olarak basilir; kapiyi kor saymaz ama GORUNUR kilinir."""
+    kacan = []
+    for sira, (ad, etiket, ankor, yeni, kollar) in enumerate(KS_SABOTAJLAR, 1):
+        d = tempfile.mkdtemp(prefix="ks_mut%d_" % sira, dir=taban)
+        sab, hata = _sabotajli_yaz(s, ankor, yeni, d, "ks%d" % sira)
+        if sab is None:
+            return kacan, "%s: %s" % (ad, hata)
+        with io.open(sab, encoding="utf-8", newline="") as f:
+            sab_metin = f.read()
+        try:
+            atesler = {e for e, _ in ks_hepsi(sab, d, sab_metin, "m", yalniz=kollar)}
+        except Kurulamadi as e:
+            return kacan, "%s: %s" % (ad, e)
+        if etiket in atesler:
+            ort = sorted(atesler - {etiket})
+            print("  %-42s -> ISIRDI ✓  (%s%s)" % (ad, etiket, ("; ortusme: " + ", ".join(ort)) if ort else ""))
+        else:
+            print("  %-42s -> KACTI ✗  (%s ekseni sabotajda da TEMIZ — kol bu olcumu HIC OLCMUYOR; atesleyen: %s)"
+                  % (ad, etiket, ", ".join(sorted(atesler)) or "hicbiri"))
+            kacan.append(ad)
+    return kacan, None
+
+
 def main():
     yol = sys.argv[1] if len(sys.argv) > 1 else VARSAYILAN
     try:
@@ -272,6 +623,14 @@ def main():
             b.append("KAPI-3: [H17] bolum VARKEN de FIRE etti (yanlis pozitif)")
         if not islendi3:
             b.append("KAPI-3: fragman islenmedi (bolum VARKEN 1 fragman islenmeli)")
+
+        # ---- K-SATIR (H18) KOLLARI -----------------------------------------
+        try:
+            ks = ks_hepsi(yol, taban, s, "k", yaz_=True)
+        except Kurulamadi as e:
+            print("  K-SATIR kollari           OLCULEMEDI: %s" % e)
+            return 2
+        b += ["K-SATIR/%s: %s" % (e, m) for e, m in ks]
 
         for x in b:
             print("      ! %s" % x)
@@ -345,14 +704,24 @@ def main():
                   "kapi bu olcumu HIC OLCMUYOR)")
             kacan.append("M-C")
 
+        # ---- K-SATIR sabotajlari -------------------------------------------
+        print("\n--- K-SATIR SABOTAJLARI (her biri YALNIZ kendi ekseninde ISIRMALI) ---")
+        ks_kacan, ks_hata = ks_sabotajlar(s, taban)
+        if ks_hata:
+            print(CIZGI)
+            print("SONUC: OLCULEMEDI — K-SATIR sabotaji kurulamadi (arac kusuru, kapi kor DEGIL): %s" % ks_hata)
+            return 2
+        kacan += ks_kacan
+
         print(CIZGI)
         if kacan:
             print("SONUC: KAPI KOR — %s beklendigi gibi olculmedi." % ", ".join(kacan))
             return 1
-        print("SONUC: YESIL — uc kol da temiz, uc mutant da AYRI eksende ISIRDI.")
+        print("SONUC: YESIL — uc kol + yedi K-SATIR kolu temiz, uc mutant + %d K-SATIR sabotaji AYRI "
+              "eksende ISIRDI." % len(KS_SABOTAJLAR))
         return 0
     finally:
-        shutil.rmtree(taban, ignore_errors=True)
+        _sil(taban)
 
 
 if __name__ == "__main__":
