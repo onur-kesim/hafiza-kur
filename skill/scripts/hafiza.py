@@ -1798,6 +1798,38 @@ def _kur_dizinler(kok, rc, y):
         os.makedirs(os.path.join(kok, "arsiv", t), exist_ok=True)
 
 
+# KALEM K-ISARET (besli-paket/IS_EMRI_ADRDURUM_GECIS_ISARETCI.md, 6 Eki 2026, Onur kilidi). OLCULDU: `kur`/`devral` yeni
+# kural evine yalniz baslik + "Bu dosya her oturumda yuklenir" yaziyordu; canli defterin ADI yoktu => defter yalniz skill
+# tetiklenirse okunuyordu (Cursor/Codex'te hic yol yok). Yeni kural evi ikinci satirda ISARETCI tasir. Kural evi ZATEN
+# VARSA dosyaya DOKUNULMAZ (sahiplik: motor proje metnine tek karakter yazmaz) — `ISARETCI YOK: ... eklemek icin: <satir>`
+# SOYLER. `kapi` (H19) ayni olcumu yapar: UYARI, cikis kodu DEGISMEZ. AGENTS.md YAZILMAZ (Onur kilidi: yalniz isaretci).
+_ISARETCI = "> Canli defter: %s — her oturum basinda once onu oku (hafiza-kur)."
+
+
+def _isaretci_var(kural_metni, canli_rel):
+    """Kural evi canli defterin ADINI (son yol parcasi, harf duyarsiz) aniyor mu? Ad geciyorsa isaret vardir."""
+    return canli_rel.replace("\\", "/").rsplit("/", 1)[-1].lower() in kural_metni.lower()
+
+
+def _isaretci_oneri(y, rc):
+    """Kural evi ZATEN VAR: dokunma; isaret yoksa tek satir oner (`kur`/`devral`)."""
+    if os.path.realpath(y.kural) != os.path.realpath(y.canli) and not _isaretci_var(oku(y.kural), rc["canli"]):
+        print("ISARETCI YOK: %s canli deftere isaret etmiyor — eklemek icin: %s"
+              % (rc["kural_evi_dosya"], _ISARETCI % rc["canli"]))
+
+
+def _kapi_isaretci(N, y):
+    """H19 KURAL EVI -> CANLI ISARETCI (K-ISARET). UYARI: yalniz N kanalina yazar (`fail`/`O` YOK — cikis kodu
+    DEGISMEZ). Kural evi yoksa ya da canli ile AYNI dosyaysa sessiz; kural evinde canli defterin adi geciyorsa sessiz.
+    Cagri yeri `_kapi_h18` basi: `_kapi_govde` 80 satir tavaninda (K-SATIR ile ayni gerekce)."""
+    if not os.path.isfile(y.kural) or os.path.realpath(y.kural) == os.path.realpath(y.canli):
+        return
+    canli = _rel(y.canli, y.kok)
+    if not _isaretci_var(oku(y.kural), canli):
+        N.append("H19: kural evi (%s) canli defterin adini (%s) anmiyor — her oturum yuklenen dosya deftere yol "
+                 "vermiyor; eklemek icin: %s" % (_rel(y.kural, y.kok), canli, _ISARETCI % canli))
+
+
 def _kur_dosyalar(ad, rc, y):
 
     if not os.path.isfile(y.canli):
@@ -1808,8 +1840,12 @@ def _kur_dosyalar(ad, rc, y):
         yaz(y.konular, SAB_KONULAR)
     if not os.path.isfile(y.kural):
         yaz(y.kural, "# %s — KALICI PROTOKOL\n"
+                     "%s\n"
                      "> Bu dosya her oturumda yüklenir.\n"
-                     "> BUDAMA TESTİ: bir satırı silmek modelin hata yapmasına yol açmıyorsa, KES.\n" % ad)
+                     "> BUDAMA TESTİ: bir satırı silmek modelin hata yapmasına yol açmıyorsa, KES.\n"
+                     % (ad, _ISARETCI % rc["canli"]))
+    else:
+        _isaretci_oneri(y, rc)
 
     # cipa: canli dosyanin O ANKI hali kanit tabanidir
     if not os.path.isfile(y.snap):
@@ -3510,7 +3546,10 @@ def cmd_devral(a):
     if not os.path.isfile(y.konular):
         yaz(y.konular, SAB_KONULAR)
     if not os.path.isfile(y.kural):
-        yaz(y.kural, "# %s — KALICI PROTOKOL\n> Bu dosya her oturumda yüklenir.\n" % rc["ad"])
+        yaz(y.kural, "# %s — KALICI PROTOKOL\n%s\n> Bu dosya her oturumda yüklenir.\n"
+                     % (rc["ad"], _ISARETCI % rc["canli"]))
+    else:
+        _isaretci_oneri(y, rc)
     _devral_karar_konusu(y, rc)                 # K-YOL: DEVIR halkasindan ONCE (politika dosyasi yukte)
     _dnot = "ilerlemis proje devralindi (%s)" % hdir_rel
     if tum_izler:
@@ -5542,6 +5581,7 @@ def _kapi_h18(N, kok, y):
     da yazilmaz, `--kapsam-zorla` cikisini etkilemez). Cozulemeyen/olculemeyen atif SAYILIR ve
     sebep sinifiyla BASILIR (gizlenmez). Atif HIC yoksa hicbir satir basmaz (altin cikti BIREBIR).
     KAPSAM: yalniz `canli`. Kural evi, arsiv, HAFIZA_*.md KAPSAM DISI. Icerik bayatligini OLCMEZ."""
+    _kapi_isaretci(N, y)                        # K-ISARET (H19): ayni N kanali, ayni uyari dili
     n, kayma, olc = _atif_tara(kok, satirlar(y.canli))
     if not n:
         return

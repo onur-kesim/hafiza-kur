@@ -81,6 +81,14 @@ K-GECIS — AYNI betige ek kol (besli-paket/IS_EMRI_ADRDURUM_GECIS_ISARETCI.md, 
   baytlarina dokunulmaz (anahtar sona eklenir). BIR KOL (`kgecis`): KGKESIF · KGBEYAN · KGBLOK · KGRC · KGTEKRAR
   (ikinci derle ayni, bayt-bayt) · KGYOK · KGBOS; 6 sabotaj (M-G1..M-G6, koşul-ters dahil).
 
+K-ISARET — AYNI betige ek kol (besli-paket/IS_EMRI_ADRDURUM_GECIS_ISARETCI.md, 6 Eki 2026, Onur kilidi)
+  Olculen: `kur`/`devral` yeni kural evine yalniz baslik + "Bu dosya her oturumda yuklenir" yaziyordu; canli defterin
+  ADI yoktu => defter yalniz skill tetiklenirse okunuyordu (Cursor/Codex'te hic yol yok). Yeni kural evi 2. satirda
+  `> Canli defter: <canli> — her oturum basinda once onu oku (hafiza-kur).` tasir; kural evi ZATEN VARSA dosya
+  BAYT-BAYT ayni + cikti `ISARETCI YOK: ... eklemek icin: <satir>` der (motor yazmaz, soyler); `kapi` H19 kural evinde
+  canli adi gecmiyorsa UYARIR (exit DEGISMEZ). AGENTS.md YAZILMAZ. BIR KOL (`kisaret`): KIKUR · KISESSIZ · KIKAPI ·
+  KIEXIT · KIBAYT · KIONERI · KIDEVRAL; 7 sabotaj (M-I1..M-I7).
+
 K-DURUM — AYNI betige ek kol (besli-paket/IS_EMRI_ADRDURUM_GECIS_ISARETCI.md, 6 Eki 2026, Onur kilidi)
   Olculen (Momentum kor okuma R1, iki tekrar YANLIS): `karar-kaynagi` blogu TASLAK bir ADR'ye (`Durum: TASLAK v6 —
   KILITLI DEGIL`) kilitlilerle AYNI agirlikta yol veriyordu; okuyucu taslagi karar sandi. Blok artik her ADR satirina
@@ -96,7 +104,7 @@ NE OLCMEZ
   eklememesi) burada DOGRU/DEGISMEZ kabul edilir, sinanmaz — sinanan KAPININ
   bunu YAKALAMASIdir.
 
-CIKIS KODU  0 tum kollar temiz (uc + yedi K-SATIR + yedi K-YOL + bir K-DURUM + bir K-GECIS) VE tum mutantlar/sabotajlar ISIRDI · 1 en az bir kol
+CIKIS KODU  0 tum kollar temiz (uc + yedi K-SATIR + yedi K-YOL + bir K-DURUM + bir K-GECIS + bir K-ISARET) VE tum mutantlar/sabotajlar ISIRDI · 1 en az bir kol
             BEKLENMEDIK / mutant KACTI · 2 OLCULEMEDI (git yok, motor
             okunamadi, kurulum basarisiz — kapi hukmu DEGIL)
 """
@@ -915,8 +923,87 @@ def kg_gecis(motor, taban):
     return b
 
 
+# ===================================================================== K-ISARET (kural evi -> canli isaretci)
+# besli-paket/IS_EMRI_ADRDURUM_GECIS_ISARETCI.md (6 Eki 2026, Onur kilidi). OLCULDU: `kur`/`devral` yeni kural evine
+# yalniz baslik + "Bu dosya her oturumda yuklenir" yaziyordu; canli defterin ADI yoktu => defter yalniz skill
+# tetiklenirse okunuyordu. Yeni kural evi 2. satirda isaretci tasir; kural evi ZATEN VARSA dosya BAYT-BAYT ayni kalir
+# ve cikti ONERI satiri basar; `kapi` (H19) kural evinde canli adi gecmiyorsa UYARIR (cikis kodu DEGISMEZ).
+# Beklenen metinler FIKSTURDEN elle yazilidir (motordan degil).
+KI_SATIR = "> Canli defter: %s — her oturum basinda once onu oku (hafiza-kur)."
+KI_VAR = "# Proje kurallari\nbu dosya projenin kendi kural evi; canli deftere yol vermiyor\n"
+
+
+def _ki_oku(kok, ad="CLAUDE.md"):
+    with io.open(os.path.join(kok, ad), "rb") as f:
+        return f.read()
+
+
+def ki_isaret(motor, taban):
+    """KIKUR: taze `kur` kural evinin 2. satirinda isaretci VAR · KISESSIZ: `kapi` H19 basmaz · KIKAPI: isaretci
+    satiri SILININCE `kapi` H19 uyarir · KIEXIT: uyari cikis kodunu DEGISTIRMEZ · KIBAYT: mevcut kural evli
+    `devral`/`kur` dosyayi BAYT-BAYT ayni birakir · KIONERI: o halde cikti `ISARETCI YOK ... eklemek icin: <satir>` der ·
+    KIDEVRAL: devral YENI kural evine isaretci yazar."""
+    b = []
+    # ---- taze kur -----------------------------------------------------------------------------------
+    kok = os.path.join(taban, "ki_a")
+    os.makedirs(kok, exist_ok=True)
+    if subprocess.run(["git", "init", "-q", kok], capture_output=True).returncode != 0:
+        raise Kurulamadi("git init basarisiz")
+    rc, c = kos(motor, ["kur", "--ad", "ISARET"], kok)
+    if rc != 0:
+        raise Kurulamadi("kur basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    sat = _ki_oku(kok).decode("utf-8").split("\n")
+    if len(sat) < 2 or sat[1] != KI_SATIR % "PROJE_HAFIZA.md":
+        b.append(("KIKUR", "taze kur: kural evi 2. satiri %r (beklenen %r)" % (sat[1:2], KI_SATIR % "PROJE_HAFIZA.md")))
+    _commit(kok, "ilk")
+    r0, c0 = kos(motor, ["kapi"], kok)
+    if "H19" in c0 or r0 != 0:
+        b.append(("KISESSIZ", "isaretci VARKEN kapi H19 bastı / exit=%s: %r" % (r0, [x for x in c0.splitlines() if "H19" in x])))
+    # ---- isaretci silinir -----------------------------------------------------------------------------
+    _yaz(os.path.join(kok, "CLAUDE.md"), "\n".join(sat[:1] + sat[2:]))
+    _commit(kok, "isaretci silindi")
+    r1, c1 = kos(motor, ["kapi"], kok)
+    uyari = [x.strip() for x in c1.splitlines() if "H19" in x]
+    if len(uyari) != 1 or not uyari[0].startswith("· H19: kural evi (CLAUDE.md) canli defterin adini (PROJE_HAFIZA.md) anmiyor") \
+            or ("eklemek icin: " + KI_SATIR % "PROJE_HAFIZA.md") not in uyari[0]:
+        b.append(("KIKAPI", "isaretci silindi: kapi H19 uyarisi %r" % (uyari,)))
+    if r1 != r0 or "SONUC: YESIL — olculen her sey gecti." not in c1:
+        b.append(("KIEXIT", "H19 uyarisi cikis kodunu/hukmu DEGISTIRDI: exit %s -> %s" % (r0, r1)))
+    # ---- mevcut kural evli devral ---------------------------------------------------------------------
+    kok2 = os.path.join(taban, "ki_b")
+    rc, c = hal_yol(motor, kok2, {"CLAUDE.md": KI_VAR}, DURUM_BOLUMLU)
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    if _ki_oku(kok2) != KI_VAR.encode("utf-8"):
+        b.append(("KIBAYT", "mevcut kural evli devral CLAUDE.md'yi DEGISTIRDI"))
+    if ("ISARETCI YOK: CLAUDE.md canli deftere isaret etmiyor — eklemek icin: " + KI_SATIR % "DURUM.md") not in c:
+        b.append(("KIONERI", "devral ISARETCI YOK onerisini basmadi: %r" % [x for x in c.splitlines() if "ISARET" in x]))
+    # ---- mevcut kural evli kur ------------------------------------------------------------------------
+    kok3 = os.path.join(taban, "ki_c")
+    os.makedirs(kok3, exist_ok=True)
+    _yaz(os.path.join(kok3, "CLAUDE.md"), KI_VAR)
+    if subprocess.run(["git", "init", "-q", kok3], capture_output=True).returncode != 0:
+        raise Kurulamadi("git init basarisiz")
+    rc, c = kos(motor, ["kur", "--ad", "ISARET", "--yine-de"], kok3)   # mevcut icerik: `kur` yine-de ister
+    if rc != 0:
+        raise Kurulamadi("kur basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    if _ki_oku(kok3) != KI_VAR.encode("utf-8"):
+        b.append(("KIBAYT", "mevcut kural evli kur CLAUDE.md'yi DEGISTIRDI"))
+    if ("ISARETCI YOK: CLAUDE.md canli deftere isaret etmiyor — eklemek icin: " + KI_SATIR % "PROJE_HAFIZA.md") not in c:
+        b.append(("KIONERI", "kur ISARETCI YOK onerisini basmadi: %r" % [x for x in c.splitlines() if "ISARET" in x]))
+    # ---- devral YENI kural evi ------------------------------------------------------------------------
+    kok4 = os.path.join(taban, "ki_d")
+    rc, c = hal_yol(motor, kok4, {}, DURUM_BOLUMLU)
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    sat4 = _ki_oku(kok4).decode("utf-8").split("\n")
+    if len(sat4) < 2 or sat4[1] != KI_SATIR % "DURUM.md":
+        b.append(("KIDEVRAL", "devral yeni kural evi 2. satiri %r (beklenen %r)" % (sat4[1:2], KI_SATIR % "DURUM.md")))
+    return b
+
+
 def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
-    """K-SATIR + K-YOL + K-DURUM + K-GECIS kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
+    """K-SATIR + K-YOL + K-DURUM + K-GECIS + K-ISARET kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
     kollar = (("K-SATIR", "dongu", lambda: ks_dongu(motor, taban, tag + "d")),
               ("K-SATIR", "tanimsiz", lambda: ks_tanimsiz(motor, os.path.join(taban, tag + "t"))),
               ("K-SATIR", "sahiplik", lambda: ks_sahiplik(motor, os.path.join(taban, tag + "s"))),
@@ -932,7 +1019,8 @@ def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
               ("K-YOL", "ykesif", lambda: ky_kesif(motor, os.path.join(taban, tag + "ye"))),
               ("K-YOL", "ykacis", lambda: ky_kacis(motor, os.path.join(taban, tag + "yx"))),
               ("K-DURUM", "kdurum", lambda: kd_durum(motor, os.path.join(taban, tag + "kd"))),
-              ("K-GECIS", "kgecis", lambda: kg_gecis(motor, os.path.join(taban, tag + "kg"))))
+              ("K-GECIS", "kgecis", lambda: kg_gecis(motor, os.path.join(taban, tag + "kg"))),
+              ("K-ISARET", "kisaret", lambda: ki_isaret(motor, os.path.join(taban, tag + "ki"))))
     b = []
     for grup, ad, kol in kollar:
         if yalniz is None or ad in yalniz:
@@ -1078,6 +1166,26 @@ KS_SABOTAJLAR = (
      '        % (once, "" if once.endswith("{") else ",", json.dumps(rel, ensure_ascii=False), t[son:]))\n',
      '    yaz(p, json.dumps(dict(json.loads(t), karar_dizini=rel), ensure_ascii=False, indent=4) + "\\n")      # MUTANT\n',
      ("kgecis",)),
+    # ---- K-ISARET ---------------------------------------------------------------------------------
+    ("M-I1 kur yeni kural evine isaretci yazmaz", 'KIKUR',
+     '                     % (ad, _ISARETCI % rc["canli"]))\n',
+     '                     % (ad, "> (isaretci yok)"))      # MUTANT\n', ("kisaret",)),
+    ("M-I2 devral yeni kural evine isaretci yazmaz", 'KIDEVRAL',
+     '                     % (rc["ad"], _ISARETCI % rc["canli"]))\n',
+     '                     % (rc["ad"], "> (isaretci yok)"))      # MUTANT\n', ("kisaret",)),
+    ("M-I3 kapi H19 kontrolu kapali", 'KIKAPI',
+     '    if not _isaretci_var(oku(y.kural), canli):\n', '    if False:      # MUTANT\n', ("kisaret",)),
+    ("M-I4 H19 uyarisi cikis kodunu degistirir", 'KIEXIT',
+     '    _kapi_h18(N, kok, y)\n', '    _kapi_h18(F, kok, y)      # MUTANT\n', ("kisaret",)),
+    ("M-I5 mevcut kural evinde oneri basilmaz", 'KIONERI',
+     '    if os.path.realpath(y.kural) != os.path.realpath(y.canli) and not _isaretci_var(oku(y.kural), rc["canli"]):\n',
+     '    if False:      # MUTANT\n', ("kisaret",)),
+    ("M-I6 mevcut kural evine isaretci YAZILIR", 'KIBAYT',
+     '              % (rc["kural_evi_dosya"], _ISARETCI % rc["canli"]))\n',
+     '              % (rc["kural_evi_dosya"], _ISARETCI % rc["canli"]))\n'
+     '        yaz(y.kural, oku(y.kural) + (_ISARETCI % rc["canli"]) + "\\n")      # MUTANT\n', ("kisaret",)),
+    ("M-I7 isaretci VARKEN de H19 konusur (yanlis pozitif)", 'KISESSIZ',
+     '    if not _isaretci_var(oku(y.kural), canli):\n', '    if True:      # MUTANT\n', ("kisaret",)),
 )
 
 
@@ -1268,8 +1376,8 @@ def main():
         if kacan:
             print("SONUC: KAPI KOR — %s beklendigi gibi olculmedi." % ", ".join(kacan))
             return 1
-        print("SONUC: YESIL — uc kol + yedi K-SATIR + yedi K-YOL + bir K-DURUM + bir K-GECIS kolu temiz, uc mutant + %d "
-              "K-SATIR/K-YOL/K-DURUM/K-GECIS sabotaji AYRI eksende ISIRDI." % len(KS_SABOTAJLAR))
+        print("SONUC: YESIL — uc kol + yedi K-SATIR + yedi K-YOL + bir K-DURUM + bir K-GECIS + bir K-ISARET kolu temiz, uc mutant + %d "
+              "K-SATIR/K-YOL/K-DURUM/K-GECIS/K-ISARET sabotaji AYRI eksende ISIRDI." % len(KS_SABOTAJLAR))
         return 0
     finally:
         _sil(taban)

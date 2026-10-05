@@ -443,3 +443,11 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   (ADR dizini sonradan açılırsa anahtarı elle düzenle). Yazım mevcut baytlara dokunmaz (anahtar sona
   eklenir) ve `derle` halkasından önce yapılır (politika dosyası zincir yükünde). Fragmansız `derle`
   (`HIC FRAGMAN`) keşfetmez.
+- **K-ISARET (6 Eki 2026): kural evi canlı deftere YOL verir — ama motor mevcut kural evine YAZMAZ.**
+  `kur`/`devral` kural evini YENİ yaratıyorsa 2. satıra `> Canli defter: <canlı yol> — her oturum basinda
+  once onu oku (hafiza-kur).` yazar (Cursor/Codex gibi skill tetiklemeyen ortamlarda defterin adı bu
+  satırdan öğrenilir). Kural evi ZATEN VARSA dosya bayt-bayt aynı kalır (sahiplik: motor proje metnine
+  yazmaz); çıktıya tek satır düşer: `ISARETCI YOK: <kural evi> canli deftere isaret etmiyor — eklemek icin:
+  <tam satır>` — eklemek insanındır. `kapi` aynısını **H19** olarak ölçer: kural evinde canlı defterin adı
+  (dosya adı, harf duyarsız) geçmiyorsa UYARI (çıkış kodu DEĞİŞMEZ), geçiyorsa sessiz. Sınır: "ad geçiyor"
+  yalnız ADI ölçer — satırın okuyucuya "önce oku" dediğini ölçmez. `AGENTS.md` YAZILMAZ.

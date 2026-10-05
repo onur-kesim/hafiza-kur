@@ -195,7 +195,9 @@ python3 faz0/sabotaj.py                # her fail() tek tek kapatılır -> kapsa
 
 ## Bilinen sınırlar
 
-Bunlar gizlenmiyor; `skill/SKILL.md` §9'da tam listesi var. En önemlileri:
+Bunlar gizlenmiyor; `skill/SKILL.md` §9'da tam listesi var (H18 satır atfı, K-YOL/K-DURUM karar
+dizini ve ADR durumu, K-GECIS kurulu projede karar dizini keşfi, K-ISARET kural evi → canlı defter
+işaretçisi dahil). En önemlileri:
 
 - **Yeniden çıpalama engellenemez, yalnız görünür kılınır.** Dosya tabanlı bir
   şemada yazma erişimi olan bir aktöre karşı bütünlük garantisi matematiksel
