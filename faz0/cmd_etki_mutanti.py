@@ -157,8 +157,8 @@ MUTANTLAR = [
        """    for p, ilk in [(y.duzelt, '{"duzeltmeler": []}\\n'),""")]),
     ("S-4 kural dosyasi metni",
      "CLAUDE.md protokol metni degisiyor — kimse stdout'ta gormez",
-     [('                     "> BUDAMA TESTİ: bir satırı silmek modelin hata yapmasına yol açmıyorsa, KES.\\n" % ad)',
-       '                     "> BUDAMA TESTI: kes.\\n" % ad)')]),
+     [('                     "> BUDAMA TESTİ: bir satırı silmek modelin hata yapmasına yol açmıyorsa, KES.\\n"\n',
+       '                     "> BUDAMA TESTI: kes.\\n"\n')]),
     # 🔴 BILINEN KOR NOKTANIN OLCUMU — bu mutantin KACMASI BEKLENIR.
     # `etki_imzasi.py` `halka`/`onceki` alanlarini normalize eder (zamandan
     # tureyen hash'ler). Bedeli: YALNIZCA halka hash'ini bozan bir kusur bu
