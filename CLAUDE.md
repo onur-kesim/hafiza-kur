@@ -49,7 +49,7 @@ geri getirme · Türkçe kanonik komut + İngilizce takma ad (yalnız komut; bay
   Durumu **loose ref** okuyarak anla (`packed-refs` BAYAT olabilir); git işini komut olarak yaz.
   **PUSH Onur'da; KOD ve COMMIT Claude Code'da** — Cowork ölçer, denetler, kararı hazırlar
   (Onur kilidi 16 Ağu: üreten ≠ denetleyen · commit ayrımı 19 Ağu).
-- Tek kanonik klon: `C:\Users\gulci\Desktop\fable dosyalama\depo\hafiza-kur`. İkinci klon açma.
+- Tek kanonik klon: `D:\PROJELER\hafiza-kur\depo\hafiza-kur`. İkinci klon açma.
 - Disk adlarında Türkçe diyakritik ASLA (macOS NFD/NFC ayrışması zinciri kırar); ASCII bilinçli.
 - `.hafizarc` anahtarları · `_CIPA.json`/`_ZINCIR.jsonl` alan adları · dosya adları ÇEVRİLMEZ.
 - `.gitattributes`'taki `* -text` gevşetilmez (gerekçe dosyanın içinde).
