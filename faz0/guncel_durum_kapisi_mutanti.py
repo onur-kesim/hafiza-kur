@@ -73,6 +73,14 @@ K-YOL (devral karar dizini) — AYNI betige ek kollar (besli-paket/IS_EMRI_KSATI
   TERIM: is emri "(iii) sabotajda (ii) KACTI gorunmeli" der; bu betigin sozlugunde o durum ISIRDI'dir
   (kol sabotajli motorda KIRMIZI yanar = kapi kor DEGIL). KACTI = sabotaj kolu kirmizi YAKMADI = kapi KOR.
 
+K-GECIS — AYNI betige ek kol (besli-paket/IS_EMRI_ADRDURUM_GECIS_ISARETCI.md, 6 Eki 2026, Onur kilidi)
+  Olculen (kurulu Momentum): `devral` exit 2 `.hafizarc ZATEN VAR` => mevcut kurulumlar `karar-kaynagi` hic alamiyordu.
+  `derle`, `.hafizarc`ta `karar_dizini` ANAHTARI HIC YOKSA K-YOL'un AYNI keşif fonksiyonunu (`_karar_ilk`) BIR KEZ
+  kosar, bulursa yazar + `KARAR DIZINI KESFEDILDI: docs/ADR (N) — .hafizarc'a yazildi` der; bulamazsa
+  `"karar_dizini": ""` yazar + beyan eder. `""` BILINCLI bos degerdir: sonraki derle taramaz. Mevcut `.hafizarc`
+  baytlarina dokunulmaz (anahtar sona eklenir). BIR KOL (`kgecis`): KGKESIF · KGBEYAN · KGBLOK · KGRC · KGTEKRAR
+  (ikinci derle ayni, bayt-bayt) · KGYOK · KGBOS; 6 sabotaj (M-G1..M-G6, koşul-ters dahil).
+
 K-DURUM — AYNI betige ek kol (besli-paket/IS_EMRI_ADRDURUM_GECIS_ISARETCI.md, 6 Eki 2026, Onur kilidi)
   Olculen (Momentum kor okuma R1, iki tekrar YANLIS): `karar-kaynagi` blogu TASLAK bir ADR'ye (`Durum: TASLAK v6 —
   KILITLI DEGIL`) kilitlilerle AYNI agirlikta yol veriyordu; okuyucu taslagi karar sandi. Blok artik her ADR satirina
@@ -88,7 +96,7 @@ NE OLCMEZ
   eklememesi) burada DOGRU/DEGISMEZ kabul edilir, sinanmaz — sinanan KAPININ
   bunu YAKALAMASIdir.
 
-CIKIS KODU  0 tum kollar temiz (uc + yedi K-SATIR + yedi K-YOL + bir K-DURUM) VE tum mutantlar/sabotajlar ISIRDI · 1 en az bir kol
+CIKIS KODU  0 tum kollar temiz (uc + yedi K-SATIR + yedi K-YOL + bir K-DURUM + bir K-GECIS) VE tum mutantlar/sabotajlar ISIRDI · 1 en az bir kol
             BEKLENMEDIK / mutant KACTI · 2 OLCULEMEDI (git yok, motor
             okunamadi, kurulum basarisiz — kapi hukmu DEGIL)
 """
@@ -823,8 +831,92 @@ def kd_durum(motor, taban):
     return b
 
 
+# ===================================================================== K-GECIS (kurulu projede kesif)
+# besli-paket/IS_EMRI_ADRDURUM_GECIS_ISARETCI.md (6 Eki 2026, Onur kilidi). OLCULDU (kurulu Momentum): `devral`
+# exit 2 `.hafizarc ZATEN VAR` => mevcut kurulumlar `karar-kaynagi` hic alamiyordu. `derle`, `.hafizarc`ta
+# `karar_dizini` ANAHTARI HIC YOKSA keşfi (K-YOL'un AYNI fonksiyonu) BIR KEZ kosar, sonucu (bulunamazsa `""`) yazar
+# ve beyan eder; `""` BILINCLI bos degerdir, dokunulmaz. Beklenti FIKSTUR iceriginden (motordan degil).
+KG_ADR = {"docs/ADR/0001-ilk.md": "# ADR 0001 — Ilk\nDurum: kabul\n",
+          "docs/ADR/0002-ikinci.md": "# ADR 0002 — Ikinci\nDurum: taslak\n"}
+
+
+def kg_hazir(motor, kok, adr):
+    """git + `kur` (kurulu proje: `.hafizarc`ta `karar_dizini` ANAHTARI YOK) [+ docs/ADR] + commit."""
+    os.makedirs(kok, exist_ok=True)
+    if subprocess.run(["git", "init", "-q", kok], capture_output=True).returncode != 0:
+        raise Kurulamadi("git init basarisiz")
+    rc, c = kos(motor, ["kur", "--ad", "GECIS"], kok)
+    if rc != 0:
+        raise Kurulamadi("kur basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    if adr:
+        for ad, icerik in KG_ADR.items():
+            _yaz(os.path.join(kok, *ad.split("/")), icerik)
+    _commit(kok, "ilk")
+
+
+def _rc_ham(kok):
+    with io.open(os.path.join(kok, ".hafizarc"), encoding="utf-8", newline="") as f:
+        return f.read()
+
+
+def kg_gecis(motor, taban):
+    """ANAHTARSIZ kurulu proje + ADR: ilk derle KESFEDER (KGKESIF: .hafizarc'a yazar · KGBEYAN: cikti beyani ·
+    KGBLOK: karar-kaynagi blogu AYNI derle'de · KGRC: mevcut baytlar AYNEN, yalniz anahtar eklenir) ·
+    ikinci derle ayni disk => cikti beyansiz, .hafizarc bayt-bayt AYNI (KGTEKRAR) · ADR'SIZ proje: `""` yazilir
+    ve beyan edilir (KGYOK) · `""` varken ADR gelse de keşif CALISMAZ (KGBOS) · kapi + kapi --siki yesil."""
+    b = []
+    kok = os.path.join(taban, "kg_a")
+    kg_hazir(motor, kok, True)
+    eski = _rc_ham(kok)
+    if "karar_dizini" in eski:
+        raise Kurulamadi("fikstur kurulu projede karar_dizini ANAHTARI zaten var")
+    rc, c = notdemle(motor, kok, "genel-durum")
+    yeni = _rc_ham(kok)
+    beklenen = eski.rstrip()[:-1].rstrip() + ',\n  "karar_dizini": "docs/ADR"\n}' + eski[len(eski.rstrip()):]
+    if rc != 0:
+        raise Kurulamadi("derle basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    if "KARAR DIZINI KESFEDILDI: docs/ADR (2) — .hafizarc'a yazildi" not in c:
+        b.append(("KGBEYAN", "derle KESFEDILDI beyanini basmadi: %r" % c[-300:]))
+    try:
+        anahtar = json.loads(yeni).get("karar_dizini")
+    except ValueError:
+        anahtar = "GECERSIZ JSON"
+    if anahtar != "docs/ADR":
+        b.append(("KGKESIF", ".hafizarc karar_dizini = %r (beklenen 'docs/ADR')" % (anahtar,)))
+    elif yeni != beklenen:
+        b.append(("KGRC", ".hafizarc mevcut baytlari DEGISTI/yeniden bicimlendi (beklenen yalniz anahtar eklenmesi)"))
+    blok = BLOK_KARAR.search(_canli(kok))
+    sat = [x[2:] for x in (blok.group(2) if blok else "").splitlines() if x.startswith("- ")]
+    if "0001-ilk.md — ADR 0001 — Ilk — [durum: kabul]" not in sat or "0002-ikinci.md — ADR 0002 — Ikinci — [durum: taslak]" not in sat:
+        b.append(("KGBLOK", "ayni derle'de karar-kaynagi blogu (2 ad) yazilmadi: %r" % sat[:4]))
+    b += _kapilar_yesil(motor, kok, " (kesif sonrasi)")
+    rc, c = notdemle(motor, kok, "acik-kararlar", "ikinci derle ayni disk")
+    if "KARAR DIZINI" in c or _rc_ham(kok) != yeni:
+        b.append(("KGTEKRAR", "anahtar VARKEN ikinci derle tekrar kesfetti/yazdi (exit=%s)" % rc))
+    # ---- ADR'SIZ proje: bulunamazsa `""` yazilir + beyan; sonra ADR gelse de keşif CALISMAZ -----------------
+    kok2 = os.path.join(taban, "kg_b")
+    kg_hazir(motor, kok2, False)
+    eski2 = _rc_ham(kok2)
+    rc, c = notdemle(motor, kok2, "genel-durum")
+    yeni2 = _rc_ham(kok2)
+    beklenen2 = eski2.rstrip()[:-1].rstrip() + ',\n  "karar_dizini": ""\n}' + eski2[len(eski2.rstrip()):]
+    if "KARAR DIZINI YOK" not in c or "(bir daha aranmaz)" not in c or yeni2 != beklenen2:
+        b.append(("KGYOK", "ADR'siz projede `\"karar_dizini\": \"\"` yazilmadi/beyan edilmedi (exit=%s): %r"
+                  % (rc, c[-240:])))
+    b += _kapilar_yesil(motor, kok2, " (bulunamadi sonrasi)")
+    _commit(kok2, "bos yazildi")
+    for ad, icerik in KG_ADR.items():
+        _yaz(os.path.join(kok2, *ad.split("/")), icerik)
+    _commit(kok2, "adr geldi")
+    rc, c = notdemle(motor, kok2, "acik-kararlar", "ADR geldi ama anahtar bilincli bos")
+    if "KARAR DIZINI" in c or _rc_ham(kok2) != yeni2 or "karar-kaynagi" in _canli(kok2):
+        b.append(("KGBOS", "`\"\"` bilincli bos degerken ADR gelince keşif CALISTI (exit=%s, blok=%s)"
+                  % (rc, "karar-kaynagi" in _canli(kok2))))
+    return b
+
+
 def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
-    """K-SATIR + K-YOL + K-DURUM kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
+    """K-SATIR + K-YOL + K-DURUM + K-GECIS kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
     kollar = (("K-SATIR", "dongu", lambda: ks_dongu(motor, taban, tag + "d")),
               ("K-SATIR", "tanimsiz", lambda: ks_tanimsiz(motor, os.path.join(taban, tag + "t"))),
               ("K-SATIR", "sahiplik", lambda: ks_sahiplik(motor, os.path.join(taban, tag + "s"))),
@@ -839,7 +931,8 @@ def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
               ("K-YOL", "ycok", lambda: ky_cok(motor, os.path.join(taban, tag + "ym"))),
               ("K-YOL", "ykesif", lambda: ky_kesif(motor, os.path.join(taban, tag + "ye"))),
               ("K-YOL", "ykacis", lambda: ky_kacis(motor, os.path.join(taban, tag + "yx"))),
-              ("K-DURUM", "kdurum", lambda: kd_durum(motor, os.path.join(taban, tag + "kd"))))
+              ("K-DURUM", "kdurum", lambda: kd_durum(motor, os.path.join(taban, tag + "kd"))),
+              ("K-GECIS", "kgecis", lambda: kg_gecis(motor, os.path.join(taban, tag + "kg"))))
     b = []
     for grup, ad, kol in kollar:
         if yalniz is None or ad in yalniz:
@@ -966,6 +1059,25 @@ KS_SABOTAJLAR = (
      '                            _karar_durum(os.path.join(y.kararlar, k["dosya"])))\n',
      '        g += ["- %s%s%s" % (k["dosya"], (" — " + k["meta"]["baslik"]) if k["meta"].get("baslik") else "",\n'
      '                            "")      # MUTANT\n', ("kdurum",)),
+    # ---- K-GECIS ----------------------------------------------------------------------------------
+    ("M-G1 kurulu projede keşif kapali", 'KGKESIF',
+     '    rel, adlar, ek = _karar_ilk(y.kok)\n    rc["karar_dizini"] = rel\n',
+     '    rel, adlar, ek = "", [], ""      # MUTANT\n    rc["karar_dizini"] = rel\n', ("kgecis",)),
+    ("M-G2 bilincli bos deger anahtar yok sayilir", 'KGBOS',
+     '    if "karar_dizini" in rc:\n        return\n', '    if rc.get("karar_dizini"):      # MUTANT\n        return\n', ("kgecis",)),
+    ("M-G3 kesif beyan EDILMEZ", 'KGBEYAN',
+     '        print("KARAR DIZINI KESFEDILDI: %s (%d)%s — .hafizarc\'a yazildi" % (rel, adet, ek))\n',
+     '        pass      # MUTANT\n', ("kgecis",)),
+    ("M-G4 bulunamazsa `\"\"` YAZILMAZ (her derle yeniden tarar)", 'KGYOK',
+     '    ertele.insert(0, (_karar_rc_yaz, (rel, len(adlar), ek)))\n',
+     '    if rel:      # MUTANT\n        ertele.insert(0, (_karar_rc_yaz, (rel, len(adlar), ek)))\n', ("kgecis",)),
+    ("M-G6 anahtar kosulu TERS (yalniz anahtar VARKEN tarar)", 'KGKESIF',
+     '    if "karar_dizini" in rc:\n        return\n', '    if "karar_dizini" not in rc:      # MUTANT\n        return\n', ("kgecis",)),
+    ("M-G5 .hafizarc yeniden bicimlenir/siralanir", 'KGRC',
+     '    yaz(p, "%s%s\\n  \\"karar_dizini\\": %s\\n%s"\n'
+     '        % (once, "" if once.endswith("{") else ",", json.dumps(rel, ensure_ascii=False), t[son:]))\n',
+     '    yaz(p, json.dumps(dict(json.loads(t), karar_dizini=rel), ensure_ascii=False, indent=4) + "\\n")      # MUTANT\n',
+     ("kgecis",)),
 )
 
 
@@ -1156,8 +1268,8 @@ def main():
         if kacan:
             print("SONUC: KAPI KOR — %s beklendigi gibi olculmedi." % ", ".join(kacan))
             return 1
-        print("SONUC: YESIL — uc kol + yedi K-SATIR + yedi K-YOL + bir K-DURUM kolu temiz, uc mutant + %d "
-              "K-SATIR/K-YOL/K-DURUM sabotaji AYRI eksende ISIRDI." % len(KS_SABOTAJLAR))
+        print("SONUC: YESIL — uc kol + yedi K-SATIR + yedi K-YOL + bir K-DURUM + bir K-GECIS kolu temiz, uc mutant + %d "
+              "K-SATIR/K-YOL/K-DURUM/K-GECIS sabotaji AYRI eksende ISIRDI." % len(KS_SABOTAJLAR))
         return 0
     finally:
         _sil(taban)

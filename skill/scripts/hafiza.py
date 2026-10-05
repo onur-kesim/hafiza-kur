@@ -5682,6 +5682,7 @@ def _atif_blok_govdesi(kayma):
 def _derle_motor_bloklari(y, rc, L, ertele, eklenen):
     """`cmd_derle`nin TEK cagri noktasi (dal eklemez: `cmd_derle` CC'si degismez). Iki motor blogu:
     `atif-kaymasi` (K-SATIR) ve — `.hafizarc`ta `karar_dizini` KAYITLIYSA — `karar-kaynagi` (K-YOL)."""
+    _karar_kesfi(y, rc, ertele)                 # K-GECIS: anahtar HIC yoksa bir kez kesfet (yoksa dokunma)
     _n, kayma, _olc = _atif_tara(y.kok, L)
     L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _ATIF_KONU, _ATIF_KONU_ACIKLAMA,
                             _atif_blok_govdesi(kayma))
@@ -5757,18 +5758,57 @@ def _karar_dizinleri(kok):
     return out, atlanan
 
 
-def devir_karar_ozeti(kok):
-    """Devral ozet satiri (`--kesif` ve yazan yol AYNI metni basar) -> secilen dizin ya da ''.
-    Satir rol desenlerine (`canli : ...`) UYMAZ; yol kok-goreli ve sirali: iki havuzda ayni cikti."""
+def _karar_ilk(kok):
+    """TEK keşif noktası (`devral` ozeti ve `derle` gecisi AYNI fonksiyonu okur — K-GECIS: ikinci kopya YOK):
+    (rel, adlar, ek) — secilen ILK aday (`rel` '' = bulunamadi) ve ozet eki (' · baska aday: ..' + ' · ATLANDI ..')."""
     bulunan, atlanan = _karar_dizinleri(kok)
     atla = "".join(" · ATLANDI (proje DISINA bagli, okunmadi): %s" % r for r in atlanan)
     if not bulunan:
-        print("  karar dizini      : bulunamadi (aranan: %s)%s" % (", ".join(_KARAR_ADAYLARI), atla))
-        return ""
+        return "", [], atla
     rel, adlar = bulunan[0]
-    diger = "".join(" · baska aday: %s" % r for r, _ in bulunan[1:])
-    print("  karar dizini      : %s (%d dosya)%s%s" % (rel, len(adlar), diger, atla))
+    return rel, adlar, "".join(" · baska aday: %s" % r for r, _ in bulunan[1:]) + atla
+
+
+def devir_karar_ozeti(kok):
+    """Devral ozet satiri (`--kesif` ve yazan yol AYNI metni basar) -> secilen dizin ya da ''.
+    Satir rol desenlerine (`canli : ...`) UYMAZ; yol kok-goreli ve sirali: iki havuzda ayni cikti."""
+    rel, adlar, ek = _karar_ilk(kok)
+    if not rel:
+        print("  karar dizini      : bulunamadi (aranan: %s)%s" % (", ".join(_KARAR_ADAYLARI), ek))
+        return ""
+    print("  karar dizini      : %s (%d dosya)%s" % (rel, len(adlar), ek))
     return rel
+
+
+# KALEM K-GECIS (besli-paket/IS_EMRI_ADRDURUM_GECIS_ISARETCI.md, 6 Eki 2026, Onur kilidi). OLCULDU (kurulu
+# Momentum): `devral` exit 2 `.hafizarc ZATEN VAR` => mevcut kurulumlar `karar-kaynagi` hic alamiyordu. `derle`,
+# `.hafizarc`ta `karar_dizini` ANAHTARI HIC YOKSA (`""` bilincli bos DEGERDIR, dokunulmaz) `_karar_ilk`i BIR KEZ
+# kosar ve sonucu (bulunamazsa `""`) yazar + beyan eder; sonraki derle'de anahtar var => tarama YOK (determinizm,
+# gurultu yok). Yazim `ertele` ile canli `yaz()` BASARILI olduktan SONRA ve DERLE halkasindan ONCE yapilir
+# (`.hafizarc` politika dosyasi zincir yukundedir: halkasiz degisim H0 'MUHURSUZ' derdi). Mevcut baytlara
+# DOKUNULMAZ: anahtar nesnenin SONUNA eklenir (yeniden bicimleme/yeniden siralama yok).
+def _karar_rc_yaz(y, rel, adet, ek):
+    p = os.path.join(y.kok, RC_AD)
+    t = oku(p)
+    son = t.rstrip().rfind("}")
+    once = t[:son].rstrip()
+    yaz(p, "%s%s\n  \"karar_dizini\": %s\n%s"
+        % (once, "" if once.endswith("{") else ",", json.dumps(rel, ensure_ascii=False), t[son:]))
+    if rel:
+        print("KARAR DIZINI KESFEDILDI: %s (%d)%s — .hafizarc'a yazildi" % (rel, adet, ek))
+    else:
+        print("KARAR DIZINI YOK (aranan: %s)%s — .hafizarc'a \"karar_dizini\": \"\" yazildi "
+              "(bir daha aranmaz)" % (", ".join(_KARAR_ADAYLARI), ek))
+
+
+def _karar_kesfi(y, rc, ertele):
+    """`rc`ye `karar_dizini` anahtari YOKSA keşfi kosar (bellekte `rc`ye isler: ayni derle blogu yazabilsin) ve diske
+    yazimi `ertele` basina koyar; anahtar VARSA (`""` dahil) hicbir sey yapmaz."""
+    if "karar_dizini" in rc:
+        return
+    rel, adlar, ek = _karar_ilk(y.kok)
+    rc["karar_dizini"] = rel
+    ertele.insert(0, (_karar_rc_yaz, (rel, len(adlar), ek)))
 
 
 def _devral_karar_rc(rel):

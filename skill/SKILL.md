@@ -435,3 +435,11 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   ön-bilgide `durum:`/`status:`; değer ≤60 karakter; bulunamazsa `[durum: BEYANSIZ]`. Motor
   durumu YORUMLAMAZ, sıralamaz, otorite SEÇMEZ (hangi belgenin karar olduğu insanındır).
   Sınır: `## Status` başlığı ALTINDAKİ değer ya da tablo hücresi okunmaz (BEYANSIZ der).
+- **K-GECIS (6 Eki 2026): kurulu projede `karar-kaynagi` için `derle` karar dizinini KENDİSİ bulur.**
+  `devral` kurulu projeyi reddeder (`.hafizarc ZATEN VAR`); bu yüzden `.hafizarc`ta `karar_dizini`
+  ANAHTARI HİÇ YOKSA `derle` (fragman işleyen koşuda) K-YOL'un AYNI keşif fonksiyonunu BİR KEZ koşar:
+  bulursa yazar ve `KARAR DIZINI KESFEDILDI: docs/ADR (5) — .hafizarc'a yazildi` der; bulamazsa
+  `"karar_dizini": ""` yazar ve bunu da söyler. `""` BİLİNÇLİ boş değerdir — sonraki `derle` taramaz
+  (ADR dizini sonradan açılırsa anahtarı elle düzenle). Yazım mevcut baytlara dokunmaz (anahtar sona
+  eklenir) ve `derle` halkasından önce yapılır (politika dosyası zincir yükünde). Fragmansız `derle`
+  (`HIC FRAGMAN`) keşfetmez.
