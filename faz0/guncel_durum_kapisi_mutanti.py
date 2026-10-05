@@ -822,8 +822,8 @@ KS_SABOTAJLAR = (
      '        out.append((no, t, m.group(1), bas, bas, tan))      # MUTANT\n', ("aralik",)),
     # ---- K-YOL ----------------------------------------------------------------------------------
     ("M-Y1 karar dizini KESFI kapali", 'YBLOK',
-     '    out, gorulen = [], set()\n    for aday in _KARAR_ADAYLARI:\n',
-     '    out, gorulen = [], set()\n    for aday in ():      # MUTANT\n', ("yadr",)),
+     '    out, gorulen, atlanan = [], set(), []\n    for aday in _KARAR_ADAYLARI:\n',
+     '    out, gorulen, atlanan = [], set(), []\n    for aday in ():      # MUTANT\n', ("yadr",)),
     ("M-Y2 bos dizin (ADR'siz) 'bulundu' sayilir", 'YKONTROL',
      '        if not adlar:\n            continue\n',
      '        if False:      # MUTANT\n            continue\n', ("ykontrol",)),
