@@ -1,23 +1,24 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban CI #122 `5f2ae09` 189/189 `gh` ölçtü; B1/B2 + K-* PUSH'SUZ)
-Son güncelleme: 5 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner, yenisi ondan sonra**
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban CI #122 `5f2ae09` 189/189; B1/B2 + K-* PUSH'SUZ)
+Son güncelleme: 6 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## SON İŞ — K-SATIR · K-YOL · K-BAYAT (Code O11, 5 Eki 2026) · PUSH YOK
-**Taban** yerel `c913725` (origin `5f2ae09`). `d57c50b` K-SATIR · `7e12d27` K-YOL · `540db82` K-BAYAT · `077eaa6`+`ae309d7` düzeltme. Motor `9DA7643D…` 424.717 B → `3BF9869F…` 447.799 B (fonksiyon 329→358). Mutant: MEVCUT `guncel_durum_kapisi_mutanti.py`'ye KOL (14 kol, 28 sabotaj).
-Çapa `cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` CC 20 AYNEN · `_kapi_govde` 80→**79** (ölü `return` çıktı) · `fail()` 67 AYNI.
-**Ölçüldü (Win py3.12, `capraz.yml` 82 adım, TAZE klon):** taban 71 OK · 9 KIRMIZI (bilinen) · 2 SKIP; son `077eaa6` AYNI küme (+`guncel_durum` çapa hatası → `ae309d7`, YEŞİL) · ruff 59 · mypy 2 · bandit 44/1 · `isir` 79+2/81 · `sabotaj` **67/67, KAPSAMSIZ 0**. Linux (WSL `olcum`, py3.14): `guncel_durum` · `readme_mutanti` 16/16 · `t_y42` 58/58 · `paketten_kos` · `altin_cikti` · `ci_kapsam` 50/50 YEŞİL · `isir` iki bloklu projede 81/81 = taban.
-**Momentum (YENİ motor):** `kapi` KAYMA **1** (`main.dart:25`) · TUTUYOR 2 · `localhost:5298` ÖLÇÜLEMEDİ · `docs/ADR` **5** ad (iş emri "6" = `.gitkeep` dâhil) · iki blok VAR · iki klonda bayt-bayt aynı.
-**Sıradaki:** push Onur'da → Cowork: `kapi` KAYMA 1 + iki blok · `derle` iki kez bit-bit (aynı dakika; `kaynak=` dakikalık) · kör okuma KARAR ≤2/4.
-**AÇIK:** macOS · py3.11/3.13 yerelde YOK · Momentum tam `isir` (~80 dk, iki bloklu) koşulmadı · README:190 "tam liste SKILL.md §9" H18/K-YOL'u içermiyor · yerel `.skill` bayat+ignore'lu · Win `t_y42` 1314 · M-H10c kod çitli KACTI (ÖNCEDEN VAR)
+## SON İŞ — K-DURUM · K-GECIS · K-ISARET (Code O12, 6 Eki 2026) · PUSH YOK
+**Taban** yerel `7c6ff91` (origin `5f2ae09`). `12e437c` K-DURUM · `e73b68a` K-GECIS · `a11d79d` K-ISARET · `df46d2b` `cmd_etki` S-4 çapa düzeltmesi (tam tur yakaladı). Motor → 454.254 B (fonksiyon 358→365). Mutant: MEVCUT `guncel_durum_kapisi_mutanti.py`'ye 3 KOL (17 kol, 46 sabotaj, KACTI 0). README+SKILL §9 güncel.
+Çapa `cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79 AYNEN · `sabotaj` **67/67, KAPSAMSIZ 0** · `altin_cikti` FARK YOK.
+**Tam tur (Win py3.12, 82 adım, taze klon):** 70 OK · 10 KIRMIZI (9 bilinen + `cmd_etki` → düzeltildi, tek başına exit 0) · 2 SKIP · fark yalnız satır no/bayt/tarih · ruff 59 · mypy 2 · bandit 44/1 AYNI (stil 590→597). Linux/WSL ve macOS BU TURDA KOŞULMADI.
+**Momentum (kopya `Momentum-o13A/B`, o12B'den klon):** 5 ADR durumlu (0001/0002 `✅ KİLİTLİ (v3)…` · iki 0003 `🟡 TASLAK v6 — KİLİTLİ DEĞİL…` · 0004 `📝 GÖVDE YAZILDI…`) · eski motorla kurulu kopyada `not`→`bolum-kur`→`derle`: `"karar_dizini": "docs/ADR"` + blok 5 ad, ikinci `derle` bayt-bayt aynı · `CLAUDE.md` `DURUM.md`'yi **5 kez** anıyor → H19 SESSİZ, `ISARETCI YOK` yok.
+**Sıradaki:** push Onur'da → Cowork: beş durum satırı · keşif+ikinci derle · taze `kur` işaretçi · kör okuma R1 yeniden.
+**AÇIK:** macOS · py3.11/3.13 · WSL `olcum` bu turda yok · H19 yalnız ADI ölçer · `## Status` başlık-altı değer BEYANSIZ · Win `t_y42` 1314 · M-H10c KACTI (ÖNCEDEN VAR)
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 K4 TAMAM (67/67), kör nokta **0**; **25 Ağu yazısı** KAPSAM DIŞI; **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
+**K-DURUM·K-GECIS·K-ISARET** (O12): `karar-kaynagi` her ADR'nin `[durum: …]`/BEYANSIZ'ı · kurulu projede `derle` karar dizinini bulur · kural evi canlı defter işaretçisi + `kapi` H19.
 **K-SATIR·K-YOL·K-BAYAT** (O11): H18 satır atfı kayması + `derle` `atif-kaymasi` · `devral` karar dizini → `karar-kaynagi` · içerik bayatlığı KESİLDİ.
-**B1+B2** (O10): `isir` sahte KAPI KÖR · taze klonda H16 → `_gitkeep_yaz` · Cowork TUTTU (`OLCUM_RAPORU_05EKIM_B1B2.md`): isir 80/80 exit 2, H16 yok.
-**O7-O9** (W1/W2·Y3·Y1·Y2·12 kör nokta): `_gecici_sil` · hook'lu `isir` 81/81 · sabotaj 55→**67/67**.
+**B1+B2** (O10): `isir` sahte KAPI KÖR · taze klonda H16 → `_gitkeep_yaz` · Cowork TUTTU (`OLCUM_RAPORU_05EKIM_B1B2.md`).
+**O7-O9**: `_gecici_sil` · hook'lu `isir` 81/81 · sabotaj 55→**67/67**.
 **ÜRÜN HAZIRLIĞI** (30 Eyl, CI #117; yükleme K7 HÂLÂ yok). **AÇIK:** harf-büyüklüğü çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
 
 ## Bilinen sınırlar (ölçülmüş)
@@ -41,5 +42,5 @@ K4 TAMAM (67/67), kör nokta **0**; **25 Ağu yazısı** KAPSAM DIŞI; **Deneme*
 - 🔴 `rmtree(ignore_errors=True)`: motorda 5 yer W1'de `_gecici_sil`e döndü (4 Eki); faz0'daki ~90 çağrı (geliştirici aracı) KAPSAM DIŞI — Win'de salt-okunur `.git` artığı bırakır (`hook_mutanti` hariç).
 - 🟡 H18 (5 Eki): yalnız `canli` · madde + `yol:N` · UYARI (exit değişmez) · içerik bayatlığını ÖLÇMEZ (`:85` TUTUYOR der) · kod çiti içi madde ayırt edilmez · `isir` kataloğunda DEĞİL.
 - 🟡 İçerik bayatlığı ölçülmez (5 Eki): zaman/sıra adayları Momentum'da A 0/3, B 1/6; md.40 iddia DOĞUŞTA bayattı → mekanik ayırt edilemiyor. Kanıt: besli-paket ölçüm raporu (depoya kopyalanmaz).
-- 🟡 K-YOL (5 Eki): karar dizini YALNIZ `devral` anında (kurulu proje reddeder) · blok yalnız fragman işleyen `derle`'de tazelenir · çok adayda İLK (diğeri "baska aday") · `NNNN-*.md`/`ADR-*.md`; `.gitkeep`/README/alt dizin SAYILMAZ · ≤40 ad · proje DIŞINA bağlı dizin OKUNMAZ (ATLANDI) · devral→`bolum-kur`te blok `ARSIV DIZINI` altına düşer (kozmetik).
+- 🟡 K-YOL/K-GECIS (5-6 Eki): karar dizini `devral` anında VEYA kurulu projede ilk fragman işleyen `derle`de (anahtar yoksa; `""` bilinçli boş) · çok adayda İLK ("baska aday") · `NNNN-*.md`/`ADR-*.md` · ≤40 ad · DIŞA bağlı dizin OKUNMAZ (ATLANDI) · devral→`bolum-kur`te blok `ARSIV DIZINI` altına düşer.
 - 🟡 Y2 sınırı: başka başlığın ALTINA düşen yetim detay ayırt EDİLEMEZ. Y3: hook'lu `isir` iskeleti COMMIT'Lİ proje ister. Win'de yükte `sabotaj.py`nin `isir`i 300 sn aşar ⇒ solo koş; izole TEMP kısa yolda olmalı (260).
