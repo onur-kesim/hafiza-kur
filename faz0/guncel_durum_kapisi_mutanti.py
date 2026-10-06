@@ -625,7 +625,7 @@ def ky_adr(motor, taban, tag="ky_a"):
         b.append(("YBLOK", "blokta beklenen dosya adi/baslik satirlari eksik: %r" % govde[:300]))
     if blok and any(x in govde for x in (".gitkeep", "README.md", "0009-eski")):
         b.append(("YSAYIM", ".gitkeep / README.md / alt dizin dosyasi sayilmis: %r" % govde[:300]))
-    if blok and "ASLA" in govde:
+    if blok and "ASLA yapilmayacaklar" in govde:      # `TASLAK` basligi `ASLA`yi sozcuk ici tasir: marker DEGIL
         b.append(("YMASKE", "kalici-kural isareti tasiyan baslik blokta GORUNUYOR"))
     if not _konu_var(kok, "karar-kaynagi"):
         b.append(("YKONU", "KONULAR.md'de 'karar-kaynagi' satiri YOK"))
@@ -1002,6 +1002,65 @@ def ki_isaret(motor, taban):
     return b
 
 
+# ===================================================================== P1 (taslak/karar ayrimi)
+# besli-paket/IS_EMRI_P1_TASLAK_KARAR_AYRIMI.md (6 Eki 2026, Onur kilidi sik (a)). OLCULDU (Momentum kor okuma R1 iki
+# tekrar YANLIS): durum etiketi okuyucuya ULASTI ama taslagin icerigi yine karar diye aktarildi. `karar-kaynagi` ADR
+# satirlarini DORT SINIF grubunda verir (GECERLI > TASLAK > GECERSIZ > SINIFLANAMADI basliklari HER ZAMAN, sayiyla);
+# sinif SABIT sozlukten, ham `[durum: ...]` AYNEN kalir; suphede GECERLI DEGIL. Beklentiler FIKSTURDEN elle yazilidir.
+KP_BASLIK = (("GECERLI", "GECERLI KARARLAR ("), ("TASLAK", "KARAR DEGIL - TASLAK/BEKLEYEN ("),
+             ("GECERSIZ", "GECERSIZ ("), ("SINIFLANAMADI", "SINIFLANAMADI ("))
+
+
+def _kp_adr(durumlar, pre="docs/ADR/"):
+    """{yol: icerik}: `durumlar` = [(no, ad, 'Durum degeri' ya da None)] -> `# ADR n` + (varsa) `Durum: deger`."""
+    return {"%s%04d-%s.md" % (pre, no, ad): "# ADR %d\n%s" % (no, ("Durum: %s\n" % d) if d is not None else "")
+            for no, ad, d in durumlar}
+
+
+def _kp_gruplar(kok):
+    """canli `karar-kaynagi` blogu -> {sinif: (baslik_satiri, [satirlar])} (sinif = KP_BASLIK sirasiyla)."""
+    blok = BLOK_KARAR.search(_canli_devral(kok))
+    out, kur = {}, None
+    for x in (blok.group(2) if blok else "").splitlines():
+        for sinif, on in KP_BASLIK:
+            if x.startswith(on):
+                out[sinif] = (x, [])
+                kur = sinif
+        if x.startswith("- ") and kur and not x.startswith("- karar dizini") and not x.startswith("- motorun"):
+            out[kur][1].append(x[2:])
+    return out
+
+
+def _kp_devral(motor, kok, durumlar, ek=None):
+    dosyalar = _kp_adr(durumlar)
+    dosyalar.update(ek or {})
+    rc, c = hal_yol(motor, kok, dosyalar, DURUM_BOLUMLU)
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    return c, _kp_gruplar(kok)
+
+
+def _kp_ad(g, sinif, no):
+    return [x for x in g.get(sinif, ("", []))[1] if x.startswith("%04d-" % no)]
+
+
+def kp_sinif(motor, taban):
+    """PSINIF: her sinifin ADR'si KENDI grubunda (accepted · proposed · superseded by 0002 · partially implemented),
+    ham `[durum: ...]` AYNEN · POZET: derle/devral cikti satiri `KARAR SINIFI: ...`."""
+    b = []
+    c, g = _kp_devral(motor, os.path.join(taban, "kp_s"),
+                      [(1, "a", "accepted"), (2, "b", "proposed"), (3, "c", "superseded by 0002"),
+                       (4, "d", "partially implemented")])
+    for no, sinif, ham in ((1, "GECERLI", "accepted"), (2, "TASLAK", "proposed"), (3, "GECERSIZ", "superseded by 0002"),
+                           (4, "SINIFLANAMADI", "partially implemented")):
+        sat = _kp_ad(g, sinif, no)
+        if len(sat) != 1 or not sat[0].endswith("[durum: %s]" % ham):
+            b.append(("PSINIF", "ADR %d `%s` grubunda degil ya da ham beyan degisti: grup=%r" % (no, sinif, sat)))
+    if "KARAR SINIFI: GECERLI 1 · TASLAK 1 · GECERSIZ 1 · SINIFLANAMADI 1" not in c:
+        b.append(("POZET", "devral cikti satiri `KARAR SINIFI: GECERLI 1 · TASLAK 1 · GECERSIZ 1 · SINIFLANAMADI 1` YOK"))
+    return b
+
+
 def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
     """K-SATIR + K-YOL + K-DURUM + K-GECIS + K-ISARET kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
     kollar = (("K-SATIR", "dongu", lambda: ks_dongu(motor, taban, tag + "d")),
@@ -1020,7 +1079,8 @@ def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
               ("K-YOL", "ykacis", lambda: ky_kacis(motor, os.path.join(taban, tag + "yx"))),
               ("K-DURUM", "kdurum", lambda: kd_durum(motor, os.path.join(taban, tag + "kd"))),
               ("K-GECIS", "kgecis", lambda: kg_gecis(motor, os.path.join(taban, tag + "kg"))),
-              ("K-ISARET", "kisaret", lambda: ki_isaret(motor, os.path.join(taban, tag + "ki"))))
+              ("K-ISARET", "kisaret", lambda: ki_isaret(motor, os.path.join(taban, tag + "ki"))),
+              ("P1", "psinif", lambda: kp_sinif(motor, os.path.join(taban, tag + "p1"))))
     b = []
     for grup, ad, kol in kollar:
         if yalniz is None or ad in yalniz:
@@ -1104,15 +1164,13 @@ KS_SABOTAJLAR = (
      '            t = unicodedata.normalize("NFC", m.group(1)).replace("`", "\'").replace("](", "] (")\n',
      '            t = unicodedata.normalize("NFC", m.group(1))      # MUTANT\n', ("yadr",)),
     ("M-Y9 derle blogu diskten yenilemez", 'YYENILE',
-     '    if govde is not None:\n        L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _KARAR_KONU, _KARAR_KONU_ACIKLAMA, govde)\n',
-     '    if False:      # MUTANT\n        L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _KARAR_KONU, _KARAR_KONU_ACIKLAMA, govde)\n',
+     '    if govde is not None:\n        _karar_sinif_yaz()\n        L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _KARAR_KONU, _KARAR_KONU_ACIKLAMA, govde)\n',
+     '    if False:      # MUTANT\n        _karar_sinif_yaz()\n        L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _KARAR_KONU, _KARAR_KONU_ACIKLAMA, govde)\n',
      ("yadr",)),
     ("M-Y10 ADR dosyalarina DOKUNULUR", 'YDOKUNMA',
-     '    out = ["- %s%s%s" % (ad, _karar_baslik(os.path.join(d, ad)), _karar_durum(os.path.join(d, ad)))\n'
-     '           for ad in adlar[:_KARAR_LISTE_TAVAN]]\n',
-     '    out = ["- %s%s%s" % (ad, _karar_baslik(os.path.join(d, ad)), _karar_durum(os.path.join(d, ad)))\n'
-     '           for ad in adlar[:_KARAR_LISTE_TAVAN]]\n'
-     '    for ad in adlar:\n        with open(os.path.join(d, ad), "ab") as f:\n            f.write(b"\\n")      # MUTANT\n',
+     '        dur = _karar_durum(os.path.join(d, ad))\n',
+     '        dur = _karar_durum(os.path.join(d, ad))\n'
+     '        with open(os.path.join(d, ad), "ab") as f:\n            f.write(b"\\n")      # MUTANT\n',
      ("yadr",)),
     ("M-Y11 dizin adi harf-duyarli aranir", 'YCASE',
      '                        if x.lower() == parca.lower() and os.path.isdir(os.path.join(yol, x)))\n',
@@ -1143,10 +1201,8 @@ KS_SABOTAJLAR = (
     ("M-D4 ilk 30 satir siniri yok", 'KPENCERE',
      '.split("\\n")[:_KARAR_DURUM_PENCERE]', '.split("\\n")      # MUTANT', ("kdurum",)),
     ("M-D5 motorun kendi kararinda durum yok", 'KMOTOR',
-     '        g += ["- %s%s%s" % (k["dosya"], (" — " + k["meta"]["baslik"]) if k["meta"].get("baslik") else "",\n'
-     '                            _karar_durum(os.path.join(y.kararlar, k["dosya"])))\n',
-     '        g += ["- %s%s%s" % (k["dosya"], (" — " + k["meta"]["baslik"]) if k["meta"].get("baslik") else "",\n'
-     '                            "")      # MUTANT\n', ("kdurum",)),
+     '            dur = _karar_durum(os.path.join(y.kararlar, k["dosya"]))\n',
+     '            dur = ""      # MUTANT\n', ("kdurum",)),
     # ---- K-GECIS ----------------------------------------------------------------------------------
     ("M-G1 kurulu projede keşif kapali", 'KGKESIF',
      '    rel, adlar, ek = _karar_ilk(y.kok)\n    rc["karar_dizini"] = rel\n',
@@ -1186,6 +1242,12 @@ KS_SABOTAJLAR = (
      '        yaz(y.kural, oku(y.kural) + (_ISARETCI % rc["canli"]) + "\\n")      # MUTANT\n', ("kisaret",)),
     ("M-I7 isaretci VARKEN de H19 konusur (yanlis pozitif)", 'KISESSIZ',
      '    if not _isaretci_var(oku(y.kural), canli):\n', '    if True:      # MUTANT\n', ("kisaret",)),
+    ('M-P1a siniflama kapali (hepsi GECERLI)', 'PSINIF',
+     '    return next((sinif for sinif, desen in _SINIF_DESEN if desen.search(t)), "SINIFLANAMADI")\n',
+     '    return "GECERLI"      # MUTANT\n', ('psinif',)),
+    ('M-P1b KARAR SINIFI ozet satiri basilmaz', 'POZET',
+     '    if _KARAR_SINIF_SON[0]:\n',
+     '    if False:      # MUTANT\n', ('psinif',)),
 )
 
 

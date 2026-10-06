@@ -5729,6 +5729,7 @@ def _derle_motor_bloklari(y, rc, L, ertele, eklenen):
     kd = _karar_dizini_rc(rc)
     govde = _karar_blok_govdesi(y, kd) if kd else None
     if govde is not None:
+        _karar_sinif_yaz()
         L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _KARAR_KONU, _KARAR_KONU_ACIKLAMA, govde)
     return L
 
@@ -5916,37 +5917,107 @@ def _karar_durum(p):
     return " — [durum: BEYANSIZ]"
 
 
+# KALEM P1 (besli-paket/IS_EMRI_P1_TASLAK_KARAR_AYRIMI.md, 6 Eki 2026, Onur kilidi sik (a)). OLCULDU (Momentum kor
+# okuma R1, iki tekrar YANLIS): durum etiketi okuyucuya ULASTI ama okuyucu taslagin icerigini yine karar diye aktardi.
+# BILINCLI DONUS: K-DURUM "motor durumu YORUMLAMAZ" demisti; P1 durumu SINIFLAR. Gizlenemez kilmak icin (i) sinif SABIT
+# bir sozlukten gelir (asagida; README'de AYNEN), (ii) her satir ham `[durum: ...]` metnini AYNEN tasimaya devam eder,
+# sinif YALNIZ gorunen ham metinden turer (okuyucu motorun siniflamasini ham beyanla her zaman karsilastirabilir),
+# (iii) suphede sinif ASLA GECERLI degildir (taslagin karar sanilmasi zararlidir; kilitlinin taslak sanilmasi UCUZ hatadir).
+# Normallestirme: Turkce katlama (`I`->i degil `İ`->i, `ı`->i, s/g/u/o/c) lower()'dan ONCE (`"İ".lower()` = i + U+0307),
+# sozcuk sinirli esleme (`red` != `kredi`). ONCELIK yukaridan asagi, ilk eslesen kazanir: GECERSIZ > TASLAK > GECERLI >
+# SINIFLANAMADI (TASLAK GECERLI'nin USTUNDE: `TASLAK v6 - KILITLI DEGIL` ve `GOVDE YAZILDI - KILIT BEKLIYOR` "kilit" kokunu
+# tasir ve ikisi de karar DEGIL). Sozluk disi beyan SINIFLANAMADI'dir; motor beyanin ANLAMINI olcmez.
+_SINIF_SOZLUK = (
+    ("GECERSIZ", ("superseded", "yerine gecildi", "yerine-gecildi", "deprecated", "rejected", "reddedildi", "red",
+                  "iptal", "withdrawn", "obsolete")),
+    ("TASLAK", ("taslak", "draft", "proposed", "onerildi", "oneri", "onerilen", "bekliyor", "bekleyen", "pending",
+                "wip", "tartisma", "discussion", "inceleme", "review", "degil", "not accepted")),
+    ("GECERLI", ("kabul", "accepted", "kilitli", "approved", "onaylandi", "final", "adopted", "yururlukte")),
+)
+_SINIF_DESEN = tuple((sinif, re.compile(r"(?<![a-z0-9])(?:%s)(?![a-z0-9])" % "|".join(re.escape(t) for t in terimler)))
+                     for sinif, terimler in _SINIF_SOZLUK)
+_SINIF_KATLA = str.maketrans({"İ": "i", "ı": "i", "Ş": "s", "ş": "s", "Ğ": "g", "ğ": "g", "Ü": "u", "ü": "u",
+                              "Ö": "o", "ö": "o", "Ç": "c", "ç": "c"})
+_SINIF_DEGER = re.compile(r"\[durum: (.*)\]$")
+
+
+def _karar_sinif(durum):
+    """`_karar_durum` CIKTISI (' — [durum: DEGER]') -> GECERSIZ | TASLAK | GECERLI | SINIFLANAMADI. Saf: yalniz
+    gorunen ham metne bakar; BEYANSIZ ve sozluk disi her sey SINIFLANAMADI (suphede GECERLI DEGIL)."""
+    m = _SINIF_DEGER.search(durum)
+    t = unicodedata.normalize("NFC", m.group(1) if m else "").translate(_SINIF_KATLA).lower()
+    return next((sinif for sinif, desen in _SINIF_DESEN if desen.search(t)), "SINIFLANAMADI")
+
+
+_KARAR_GRUPLAR = (
+    ("GECERLI", "GECERLI KARARLAR (%d) - durum beyani kabul/kilitli:"),
+    ("TASLAK", "KARAR DEGIL - TASLAK/BEKLEYEN (%d) - bu dosyalardaki secim YURURLUKTE DEGILDIR:"),
+    ("GECERSIZ", "GECERSIZ (%d) - yerine gecildi/reddedildi:"),
+    ("SINIFLANAMADI", "SINIFLANAMADI (%d) - durum yok ya da sozlukte yok; karar diye ALINTILAMA, dosyayi oku:"),
+)
+_KARAR_SINIF_SON = [None]           # son blok govdesinin sinif sayilari (derle/devral tek satir basar)
+
+
+def _karar_gruplari(girdiler):
+    """[(satir, sinif)] -> (satirlar, {sinif: sayi}). DORT baslik HER ZAMAN basilir (sayiyla; `GECERLI (0)` dahil:
+    'kilitli beyanli karar YOK' bilgisi ancak boyle gizlenemez olur). Tavan TOPLAMDIR: gruplar sabit sirada dolar
+    (GECERLI once); kirpilan sayi GRUP BASINA yazilir. Grup ici sira girdi sirasi."""
+    out, sayi, kalan = [], {}, _KARAR_LISTE_TAVAN
+    for sinif, baslik in _KARAR_GRUPLAR:
+        g = [s for s, c in girdiler if c == sinif]
+        sayi[sinif] = len(g)
+        out.append(baslik % len(g))
+        out += g[:kalan]
+        if len(g) > kalan:
+            out.append("- … +%d dosya daha (listelenmedi; dizinde duruyor)" % (len(g) - kalan))
+        kalan = max(0, kalan - len(g))
+    return out, sayi
+
+
+def _karar_sinif_yaz():
+    """derle/devral cikti satiri (ASCII; son blok govdesi sayilarindan)."""
+    if _KARAR_SINIF_SON[0]:
+        print("KARAR SINIFI: " + " · ".join("%s %d" % (s, _KARAR_SINIF_SON[0][s]) for s, _ in _KARAR_GRUPLAR))
+
+
 def _karar_satirlari(kok, rel, adlar):
-    """Blok govdesi icin `- ad — baslik — [durum: ...]` satirlari (en cok _KARAR_LISTE_TAVAN; kirpilan SAYI yazilir)."""
+    """[(`- ad — baslik — [durum: ...]`, sinif)] — dizindeki TUM adlar (tavan/kirpma `_karar_gruplari`nda)."""
     d = os.path.join(kok, *rel.split("/"))
-    out = ["- %s%s%s" % (ad, _karar_baslik(os.path.join(d, ad)), _karar_durum(os.path.join(d, ad)))
-           for ad in adlar[:_KARAR_LISTE_TAVAN]]
-    if len(adlar) > _KARAR_LISTE_TAVAN:
-        out.append("- … +%d dosya daha (listelenmedi; dizinde duruyor)" % (len(adlar) - _KARAR_LISTE_TAVAN))
+    out = []
+    for ad in adlar:
+        dur = _karar_durum(os.path.join(d, ad))
+        out.append(("- %s%s%s" % (ad, _karar_baslik(os.path.join(d, ad)), dur), _karar_sinif(dur)))
     return out
 
 
 def _karar_blok_govdesi(y, kd):
     """Blok govdesi (liste) ya da None (kayitli yol proje DISINA bagli: bloga DOKUNMA). Dizin YOKSA blok
-    'YOK (kayitli: ...)' der — sessizce DUSMEZ. Motorun kendi karar dizini (ADR'li ise) de listelenir."""
+    'YOK (kayitli: ...)' der — sessizce DUSMEZ. Motorun kendi karar dizini (ADR'li ise) AYNI gruplara girer
+    (ayni sozluk). ADR satirlari dort SINIF grubunda (P1)."""
+    _KARAR_SINIF_SON[0] = None
     yol = os.path.join(y.kok, *kd.split("/"))
     if kok_disina_mi(y.kok, yol):
         return None
     g = ["> Motor (devral/derle) uretti: projenin KENDI karar kayitlari asagidaki dizindedir; dosyalara "
          "dokunulmaz, tasinmaz, kopyalanmaz. Hangisinin otorite oldugunu motor KARARLASTIRMAZ."]
+    girdi = []
     if not os.path.isdir(yol):
         g.append("- karar dizini: YOK (kayitli: %s)" % kd)
     else:
         adlar = _karar_adlari(y.kok, kd)
         g.append("- karar dizini: %s (%d dosya%s)"
                  % (kd, len(adlar), "" if adlar else " — NNNN-*.md / ADR-*.md desenli dosya yok"))
-        g += _karar_satirlari(y.kok, kd, adlar)
+        girdi = _karar_satirlari(y.kok, kd, adlar)
     motor = adr_listesi(y)
     if motor:
         g.append("- motorun kendi karar dizini (otorite sorusu motora bagli DEGIL): %d dosya" % len(motor))
-        g += ["- %s%s%s" % (k["dosya"], (" — " + k["meta"]["baslik"]) if k["meta"].get("baslik") else "",
-                            _karar_durum(os.path.join(y.kararlar, k["dosya"])))
-              for k in motor[:_KARAR_LISTE_TAVAN]]
+        for k in motor:
+            dur = _karar_durum(os.path.join(y.kararlar, k["dosya"]))
+            girdi.append(("- %s%s%s" % (k["dosya"], (" — " + k["meta"]["baslik"]) if k["meta"].get("baslik") else "",
+                                        dur), _karar_sinif(dur)))
+    if girdi:
+        satirlar_, _KARAR_SINIF_SON[0] = _karar_gruplari(girdi)
+        g += satirlar_
     return g
 
 
@@ -5957,6 +6028,7 @@ def _devral_karar_blogu(y, rc, canli_p):
     govde = _karar_blok_govdesi(y, kd) if kd else None
     if govde is None:
         return
+    _karar_sinif_yaz()
     L = satirlar(canli_p)
     yeni = _motor_blogu_esitle(y, rc, L, None, None, _KARAR_KONU, _KARAR_KONU_ACIKLAMA, govde, True)
     if yeni != L:
