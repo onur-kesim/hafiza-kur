@@ -189,6 +189,40 @@ def kol_sinir(h, taban):
     return b
 
 
+def _win_uzun_yollar():
+    return ["veri/w%04d_%s.txt" % (i, "q" * 56) for i in range(600)]       # 600 x 72 = ~43.200 kr > 32.767
+
+
+def kol_win(motor, taban):
+    """H14-WIN-UZUN: toplam yol > 32.767 kr gercek projede `kapi` exit != 3 ve `H14:` satiri. YALNIZ Windows."""
+    if os.name != "nt":
+        return None
+    yollar = _win_uzun_yollar()
+    kok = os.path.join(taban, "pw")
+    os.makedirs(kok)
+    if subprocess.run(["git", "init", "-q", kok], capture_output=True).returncode != 0:
+        raise Kurulamadi("git init basarisiz")
+    ortam = dict(os.environ, PYTHONIOENCODING="utf-8")
+    kos = lambda *a: subprocess.run([sys.executable, "-X", "utf8", motor] + list(a) + ["--kok", kok],
+                                    capture_output=True, text=True, encoding="utf-8", errors="replace", env=ortam)
+    r = kos("kur", "--ad", "H14P")
+    if r.returncode != 0:
+        raise Kurulamadi("kur basarisiz (exit=%s): %s" % (r.returncode, (r.stdout + r.stderr).strip()[-160:]))
+    for y in yollar:
+        _yaz(os.path.join(kok, *y.split("/")), "ilk\n")
+    if max(len(os.path.join(kok, *y.split("/"))) for y in yollar) >= 260:
+        raise Kurulamadi("tek yol >= 260 (TEMP kisa degil): %s" % kok)
+    _git(kok, "add", "-A")
+    if _git(kok, "commit", "-q", "-m", "ilk", tarih=ESKI).returncode != 0:
+        raise Kurulamadi("git commit basarisiz")
+    r = kos("kapi")
+    cikti = r.stdout + r.stderr
+    if r.returncode == 3 or "H14:" not in cikti and "[H14]" not in cikti:
+        return [("PWIN", "kapi exit=%s, H14 satiri %s: %r" % (
+            r.returncode, "VAR" if ("H14:" in cikti or "[H14]" in cikti) else "YOK", cikti.strip().split("\n")[0][:120]))]
+    return []
+
+
 def _sabotajli_yaz(kaynak, ankor, yeni, hedef_dizin, ad):
     n = kaynak.count(ankor)
     if n != 1:
@@ -207,7 +241,9 @@ def _sabotajli_yaz(kaynak, ankor, yeni, hedef_dizin, ad):
 def hepsi(motor, taban, ad):
     """UC kolun (WIN yalniz Windows'ta) bulgulari -> [(etiket, mesaj)]; WIN olculemezse etiket `OLCULEMEDI-WIN`."""
     h = yukle(motor, ad)
-    return kol_max(h, taban) + kol_sinir(h, taban)
+    b = kol_max(h, taban) + kol_sinir(h, taban)
+    w = kol_win(motor, taban)
+    return b + ([("OLCULEMEDI-WIN", "bu platformda sinir yok")] if w is None else w)
 
 
 # (ad, etiket, ankor, yeni): ankor motorda TAM 1 kez gecmeli (aksi OLCULEMEDI).
@@ -221,6 +257,8 @@ SABOTAJLAR = (
     ("M-PS2 ayrac SAYILMAZ (+1 kume bolunmez)", "PSINIR-SAYI",
      "        if parca and toplam + len(yol) + 1 > butce:\n",
      "        if parca and toplam + len(yol) > butce:      # MUTANT\n"),
+    ("M-PW1 butce SONSUZ (tek cagri)", "PWIN",
+     "_GIT_YOL_BUTCE = 8000\n", "_GIT_YOL_BUTCE = 10 ** 9      # MUTANT\n"),
 )
 
 
@@ -244,9 +282,12 @@ def main():
         except Kurulamadi as e:
             print("SONUC: OLCULEMEDI — duzenek kurulamadi (arac kusuru, kapi kor DEGIL): %s" % e)
             return 2
-        kotu = temiz
-        olcul = []
+        olcul = [x for x in temiz if x[0] == "OLCULEMEDI-WIN"]
+        kotu = [x for x in temiz if x[0] != "OLCULEMEDI-WIN"]
         print("  H14-PARCA-MAX / PARCA-SINIR : %s" % ("TEMIZ" if not kotu else "BEKLENMEDIK"))
+        print("  H14-WIN-UZUN                : %s" % ("OLCULEMEDI: bu platformda sinir yok (Windows komut satiri sinirina "
+                                                       "ozgu; beyanli, sessiz YESIL degil)" if olcul else
+                                                       ("TEMIZ" if not [x for x in kotu if x[0] == "PWIN"] else "BEKLENMEDIK")))
         for et, m in kotu:
             print("      ! %s: %s" % (et, m))
         if kotu:
@@ -255,13 +296,17 @@ def main():
         print("\n--- SABOTAJLAR (her biri KENDI ekseninde ISIRMALI; ortusme raporlanir) ---")
         kacan, olculemeyen = [], []
         for sira, (ad, etiket, ankor, yeni) in enumerate(SABOTAJLAR, 1):
+            if etiket == "PWIN" and os.name != "nt":
+                print("  %-58s -> OLCULEMEDI: bu platformda sinir yok (WIN-UZUN yalniz Windows'ta isirir)" % ad)
+                olculemeyen.append(ad)
+                continue
             d = tempfile.mkdtemp(prefix="m%d_" % sira, dir=taban)
             sab, hata = _sabotajli_yaz(s, ankor, yeni, d, "m%d" % sira)
             if sab is None:
                 print("SONUC: OLCULEMEDI — %s: %s" % (ad, hata))
                 return 2
             try:
-                atesler = {e for e, _ in hepsi(sab, os.path.join(d, "t"), "h14p_m%d" % sira)}
+                atesler = {e for e, _ in hepsi(sab, os.path.join(d, "t"), "h14p_m%d" % sira)} - {"OLCULEMEDI-WIN"}
             except Kurulamadi as e:
                 print("SONUC: OLCULEMEDI — %s: %s" % (ad, e))
                 return 2
