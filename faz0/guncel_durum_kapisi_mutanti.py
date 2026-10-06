@@ -1087,6 +1087,15 @@ def kp_suphe(motor, taban):
              % (kotu, g.get("GECERLI", ("", []))[1][:3]))] if kotu else []
 
 
+def kp_sifir(motor, taban):
+    """PSIFIR: yalniz taslak ADR'ler -> `GECERLI KARARLAR (0)` basligi VAR ('kilitli beyanli karar YOK' gizlenemez)
+    ve bos GECERSIZ/SINIFLANAMADI basliklari da."""
+    c, g = _kp_devral(motor, os.path.join(taban, "kp_z"), [(1, "a", "taslak"), (2, "b", "draft")])
+    eksik = [s for s in ("GECERLI", "GECERSIZ", "SINIFLANAMADI") if not g.get(s, ("", []))[0].startswith(
+        dict(KP_BASLIK)[s] + "0)")]
+    return [("PSIFIR", "bos grup basliklari `(0)` ile BASILMADI: %r" % eksik)] if eksik else []
+
+
 def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
     """K-SATIR + K-YOL + K-DURUM + K-GECIS + K-ISARET kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
     kollar = (("K-SATIR", "dongu", lambda: ks_dongu(motor, taban, tag + "d")),
@@ -1109,7 +1118,8 @@ def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
               ("P1", "psinif", lambda: kp_sinif(motor, os.path.join(taban, tag + "p1"))),
               ("P1", "poncelik", lambda: kp_oncelik(motor, os.path.join(taban, tag + "p2"))),
               ("P1", "ptr", lambda: kp_tr(motor, os.path.join(taban, tag + "p3"))),
-              ("P1", "psuphe", lambda: kp_suphe(motor, os.path.join(taban, tag + "p4"))))
+              ("P1", "psuphe", lambda: kp_suphe(motor, os.path.join(taban, tag + "p4"))),
+              ("P1", "psifir", lambda: kp_sifir(motor, os.path.join(taban, tag + "p5"))))
     b = []
     for grup, ad, kol in kollar:
         if yalniz is None or ad in yalniz:
@@ -1286,6 +1296,9 @@ KS_SABOTAJLAR = (
     ('M-P1e varsayilan sinif GECERLI', 'PSUPHE',
      '    return next((sinif for sinif, desen in _SINIF_DESEN if desen.search(t)), "SINIFLANAMADI")\n',
      '    return next((sinif for sinif, desen in _SINIF_DESEN if desen.search(t)), "GECERLI")      # MUTANT\n', ('psuphe',)),
+    ('M-P1f bos grup basligi basilmaz', 'PSIFIR',
+     '        out.append(baslik % len(g))\n',
+     '        if g:      # MUTANT\n            out.append(baslik % len(g))\n', ('psifir',)),
 )
 
 
