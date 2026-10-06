@@ -1,24 +1,24 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `15bd10f` CI #123 192/192, push YAPILDI, Cowork O13 ölçtü; P1 PUSH'SUZ)
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `f1822bb` CI #124 192/192, push YAPILDI; H14 PUSH'SUZ)
 Son güncelleme: 6 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## SON İŞ — P1 taslak/karar ayrımı (Code O13, 6 Eki 2026) · PUSH YOK
-**Taban** `15bd10f`. `a28a44e` motor+`psinif` · `836d23e`·`4e64736`·`7c90f61`·`2b50e90`·`aec43a8` kollar ONCELIK/TR/SUPHE/SIFIR/KIRP · `3d6f82e` belge. **BİLİNÇLİ DÖNÜŞ:** K-DURUM "yorumlamaz" → SABİT sözlükle SINIFLAR (ham `[durum:]` AYNEN, şüphede GECERLI değil). Mutant: MEVCUT `guncel_durum_...mutanti.py`'ye 6 KOL (23 kol, 53 sabotaj, KACTI 0; P1 7 sabotaj, kol başına 1-2). Örtüşme: M-P1a→5 kol · d→ONCELIK · e→SINIF+OZET.
-Çapa `cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79 AYNEN · `sabotaj` **67/67**. **Tam tur (Win, 82 adım):** 71 OK · 9 KIRMIZI (hepsi bilinen) · 2 SKIP · regresyon 0 · ruff/mypy/bandit AYNI.
-**Momentum (`o15P1`):** GECERLI 0001+0002 · TASLAK iki 0003+0004 · GECERSIZ 0 · SINIFLANAMADI 0 · `KARAR SINIFI` satırı basıldı · ikinci `derle` blok bayt aynı.
-**Sıradaki:** push Onur'da → Cowork: mozilla/fxa dört grup · kör okuma R1.
-**AÇIK:** macOS · py3.11/3.13 · WSL `olcum` yok · Win `t_y42` 1314 · M-H10c KACTI (ÖNCEDEN VAR)
+## SON İŞ — H14 komut satırı sınırı (Code O14, 6 Eki 2026) · PUSH YOK
+**Taban** `f1822bb`. `ec62cbe` motor (`_git_son_ct`, `_GIT_YOL_BUTCE`=8000) · `3b75556` YENİ `faz0/h14_parca_mutanti.py`+CI işi (kol MAX) · `bf712f2` SINIR · `4bcb07c` WIN-UZUN · `fb9ce11` belge. Sabotaj MAX 1 · SINIR 2 · WIN 1 (yalnız Win). Örtüşme: PM1→+PSINIR-TARIH · PW1→+PMAX/PSINIR-SAYI. `ci_kapsam` 50→51.
+**fxa kopyası:** `kapi` exit 3→1, `H14:` satırı basılı (2026-10-06); 8.335 yol→64 parça (≤8000), git tarafı = HEAD %ct. **L5032 DOKUNULMADI:** yolları `HAFIZA_*.md` kadar (fxa/Momentum 0).
+Çapa AYNEN (`cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79) · `sabotaj` **67/67** · **Tam tur (Win, 83 adım):** 72 OK · 9 KIRMIZI (bilinen) · 2 SKIP · regresyon 0. WSL: yeni betik YEŞİL (SINIRLI).
+**Sıradaki:** push Onur'da → Cowork: fxa yeni kopya `kapi` + kendi `git log` karşılaştırması.
+**AÇIK:** macOS · py3.11/3.13 · `devral` gömülü kapı çöküşünde exit 0 (kapsam DIŞI) · Win `t_y42` 1314 · M-H10c KACTI (ÖNCEDEN VAR)
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 K4 TAMAM (67/67), kör nokta **0**; **25 Ağu yazısı** KAPSAM DIŞI; **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**P1** (O13): `karar-kaynagi` ADR'leri GECERLI/TASLAK/GECERSIZ/SINIFLANAMADI gruplarında verir (sabit sözlük).
+**H14** (O14): git yolları parçalı (fxa exit 3 → H14 satırı) · **P1** (O13): `karar-kaynagi` ADR'leri 4 sınıfta.
 **K-DURUM·K-GECIS·K-ISARET** (O12): `karar-kaynagi` her ADR'nin `[durum: …]`/BEYANSIZ'ı · kurulu projede `derle` karar dizinini bulur · kural evi canlı defter işaretçisi + `kapi` H19.
 **K-SATIR·K-YOL·K-BAYAT** (O11): H18 satır atfı kayması + `derle` `atif-kaymasi` · `devral` karar dizini → `karar-kaynagi`.
 **B1+B2** (O10): `isir` sahte KAPI KÖR · taze klonda H16 → `_gitkeep_yaz` · Cowork TUTTU (`OLCUM_RAPORU_05EKIM_B1B2.md`).
-**ÜRÜN HAZIRLIĞI** (30 Eyl, CI #117; K7 yok). **AÇIK:** harf-büyüklüğü çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
+**ÜRÜN HAZIRLIĞI** (30 Eyl, CI #117; K7 yok). **AÇIK:** büyük/küçük harf çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
 
 ## Bilinen sınırlar (ölçülmüş)
 - 🔴 `isir` exit 0 böl-kur'lu/devral'li projede ULAŞILAMAZ (5 Eki): `kapi --siki` bolum-kur başlıklarını BEYANSIZ sayar → M-H1s KURULAMADI → exit 2 (taban Momentum'da da). M-DEVIR ölçütü canlıda ÖNCEDEN `CAPA DEVRI` varken sabotajı GÖRMEZ · `.kilit` varken M-KILIT `isir`i öldürür.
