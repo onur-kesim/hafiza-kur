@@ -2330,6 +2330,43 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
+  # 2b-30b) H14 PARCA MUTANTI — besli-paket/IS_EMRI_H14_KOMUT_SATIRI.md (Onur
+  #     kilidi 6 Ekim 2026, sik (a)): mozilla/fxa kopyasinda (8.335 izlenen
+  #     dosya, yollarin toplami ~509.000 kr) `kapi` exit 3 `[WinError 206]`
+  #     verdi — `_h14_en_yeni` butun temiz yollari 400'luk obeklerle TEK komut
+  #     satirinda gonderiyordu (Windows ~32.767 kr). Duzeltme: yollar KARAKTER
+  #     butcesiyle (8.000) parcalanir, sonuc parcalarin en buyuk `%ct`'si.
+  #     UC KOL: PARCA-MAX (en yeni commit SON parcada) · PARCA-SINIR (butceye
+  #     tam esit / +1) · WIN-UZUN (yalniz Windows'ta isirir; Linux/macOS'ta
+  #     `OLCULEMEDI: bu platformda sinir yok` BEYAN eder, sessiz YESIL degil).
+  #     Motoru KUTUPHANE olarak ice alir (girdi sirasi + git cagrilari kayitli).
+  #     🔴 UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  h14_parca_mutanti:
+    name: H14 parca mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: git yollari karakter butcesiyle parcalaniyor mu (3 kol, WIN-UZUN yalniz Windows)
+        shell: bash
+        run: python faz0/h14_parca_mutanti.py 2>&1 | tee h14-parca-cikti.txt
+      - name: h14 parca mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h14-parca-${{ matrix.os }}
+          path: h14-parca-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
   # 2b-31) ISIR UYGULANMAZ MUTANTI — besli-paket/IS_EMRI_UYGULANMAZ.md KALEM 1
   #     (Onur kilidi 7 Eylul 2026): `isir`e git'li `mutant_git` kolu eklenince
   #     (M-H12g/M-H14g), git'SIZ projede (`t_y42`'nin `yeni()` fabrikasi gibi)
