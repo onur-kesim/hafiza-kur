@@ -219,6 +219,30 @@ işaretçisi dahil). En önemlileri:
   (Momentum, kör okuma): KARAR 2/4; okuyucu `TASLAK` etiketini görüp yine taslağı karar sandı
   (R1 yanlış ×2). Ayrıca H19 yalnız ADI ölçer: "X'i ASLA okuma" satırı kapıyı susturur.
 
+- **Taslak ≠ karar: `karar-kaynagi` bloğu ADR'leri dört sınıf grubunda verir (P1, 6 Eki 2026) —
+  BİLİNÇLİ DÖNÜŞ.** K-DURUM "motor durumu YORUMLAMAZ" demişti; ölçüm (Momentum kör okuma, R1 yanlış ×2)
+  etiketin okuyucuya ulaştığını ama okuyucunun taslağın içeriğini yine karar diye aktardığını gösterdi.
+  Bu yüzden motor artık durumu SINIFLAR — ama gizlenemez biçimde: (i) sınıf SABİT sözlükten gelir (aşağıda),
+  (ii) her satır ham `[durum: …]` metnini AYNEN taşır ve sınıf yalnız bu görünen metinden türer (okuyucu
+  motorun sınıflamasını ham beyanla her zaman karşılaştırabilir), (iii) **şüphede sınıf ASLA `GECERLI`
+  değildir** (taslağın karar sanılması zararlıdır; kilitli kararın taslak sanılması ucuz hatadır).
+  Dört başlık HER ZAMAN sayıyla basılır (`GECERLI KARARLAR (0)` dahil): `GECERLI KARARLAR` ·
+  `KARAR DEGIL - TASLAK/BEKLEYEN` · `GECERSIZ` · `SINIFLANAMADI`; `derle`/`devral` ayrıca
+  `KARAR SINIFI: GECERLI 2 · TASLAK 3 · GECERSIZ 0 · SINIFLANAMADI 0` yazar. Tavan (40) toplamdır,
+  gruplar sabit sırada dolar, kırpılan sayı grup başına yazılır.
+  **Sözlük ve ÖNCELİK (yukarıdan aşağı, ilk eşleşen kazanır; önce Türkçe katlama `İ ı→i`, `ş→s`,
+  `ğ→g`, `ü→u`, `ö→o`, `ç→c`, sonra `lower()`; sözcük sınırlı eşleşme — `red` ≠ `kredi`):**
+  1. `GECERSIZ` — superseded · yerine gecildi · yerine-gecildi · deprecated · rejected · reddedildi · red · iptal · withdrawn · obsolete
+  2. `TASLAK` — taslak · draft · proposed · onerildi · oneri · onerilen · bekliyor · bekleyen · pending · wip · tartisma · discussion · inceleme · review · **degil** · **not accepted**
+  3. `GECERLI` — kabul · accepted · kilitli · approved · onaylandi · final · adopted · yururlukte
+  4. `SINIFLANAMADI` — geri kalan HER ŞEY (`BEYANSIZ` dahil)
+
+  `TASLAK`, `GECERLI`'nin ÜSTÜNDE: `TASLAK v6 — KİLİTLİ DEĞİL` ve `GÖVDE YAZILDI — KİLİT BEKLİYOR`
+  "kilit" kökünü taşır ve ikisi de karar DEĞİL. **Sınırlar:** sözlük dışı beyan `SINIFLANAMADI`'ya düşer;
+  motor beyanın ANLAMINI ölçmez — `kabul` yazan bir taslak `GECERLI` görünür (`kabul edilmedi` / `not
+  approved` sözlükte yok: `kabul`/`approved` GECERLI sayılır); sınıf 60 karakterlik GÖRÜNEN metinden
+  türer, kırpılmış kuyruk sınıfı değiştirmez.
+
 - **Platform hükmü eşit değildir.** `capraz.yml`deki adımlar iki sınıftır: KAPI
   (`continue-on-error` YOK — üç platformlu MUTANT bataryası: h1/h4/h10/h12/h14
   kenar mutantları, altın çıktı/ölçüt/küme ailesi, yapı kapısı, karmaşıklık
