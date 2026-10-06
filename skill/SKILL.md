@@ -474,3 +474,12 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   motor beyanın ANLAMINI ölçmez — `kabul` yazan bir taslak `GECERLI` görünür (`kabul edilmedi` / `not
   approved` sözlükte yok: `kabul`/`approved` GECERLI sayılır); sınıf 60 karakterlik GÖRÜNEN metinden
   türer, kırpılmış kuyruk sınıfı değiştirmez.
+- **H14 büyük projede git'e yolları PARÇALI sorar (6 Eki 2026).** mozilla/fxa kopyasında (8.335 izlenen dosya,
+  yolların toplamı ~509.000 karakter) `kapi` Windows komut satırı sınırında (~32.767 karakter) `exit 3`
+  (`[WinError 206]`) veriyordu. `_git_son_ct` yolları girdi SIRASIYLA parçalara böler (her parçada karakter
+  toplamı + 1 ayraç ≤ `_GIT_YOL_BUTCE` = 8.000; tek yol bütçeyi aşarsa kendi parçası) ve sonuç olarak parçaların
+  EN BÜYÜK commit tarihini alır; tek parçaya sığan projede çıktı eskisiyle aynıdır. `_h12_hafiza_git_tarihi`
+  (H12/H14'ün hafıza tarafı) BİLEREK dönüştürülmedi: yolları `HAFIZA_*.md` arşiv dosyaları kadardır
+  (proje dosya sayısıyla büyümez; ~500 arşiv dosyasında sınıra yaklaşır) ve hata halinde exit 3 değil `None` döner.
+  Sınır: `devral`'ın gömülü kapı çöküşünde exit 0 dönmesi bu işin kapsamı DIŞI. Kapı: `faz0/h14_parca_mutanti.py`
+  (WIN-UZUN kolu yalnız Windows'ta ısırır; Linux/macOS'ta `OLCULEMEDI: bu platformda sinir yok` der).
