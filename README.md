@@ -213,6 +213,12 @@ işaretçisi dahil). En önemlileri:
 - **Uzun hafıza her zaman iyi değildir.** Girdi uzadıkça model başarımı düşer;
   bu yüzden tavan vardır ve canlı dosya **yol taşır, metin taşımaz**.
 
+- **Karar yolu ≠ karar doğrulaması (K-BAYAT/K-DURUM kesme beyanı, 6 Eki 2026).** `karar-kaynagi`
+  bloğu karar DİZİNİNE yol verir ve her ADR'nin kendi durum satırını taşır; dizin DIŞINDAKİ
+  gerekçe dosyaları (iş emirleri vb.) ve taslak/kilitli ayrımının yorumu okuyucuya kalır. Ölçüldü
+  (Momentum, kör okuma): KARAR 2/4; okuyucu `TASLAK` etiketini görüp yine taslağı karar sandı
+  (R1 yanlış ×2). Ayrıca H19 yalnız ADI ölçer: "X'i ASLA okuma" satırı kapıyı susturur.
+
 - **Platform hükmü eşit değildir.** `capraz.yml`deki adımlar iki sınıftır: KAPI
   (`continue-on-error` YOK — üç platformlu MUTANT bataryası: h1/h4/h10/h12/h14
   kenar mutantları, altın çıktı/ölçüt/küme ailesi, yapı kapısı, karmaşıklık
