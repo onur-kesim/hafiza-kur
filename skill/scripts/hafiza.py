@@ -5284,6 +5284,43 @@ def _h14_adaylar(kok, y):
     return adaylar
 
 
+# KALEM H14-KOMUT-SATIRI (besli-paket/IS_EMRI_H14_KOMUT_SATIRI.md, 6 Eki 2026, Onur kilidi sik (a)). OLCULDU (mozilla/fxa,
+# 8.335 izlenen dosya, yollarin toplami ~509.000 kr): `kapi` exit 3 `FileNotFoundError: [WinError 206]` — Windows komut satiri
+# ~32.767 karakter. Eski obekleme 400 YOL sayiyordu (yol UZUNLUGU degil): uzun yollarda 400 yol sinirin ustune cikar.
+# Yollar girdi SIRASIYLA parcalara bolunur; her parcada yollarin karakter toplami (+1 ayrac) <= `_GIT_YOL_BUTCE`; sonuc =
+# parcalarin EN BUYUK `%ct`'si. Basarisiz/bos parca bugunku tek cagrinin davranisiyla AYNI sessizlikle atlanir. Tek yol
+# butceyi asarsa kendi parcasini olusturur (bolunemez). L5032 (`_h12_hafiza_git_tarihi`) BILEREK bunu kullanmaz: yollari
+# `HAFIZA_*.md` arsiv dosyalari kadardir (proje dosya sayisiyla BUYUMEZ) ve hata halinde exit 3 degil `None` doner.
+_GIT_YOL_BUTCE = 8000
+
+
+def _yol_parcalari(yollar, butce=_GIT_YOL_BUTCE):
+    """Yollar -> parcalar (girdi sirasi korunur); her parcanin karakter toplami (+1 ayrac / yol) <= butce
+    (tek basina asan yol kendi parcasi)."""
+    parca, toplam = [], 0
+    for yol in yollar:
+        if parca and toplam + len(yol) + 1 > butce:
+            yield parca
+            parca, toplam = [], 0
+        parca.append(yol)
+        toplam += len(yol) + 1
+    if parca:
+        yield parca
+
+
+def _git_son_ct(kok, yollar):
+    """`yollar`a dokunan EN YENI commit'in `%ct`'si (parcalarin en buyugu) ya da None (hic parca sonuc vermedi)."""
+    en = None
+    for parca in _yol_parcalari(yollar):
+        rg = subprocess.run(["git", "-C", kok, "log", "-1", "--format=%ct", "--"] + parca,
+                            capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if rg.returncode == 0 and (rg.stdout or "").strip().isdigit():
+            ct = int(rg.stdout.strip())
+            if en is None or ct > en:
+                en = ct
+    return en
+
+
 def _h14_en_yeni(kok, adaylar, git_var, kirli, izlenen):
     en_yeni_t, en_yeni_f = None, None
     temiz = []
@@ -5297,17 +5334,10 @@ def _h14_en_yeni(kok, adaylar, git_var, kirli, izlenen):
         if en_yeni_t is None or m0 > en_yeni_t:      # kirli/izlenmeyen ya da git yok
             en_yeni_t, en_yeni_f = m0, rel0
     if temiz:
-        # TEK cagri: bu dosyalardan HERHANGI birine dokunan EN YENI commit.
-        # (Aradigimiz zaten maksimum oldugu icin dosya-basina sormaya gerek yok.)
-        oba = 400                                    # komut satiri sinirina karsi obekleme
-        for i0 in range(0, len(temiz), oba):
-            obek = temiz[i0:i0 + oba]
-            rg = subprocess.run(["git", "-C", kok, "log", "-1", "--format=%ct", "--"] + obek,
-                                capture_output=True, text=True, encoding="utf-8", errors="replace")
-            if rg.returncode == 0 and (rg.stdout or "").strip().isdigit():
-                ct = int(rg.stdout.strip())
-                if en_yeni_t is None or ct > en_yeni_t:
-                    en_yeni_t, en_yeni_f = ct, "(commit'li dosyalar)"
+        # Bu dosyalardan HERHANGI birine dokunan EN YENI commit (aradigimiz maksimum: dosya-basina sorulmaz).
+        ct = _git_son_ct(kok, temiz)
+        if ct is not None and (en_yeni_t is None or ct > en_yeni_t):
+            en_yeni_t, en_yeni_f = ct, "(commit'li dosyalar)"
     return en_yeni_t, en_yeni_f
 
 
