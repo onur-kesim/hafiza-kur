@@ -1,25 +1,24 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban CI #122 `5f2ae09` 189/189; B1/B2 + K-* PUSH'SUZ)
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `15bd10f` CI #123 192/192, push YAPILDI, Cowork O13 ölçtü; P1 PUSH'SUZ)
 Son güncelleme: 6 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## SON İŞ — K-DURUM · K-GECIS · K-ISARET (Code O12, 6 Eki 2026) · PUSH YOK
-**Taban** `7c6ff91` (origin `5f2ae09`). `12e437c` K-DURUM · `e73b68a` K-GECIS · `a11d79d` K-ISARET · `df46d2b` `cmd_etki` S-4 çapa düzeltmesi. Motor → 454.254 B (fonksiyon 358→365). Mutant: MEVCUT `guncel_durum_kapisi_mutanti.py`'ye 3 KOL (17 kol, 46 sabotaj, KACTI 0). README+SKILL §9 güncel.
-Çapa `cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79 AYNEN · `sabotaj` **67/67** · `altin_cikti` FARK YOK.
-**Tam tur (Win, 82 adım, taze klon):** 70 OK · 10 KIRMIZI (9 bilinen + `cmd_etki` → düzeltildi) · 2 SKIP · fark yalnız satır no/bayt/tarih · ruff 59 · mypy 2 · bandit 44/1 AYNI.
-**Momentum (kopya `o13A/B`):** 5 ADR durumlu (0001/0002 `✅ KİLİTLİ (v3)…` · iki 0003 `🟡 TASLAK v6 — KİLİTLİ DEĞİL…` · 0004 `📝 GÖVDE YAZILDI…`) · eski motorla kurulu kopyada `derle`: `karar_dizini` `docs/ADR` + blok 5 ad, ikinci `derle` bayt aynı · `CLAUDE.md` `DURUM.md`'yi **5 kez** anıyor → H19 SESSİZ, `ISARETCI YOK` yok.
-**Sıradaki:** push Onur'da → Cowork: beş durum satırı · keşif+ikinci derle · taze `kur` işaretçi · kör okuma R1.
-**AÇIK:** macOS · py3.11/3.13 · WSL `olcum` yok · `## Status` başlık-altı değer BEYANSIZ · Win `t_y42` 1314 · M-H10c KACTI (ÖNCEDEN VAR)
+## SON İŞ — P1 taslak/karar ayrımı (Code O13, 6 Eki 2026) · PUSH YOK
+**Taban** `15bd10f`. `a28a44e` motor+`psinif` · `836d23e`·`4e64736`·`7c90f61`·`2b50e90`·`aec43a8` kollar ONCELIK/TR/SUPHE/SIFIR/KIRP · `3d6f82e` belge. **BİLİNÇLİ DÖNÜŞ:** K-DURUM "yorumlamaz" → SABİT sözlükle SINIFLAR (ham `[durum:]` AYNEN, şüphede GECERLI değil). Mutant: MEVCUT `guncel_durum_...mutanti.py`'ye 6 KOL (23 kol, 53 sabotaj, KACTI 0; P1 7 sabotaj, kol başına 1-2). Örtüşme: M-P1a→5 kol · d→ONCELIK · e→SINIF+OZET.
+Çapa `cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79 AYNEN · `sabotaj` **67/67**. **Tam tur (Win, 82 adım):** 71 OK · 9 KIRMIZI (hepsi bilinen) · 2 SKIP · regresyon 0 · ruff/mypy/bandit AYNI.
+**Momentum (`o15P1`):** GECERLI 0001+0002 · TASLAK iki 0003+0004 · GECERSIZ 0 · SINIFLANAMADI 0 · `KARAR SINIFI` satırı basıldı · ikinci `derle` blok bayt aynı.
+**Sıradaki:** push Onur'da → Cowork: mozilla/fxa dört grup · kör okuma R1.
+**AÇIK:** macOS · py3.11/3.13 · WSL `olcum` yok · Win `t_y42` 1314 · M-H10c KACTI (ÖNCEDEN VAR)
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 K4 TAMAM (67/67), kör nokta **0**; **25 Ağu yazısı** KAPSAM DIŞI; **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
+**P1** (O13): `karar-kaynagi` ADR'leri GECERLI/TASLAK/GECERSIZ/SINIFLANAMADI gruplarında verir (sabit sözlük).
 **K-DURUM·K-GECIS·K-ISARET** (O12): `karar-kaynagi` her ADR'nin `[durum: …]`/BEYANSIZ'ı · kurulu projede `derle` karar dizinini bulur · kural evi canlı defter işaretçisi + `kapi` H19.
-**K-SATIR·K-YOL·K-BAYAT** (O11): H18 satır atfı kayması + `derle` `atif-kaymasi` · `devral` karar dizini → `karar-kaynagi` · içerik bayatlığı KESİLDİ.
+**K-SATIR·K-YOL·K-BAYAT** (O11): H18 satır atfı kayması + `derle` `atif-kaymasi` · `devral` karar dizini → `karar-kaynagi`.
 **B1+B2** (O10): `isir` sahte KAPI KÖR · taze klonda H16 → `_gitkeep_yaz` · Cowork TUTTU (`OLCUM_RAPORU_05EKIM_B1B2.md`).
-**O7-O9**: `_gecici_sil` · hook'lu `isir` 81/81 · sabotaj 55→**67/67**.
-**ÜRÜN HAZIRLIĞI** (30 Eyl, CI #117; yükleme K7 HÂLÂ yok). **AÇIK:** harf-büyüklüğü çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
+**ÜRÜN HAZIRLIĞI** (30 Eyl, CI #117; K7 yok). **AÇIK:** harf-büyüklüğü çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
 
 ## Bilinen sınırlar (ölçülmüş)
 - 🔴 `isir` exit 0 böl-kur'lu/devral'li projede ULAŞILAMAZ (5 Eki): `kapi --siki` bolum-kur başlıklarını BEYANSIZ sayar → M-H1s KURULAMADI → exit 2 (taban Momentum'da da). M-DEVIR ölçütü canlıda ÖNCEDEN `CAPA DEVRI` varken sabotajı GÖRMEZ · `.kilit` varken M-KILIT `isir`i öldürür.
@@ -43,5 +42,6 @@ K4 TAMAM (67/67), kör nokta **0**; **25 Ağu yazısı** KAPSAM DIŞI; **Deneme*
 - 🟡 H18 (5 Eki): yalnız `canli` · madde + `yol:N` · UYARI (exit değişmez) · içerik bayatlığını ÖLÇMEZ (`:85` TUTUYOR der) · kod çiti içi madde ayırt edilmez · `isir` kataloğunda DEĞİL.
 - 🟡 İçerik bayatlığı ölçülmez (5 Eki): zaman/sıra adayları Momentum'da A 0/3, B 1/6; md.40 iddia DOĞUŞTA bayattı → mekanik ayırt edilemiyor. Kanıt: besli-paket ölçüm raporu (depoya kopyalanmaz).
 - 🔴 KESME (6 Eki, Onur kilidi): `karar-kaynagi` karar DİZİNİNE yol verir + her ADR'nin durumunu taşır; dizin DIŞI gerekçe dosyaları ve taslak/kilitli yorumu okuyucuya kalır (Momentum kör okuma KARAR 2/4: `TASLAK`a rağmen taslak karar sanıldı, R1 ×2) · H19 yalnız ADI ölçer: "X'i ASLA okuma" kapıyı susturur.
+- 🟡 P1 (6 Eki): sözlük dışı beyan SINIFLANAMADI'ya düşer; motor beyanın ANLAMINI ölçmez — `kabul` yazan taslak GECERLI görünür (`kabul edilmedi`/`not approved` dahil) · sınıf 60 kr GÖRÜNEN metinden.
 - 🟡 K-YOL/K-GECIS (5-6 Eki): karar dizini `devral`da VEYA kurulu projede ilk fragman işleyen `derle`de (anahtar yoksa; `""` bilinçli boş) · çok adayda İLK · `NNNN-*.md`/`ADR-*.md` · ≤40 ad · DIŞA bağlı dizin OKUNMAZ · devral→`bolum-kur`te blok `ARSIV DIZINI` altına düşer.
 - 🟡 Y2 sınırı: başka başlığın ALTINA düşen yetim detay ayırt EDİLEMEZ. Y3: hook'lu `isir` iskeleti COMMIT'Lİ proje ister. Win'de yükte `sabotaj.py`nin `isir`i 300 sn aşar ⇒ solo koş; izole TEMP kısa yolda olmalı (260).
