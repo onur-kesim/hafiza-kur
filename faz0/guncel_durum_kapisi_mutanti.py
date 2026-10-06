@@ -1072,6 +1072,13 @@ def kp_oncelik(motor, taban):
              % (kotu, g.get("GECERLI", ("", []))[1][:3]))] if kotu else []
 
 
+def kp_tr(motor, taban):
+    """PTR: `KİLİTLİ` (noktali buyuk İ) ve `yürürlükte` (ü) -> GECERLI (Turkce katlama lower()'dan ONCE)."""
+    c, g = _kp_devral(motor, os.path.join(taban, "kp_t"), [(1, "a", "KİLİTLİ"), (2, "b", "yürürlükte")])
+    kotu = [no for no in (1, 2) if len(_kp_ad(g, "GECERLI", no)) != 1]
+    return [("PTR", "Turkce harfli GECERLI beyan baska grupta: %r" % kotu)] if kotu else []
+
+
 def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
     """K-SATIR + K-YOL + K-DURUM + K-GECIS + K-ISARET kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
     kollar = (("K-SATIR", "dongu", lambda: ks_dongu(motor, taban, tag + "d")),
@@ -1092,7 +1099,8 @@ def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
               ("K-GECIS", "kgecis", lambda: kg_gecis(motor, os.path.join(taban, tag + "kg"))),
               ("K-ISARET", "kisaret", lambda: ki_isaret(motor, os.path.join(taban, tag + "ki"))),
               ("P1", "psinif", lambda: kp_sinif(motor, os.path.join(taban, tag + "p1"))),
-              ("P1", "poncelik", lambda: kp_oncelik(motor, os.path.join(taban, tag + "p2"))))
+              ("P1", "poncelik", lambda: kp_oncelik(motor, os.path.join(taban, tag + "p2"))),
+              ("P1", "ptr", lambda: kp_tr(motor, os.path.join(taban, tag + "p3"))))
     b = []
     for grup, ad, kol in kollar:
         if yalniz is None or ad in yalniz:
@@ -1263,6 +1271,9 @@ KS_SABOTAJLAR = (
     ("M-P1c GECERLI sozlugu TASLAK'tan once denenir", 'PONCELIK',
      '    return next((sinif for sinif, desen in _SINIF_DESEN if desen.search(t)), "SINIFLANAMADI")\n',
      '    return next((sinif for sinif, desen in reversed(_SINIF_DESEN) if desen.search(t)), "SINIFLANAMADI")      # MUTANT\n', ('poncelik',)),
+    ('M-P1d Turkce katlama yok (duz lower())', 'PTR',
+     '    t = unicodedata.normalize("NFC", m.group(1) if m else "").translate(_SINIF_KATLA).lower()\n',
+     '    t = unicodedata.normalize("NFC", m.group(1) if m else "").lower()      # MUTANT\n', ('ptr',)),
 )
 
 
