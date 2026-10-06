@@ -1061,6 +1061,17 @@ def kp_sinif(motor, taban):
     return b
 
 
+def kp_oncelik(motor, taban):
+    """PONCELIK: `TASLAK v6 — KİLİTLİ DEĞİL` · `GÖVDE YAZILDI — KİLİT BEKLİYOR` · `kabul bekliyor` -> UCU DE TASLAK
+    (TASLAK, GECERLI'nin USTUNDE; `kilit`/`kabul` koku tasisalar da karar DEGIL)."""
+    c, g = _kp_devral(motor, os.path.join(taban, "kp_o"),
+                      [(1, "a", "TASLAK v6 — KİLİTLİ DEĞİL"), (2, "b", "GÖVDE YAZILDI — KİLİT BEKLİYOR"),
+                       (3, "c", "kabul bekliyor")])
+    kotu = [no for no in (1, 2, 3) if len(_kp_ad(g, "TASLAK", no)) != 1]
+    return [("PONCELIK", "TASLAK olmasi gereken ADR'ler baska grupta: %r (GECERLI=%r)"
+             % (kotu, g.get("GECERLI", ("", []))[1][:3]))] if kotu else []
+
+
 def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
     """K-SATIR + K-YOL + K-DURUM + K-GECIS + K-ISARET kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
     kollar = (("K-SATIR", "dongu", lambda: ks_dongu(motor, taban, tag + "d")),
@@ -1080,7 +1091,8 @@ def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
               ("K-DURUM", "kdurum", lambda: kd_durum(motor, os.path.join(taban, tag + "kd"))),
               ("K-GECIS", "kgecis", lambda: kg_gecis(motor, os.path.join(taban, tag + "kg"))),
               ("K-ISARET", "kisaret", lambda: ki_isaret(motor, os.path.join(taban, tag + "ki"))),
-              ("P1", "psinif", lambda: kp_sinif(motor, os.path.join(taban, tag + "p1"))))
+              ("P1", "psinif", lambda: kp_sinif(motor, os.path.join(taban, tag + "p1"))),
+              ("P1", "poncelik", lambda: kp_oncelik(motor, os.path.join(taban, tag + "p2"))))
     b = []
     for grup, ad, kol in kollar:
         if yalniz is None or ad in yalniz:
@@ -1248,6 +1260,9 @@ KS_SABOTAJLAR = (
     ('M-P1b KARAR SINIFI ozet satiri basilmaz', 'POZET',
      '    if _KARAR_SINIF_SON[0]:\n',
      '    if False:      # MUTANT\n', ('psinif',)),
+    ("M-P1c GECERLI sozlugu TASLAK'tan once denenir", 'PONCELIK',
+     '    return next((sinif for sinif, desen in _SINIF_DESEN if desen.search(t)), "SINIFLANAMADI")\n',
+     '    return next((sinif for sinif, desen in reversed(_SINIF_DESEN) if desen.search(t)), "SINIFLANAMADI")      # MUTANT\n', ('poncelik',)),
 )
 
 
