@@ -1096,6 +1096,25 @@ def kp_sifir(motor, taban):
     return [("PSIFIR", "bos grup basliklari `(0)` ile BASILMADI: %r" % eksik)] if eksik else []
 
 
+def kp_kirp(motor, taban):
+    """PKIRP: tavan+5 ADR (20 accepted + 25 proposed = 45 > 40): GECERLI satirlari TAM, kirpilan sayi TASLAK
+    grubunda yazili (`… +5 dosya daha`), GECERLI grubunda kirpma YOK."""
+    b = []
+    c, g = _kp_devral(motor, os.path.join(taban, "kp_k"),
+                      [(i, "a", "accepted") for i in range(1, 21)] + [(i, "b", "proposed") for i in range(21, 46)])
+    gecerli = g.get("GECERLI", ("", []))
+    taslak = g.get("TASLAK", ("", []))
+    if (not gecerli[0].startswith("GECERLI KARARLAR (20)") or len([x for x in gecerli[1] if x.startswith("0")]) != 20
+            or any(x.startswith("… +") for x in gecerli[1])):
+        b.append(("PKIRP", "GECERLI satirlari TAM degil (baslik=%r, satir=%d)" % (gecerli[0][:30], len(gecerli[1]))))
+    if (not taslak[0].startswith("KARAR DEGIL - TASLAK/BEKLEYEN (25)")
+            or len([x for x in taslak[1] if x.startswith("0")]) != 20
+            or not any(x.startswith("… +5 dosya daha") for x in taslak[1])):
+        b.append(("PKIRP", "kirpilan sayi TASLAK grubunda yazili degil (baslik=%r, satirlar=%r)"
+                  % (taslak[0][:40], taslak[1][-2:])))
+    return b
+
+
 def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
     """K-SATIR + K-YOL + K-DURUM + K-GECIS + K-ISARET kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
     kollar = (("K-SATIR", "dongu", lambda: ks_dongu(motor, taban, tag + "d")),
@@ -1119,7 +1138,8 @@ def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
               ("P1", "poncelik", lambda: kp_oncelik(motor, os.path.join(taban, tag + "p2"))),
               ("P1", "ptr", lambda: kp_tr(motor, os.path.join(taban, tag + "p3"))),
               ("P1", "psuphe", lambda: kp_suphe(motor, os.path.join(taban, tag + "p4"))),
-              ("P1", "psifir", lambda: kp_sifir(motor, os.path.join(taban, tag + "p5"))))
+              ("P1", "psifir", lambda: kp_sifir(motor, os.path.join(taban, tag + "p5"))),
+              ("P1", "pkirp", lambda: kp_kirp(motor, os.path.join(taban, tag + "p6"))))
     b = []
     for grup, ad, kol in kollar:
         if yalniz is None or ad in yalniz:
@@ -1299,6 +1319,9 @@ KS_SABOTAJLAR = (
     ('M-P1f bos grup basligi basilmaz', 'PSIFIR',
      '        out.append(baslik % len(g))\n',
      '        if g:      # MUTANT\n            out.append(baslik % len(g))\n', ('psifir',)),
+    ("M-P1g kirpma GECERLI'den baslar (butce sondan)", 'PKIRP',
+     '    for sinif, baslik in _KARAR_GRUPLAR:\n        g = [s for s, c in girdiler if c == sinif]\n',
+     '    for sinif, baslik in reversed(_KARAR_GRUPLAR):      # MUTANT\n        g = [s for s, c in girdiler if c == sinif]\n', ('pkirp',)),
 )
 
 
