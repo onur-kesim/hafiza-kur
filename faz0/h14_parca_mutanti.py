@@ -165,6 +165,30 @@ def kol_max(h, taban):
     return b
 
 
+def _yollar_esit(ekstra):
+    """100 yol x 80 kr (79 + 1 ayrac) = TAM 8.000; `ekstra` True ise SON yol 1 kr uzar (80 kr -> 81) -> 8.001."""
+    yollar = ["veri/e%03d_%s.txt" % (i, "y" * (79 - len("veri/e000_") - len(".txt"))) for i in range(100)]
+    assert all(len(y) == 79 for y in yollar), [len(y) for y in yollar][:3]
+    if ekstra:
+        yollar[-1] = yollar[-1][:-4] + "y.txt"
+    return yollar
+
+
+def kol_sinir(h, taban):
+    """H14-PARCA-SINIR (PSINIR-TARIH · PSINIR-SAYI): butceye TAM esit -> 1 cagri; +1 -> 2 cagri; ikisinde de tarih dogru."""
+    b = []
+    for ad, ekstra, beklenen in (("psesit", False, 1), ("psarti", True, 2)):
+        yollar = _yollar_esit(ekstra)
+        kok = _depo(taban, ad, yollar, yollar[-1])
+        ct, cagrilar = kayitli(lambda: h._git_son_ct(kok, yollar))
+        if ct != _ts(YENI):
+            b.append(("PSINIR-TARIH", "%s: sonuc %r (beklenen %d)" % (ad, ct, _ts(YENI))))
+        if len(cagrilar) != beklenen:
+            b.append(("PSINIR-SAYI", "%s: git cagrisi %d (beklenen %d; toplam %d kr, butce %d)"
+                      % (ad, len(cagrilar), beklenen, sum(len(y) + 1 for y in yollar), BUTCE)))
+    return b
+
+
 def _sabotajli_yaz(kaynak, ankor, yeni, hedef_dizin, ad):
     n = kaynak.count(ankor)
     if n != 1:
@@ -183,7 +207,7 @@ def _sabotajli_yaz(kaynak, ankor, yeni, hedef_dizin, ad):
 def hepsi(motor, taban, ad):
     """UC kolun (WIN yalniz Windows'ta) bulgulari -> [(etiket, mesaj)]; WIN olculemezse etiket `OLCULEMEDI-WIN`."""
     h = yukle(motor, ad)
-    return kol_max(h, taban)
+    return kol_max(h, taban) + kol_sinir(h, taban)
 
 
 # (ad, etiket, ankor, yeni): ankor motorda TAM 1 kez gecmeli (aksi OLCULEMEDI).
@@ -191,6 +215,12 @@ SABOTAJLAR = (
     ("M-PM1 yalniz ILK parcanin sonucu alinir", "PMAX-TARIH",
      "            if en is None or ct > en:\n                en = ct\n",
      "            if en is None:      # MUTANT\n                en = ct\n"),
+    ("M-PS1 butce karsilastirmasi `>` -> `>=` (esit kume bolunur)", "PSINIR-SAYI",
+     "        if parca and toplam + len(yol) + 1 > butce:\n",
+     "        if parca and toplam + len(yol) + 1 >= butce:      # MUTANT\n"),
+    ("M-PS2 ayrac SAYILMAZ (+1 kume bolunmez)", "PSINIR-SAYI",
+     "        if parca and toplam + len(yol) + 1 > butce:\n",
+     "        if parca and toplam + len(yol) > butce:      # MUTANT\n"),
 )
 
 
