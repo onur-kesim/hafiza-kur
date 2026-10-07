@@ -121,6 +121,7 @@ komuttur ve aynı çıkış kodunu verir (ör. `gate --kok=<proje> --siki` ≡ `
 | `surum` | `version` |
 | `skill-kur` | `install-skill` |
 | `paket` | `package` |
+| `adres` | — (takma ad yok) |
 | `hook` | — (takma ad yok) |
 
 **Yardımcı komutlar**

@@ -24,7 +24,10 @@ KOK COZUMU (sessiz varsayim YOK):
 """
 
 import argparse
+import ast
+import bisect
 import datetime as _dt
+import difflib
 import errno as _errno
 import hashlib
 import json
@@ -38,6 +41,7 @@ import tempfile
 import threading as _threading
 import traceback as _tb
 import unicodedata
+import warnings
 
 SURUM = "2.5.0-dev"   # Faz A basladi. 2.4.1 DENETLENMIS bir bayt kumesidir (Fable 4.
 # tur tam onu olctu); baytlar degistigi anda ayni numarayi tasimak YALAN olur ve
@@ -8432,6 +8436,1729 @@ def cmd_paket(a):
 
 # ---------------------------------------------------------------- main
 
+# ==== ADRES DEFTERI (P2) BASLANGIC ====
+# ======================================================================
+# ADRES DEFTERI (P2) -- `hafiza.py adres` (besli-paket/IS_EMRI_P2_ADRES_DEFTERI.md, TASARIM §2 P2 + §6, Onur kilidi 6-7 Eki 2026)
+#
+# NE: izlenen kod dosyalarindaki TANIMLARIN (sinif/arayuz/kayit/enum, metot/fonksiyon, ok-fonksiyon atamasi, alan/sabit) adres
+#     defteri `arsiv/hafiza/ADRES.tsv` + sorgu (`adres <ad>`: tanim + cagiranlar · `--mahalle <onek>`). Dort dil: Python (`ast`,
+#     kesin) · C# · Dart · TypeScript/JavaScript (stdlib desen/dengeleme; AST kadar kesin DEGIL).
+# KISIT (§6 kabul olcutu): bu blok YALNIZ `cmd_adres`ten cagrilir; `kapi/derle/devral/not/isir`e HIC baglanmaz (H20 = P5, ayri is).
+#     Hicbir fonksiyon CC > 20 ya da > 80 satir degil. Ortak `fail`/`F`/`N`/`O` hukum kanallari BILEREK kullanilmaz.
+# YONTEM (desen tabanli diller): (1) metinden yorum + dize + (JS) regex literali BOSALTILIR (uzunluk ve satir sonlari korunur);
+#     (2) `{`/`}` eslesmesi; (3) her kapsayici govdesi bildirim-bildirim gezilir (govde icine INILMEZ): baslik = `;` / govde `{` /
+#     (TS/JS) ASI satir sonu'na kadar; (4) baslik, ic ice parantez ICERIGI bosaltilmis bir ISKELETE cevrilip dil basina bir
+#     desen listesiyle siniflandirilir. Baslangic satiri = ADIN gectigi satir; bitis = govde `}` ya da `;` satiri.
+# ======================================================================
+
+_ADRES_DEFTER = "ADRES.tsv"
+_ADRES_BICIM = "1"
+_ADRES_AYRAC = " > "                      # ASCII konsol cikti kisiti (IS_EMRI KISIT 3): tek yer
+_ADRES_UZANTI = {".py": "py", ".pyw": "py", ".cs": "cs", ".dart": "dart", ".ts": "ts", ".tsx": "ts", ".mts": "ts", ".cts": "ts",
+                 ".js": "ts", ".jsx": "ts", ".mjs": "ts", ".cjs": "ts"}
+_ADRES_DIL_SIRA = ("py", "cs", "dart", "ts")
+_ADRES_JSX = frozenset((".tsx", ".jsx", ".js"))                  # bu uzantilarda JSX maskesi (dil kodu `tsx`)
+_ADRES_DISI_UZANTI = frozenset((
+    ".java", ".kt", ".kts", ".go", ".rs", ".swift", ".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".m", ".mm", ".rb", ".php",
+    ".scala", ".lua", ".pl", ".pm", ".r", ".jl", ".ex", ".exs", ".erl", ".hs", ".clj", ".cljs", ".groovy", ".sh", ".bash",
+    ".ps1", ".sql", ".vue", ".svelte", ".zig", ".nim", ".v", ".sol", ".tf", ".pyi", ".fs", ".fsx", ".vb", ".razor",
+    ".cshtml", ".astro", ".coffee", ".ml", ".mli", ".elm"))
+_ADRES_DOSYA_TAVAN = 8 * 1024 * 1024
+_ADRES_TANIM_TAVAN = 30
+_ADRES_CAGIRAN_TAVAN = 30
+_ADRES_MAHALLE_TAVAN = 60
+_ADRES_YAKIN_ADET = 5
+_ADRES_YAKIN_ADAY = 20000
+_ADRES_SATIR_TAVAN = 20                   # bir cagiran grubunda en cok bu kadar satir no
+_ADRES_BENZER_TAVAN = 10                  # `BENZER AD` listesinde en cok bu kadar tanim satiri
+_ADRES_KODLAR = ("CIKIS KODLARI: 0 bulundu / kuruldu; 1 bulunamadi, defter YOK ya da BOZUK, ya da defter BAYAT (cevap yine "
+                 "basilir); 2 kullanim hatasi; 3 arac kusuru (ornegin git cagrisi basarisiz)")
+
+
+# ---------------------------------------------------------------- metin yardimcilari
+
+_ADRES_SATIR_SONU = re.compile(r"\r\n?")
+_ADRES_SON_BOSLUK = re.compile(r"(?<![ \t])[ \t]+(?=\n|\Z)")        # DOGRUSAL: her bosluk dizisi yalniz BASINDAN taranir
+
+
+def _adres_bom(ham):
+    """UTF-16/UTF-32 BOM'u varsa codec adi (UTF-32 LE BOM'u `ff fe 00 00`, UTF-16'nin BOM'una BENZER: once o sorulur)."""
+    if ham[:4] in (b"\xff\xfe\x00\x00", b"\x00\x00\xfe\xff"):
+        return "utf-32"
+    return "utf-16" if ham[:2] in (b"\xff\xfe", b"\xfe\xff") else None
+
+
+def _adres_coz(ham):
+    """Baytlar -> (metin, uyari). UTF-16/UTF-32 BOM'u cozulur; UTF-8 degilse latin-1 (bayt-bayt: ozet/iz KAYIPSIZ kalir) ve
+    uyari `kodlama` doner. NUL baytli (ikili) icerik cagiranda `ikili` sayilir."""
+    bom = _adres_bom(ham)
+    if bom:
+        return ham.decode(bom, "replace"), None
+    try:
+        return ham.decode("utf-8"), None
+    except UnicodeDecodeError:
+        return ham.decode("latin-1"), "kodlama"
+
+
+def _adres_duzle(s):
+    """Metin -> normallestirilmis metin: BOM yok · satir sonlari LF · satir sonu bosluklari yok · son satir sonu yok.
+    Parmak izi ve dosya ozeti BU metinden hesaplanir: CRLF ya da satir sonu boslugu degisince iz DEGISMEZ."""
+    s = s.replace("\ufeff", "")
+    s = _ADRES_SON_BOSLUK.sub("", _ADRES_SATIR_SONU.sub("\n", s))
+    return s[:-1] if s.endswith("\n") else s
+
+
+def _adres_normalle(ham):
+    """Baytlar -> normallestirilmis metin (kodlama coze + `_adres_duzle`)."""
+    return _adres_duzle(_adres_coz(ham)[0])
+
+
+def _adres_sha(metin):
+    return hashlib.sha256(metin.encode("utf-8")).hexdigest()
+
+
+def _adres_iz(satirlar, bas, bit):
+    """Govde parmak izi: `bas..bit` satirlarinin SHA-256'sinin ilk 8 hex'i."""
+    return _adres_sha("\n".join(satirlar[bas - 1:bit]))[:8]
+
+
+# ---------------------------------------------------------------- bosaltma (yorum + dize)
+
+_AD_BOS = re.compile(r"[^\n]")
+_AD_BOS_HEPSI = re.compile(r".", re.S)               # maskede dize/yorum ICI satir sonlari da bosluk olur (ASI yaniltilmaz)
+_AD_DESEN = {}
+
+
+def _ad_desen(kapanis, kacis, delik, tek_satir):
+    """Dize ICERIGINDE aranan ozel konumlar. Gruplar: k kapanis · e kacis (atla) · h delik acilisi · n satir sonu
+    (kapanmamis tek satirlik dize: orada KESILIR). Desenler anahtar basina bir kez derlenir."""
+    anahtar = (kapanis, kacis, delik, tek_satir)
+    d = _AD_DESEN.get(anahtar)
+    if d is None:
+        parca = (["(?P<e>%s)" % kacis] if kacis else []) + ["(?P<k>%s)" % kapanis]
+        if tek_satir:
+            parca.append(r"(?P<n>\n)")
+        if delik:
+            parca.append("(?P<h>%s)" % delik)
+        d = _AD_DESEN[anahtar] = re.compile("|".join(parca), re.S)
+    return d
+
+
+def _ad_dize(t, i, desen, delik_ac):
+    """t[i:] bir dizenin ICERIGI; kapanisin SONRASINI doner (kapanmamis tek satirlik dize satir sonunda biter)."""
+    while True:
+        m = desen.search(t, i)
+        if m is None:
+            return len(t)
+        g = m.lastgroup
+        if g == "k":
+            return m.end()
+        if g == "n":
+            return m.start()
+        i = delik_ac(t, m.end()) if g == "h" else m.end()
+
+
+_AD_DELIK_PAR = re.compile(r"[{}\"'`]")
+
+
+def _ad_delik(t, i, ic_ac, par=_AD_DELIK_PAR):
+    """Dize deligi (`${...}` / `{...}`) icinden: eslesen `}`'in SONRASI. Ic ice dizeler (TS: yorum/regex de) `ic_ac(t, konum)`
+    ile atlanir; `par` ozel karakterleri secer."""
+    d = 1
+    while True:
+        m = par.search(t, i)
+        if m is None:
+            return len(t)
+        c = m.group()
+        if c not in "{}":
+            i = max(ic_ac(t, m.start()), m.start() + 1)
+            continue
+        d += 1 if c == "{" else -1
+        i = m.end()
+        if d == 0:
+            return i
+
+
+def _ad_blok_yorum(t, m):
+    j = t.find("*/", m.end())
+    return len(t) if j < 0 else j + 2
+
+
+_AD_DART_YB = re.compile(r"/\*|\*/")
+
+
+def _ad_dart_yorum(t, m):
+    return _ad_dart_blok(t, m.end())
+
+
+def _ad_dart_blok(t, i):
+    """Dart blok yorumlari IC ICE olabilir; i = `/*`'dan SONRAKI konum."""
+    d = 1
+    while d:
+        e = _AD_DART_YB.search(t, i)
+        if e is None:
+            return len(t)
+        d += 1 if e.group() == "/*" else -1
+        i = e.end()
+    return i
+
+
+# ---- C#
+_AD_CS_CHAR = re.compile(r"'(?:[^'\\\n]|\\[^\n][^'\n]*)'")
+_AD_ANA_CS = re.compile(r"(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<pp>(?m:^)[ \t]*#[^\n]*)|(?P<ds>(?<![$@])[$@]*\"+)|(?P<ch>'(?:[^'\\\n]|\\[^\n][^'\n]*)')")
+
+
+_AD_DELIK_PAR_CS = re.compile(r"[{}\"'/]")
+_AD_CS_ON = re.compile(r'[$@]*"+')
+
+
+def _ad_cs_ic(t, k):
+    """Delik icinde `k`daki ozel karakter: yorum, karakter sabiti ya da dize (`$`/`@`/ham on ekiyle -> ana tarayiciyla AYNI yol)."""
+    c = t[k]
+    if c == "/":
+        return _ad_yorum_son(t, k) if t[k + 1:k + 2] in ("/", "*") else k + 1
+    if c == "'":
+        m = _AD_CS_CHAR.match(t, k)
+        return m.end() if m else k + 1
+    j = k
+    while j > 0 and t[j - 1] in "$@":
+        j -= 1
+    return _ad_cs_dize(t, _AD_CS_ON.match(t, j))
+
+
+def _ad_cs_delik(t, i):
+    return _ad_delik(t, i, _ad_cs_ic, _AD_DELIK_PAR_CS)
+
+
+def _ad_cs_dize(t, m):
+    on = m.group()
+    nq = len(on) - len(on.rstrip('"'))
+    dolar = "$" in on
+    kacis = (r"\{\{|" if dolar else "")
+    delik = r"\{" if dolar else None
+    if "@" in on:                                     # ad-hoc birebir dize: `""` kacis, cok satirli
+        i = m.start() + len(on) - nq + 1
+        return _ad_dize(t, i, _ad_desen('"', kacis + '""', delik, False), _ad_cs_delik)
+    if nq >= 3:                                       # ham dize: ayni sayida tirnakla kapanir
+        j = t.find('"' * nq, m.end())
+        return len(t) if j < 0 else j + nq
+    if nq == 2:
+        return m.end()
+    return _ad_dize(t, m.end(), _ad_desen('"', kacis + r"\\.", delik, True), _ad_cs_delik)
+
+
+def _ad_cs_ac(t, m, _u):
+    g = m.lastgroup
+    if g == "yb":
+        return _ad_blok_yorum(t, m)
+    return _ad_cs_dize(t, m) if g == "ds" else m.end()
+
+
+# ---- Dart
+_AD_ANA_DART = re.compile(r"(?P<sb>\A#![^\n]*)|(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<ds>(?:(?<![\w$])r)?(?:'''|\"\"\"|'|\"))")
+
+
+def _ad_dart_dize(t, i, q, ham):
+    kacis = None if ham else r"\\."
+    delik = None if ham else r"\$\{"
+    return _ad_dize(t, i, _ad_desen(re.escape(q), kacis, delik, len(q) == 1), _ad_dart_delik)
+
+
+_AD_DELIK_PAR_DART = re.compile(r"[{}\"'/]")
+
+
+def _ad_dart_ic(t, k):
+    """Deligin icindeki yorum (`/`) ya da dize (`k` tirnakta): `r'..'` ham, `'''..'''` / `\"\"\"..\"\"\"` ucluk tirnak da tanir."""
+    if t[k] == "/":
+        if t[k + 1:k + 2] == "/":
+            return _ad_yorum_son(t, k)
+        return _ad_dart_blok(t, k + 2) if t[k + 1:k + 2] == "*" else k + 1
+    q = t[k:k + 3] if t[k:k + 3] in ("'''", '"""') else t[k]
+    on = t[k - 1:k]
+    ham = on == "r" and not (t[k - 2:k - 1].isalnum() or t[k - 2:k - 1] in ("_", "$"))
+    return _ad_dart_dize(t, k + len(q), q, ham)
+
+
+def _ad_dart_delik(t, i):
+    return _ad_delik(t, i, _ad_dart_ic, _AD_DELIK_PAR_DART)
+
+
+def _ad_dart_ac(t, m, _u):
+    g = m.lastgroup
+    if g == "yb":
+        return _ad_dart_yorum(t, m)
+    if g == "yo" or g == "sb":
+        return m.end()
+    on = m.group()
+    ham = on[:1] == "r"
+    q = on[1:] if ham else on
+    return _ad_dart_dize(t, m.end(), q, ham)
+
+
+# ---- TypeScript / JavaScript
+_AD_ANA_TS = re.compile(r"(?P<sb>\A#![^\n]*)|(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<t1>')|(?P<t2>\")|(?P<t3>`)|(?P<rx>/)")
+_AD_ANA_TSX = re.compile(r"(?P<sb>\A#![^\n]*)|(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<t1>')|(?P<t2>\")|(?P<t3>`)|(?P<rx>/)|(?P<jx><)")
+_AD_TS_SABLON = _ad_desen("`", r"\\.", r"\$\{", False)
+_AD_RX_PAR = re.compile(r"(?P<e>\\.)|(?P<s>\[)|(?P<c>\])|(?P<k>/)|(?P<n>\n)", re.S)
+_AD_RX_BAYRAK = re.compile(r"[A-Za-z]*")
+_AD_RX_ONCE = frozenset("([{,;=:!&|?+-*%<>~^")
+_AD_RX_SOZ = frozenset(("return", "typeof", "instanceof", "in", "of", "new", "delete", "void", "throw", "case", "do",
+                        "else", "yield", "await", "default"))
+_AD_SON_KELIME = re.compile(r"[A-Za-z_$][\w$]*\Z")
+
+
+_AD_DELIK_PAR_TS = re.compile(r"[{}\"'`/]")
+_AD_DELIK_PAR_TSX = re.compile(r"[{}\"'`/<]")
+
+
+def _ad_yorum_son(t, k):
+    """`//` ya da `/*` yorumunun (k) sonu."""
+    satir = t[k + 1] == "/"
+    j = t.find("\n" if satir else "*/", k + 2)
+    return len(t) if j < 0 else (j if satir else j + 2)
+
+
+def _ad_ts_ic(t, k, jsx=False):
+    """Dize/sablon deligi icinde `k`daki ozel karakter: yorum, regex literali, JSX, dize ya da sablon -> SONRASI."""
+    c = t[k]
+    if c == "/":
+        return _ad_yorum_son(t, k) if t[k + 1:k + 2] in ("/", "*") else _ad_rx(t, k)
+    if c == "<":
+        return _ad_jsx_dene(t, k) or k + 1
+    if c == "`":
+        return _ad_dize(t, k + 1, _AD_TS_SABLON, _ad_tsx_delik if jsx else _ad_ts_delik)
+    return _ad_dize(t, k + 1, _ad_desen(c, r"\\.", None, True), None)
+
+
+def _ad_ts_delik(t, i):
+    return _ad_delik(t, i, _ad_ts_ic, _AD_DELIK_PAR_TS)
+
+
+def _ad_rx_son(t, i):
+    """Regex literalinin SONU (bayraklar dahil); sinif icindeki `/` bitirmez; kapanmamissa satir sonunda kesilir."""
+    sinif = False
+    while True:
+        m = _AD_RX_PAR.search(t, i)
+        if m is None:
+            return len(t)
+        g = m.lastgroup
+        i = m.end()
+        if g == "n":
+            return m.start()
+        if g == "s" or g == "c":
+            sinif = g == "s"
+        elif g == "k" and not sinif:
+            return _AD_RX_BAYRAK.match(t, i).end()
+
+
+def _ad_rx_paren(t, k):
+    """`)` (k) bir `if/for/while/with (...)` basligini mi kapatiyor? (ardindan `/` regex literalidir)"""
+    d, i = 0, k
+    while i >= 0 and k - i < 2000:
+        c = t[i]
+        if c == ")":
+            d += 1
+        elif c == "(":
+            d -= 1
+            if d == 0:
+                w = _AD_SON_KELIME.search(t, max(0, i - 8), len(t[:i].rstrip()))
+                return w is not None and w.group() in ("if", "for", "while", "with")
+        i -= 1
+    return False
+
+
+def _ad_rx_once(t, k):
+    """`/`dan once gelen son anlamli harf (k) regex literalini baslatabilir mi?"""
+    c = t[k]
+    if c == ")":
+        return _ad_rx_paren(t, k)
+    if c in "+-":
+        return t[k - 1:k] != c                         # `x++ / 2`: sonek, bolme
+    if c == "!":
+        return not (t[k - 1:k].isalnum() or t[k - 1:k] in ("_", "$", ")", "]"))     # `x! / y`: bolme
+    if c in _AD_RX_ONCE:
+        return True
+    w = _AD_SON_KELIME.search(t, max(0, k - 12), k + 1)
+    return w is not None and w.group() in _AD_RX_SOZ and t[w.start() - 1:w.start()] != "."
+
+
+def _ad_geri(t, a):
+    """t[:a] icindeki son bosluk-olmayan harfin konumu (yoksa -1)."""
+    k = a - 1
+    while k >= 0 and t[k].isspace():
+        k -= 1
+    return k
+
+
+def _ad_rx(t, a, u=None):
+    """`/` (a) regex literali mi, bolme mi? Onceki anlamli harf/sozcuge (`u`; yoksa geriye tarar) bakar; `</tag>` (JSX kapanisi)
+    regex DEGILDIR."""
+    if t[a - 1:a] == "<":
+        return a + 1
+    k = _ad_geri(t, a) if u is None else u
+    if k >= 0 and not _ad_rx_once(t, k) and not (t[k] == "}" and "\n" in t[k:a]):      # `}` + satir sonu + `/`: yeni ifade
+        return a + 1
+    return _ad_rx_son(t, a + 1)
+
+
+# ---- JSX (yalniz .tsx/.jsx/.js): eleman govdesi `0` yigini olur; metin icindeki ' " ` // /* ve { } maskeyi BOZMAZ
+_AD_JSX_AD = re.compile(r"(?:[^\W\d]|\$)[\w$.:-]*")
+_AD_JSX_ETIKET = re.compile(r"//[^\n]*|/\*[\s\S]*?(?:\*/|\Z)|/>|>|\{|['\"]")
+_AD_JSX_COCUK = re.compile(r"<(?=[/>$]|[^\W\d])|\{")
+_AD_JSX_TUR = re.compile(r"[<>]")
+_AD_JSX_PAR = re.compile(r"[()]")
+_AD_JSX_DONUS = re.compile(r":[^;\n=]*=>")
+_AD_JSX_ONCE = frozenset("([{,;=:?&|!.+*%^~")
+_AD_JSX_SOZ = frozenset(("return", "yield", "default", "case", "else", "do", "await", "throw", "typeof", "void", "in",
+                         "instanceof", "delete"))
+_AD_JSX_DERIN = 100
+_AD_JSX_MEMO = {}                    # {`<` konumu: eleman SONU ya da None}: ayni konum ayni metinde iki kez DENENMEZ (ustel sure yok)
+
+
+def _ad_jsx_once_mi(t, k):
+    """`<`den ONCEKI son anlamli harf (k) bir ifade BASLANGICI mi (JSX orada baslayabilir)?"""
+    if t[k] == ">":
+        return t[k - 1:k] == "="
+    if t[k] in _AD_JSX_ONCE:
+        return True
+    w = _AD_SON_KELIME.search(t, max(0, k - 12), k + 1)
+    return w is not None and w.group() in _AD_JSX_SOZ and t[w.start() - 1:w.start()] != "."
+
+
+def _ad_jsx_ok_mi(t, r):
+    """`<T>(x: T) => ..` / `<T>(x): U => ..`: `>` (r) ardindan dengeli `( )` ve `=>` (ya da `: .. =>`) — genel ok-fonksiyon/tur."""
+    if t[r:r + 1] != ">":
+        return False
+    i = _ad_bosluk(t, r + 1, len(t))
+    if t[i:i + 1] != "(":
+        return False
+    d = 0
+    for e in _AD_JSX_PAR.finditer(t, i):
+        d += 1 if e.group() == "(" else -1
+        if d == 0:
+            j = _ad_bosluk(t, e.end(), len(t))
+            return t.startswith("=>", j) or _AD_JSX_DONUS.match(t, j) is not None
+    return False
+
+
+def _ad_jsx_ad_mi(t, a):
+    """`<Ad ...` JSX etiketi mi, yoksa genel mi (`<T,>` · `<T extends` · `<T = x>` · `<const T` · `<T>(x) =>`)?"""
+    g = _AD_JSX_AD.match(t, a + 1)
+    if g is None or g.group() == "const":
+        return False
+    r = _ad_bosluk(t, g.end(), len(t))
+    if t[r:r + 1] in (",", "=") or t.startswith("extends", r):
+        return False
+    return not _ad_jsx_ok_mi(t, r)
+
+
+def _ad_jsx_basla_mi(t, a, u=None):
+    """`<` (a) bir JSX elemani mi acar? Onceki anlamli harf/sozcuk (`u`) + `<Ad` ya da `<>`; genel (`<T,>(`) JSX DEGILDIR."""
+    n = t[a + 1:a + 2]
+    if n != ">" and not (n.isalpha() or n in ("_", "$")):
+        return False
+    k = _ad_geri(t, a) if u is None else u
+    if k >= 0 and not _ad_jsx_once_mi(t, k):
+        return False
+    return n == ">" or _ad_jsx_ad_mi(t, a)
+
+
+def _ad_jsx_tur(t, i):
+    """`<Ad<A, B> x />`: Ad'dan sonraki dengeli tur argumani listesinin SONU (liste yoksa i)."""
+    if t[i:i + 1] != "<":
+        return i
+    d = 0
+    for e in _AD_JSX_TUR.finditer(t, i):
+        if e.group() == "<":
+            d += 1
+        elif t[e.start() - 1:e.start()] != "=":
+            d -= 1
+            if d == 0:
+                return e.end()
+    return i
+
+
+def _ad_jsx_etiket(t, i):
+    """Acilis etiketinin sonu -> (konum, kendi kapanan mi) ya da None; etiket icindeki yorumlar atlanir."""
+    while True:
+        m = _AD_JSX_ETIKET.search(t, i)
+        if m is None:
+            return None
+        g = m.group()
+        if g == "/>" or g == ">":
+            return m.end(), g == "/>"
+        if g == "{":
+            i = _ad_tsx_delik(t, m.end())
+        elif g[:2] in ("//", "/*"):
+            i = m.end()
+        else:
+            j = t.find(g, m.end())
+            if j < 0:
+                return None
+            i = j + 1
+
+
+def _ad_jsx_cocuk(t, i, derin, ad):
+    """Eleman cocuklarinin sonu (kapanis etiketi dahil) ya da None; kapanis etiketi ACILIS ADIYLA eslesmezse JSX DEGILDIR."""
+    while True:
+        m = _AD_JSX_COCUK.search(t, i)
+        if m is None:
+            return None
+        if m.group() == "{":
+            i = _ad_tsx_delik(t, m.end())
+        elif t[m.end():m.end() + 1] == "/":
+            j = t.find(">", m.end())
+            return j + 1 if j >= 0 and t[m.end() + 1:j].strip() == ad else None
+        else:
+            i = _ad_jsx_son(t, m.start(), derin + 1)
+            if i is None:
+                return None
+
+
+def _ad_jsx_son(t, a, derin):
+    """JSX elemaninin (a: `<`) SONRASI; kapanmiyorsa None. Derinlik siniri asilirsa RecursionError: dosya `sozdizimi` diye
+    GORUNUR atlanir (sessizce kod sanilmaz)."""
+    if derin > _AD_JSX_DERIN:
+        raise RecursionError("JSX ic ice derinligi %d'i asti" % _AD_JSX_DERIN)
+    if a in _AD_JSX_MEMO:
+        return _AD_JSX_MEMO[a]
+    r = None
+    if t[a + 1:a + 2] == ">":                                      # `<>` fragman: etiket yok, kapanis `</>`
+        r = _ad_jsx_cocuk(t, a + 2, derin, "")
+    else:
+        g = _AD_JSX_AD.match(t, a + 1)
+        e = _ad_jsx_etiket(t, _ad_jsx_tur(t, g.end())) if g else None
+        if e is not None:
+            r = e[0] if e[1] else _ad_jsx_cocuk(t, e[0], derin, g.group())
+    _AD_JSX_MEMO[a] = r
+    return r
+
+
+def _ad_jsx_dene(t, a, u=None):
+    """JSX elemani ise SONRASI, degilse 0."""
+    return (_ad_jsx_son(t, a, 0) or 0) if _ad_jsx_basla_mi(t, a, u) else 0
+
+
+def _ad_tsx_ic(t, k):
+    return _ad_ts_ic(t, k, True)
+
+
+def _ad_tsx_delik(t, i):
+    return _ad_delik(t, i, _ad_tsx_ic, _AD_DELIK_PAR_TSX)
+
+
+def _ad_ts_ac(t, m, u, jsx=False):
+    g = m.lastgroup
+    if g == "yo" or g == "sb":
+        return m.end()
+    if g == "yb":
+        return _ad_blok_yorum(t, m)
+    if g == "rx":
+        return _ad_rx(t, m.start(), u)
+    if g == "jx":
+        return _ad_jsx_dene(t, m.start(), u) or m.end()
+    return _ad_ts_ic(t, m.start(), jsx)
+
+
+def _ad_tsx_ac(t, m, u):
+    return _ad_ts_ac(t, m, u, True)
+
+
+_AD_DIL_AYAR = {"cs": (_AD_ANA_CS, _ad_cs_ac), "dart": (_AD_ANA_DART, _ad_dart_ac), "ts": (_AD_ANA_TS, _ad_ts_ac),
+                "tsx": (_AD_ANA_TSX, _ad_tsx_ac)}
+
+
+_AD_YORUM_GRUP = frozenset(("yo", "yb", "pp", "sb"))
+
+
+def _ad_maske_parca(seg, g):
+    """Tek bolgenin maskesi. Yorum: tamami bosluk. Dize: IC bosluk, acilis/kapanis tirnagi KALIR (ifade `"..."` ile
+    bitiyor — ASI/yeni bildirim kararinin dayandigi son harf kaybolmasin). Regex literali: `0` yigini (bolme `/` kalir)."""
+    bos = _AD_BOS_HEPSI.sub(" ", seg)
+    if g in _AD_YORUM_GRUP:
+        return bos
+    if g == "rx" or g == "jx":
+        return seg if len(seg) == 1 else "0" * len(seg)
+    if len(seg) >= 2 and seg[-1] in "\"'`":
+        return seg[0] + bos[1:-1] + seg[-1]
+    return bos
+
+
+def _ad_maske(t, ana, ac):
+    """t ile AYNI uzunlukta: yorum ve dize bolgeleri bosaltilmis (satir sonlari korunur). `ac(t, m, u)`: `u` = `m`den ONCEKI son
+    anlamli harfin konumu (yorumlar ATLANIR, yoksa -1): regex/JSX karari bir yorum satirindan ETKILENMEZ."""
+    _AD_JSX_MEMO.clear()
+    parca, son, pos, u = [], 0, 0, -1
+    while True:
+        m = ana.search(t, pos)
+        if m is None:
+            break
+        a = m.start()
+        ara = t[son:a].rstrip()
+        u = son + len(ara) - 1 if ara else u
+        b = max(ac(t, m, u), a + 1)
+        parca.append(t[son:a])
+        parca.append(_ad_maske_parca(t[a:b], m.lastgroup))
+        if m.lastgroup not in _AD_YORUM_GRUP:
+            u = b - 1
+        son = pos = b
+    parca.append(t[son:])
+    return "".join(parca)
+
+
+# ---------------------------------------------------------------- yapi: govde eslesmesi + satir indeksi
+
+_AD_NL = re.compile(r"\n")
+_AD_BRC = re.compile(r"[{}]")
+_AD_BOSLUK = re.compile(r"\s*")
+
+
+def _ad_bosluk(m, i, b):
+    """m[i:b] icinde ilk bosluk-olmayan konum (i >= b ise b)."""
+    return b if i >= b else _AD_BOSLUK.match(m, i, b).end()
+_AD_PAR = re.compile(r"[()\[\]{}]")
+
+
+class _AdMetin:
+    """Bir dosyanin cikarim durumu: `m` bosaltilmis metin · `esl` {`{` konumu: eslesen `}` konumu} · `nl` satir sonu
+    konumlari (satir numarasi icin) · `dil`."""
+    __slots__ = ("m", "esl", "nl", "dil")
+
+
+def _ad_esle(m):
+    esl, yigin = {}, []
+    for e in _AD_BRC.finditer(m):
+        if e.group() == "{":
+            yigin.append(e.start())
+        elif yigin:
+            esl[yigin.pop()] = e.start()
+    for a in yigin:
+        esl[a] = len(m)                                # eslesmeyen `{`: dosya sonuna kadar
+    return esl
+
+
+def _ad_hazirla(dil, metin):
+    ana, ac = _AD_DIL_AYAR[dil]
+    S = _AdMetin()
+    S.dil = "ts" if dil == "tsx" else dil               # `tsx` = ayni dil + JSX maskesi
+    S.m = _ad_maske(metin, ana, ac)
+    S.nl = [e.start() for e in _AD_NL.finditer(metin)]       # satir sayimi ORIJINAL metinden (maskede dize ici \n yok)
+    S.esl = _ad_esle(S.m)
+    return S
+
+
+def _ad_satir(S, konum):
+    return bisect.bisect_left(S.nl, konum) + 1
+
+
+def _ad_iskelet(h):
+    """h ile AYNI uzunlukta: ic ice (), [], {} ICERIKLERI bosluk (satir sonlari korunur)."""
+    cikti, yigin, son = [], 0, 0
+    for e in _AD_PAR.finditer(h):
+        k = e.start()
+        if e.group() in "([{":
+            if not yigin:
+                cikti.append(h[son:k + 1])
+                son = k + 1
+            yigin += 1
+        elif yigin:
+            yigin -= 1
+            if not yigin:
+                cikti.append(_AD_BOS.sub(" ", h[son:k]))
+                son = k
+    cikti.append(_AD_BOS.sub(" ", h[son:]) if yigin else h[son:])
+    return "".join(cikti)
+
+
+def _ad_son_harf(m, j, alt):
+    """m[alt:j] icindeki SON bosluk-olmayan harfin konumu (yoksa alt)."""
+    k = j - 1
+    while k > alt and m[k].isspace():
+        k -= 1
+    return k
+
+
+# ---------------------------------------------------------------- bildirim gezisi (baslik -> govde -> siniflandirma)
+
+_AD_ARA = re.compile(r"[()\[\]{};]")
+_AD_ARA_TS = re.compile(r"[()\[\]{};\n]")
+_AD_ATAMA = re.compile(r"(?<![=!<>])=(?![=>])|=>")
+_AD_KURUCU_LISTE = re.compile(r"\)\s*:")
+_AD_OPERATOR = re.compile(r"\boperator\s*[^\s(\w]+")
+_AD_SWITCH = re.compile(r"\bswitch\s*\(\s*\)\s*\Z")
+_AD_ASI_ON = frozenset(",=+-*/%&|^<?:.([{~")
+_AD_ASI_ARKA = frozenset(".,?:=+-*/%&|^<([{>)];")
+_AD_ASI_ON_SOZ = frozenset((
+    "extends", "implements", "new", "typeof", "instanceof", "in", "of", "as", "satisfies", "await", "export", "default",
+    "static", "function", "class", "interface", "enum", "import", "delete", "yield", "keyof", "is", "infer", "else", "do",
+    "var", "let", "const"))
+_AD_ASI_BAGLAM = frozenset(("of", "as", "satisfies", "is", "static", "keyof", "infer"))   # onunde operator varsa TANIMLAYICI (operand)
+_AD_ASI_ISLEC = frozenset(",=+-*/%&|^<>?:.([!~")
+_AD_ASI_ARKA_SOZ = frozenset(("extends", "implements", "in", "of", "instanceof", "as", "satisfies", "else", "catch",
+                              "finally", "is"))
+_AD_ASI_OZELLIK = frozenset(":?=,.;(){}<")
+_AD_ILK_SOZ = re.compile(r"[\w$]+")
+_AD_AS_ONCE = re.compile(r"\bas\s+\Z")
+
+
+def _ad_asi_on(m, p):
+    """Satir sonundaki sozcuk (`extends`, `new`, ...) ifadeyi surduruyor mu? `x.type` gibi uye erisimi sozcuk SAYILMAZ."""
+    w = _AD_SON_KELIME.search(m, max(0, p - 20), p + 1)
+    if w is None or w.group() not in _AD_ASI_ON_SOZ or m[w.start() - 1:w.start()] in (".", "#"):
+        return False
+    g, q = w.group(), _ad_geri(m, w.start())
+    if g in _AD_ASI_BAGLAM and q >= 0 and m[q] in _AD_ASI_ISLEC:
+        return False                                  # `x = of` / `exports.is = is`: sozcuk OPERAND (tanimlayici), ifadeyi bitirir
+    return g != "const" or _AD_AS_ONCE.search(m, max(0, w.start() - 12), w.start()) is None      # `as const` ifadeyi BITIRIR
+
+
+def _ad_asi_ark(m, q, b):
+    """Sonraki satir (q) bir devam sozcugu (`extends`, `as`, ...) ile mi basliyor? Ozellik/metot adi (`in: x`, `of(..)`) DEGIL."""
+    w = _AD_ILK_SOZ.match(m, q)
+    if w is None or w.group() not in _AD_ASI_ARKA_SOZ:
+        return False
+    r = _ad_bosluk(m, w.end(), b)
+    return r < b and m[r] not in _AD_ASI_OZELLIK
+
+
+def _ad_asi(m, k, b, yeni_uye=False):
+    """TS/JS: satir sonu (k) bildirimi bitiriyor mu? (otomatik noktali virgul: satir sonu bir operatorle/devam sozcugu ile
+    bitiyorsa ya da sonraki satir bir operator/devam sozcugu ile basliyorsa ifade SURER). Sonek `x++` ifadeyi bitirir; satir
+    basinda `++y` yeni ifadedir; atamasiz uye basligindan sonra `[` (hesaplanan ad / indeks imzasi) yeni uyedir."""
+    p = k - 1
+    while p >= 0 and m[p].isspace():
+        p -= 1
+    q = _ad_bosluk(m, k, b)
+    if p < 0:
+        return False
+    if q >= b:
+        return True
+    if (m[p] in _AD_ASI_ON and not (m[p] in "+-" and m[p - 1:p] == m[p])) or (m[p] == ">" and m[p - 1:p] == "="):
+        return False
+    if m[q:q + 2] in ("++", "--") or (yeni_uye and m[q] in "[*"):
+        return True
+    return not (_ad_asi_on(m, p) or m[q] in _AD_ASI_ARKA or m[q:q + 2] == "!=" or _ad_asi_ark(m, q, b))
+
+
+_AD_ACIK = re.compile(r"=>|[<>]")
+
+
+_AD_SAYI_SON = re.compile(r"(?<![\w$])\d[\w.]*\Z")                  # `1<`, `0x1F<`: sayi sabiti tur adi DEGILDIR
+_AD_UNMANAGED = re.compile(r"unmanaged\s*\[[^\]]*\]\s*\Z")
+
+
+def _ad_acik_mi(isk, k):
+    """`<` (k) bir tur argumani listesi mi acar? Tanimlayiciya bitisik (`Foo<`) ya da `= <T>(` / `(<T>` gibi ifade basi;
+    `1<<n` ve `a <= b` DEGIL."""
+    p = isk[k - 1:k] if k else ""
+    if isk[k + 1:k + 2] in ("<", "="):
+        return False
+    if p.isalnum() or p in ("_", "$") or isk[max(0, k - 9):k] == "delegate*":      # C# `delegate*<int, void>`
+        return _AD_SAYI_SON.search(isk, max(0, k - 24), k) is None
+    if p == "?" and (isk[k - 2:k - 1].isalnum() or isk[k - 2:k - 1] in ("_", "$")):     # TS `ad?<T>(x)` istege bagli yontem
+        return True
+    if p == "]" and _AD_UNMANAGED.search(isk, max(0, k - 80), k) is not None:      # C# `delegate* unmanaged[Cdecl]<..>`
+        return True
+    j = k - 1
+    while j >= 0 and isk[j] in " \t\n\r":
+        j -= 1
+    n = isk[_AD_BOSLUK.match(isk, k + 1).end():][:1]
+    if j < 0 or not (n.isalpha() or n in ("_", "$")):
+        return False
+    return isk[j] in "=(,:|&_$" or isk[j].isalnum()              # `= <T>(` · `(<T>` · `ad <T>(` (bosluklu tur argumani)
+
+
+def _ad_aci(isk):
+    """Baslikta ACIK kalan `<` (tur argumani) sayisi: `=>` sayilmaz. TS'de `function f<T extends { a: 1 }>(..)` ve
+    `= <T extends { id: number }>(o) => {` basliklarinda `{` bir tur literalidir, govde DEGIL."""
+    d = 0
+    for e in _AD_ACIK.finditer(isk):
+        g = e.group()
+        if g == "<":
+            d += _ad_acik_mi(isk, e.start())
+        elif g == ">" and d:
+            d -= 1
+    return d
+
+
+def _ad_acik_bosalt(isk):
+    """isk ile AYNI uzunlukta: dengeli `<...>` (tur argumani) ICERIGI bosluk — her derinlikte; `=>` ve eslesmeyen `<`/`>`
+    (karsilastirma) DOKUNULMAZ."""
+    if "<" not in isk:
+        return isk
+    cikti, son, yigin = [], 0, []
+    for e in _AD_ACIK.finditer(isk):
+        g, k = e.group(), e.start()
+        if g == "<":
+            if _ad_acik_mi(isk, k):
+                yigin.append(k)
+        elif g == ">" and yigin:
+            a = yigin.pop()
+            if not yigin:
+                cikti.append(isk[son:a + 1])
+                cikti.append(_AD_BOS.sub(" ", isk[a + 1:k]))
+                son = k
+    cikti.append(isk[son:])
+    return "".join(cikti)
+
+
+_AD_TS_LIT_SOZ = frozenset(("is", "as", "satisfies", "extends", "keyof", "infer", "asserts"))
+_AD_TS_OZELLIK = re.compile(r"\s*(?:(?:public|private|protected|static|readonly|abstract|declare|override)\s+)*"
+                            r"[\w$#]+\s*\??\s*:")
+_AD_ATAMA_ESIT = re.compile(r"(?<![=!<>])=(?![=>])")
+_AD_TS_SINIF_IFADE = re.compile(r"(?:=\s*(?:new\s+)?class\b|\bextends\s*class\b)[^{;=]*\Z|=\s*<[^=;]*>\s*\Z")
+_AD_TS_TIP_TAKMA = re.compile(r"\s*(?:(?:export|declare)\s+)*type\s+[\w$]+")
+_AD_TS_KOSUL = re.compile(r"(?<![=!<>])=(?![=>])[^;{}]*?(?:\?(?![.:])|\|\||&&)")
+_AD_CONST_SOZ = re.compile(r"\b(?:const|new)\s*\Z")
+
+
+def _ad_oncesi_tur(isk):
+    """isk `...<..>` ile bitiyorsa: acan `<` bir TUR ADINA bitisik mi (`o as Map<K, V> {` -> govde)? `const <T>{` literaldir."""
+    d, k = 0, len(isk.rstrip()) - 1
+    while k >= 0:
+        c = isk[k]
+        if c == ">":
+            d += 1
+        elif c == "<":
+            d -= 1
+            if d == 0:
+                break
+        k -= 1
+    if k <= 0:
+        return False
+    w = _AD_SON_KELIME.search(isk, max(0, k - 12), k)
+    return w is not None and w.group() not in ("const", "new")
+
+
+def _ad_ifade_ts(m, i, k, p):
+    """TS/JS: `{` (k) basliginda ifade/tur literali mi? `=> {` govdedir; `: {` `= {` `| {` ve tur konumundaki `=> {` literaldir."""
+    w = _AD_SON_KELIME.search(m, max(i, p - 12), p + 1)
+    if m[p] in ":|&<,=([?" or (w is not None and w.group() in _AD_TS_LIT_SOZ):
+        return True
+    isk = _ad_iskelet(m[i:k])
+    return (_ad_aci(isk) > 0 or _AD_TS_SINIF_IFADE.search(isk) is not None or _AD_TS_TIP_TAKMA.match(isk) is not None
+            or _AD_TS_KOSUL.search(_ad_acik_bosalt(isk)) is not None            # tur argumani ICI `= .. ? ..` (varsayilan tur) sayilmaz
+            or (_AD_TS_OZELLIK.match(isk) is not None and _AD_ATAMA_ESIT.search(isk) is None))
+
+
+def _ad_ifade_mi(S, i, k):
+    """`{` (k) i..k basliginda bir IFADE/literal mi (True: blok govde DEGIL, atlanip `;`a kadar surulur)?"""
+    m = S.m
+    p = k - 1
+    while p >= i and m[p].isspace():
+        p -= 1
+    if p < i:
+        return False
+    if S.dil == "ts":
+        return _ad_ifade_ts(m, i, k, p)
+    if m[p] in ",=([":
+        return True                                    # her halde ifade (iskelet hesabi gerekmez: cok sayida `{}` dogrusal kalir)
+    isk = _AD_OPERATOR.sub("operator", _ad_iskelet(m[i:k]))          # `operator []=(` atama DEGILDIR
+    atama = _AD_ATAMA.search(isk) is not None
+    if S.dil == "dart" and atama and _ad_kurucu_listesi_mi(isk):
+        # Dart kurucu ilklendirici listesi: `switch (x) {` ve `const {` ifadedir; `T<..> {` / `as T? {` oncesi tur ise govdedir
+        if _AD_SWITCH.search(isk) is not None or _AD_CONST_SOZ.search(isk) is not None:
+            return True
+        if m[p] == "?" and _AD_DART_NULL_TUR.search(isk) is not None:
+            return False
+        return (not _ad_oncesi_tur(isk)) if m[p] == ">" else m[p] in ",=([:?"
+    return atama or m[p] in ",=(["
+
+
+_AD_DART_NULL_TUR = re.compile(r"\b(?:as|is)\s+!?\s*[\w.$<>,\[\]()\s?]*[\w>\])]\?\s*\Z")
+
+
+def _ad_kurucu_listesi_mi(isk):
+    """Baslikta `) :` kurucu ilklendirici listesini mi aciyor? (alan `x = c ? f(1) : () {` ucluk DEGILDIR: `=` once gelir)"""
+    kl = _AD_KURUCU_LISTE.search(isk)
+    if kl is None:
+        return False
+    ea = _AD_ATAMA_ESIT.search(isk)
+    return ea is None or kl.start() < ea.start()
+
+
+_AD_ARA_TSV = re.compile(r"[()\[\]{};\n,]")
+
+
+def _ad_virgul_bitirir(S, i, k):
+    """TS arayuz govdesinde `,` (k) bir ayirici mi (parantez/suslu/tur argumani disinda)?"""
+    return _ad_aci(_ad_iskelet(S.m[i:k])) == 0
+
+
+def _ad_adim(S, i, b, k, c, d, uye):
+    """Baslik taramasinda tek ozel karakter (`c`, konum `k`, parantez derinligi `d`) -> (derinlik, konum, son); son None ise
+    tarama surer (`{` ifade/literal ise konum eslesen `}`ya atlar)."""
+    if c in "([":
+        return d + 1, k, None
+    if c in ")]":
+        return (d - 1 if d else 0), k, None
+    if c == "}":
+        return d, k, "}"
+    if c == "{":
+        if not d and not _ad_ifade_mi(S, i, k):
+            return d, k, "{"
+        return d, S.esl.get(k, b), None
+    if d:
+        return d, k, None
+    if c == ";" or (c == "," and _ad_virgul_bitirir(S, i, k)):
+        return d, k, ";"
+    if c == "\n" and _ad_asi(S.m, k, b, uye and _AD_ATAMA_ESIT.search(S.m, i, k) is None):
+        return d, k, "n"
+    return d, k, None
+
+
+def _ad_baslik(S, i, b, ust):
+    """i'den baslayan bildirimin basligi -> (j, son). son: `{` govde acilisi · `;` · `n` (TS ASI satir sonu) ·
+    `}` (eslesmeyen kapanis) · `e` (bolge sonu). Parantez/koseli icindeki ve ifade olan bloklar ATLANIR; TS arayuz govdesinde
+    ust duzey `,` de uyeyi bitirir."""
+    ts = S.dil == "ts"
+    ara = _AD_ARA_TSV if ts and ust[3] == "interface" else (_AD_ARA_TS if ts else _AD_ARA)
+    uye = ts and ust[2] == "uye"
+    d, k = 0, i
+    while True:
+        e = ara.search(S.m, k, b)
+        if e is None:
+            return b, "e"
+        d, k, son = _ad_adim(S, i, b, e.start(), e.group(), d, uye)
+        if son:
+            return k, son
+        k += 1
+
+
+def _ad_surer_mi(S, c, q, ust):
+    """Govde kapanisindan sonraki `c` (konum q) bildirimi SURDURUR mu? C# ozellik ilklendiricisi `= ifade;` · TS coklu
+    bildirim `var a = function () {}, b = ...;` · ucluk/zincir `x = c ? function () {} : f;` ve `function () {}.bind(t)`."""
+    if S.dil == "cs":
+        return c == "=" and S.m[q + 1:q + 2] not in ("=", ">")
+    if S.dil != "ts":
+        return False
+    return (c == "," and ust[3] != "interface") or (c != "" and c in ":?.|&")
+
+
+def _ad_devam(S, k, b, ust):
+    """Govde kapanisindan (k) SONRA bildirim surer mi? -> (sonraki konum, bitis konumu). `;` yutulur; surerse (bkz.
+    `_ad_surer_mi`) bildirim `;`/satir sonuna kadar uzar — araya giren ek bloklar da bildirimin PARCASIDIR."""
+    while True:
+        q = _ad_bosluk(S.m, k + 1, b)
+        c = S.m[q:q + 1]
+        if c == ";":
+            return q + 1, k
+        if not _ad_surer_mi(S, c, q, ust):
+            return k + 1, k
+        j, son = _ad_baslik(S, q + (c == ","), b, ust)
+        if son != "{":
+            return j + 1, j
+        k = min(S.esl.get(j, b), b)
+
+
+# ---------------------------------------------------------------- siniflandirma desenleri
+# Baslik ISKELETI (`_ad_iskelet` + `_ad_acik_bosalt`): ic ice (), [], {} ve DENGELI `<...>` icerikleri bosluktur ->
+# desenler tur argumanlarinin derinligini, `=>`'yi ve parametre listelerini gormez.
+
+_N = r"(?:[^\W\d]|[$#@])[\w$]*"
+_NP = _N + r"(?:\." + _N + r")*"
+_G2 = r"\s*<\s*>\s*"                      # tur argumani listesi (iskelette icerigi bosluk); etrafinda bosluk SERBEST
+_NS = r"(?![\w$])"                       # `\b` DEGIL: `$` ile biten adlar (RxJS `x$`) tam alinir
+_AD_TUR_KW = {"class": "sinif", "interface": "arayuz", "struct": "yapi", "record": "kayit", "record class": "kayit",
+              "record struct": "kayit", "enum": "enum", "namespace": "ad-alani", "module": "ad-alani",
+              "global": "ad-alani", "mixin": "mixin", "extension": "uzanti", "type": "tip", "const": "sabit",
+              "let": "alan", "var": "alan", "get": "ozellik", "set": "ozellik"}
+
+# ---- C#
+_CS_MODW = ("public|private|protected|internal|static|virtual|override|abstract|sealed|async|extern|unsafe|new|partial|"
+            "readonly|volatile|const|required|file|fixed|ref")
+_CS_MOD = r"(?:(?:%s)\s+)*" % _CS_MODW
+_CS_TIP = (r"(?:ref\s+(?:readonly\s+)?)?(?!(?:%s|event|operator|implicit|explicit|return|using|class|struct|interface|"
+           r"enum|namespace|record|this|base|where)\b|delegate\b(?!\s*\*))"
+           r"(?:delegate\s*\*\s*(?:(?:managed|unmanaged)\s*(?:\[[^\]]*\]\s*)?)?%s|(?:\w+::)?(?:\w+|\(\s*\))(?:%s)?"
+           r"(?:\s*\.\s*\w+(?:%s)?)*)(?:\s*(?:[?*]|\[[\s,]*\]))*" % (_CS_MODW, _G2, _G2, _G2))
+_CS_EI = r"(?:(?:\w+::)?\w+(?:%s)?\.)*" % _G2
+_CS_SP = r"(?:\s+|(?<=\*)\s*)"                          # tur ile ad arasi (`int *P`: `*` sonrasi bosluk serbest)
+_CS_ARKA = r"(?=\s*(?:$|=>|where\b|:|=(?!=)))"
+_CS_DIZI = r"(?:\s*\[\s*\])?"                                 # `fixed byte buf[16]`
+_CS_KAP = (re.compile(r"%s(?P<kw>class|struct|interface|enum|record(?:\s+(?:class|struct))?|namespace)\s+(?P<ad>%s)"
+                      % (_CS_MOD, _NP)), None, "k")
+_CS_DELEGATE = (re.compile(r"%sdelegate\s+%s\s+(?P<ad>%s)\s*(?:%s)?\(" % (_CS_MOD, _CS_TIP, _N, _G2)), "tip", "")
+_CS_UYE = (
+    _CS_KAP, _CS_DELEGATE,
+    (re.compile(r"%s(?P<ad>~?%s)\s*\(\s*\)(?=\s*(?:$|=>|:))" % (_CS_MOD, _N)), "kurucu", "c"),
+    (re.compile(r"%s%s%s%s(?P<ad>%s)\s*(?:%s)?\(\s*\)%s" % (_CS_MOD, _CS_TIP, _CS_SP, _CS_EI, _N, _G2, _CS_ARKA)), "metot", ""),
+    (re.compile(r"%sconst\s+%s\s+(?P<ad>%s)%s\s*(?:=|,|$)" % (_CS_MOD, _CS_TIP, _N, _CS_DIZI)), "sabit", "s"),
+    (re.compile(r"%sevent\s+%s\s+%s(?P<ad>%s)\s*$" % (_CS_MOD, _CS_TIP, _CS_EI, _N)), "alan", "b"),
+    (re.compile(r"%s%s%s%s(?P<ad>%s)\s*=>" % (_CS_MOD, _CS_TIP, _CS_SP, _CS_EI, _N)), "ozellik", ""),
+    (re.compile(r"%s%s%s%s(?P<ad>%s)\s*$" % (_CS_MOD, _CS_TIP, _CS_SP, _CS_EI, _N)), "ozellik", "b"),
+    (re.compile(r"%s(?:event\s+)?%s%s(?P<ad>(?!(?:this|operator)(?![\w$]))%s)%s\s*(?:=|,|$)"
+                % (_CS_MOD, _CS_TIP, _CS_SP, _N, _CS_DIZI)), "alan", "s"),
+)
+
+# ---- Dart
+_DA_MODW = ("static|external|abstract|covariant|late|final|const|var|factory|get|set|operator|async|sync|on|extends|"
+            "implements|with|import|export|part|library|typedef|class|enum|mixin|extension|return|new")
+_DA_FN = r"Function\s*(?:%s)?\s*\(\s*\)\??" % _G2                # `Function(int)` (iskelette parantez ici bos)
+_DA_TIP = (r"(?!(?:%s)\b(?!\s*\.))(?:%s|[\w$]+(?:\s*\.\s*[\w$]+)*|\(\s*\))(?:%s)?(?:\s*\?)?(?:\s+%s)*"
+           % (_DA_MODW, _DA_FN, _G2, _DA_FN))
+_DA_ARKA = r"(?=\s*(?:$|=>|:|=(?!=)|async\b|sync\b))"
+_DA_KAP = (re.compile(r"(?:(?:abstract|base|final|interface|sealed|mixin|augment)\s+)*"
+                      r"(?P<kw>class|enum|mixin|extension)(?![\w$])(?!\s*\()(?:(?<=extension)\s+type\b|(?<=mixin)\s+class\b)?(?:\s+const\b)?"
+                      r"\s*(?P<ad>(?!on\b|extends\b|with\b|implements\b|const\b)%s)?" % _N), None, "k")
+_DA_ORTAK = (
+    (re.compile(r"(?:import|export|part|library)(?![\w$])(?!\s*\()"), "-", "d"),
+    _DA_KAP,
+    (re.compile(r"typedef\s+(?:%s\s+)?(?P<ad>%s)\s*(?:%s)?\s*(?:=|\()" % (_DA_TIP, _N, _G2)), "tip", ""),
+    (re.compile(r"(?:(?:static|external|abstract)\s+)*(?:%s\s+)?(?P<kw>get|set)\s+(?P<ad>%s)" % (_DA_TIP, _N)), None, ""),
+    (re.compile(r"(?:(?:const|external|factory)\s+)*(?P<cls>%s)\s*\.\s*(?P<ad>%s)\s*(?:%s)?\(\s*\)" % (_N, _N, _G2)),
+     "kurucu", "n"),
+    (re.compile(r"(?:(?:const|external|factory)\s+)*(?P<ad>%s)\s*\(\s*\)%s" % (_N, _DA_ARKA)), "kurucu", "c"),
+    (re.compile(r"(?:(?:static|external|abstract)\s+)*(?:%s\s+)?\boperator(?![\w$])\s*(?P<ad>[^\s(]+)\s*\(" % _DA_TIP), "fm", ""),
+    (re.compile(r"(?:(?:static|external|abstract|covariant|late)\s+)*(?:%s\s+)?(?P<ad>%s)\s*(?:%s)?\(\s*\)%s"
+                % (_DA_TIP, _N, _G2, _DA_ARKA)), "fm", ""),
+    (re.compile(r"(?:(?:static|external)\s+)*const\s+(?:%s\s+)?(?P<ad>%s)\s*(?:=|,|$)" % (_DA_TIP, _N)), "sabit", "s"),
+    (re.compile(r"(?:(?:static|late|final|var|covariant|external|abstract)\s+)*(?:%s\s+)?(?P<ad>%s)\s*(?:=|,|$)"
+                % (_DA_TIP, _N)), "alan", "s"),
+)
+
+# ---- TypeScript / JavaScript
+_TS_P = r"(?:(?:export|default|declare)\s+|@[\w.$]+\s*(?:\(\s*\)\s*)?)*"
+_TS_FN = (r"(?:async\s+)?(?:function\b|(?:%s\s*)?\(\s*\)\s*(?::[^=;]*?)?=>|%s\s*=>)" % (_G2, _N))
+_TS_ANOT = r"(?:\s*:(?=(?P<anot>(?:[^=]|=>)*))(?P=anot))?"      # ATOMIK (geri izleme yok: ic ice buyuk tur nesnesinde dogrusal)
+_TS_ATAMA = r"\s*=(?![=>])\s*"
+_TS_MOD = r"(?:(?:public|private|protected|static|abstract|override|readonly|declare|async|accessor)(?:\s+|(?=[*#])))*"
+_TS_DOSYA = (
+    (re.compile(r"%s(?:(?:abstract|const)\s+)?(?P<kw>class|interface|enum|namespace|module)\s+"
+                r"(?P<ad>(?!extends\b|implements\b)%s)" % (_TS_P, _NP)), None, "k"),
+    (re.compile(r"%s(?:abstract\s+)?(?P<kw>class|namespace|module|global)\s*(?:(?:'\s*'|\"\s*\")\s*)?"
+                r"(?:\s(?:extends|implements)\b[\s\S]*)?$" % _TS_P), None, "kb"),
+    (re.compile(r"%s(?P<kw>type)\s+(?P<ad>%s)%s" % (_TS_P, _N, _NS)), None, ""),
+    (re.compile(r"%s(?:async\s+)?function\b\s*\*?\s*(?P<ad>%s)\s*(?:%s)?\(" % (_TS_P, _N, _G2)), "fonksiyon", ""),
+    (re.compile(r"%s(?:const|let|var)\s+(?P<ad>%s)%s%s%s%s" % (_TS_P, _N, _NS, _TS_ANOT, _TS_ATAMA, _TS_FN)), "fonksiyon", ""),
+    (re.compile(r"%s(?P<kw>const|let|var)\s+(?P<ad>%s)%s" % (_TS_P, _N, _NS)), None, ""),
+    (re.compile(r"(?:module\.)?exports\.(?P<ad>%s)%s%s" % (_N, _TS_ATAMA, _TS_FN)), "fonksiyon", ""),
+    (re.compile(r"(?:module\.)?exports\.(?P<ad>%s)\s*=" % _N), "alan", ""),
+    (re.compile(r"(?P<ad>%s\.prototype\.%s)%s(?:[\w$.]+%s)*%s" % (_N, _N, _TS_ATAMA, _TS_ATAMA, _TS_FN)), "metot", ""),
+    (re.compile(r"(?P<ad>%s\.prototype\.%s)\s*=(?![=>])" % (_N, _N)), "alan", ""),
+)
+_TS_UYE = (
+    (re.compile(r"%s(?P<ad>constructor)\s*(?:%s)?\(" % (_TS_MOD, _G2)), "kurucu", ""),
+    (re.compile(r"%s(?P<ad>%s)\s*[?!]?%s%s%s" % (_TS_MOD, _N, _TS_ANOT, _TS_ATAMA, _TS_FN)), "metot", ""),
+    (re.compile(r"%s(?:get|set)(?:\s+|(?=#))(?P<ad>%s)\s*(?:%s)?\(" % (_TS_MOD, _N, _G2)), "ozellik", ""),
+    (re.compile(r"%s\*?\s*(?!new\s*(?:%s)?\()(?P<ad>%s)\s*\??\s*(?:%s)?\(" % (_TS_MOD, _G2, _N, _G2)), "metot", "i"),
+    (re.compile(r"%s\*?\s*(?P<ad>%s)\s*\??\s*(?:%s)?\(" % (_TS_MOD, _N, _G2)), "metot", "j"),
+    (re.compile(r"%s(?P<ad>%s)\s*[?!]?\s*(?::|=|$)" % (_TS_MOD, _N)), "alan", "s"),
+)
+
+_AD_KURALLAR = {("cs", "dosya"): (_CS_KAP, _CS_DELEGATE), ("cs", "uye"): _CS_UYE,
+                ("dart", "dosya"): _DA_ORTAK, ("dart", "uye"): _DA_ORTAK,
+                ("ts", "dosya"): _TS_DOSYA, ("ts", "uye"): _TS_DOSYA[:2] + _TS_UYE}
+_AD_DEK_CS = re.compile(r"\s*(?:\[\s*\]\s*)*")
+_AD_DEK_AT = re.compile(r"\s*(?:@\s*[\w.$]+(?:%s)?(?:\.[\w$]+)?(?:\(\s*\))?\s*)*" % _G2)
+_AD_DEK = {"cs": _AD_DEK_CS, "dart": _AD_DEK_AT, "ts": _AD_DEK_AT}
+_AD_OGE = re.compile(_N.join(("(?P<ad>", ")")))
+
+
+def _ad_bay_red(bay, mm, son, ust):
+    """Kural bayragi bu baglama UYMUYOR mu? b: yalniz `{` ile biten baslik · s: `{` ile BITMEYEN · d: dosya duzeyi · i: yalniz
+    arayuz govdesi · j: arayuz DEGIL · c: kurucu adi kapsayiciyla ayni · n: `Sinif.ad` kurucusu (Dart)."""
+    return (("b" in bay and son != "{") or ("s" in bay and son == "{") or ("d" in bay and ust[2] != "dosya")
+            or ("i" in bay and ust[3] != "interface") or ("j" in bay and ust[3] == "interface")
+            or ("c" in bay and mm.group("ad").lstrip("~") != ust[1]) or ("n" in bay and mm.group("cls") != ust[1]))
+
+
+def _ad_ara(kurallar, isk, o, son, ust):
+    """Iskelet `isk` (o'dan) icin ilk uyan kural -> (eslesme, tur, kapsayici kw) ya da None."""
+    for desen, tur, bay in kurallar:
+        mm = desen.match(isk, o)
+        if mm is None or (bay and _ad_bay_red(bay, mm, son, ust)):
+            continue
+        kw = mm.groupdict().get("kw")
+        kw = " ".join(kw.split()) if kw else None
+        if tur == "fm":
+            tur = "fonksiyon" if ust[2] == "dosya" else "metot"
+        return mm, tur or _AD_TUR_KW.get(kw, "alan"), (kw if "k" in bay else None)
+    return None
+
+
+def _ad_siniflandir(S, i, j, son, ust):
+    """[i,j) basligi -> (tur, ad, ad konumu, kapsayici kw) ya da None (taninmayan bildirim)."""
+    isk = _ad_acik_bosalt(_ad_iskelet(S.m[i:j]))
+    o = _AD_DEK[S.dil].match(isk).end()
+    r = _ad_ara(_AD_KURALLAR[(S.dil, ust[2])], isk, o, son, ust)
+    if r is None or r[1] == "-":
+        return None
+    mm, tur, kap = r
+    ad = mm.groupdict().get("ad")
+    if ad and ".prototype." in ad:
+        ad = ad.replace(".prototype.", ".")
+    return tur, ad, (i + mm.start("ad") if ad else i + o), kap
+
+
+def _ad_ust(S, kap, ad, ust):
+    """Kapsayici govdesinin baglami: (ad oneki, kapsayici kisa adi, `dosya`|`uye`, kapsayici kw)."""
+    ns = kap in ("namespace", "module", "global")
+    if ns and S.dil == "cs":
+        return ust                                     # C# ad alani nitelikli ada GIRMEZ (yol zaten modul)
+    ctx = "dosya" if ns else "uye"
+    if not ad:
+        return (ust[0], "", ctx, kap)
+    return (ust[0] + ad + ".", ad.split(".")[-1], ctx, kap)
+
+
+_AD_AYRAC = re.compile(r"[,;]")
+
+
+def _ad_enum(S, a, b, ust, cikti):
+    """Enum govdesi: her oge `sabit`; ogeler ISKELETTE (parantez/suslu/`<..>` icerigi bosaltilmis) `,` ile bolunur;
+    Dart gelismis enum'da `;`'dan sonrasi uye bolgesidir."""
+    z = _ad_acik_bosalt(_ad_iskelet(S.m[a:b]))
+    i, n = 0, len(z)
+    while True:
+        i = _ad_bosluk(z, i, n)
+        if i >= n:
+            return
+        e = _AD_AYRAC.search(z, i)
+        j = e.start() if e else n
+        mm = _AD_OGE.match(z, _AD_DEK[S.dil].match(z, i).end())
+        if mm is not None and mm.end() <= j:
+            cikti.append(("sabit", ust[0] + mm.group("ad"), _ad_satir(S, a + mm.start("ad")),
+                          _ad_satir(S, _ad_son_harf(S.m, a + j, a + i))))
+        if e and e.group() == ";" and S.dil == "dart":
+            _ad_bolge(S, a + j + 1, b, (ust[0], ust[1], "uye", None), cikti)
+            return
+        i = j + 1
+
+
+def _ad_icine(S, kap, ad, a, b, ust, cikti):
+    if not ad and kap == "class" and S.dil == "ts":
+        return                                         # adsiz sinif ifadesi: uyeleri ust duzey tanim DEGILDIR
+    ust2 = _ad_ust(S, kap, ad, ust)
+    if kap == "enum":
+        _ad_enum(S, a, b, ust2, cikti)
+    else:
+        _ad_bolge(S, a, b, ust2, cikti)
+
+
+def _ad_noktali(S, i, j, bitis):
+    """`const f = () => {}` + (ayri satirda bile) `;`: ilkleyicili bildirimi `;` bitirir; `function f() {}` / `class A {}` ardindan
+    `;` ise BOS ifadedir (bitise katilmaz)."""
+    if _AD_ATAMA_ESIT.search(_ad_acik_bosalt(_ad_iskelet(S.m[i:j]))) is None:
+        return bitis
+    q = _ad_bosluk(S.m, bitis + 1, len(S.m))
+    return q if S.m[q:q + 1] == ";" else bitis
+
+
+def _ad_bildir(S, i, j, bitis, son, k, ust, cikti):
+    """Tek bildirimi siniflandirir; tanimsa satirini ekler, kapsayiciysa govdesine iner."""
+    if son != "{" and son != ";":
+        bitis = _ad_son_harf(S.m, j, i)
+    r = _ad_siniflandir(S, i, j, son, ust)
+    if r is None:
+        return
+    tur, ad, ad_off, kap = r
+    if son == "{" and not kap:
+        bitis = _ad_noktali(S, i, j, bitis)
+    if ad and not (S.dil == "cs" and kap == "namespace"):
+        cikti.append((tur, ust[0] + ad, _ad_satir(S, ad_off), _ad_satir(S, bitis)))
+    if kap and son == "{":
+        _ad_icine(S, kap, ad, j + 1, k, ust, cikti)
+
+
+def _ad_bolge(S, a, b, ust, cikti):
+    """[a,b) bolgesindeki bildirimleri sirayla gezer (govde icine INILMEZ; yalniz kapsayicilarin govdesine)."""
+    i = a
+    while True:
+        i = _ad_bosluk(S.m, i, b)
+        if i >= b:
+            return
+        j, son = _ad_baslik(S, i, b, ust)
+        if son == "{":
+            k = min(S.esl.get(j, b), b)
+            sonraki, bitis = _ad_devam(S, k, b, ust)
+            _ad_bildir(S, i, j, bitis, son, k, ust, cikti)
+            i = max(sonraki, j + 1)
+            continue
+        _ad_bildir(S, i, j, j, son, j, ust, cikti)
+        if son == "e" or (son == "}" and ust[2] != "dosya"):
+            return                                     # ust duzeyde eslesmeyen `}` taramayi KESMEZ (yarim duzenlenmis dosya)
+        i = j + 1
+
+
+# ---------------------------------------------------------------- Python (ast: kesin)
+
+_AD_PY_ICE = tuple(getattr(ast, ad) for ad in ("If", "For", "AsyncFor", "While", "With", "AsyncWith", "Try", "TryStar", "Match")
+                   if hasattr(ast, ad))          # TryStar (3.11) / Match (3.10): eski surumde yok
+_AD_PY_TIP = getattr(ast, "TypeAlias", ())       # `type X = ...` (3.12)
+
+
+def _ad_py_alt(d):
+    """Ayni kapsamdaki (if/try/with/for/while/match) alt govdeler: duz liste."""
+    alt = []
+    for alan in ("body", "orelse", "finalbody"):
+        alt += getattr(d, alan, None) or []
+    for h in getattr(d, "handlers", None) or []:
+        alt += h.body
+    for c in getattr(d, "cases", None) or []:
+        alt += c.body
+    return alt
+
+
+def _ad_py_atama(d, onek, cikti):
+    for h in (d.targets if isinstance(d, ast.Assign) else [d.target]):
+        if isinstance(h, ast.Name):
+            cikti.append(("sabit" if h.id.isupper() else "alan", onek + h.id, d.lineno, d.end_lineno))
+
+
+def _ad_py_gez(govde, onek, sinifta, cikti):
+    """Python tanimlari (ast). ACIK YIGIN ile gezer: ~1000'den uzun `elif` zinciri (ic ice `If`) RecursionError vermez."""
+    yigin = [(iter(govde), onek, sinifta)]
+    while yigin:
+        it, on, sf = yigin[-1]
+        d = next(it, None)
+        if d is None:
+            yigin.pop()
+        elif isinstance(d, ast.ClassDef):
+            cikti.append(("sinif", on + d.name, d.lineno, d.end_lineno))
+            yigin.append((iter(d.body), on + d.name + ".", True))
+        elif isinstance(d, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            cikti.append(("metot" if sf else "fonksiyon", on + d.name, d.lineno, d.end_lineno))
+        elif isinstance(d, (ast.Assign, ast.AnnAssign)):
+            _ad_py_atama(d, on, cikti)
+        elif _AD_PY_TIP and isinstance(d, _AD_PY_TIP):
+            cikti.append(("tip", on + d.name.id, d.lineno, d.end_lineno))
+        elif isinstance(d, _AD_PY_ICE):
+            yigin.append((iter(_ad_py_alt(d)), on, sf))
+
+
+def _ad_py(metin):
+    cikti = []
+    with warnings.catch_warnings():                    # taranan kodun SyntaxWarning'i (gecersiz kacis dizisi...) motorun stderr'ine KARISMAZ
+        warnings.simplefilter("ignore")
+        govde = ast.parse(metin).body
+    _ad_py_gez(govde, "", False, cikti)
+    return cikti
+
+
+def _adres_cikar(dil, metin):
+    """Normallestirilmis metin -> [(tur, nitelikli ad, bas satiri, bitis satiri)]. YALNIZ `adres` komutundan cagrilir."""
+    if dil == "py":
+        return _ad_py(metin)
+    S = _ad_hazirla(dil, metin)
+    cikti = []
+    _ad_bolge(S, 0, len(S.m), ("", "", "dosya", None), cikti)
+    return cikti
+
+
+# ---------------------------------------------------------------- dosya listesi + okuma + indeksleme
+
+_ADRES_GIT_ORTAM_HARIC = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")
+
+
+def _adres_git(kok, *args):
+    """`git -C kok ...` (yollar komut satirina DIZILMEZ — H14 dersi); baska deponun ortam degiskenleri susturulur."""
+    ortam = dict((k, v) for k, v in os.environ.items() if k not in _ADRES_GIT_ORTAM_HARIC)
+    return subprocess.run(["git", "-C", kok] + list(args), capture_output=True, env=ortam)
+
+
+def _adres_git_dosyalari(kok):
+    """Git'in IZLEDIGI dosyalar (`ls-files -z`; alt dizinde `kok`e GORELI)."""
+    r = _adres_git(kok, "ls-files", "-z")
+    if r.returncode != 0:
+        oldur("git ls-files BASARISIZ (exit %d): %s" % (
+            r.returncode, _ilk_satir_isaretli((r.stderr or b"").decode("utf-8", "replace").strip())), 3)
+    return sorted(set(x.decode("utf-8", "replace") for x in r.stdout.split(b"\0") if x))
+
+
+def _adres_git_icinde(kok):
+    """`kok` bir git calisma agacinin ALT dizini mi (kok degil)? Git VAR ama okunamiyorsa (`dubious ownership`) 'git YOK' DENMEZ."""
+    if not shutil.which("git"):
+        return False
+    r = _adres_git(kok, "rev-parse", "--is-inside-work-tree")
+    hata = (r.stderr or b"").decode("utf-8", "replace")
+    if r.returncode != 0 and ("dubious ownership" in hata or "safe.directory" in hata):
+        oldur("git deposu OKUNAMADI (alt dizin): %s" % _ilk_satir_isaretli(hata.strip()), 3)
+    return r.returncode == 0 and r.stdout.strip() == b"true"
+
+
+def _adres_git_kokte_mi(kok):
+    """`_git_kokte_mi` ile ayni uc kademe; FARKI: baska deponun `GIT_DIR`/`GIT_WORK_TREE` ortami susturulur (git'siz klasor
+    `GIT_DIR` yuzunden 'git var' sanilmaz)."""
+    if not shutil.which("git"):
+        return False
+    if os.path.exists(os.path.join(kok, ".git")):
+        return True
+    r = _adres_git(kok, "rev-parse", "--show-toplevel")
+    tepe = r.stdout.decode("utf-8", "replace").strip() if r.returncode == 0 else ""
+    n = lambda q: os.path.normcase(os.path.realpath(q))
+    return bool(tepe) and n(tepe) == n(kok)
+
+
+def _adres_baglanti_mi(p):
+    """Dizin sembolik baglanti ya da Windows kavsagi (junction/reparse noktasi) mi? (izlenmez: dongu/ustel patlama)"""
+    try:
+        return os.path.islink(p) or bool(getattr(os.lstat(p), "st_file_attributes", 0) & 0x400)
+    except OSError:
+        return True
+
+
+def _adres_yol_metni(yol):
+    """Dosya adi UTF-8'e KODLANAMIYORSA (Linux: gecersiz bayt -> yedek/surrogate karakter) git kipindeki gibi U+FFFD'ye cevrilir; dosya
+    `okunamadi` diye BEYAN edilir, komut COKMEZ."""
+    try:
+        yol.encode("utf-8")
+        return yol
+    except UnicodeEncodeError:
+        return os.fsencode(yol).decode("utf-8", "replace")
+
+
+def _adres_fs_dosyalari(kok):
+    """Git YOKSA: dosya sistemi (`.gitignore` saygisi YOK; `_ATIF_HARIC` adli dizinler, baglanti dizinleri budanir,
+    okunamayan dizinler sayilir) -> (yollar, notlar): her budama BEYAN edilir."""
+    cikti, bud, baglanti, okunmaz = [], set(), 0, []
+    for r0, d0, f0 in os.walk(kok, onerror=lambda e: okunmaz.append(e.filename)):
+        kalan = []
+        for d in d0:
+            if d in _ATIF_HARIC:
+                bud.add(d)
+            elif _adres_baglanti_mi(os.path.join(r0, d)):
+                baglanti += 1
+            else:
+                kalan.append(d)
+        d0[:] = kalan
+        cikti += [_adres_yol_metni(_rel(os.path.join(r0, f), kok)) for f in f0]
+    notlar = []
+    if bud:
+        notlar.append("budanan dizin adlari: %s" % ", ".join(sorted(bud)))
+    if baglanti:
+        notlar.append("baglanti (symlink/junction) dizini atlandi: %d" % baglanti)
+    if okunmaz:
+        notlar.append("okunamayan dizin: %d (ilk: %s)" % (len(okunmaz), _adres_yol_metni(_rel(sorted(okunmaz)[0], kok))))
+    return sorted(cikti), notlar
+
+
+def _adres_dosyalar(kok):
+    """-> (kaynak: `git` | `git-alt` | `dosya`, yollar, notlar)."""
+    if _adres_git_kokte_mi(kok):
+        return "git", _adres_git_dosyalari(kok), []
+    if _adres_git_icinde(kok):
+        return "git-alt", _adres_git_dosyalari(kok), []
+    yollar, notlar = _adres_fs_dosyalari(kok)
+    return "dosya", yollar, notlar
+
+
+def _adres_yol_ayir(yollar):
+    """Yollar -> ({dil: [yol]}, {kapsam disi uzanti: adet})."""
+    kod, disi = dict((d, []) for d in _ADRES_DIL_SIRA), {}
+    for y in yollar:
+        uz = os.path.splitext(y)[1].lower()
+        if uz in _ADRES_UZANTI:
+            kod[_ADRES_UZANTI[uz]].append(y)
+        elif uz in _ADRES_DISI_UZANTI:
+            disi[uz] = disi.get(uz, 0) + 1
+    return kod, disi
+
+
+def _adres_oku(kok, yol):
+    """-> (normallestirilmis metin, uyari) ya da (None, sebep). sebep: `link` · `buyuk` · `ikili` · `okunamadi`;
+    uyari: None ya da `kodlama` (UTF-8 degil: latin-1 varsayildi)."""
+    p = os.path.join(kok, *yol.split("/"))
+    try:
+        if os.path.islink(p):
+            return None, "link"
+        st = os.stat(p)
+        if not stat.S_ISREG(st.st_mode):
+            return None, "okunamadi"
+        if st.st_size > _ADRES_DOSYA_TAVAN:
+            return None, "buyuk"
+        with open(p, "rb") as f:
+            ham = f.read()
+    except OSError:
+        return None, "okunamadi"
+    if b"\x00" in ham[:8192] and _adres_bom(ham) is None:
+        return None, "ikili"
+    metin, uyari = _adres_coz(ham)
+    return _adres_duzle(metin), uyari
+
+
+_ADRES_YUZDE = re.compile(r"%(?=09|0A|0D|25)")
+
+
+def _adres_alan(s):
+    """Sutun degerinde sekme/satir sonu OLAMAZ: bu karakterler `%09` `%0A` `%0D` olur. Kacis TERSINIRDIR: kacis dizisine benzeyen
+    gercek `%09`/`%0A`/`%0D`/`%25` once `%25..` olur (sekmeli ad ile `a%09b` adli dosya ayni anahtara DUSMEZ)."""
+    return _ADRES_YUZDE.sub("%25", s).replace("\t", "%09").replace("\n", "%0A").replace("\r", "%0D")
+
+
+def _adres_dosya_satiri(yol, metin):
+    """`dosya` satiri: ad sutunu = dosyanin TAM SHA-256'si (normallestirilmis metin); bayatlik karari bunlara bakar."""
+    ozet = _adres_sha(metin)
+    return (_adres_alan(yol), "dosya", ozet, 1, metin.count("\n") + 1, ozet[:8])
+
+
+def _adres_dosya_satirlari(yol, metin, dil):
+    """Bir dosyanin defter satirlari: once `dosya` satiri, sonra tanimlar. Ayni (bas, bit) araligi bir kez hashlenir."""
+    satirlar = metin.split("\n")
+    n = len(satirlar)
+    sat, onbellek = [_adres_dosya_satiri(yol, metin)], {}
+    for tur, ad, bas, bit in _adres_cikar(_adres_cikarici_dili(yol, dil), metin):
+        bas = min(max(bas, 1), n)
+        bit = min(max(bit, bas), n)
+        if (bas, bit) not in onbellek:
+            onbellek[(bas, bit)] = _adres_iz(satirlar, bas, bit)
+        sat.append((sat[0][0], tur, _adres_alan(ad), bas, bit, onbellek[(bas, bit)]))
+    return sat
+
+
+def _adres_cikarici_dili(yol, dil):
+    """Dosyanin cikarici dil kodu: `.tsx/.jsx/.js` icin JSX maskeli `tsx`."""
+    return "tsx" if dil == "ts" and os.path.splitext(yol)[1].lower() in _ADRES_JSX else dil
+
+
+def _adres_dizinle(kok, kod):
+    """{dil: [yol]} -> (satirlar, dosya sayilari, tanim sayilari, atlananlar {sebep: [yol]}, uyarilar {sebep: [yol]}).
+    `sozdizimi` (dosyanin kendisi cikarilamaz) ARAC kusuru DEGILDIR; `cikarici` (beklenmeyen istisna) ARAC KUSURUDUR."""
+    sat, dosya, tanim, atla, uyari = [], {}, {}, {}, {}
+    for dil in _ADRES_DIL_SIRA:
+        dosya[dil], tanim[dil] = 0, 0
+        for yol in kod[dil]:
+            metin, sebep = _adres_oku(kok, yol)
+            if metin is None:
+                atla.setdefault(sebep, []).append(yol)
+                continue
+            if sebep:
+                uyari.setdefault(sebep, []).append(yol)
+            try:
+                s = _adres_dosya_satirlari(yol, metin, dil)
+            except (SyntaxError, ValueError, RecursionError, MemoryError):
+                s = [_adres_dosya_satiri(yol, metin)]
+                atla.setdefault("sozdizimi", []).append(yol)
+            except Exception:               # noqa: BLE001 — tek dosyanin cikarici kusuru tum defteri oldurmez, SAYILIR (exit 3)
+                s = [_adres_dosya_satiri(yol, metin)]
+                atla.setdefault("cikarici", []).append(yol)
+            sat += s
+            dosya[dil] += 1
+            tanim[dil] += len(s) - 1
+    return sat, dosya, tanim, atla, uyari
+
+
+def _adres_ozet(dosya_satirlari):
+    """Izlenen kod agacinin ozeti: (yol, dosya SHA-256) ciftlerinin SHA-256'sinin ilk 16 hex'i. Bayatlik karari BU."""
+    govde = "\n".join("%s\t%s" % (r[0], r[2]) for r in dosya_satirlari)
+    return _adres_sha(govde)[:16]
+
+
+def _adres_disi_metni(disi):
+    if not disi:
+        return "-"
+    return ",".join("%s:%d" % (u, n) for u, n in sorted(disi.items(), key=lambda x: (-x[1], x[0])))
+
+
+def _adres_defter_metni(sat, kaynak, dosya, tanim, disi, atla):
+    sat.sort(key=lambda r: (r[0], r[3], -r[4], r[1], r[2]))
+    dosya_sat = [r for r in sat if r[1] == "dosya"]
+    dil = " ".join("%s=%d/%d" % (d, dosya[d], tanim[d]) for d in _ADRES_DIL_SIRA)
+    baslik = ("# adres-defteri bicim=%s surum=%s kaynak=%s ozet=%s dosya=%d tanim=%d %s disi=%s atlandi=%d"
+              % (_ADRES_BICIM, SURUM, kaynak, _adres_ozet(dosya_sat), len(dosya_sat), len(sat) - len(dosya_sat), dil,
+                 _adres_disi_metni(disi), sum(len(v) for v in atla.values())))
+    return "\n".join([baslik] + ["\t".join((r[0], r[1], r[2], str(r[3]), str(r[4]), r[5])) for r in sat]) + "\n"
+
+
+def _adres_disi_satiri(disi, sinir=8):
+    """`KAPSAM DISI DIL: n dosya (.kt 12, .java 3)` — bu dilimde cikarilmayan kaynak dilleri GIZLENMEZ."""
+    sirali = sorted(disi.items(), key=lambda x: (-x[1], x[0]))
+    ek = len(sirali) - sinir
+    ad = ", ".join("%s %d" % (u, n) for u, n in sirali[:sinir]) + (", +%d diger" % ek if ek > 0 else "")
+    return "KAPSAM DISI DIL: %d dosya (%s)" % (sum(disi.values()), ad)
+
+
+def _adres_sebep_satiri(baslik, sozluk):
+    ad = ", ".join("%s %d" % (s, len(v)) for s, v in sorted(sozluk.items()))
+    ilk = sorted(x for v in sozluk.values() for x in v)[:3]
+    return "%s: %d dosya (%s); ilk: %s" % (baslik, sum(len(v) for v in sozluk.values()), ad, ", ".join(ilk))
+
+
+_ADRES_KAYNAK_METNI = {"git": "git (izlenen dosyalar)", "git-alt": "git (alt dizin; izlenen dosyalar)",
+                       "dosya": "dosya sistemi (git YOK; .gitignore saygisi YOK)"}
+
+
+def _adres_kur(kok, y, p):
+    """`adres --kur`: `arsiv/hafiza/ADRES.tsv`yi yeniden uretir (deterministik; ayni agac + ayni motor + ayni Python
+    surumu -> bayt-bayt ayni). 0 kuruldu · 3 bir dosyada cikarici BEKLENMEDIK istisna firlatti (defter yine yazilir)."""
+    kaynak, yollar, notlar = _adres_dosyalar(kok)
+    kod, disi = _adres_yol_ayir(yollar)
+    sat, dosya, tanim, atla, uyari = _adres_dizinle(kok, kod)
+    metin = _adres_defter_metni(sat, kaynak, dosya, tanim, disi, atla)
+    try:
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+    except OSError as e:
+        oldur("PROJE YAPISI bozuk: %s dizin olmali (%s)" % (_rel(os.path.dirname(p), kok), e), 2)
+    yaz(p, metin)
+    print("ADRES DEFTERI KURULDU: %s (%d bayt)" % (_rel(p, kok), len(metin.encode("utf-8"))))
+    print("  kaynak : %s" % _ADRES_KAYNAK_METNI[kaynak])
+    for n in notlar:
+        print("  not    : " + n)
+    print("  dosya  : %d, tanim %d" % (sum(dosya.values()), sum(tanim.values())))
+    print("  dil    : %s" % " ".join("%s %d/%d" % (d, dosya[d], tanim[d]) for d in _ADRES_DIL_SIRA))
+    if disi:
+        print("  " + _adres_disi_satiri(disi))
+    if atla:
+        print("  " + _adres_sebep_satiri("ATLANDI", atla))
+    if uyari:
+        print("  " + _adres_sebep_satiri("UYARI (UTF-8 degil, latin-1 varsayildi)", uyari))
+    print("  NOT: cagiranlar sozcuk eslesmesidir; C#/Dart/TS/JS cikarimi desen tabanlidir (AST kadar kesin DEGIL)")
+    if atla.get("cikarici"):
+        print("  ARAC KUSURU: %d dosyada cikarici BEKLENMEDIK istisna firlatti (o dosyalarin tanimi YOK) - exit 3"
+              % len(atla["cikarici"]))
+        return 3
+    return 0
+
+
+# ---------------------------------------------------------------- defteri okuma + sorgu
+
+def _adres_baslik_coz(satir):
+    if not satir.startswith("# adres-defteri "):
+        return None
+    b = {}
+    for t in satir[len("# adres-defteri "):].split(" "):
+        k, ayrac, v = t.partition("=")
+        if ayrac:
+            b[k] = v
+    return b
+
+
+def _adres_defter_oku(p):
+    """-> ('yok', None) · ('bozuk', sebep) · ('tamam', (baslik, tanimlar, {yol: (sha, satir)}))."""
+    if not os.path.isfile(p):
+        return "yok", None
+    try:
+        with open(p, encoding="utf-8", errors="replace", newline="") as f:
+            satirlar = f.read().split("\n")
+    except OSError as e:
+        oldur("ADRES.tsv OKUNAMADI: %s" % e, 3)
+    baslik = _adres_baslik_coz(satirlar[0].rstrip("\r"))
+    if baslik is None or baslik.get("bicim") != _ADRES_BICIM:
+        return "bozuk", "baslik taninmiyor (bicim=%s bekleniyor)" % _ADRES_BICIM
+    tanim, dosya = [], {}
+    for n, s in enumerate(satirlar[1:], 2):
+        r = s.rstrip("\r").split("\t")
+        if not s.rstrip("\r"):
+            continue
+        try:
+            bas, bit = int(r[3]), int(r[4])
+        except (ValueError, IndexError):
+            return "bozuk", "%d. satir bozuk" % n
+        if len(r) != 6 or not 1 <= bas <= bit:
+            return "bozuk", "%d. satir bozuk" % n
+        if r[1] == "dosya":
+            dosya[r[0]] = (r[2], bit)
+        else:
+            tanim.append((r[0], r[1], r[2], bas, bit, r[5]))
+    for r in tanim:
+        if r[0] in dosya and r[4] > dosya[r[0]][1]:
+            return "bozuk", "%s: tanim satiri dosya sonunu asiyor" % r[0]
+    return "tamam", (baslik, tanim, dosya)
+
+
+def _adres_tara(kok, kod, arama):
+    """Izlenen kod dosyalarini BIR kez okur -> ({yol: tam SHA-256}, {yol: [satir]}); `arama` = (alt metin, sozcuk deseni) ya da None."""
+    bugun, isabet = {}, {}
+    for dil in _ADRES_DIL_SIRA:
+        for yol in kod[dil]:
+            metin = _adres_oku(kok, yol)[0]
+            if metin is None:
+                continue
+            bugun[_adres_alan(yol)] = _adres_sha(metin)
+            sat = _adres_satir_isabetleri(metin, arama[1]) if arama is not None and arama[0] in metin else None
+            if sat:
+                isabet[_adres_alan(yol)] = sat
+    return bugun, isabet
+
+
+def _adres_satir_isabetleri(metin, desen):
+    """Sozcuk isabetlerinin satir numaralari (artan; AYNI satirdaki birden cok gecis TEK kez)."""
+    sat, son, say = [], 0, 1
+    for m in desen.finditer(metin):
+        say += metin.count("\n", son, m.start())
+        son = m.start()
+        if not sat or sat[-1] != say:
+            sat.append(say)
+    return sat
+
+
+def _adres_arama(ad):
+    return ad, re.compile(r"(?<![\w$])%s(?![\w$])" % re.escape(ad))
+
+
+def _adres_bayat_sayisi(dosyalar, bugun):
+    yollar = set(dosyalar) | set(bugun)
+    return sum(1 for y in yollar if (dosyalar.get(y) or (None,))[0] != bugun.get(y))
+
+
+def _adres_eslestir(tanimlar, ad):
+    """-> ('tam', satirlar) · ('kismi', satirlar) · (None, [])."""
+    tam = [r for r in tanimlar if r[2] == ad or r[2].endswith("." + ad)]
+    if tam:
+        return "tam", tam
+    k = ad.lower()
+    kismi = [r for r in tanimlar if k in r[2].lower()]
+    return ("kismi", kismi) if kismi else (None, [])
+
+
+def _adres_tanim_satiri(r):
+    return "%s%s  L%d-%d  #%s  %s" % (r[0], _ADRES_AYRAC + _ADRES_AYRAC.join(r[2].split(".")), r[3], r[4], r[5], r[1])
+
+
+def _adres_sahip(tanimlar, n):
+    """Bir dosyanin satir -> o satiri kapsayan EN DAR tanim adi (yoksa None) haritasi (en buyuk aralik once, ic ice
+    tanimlar sonra boyanir; esit aralikta daha derin nitelikli ad kazanir)."""
+    sahip = [None] * (n + 2)
+    for r in sorted(tanimlar, key=lambda r: (-(r[4] - r[3]), r[2].count("."), r[3])):
+        bas, bit = r[3], min(r[4], n)
+        if bit >= bas:
+            sahip[bas:bit + 1] = [r[2]] * (bit - bas + 1)
+    return sahip
+
+
+def _adres_cagiranlar(tanimlar, isabet, ad):
+    """Isabetleri CAGIRANIN adresine gruplar (tanim satirlari HARIC) -> [(yol, kapsayan ad ya da None, [satir])]."""
+    dosya_tanim, tanim_satiri = {}, set()
+    for r in tanimlar:
+        dosya_tanim.setdefault(r[0], []).append(r)
+        if r[2] == ad or r[2].endswith("." + ad):
+            tanim_satiri.add((r[0], r[3]))
+    grup = {}
+    for yol in sorted(isabet):
+        sahip = _adres_sahip(dosya_tanim.get(yol, ()), isabet[yol][-1])
+        for satir in isabet[yol]:
+            if (yol, satir) not in tanim_satiri:
+                grup.setdefault((yol, sahip[satir]), []).append(satir)
+    return [(y, k, s) for (y, k), s in sorted(grup.items(), key=lambda x: (x[0][0], x[1][0], x[0][1] or ""))]
+
+
+def _adres_cagiran_satiri(g):
+    """`yol > Sinif > uye:satir,satir` (en cok `_ADRES_SATIR_TAVAN` satir no + `,+N`)."""
+    yol, ad, sat = g
+    ek = ",+%d" % (len(sat) - _ADRES_SATIR_TAVAN) if len(sat) > _ADRES_SATIR_TAVAN else ""
+    return "%s%s%s:%s%s" % (yol, _ADRES_AYRAC, _ADRES_AYRAC.join(ad.split(".")) if ad else "(dosya)",
+                            ",".join(map(str, sat[:_ADRES_SATIR_TAVAN])), ek)
+
+
+def _adres_yakin(tanimlar, ad):
+    """En yakin adlar; aday tavani (uzunlugu sorguya en yakin `_ADRES_YAKIN_ADAY` ad) yuz binlerce adli defterde sureyi sinirlar."""
+    son = ad.split(".")[-1]
+    adaylar = sorted(set(r[2].split(".")[-1] for r in tanimlar), key=lambda c: (abs(len(c) - len(son)), c))
+    return difflib.get_close_matches(son, adaylar[:_ADRES_YAKIN_ADAY], n=_ADRES_YAKIN_ADET, cutoff=0.3)
+
+
+def _adres_sinirli(satirlar, tavan, bicim):
+    """En cok `tavan` satir basar + `+N daha`."""
+    for s in satirlar[:tavan]:
+        print(bicim(s))
+    if len(satirlar) > tavan:
+        print("  +%d daha" % (len(satirlar) - tavan))
+
+
+def _adres_benzer(tanimlar, ad, bul):
+    """TAM eslesme VARKEN adi iceren DIGER adlar (`ShouldResync` -> `ShouldResyncAsync`): tanim adresleri (en cok 10 satir)."""
+    son = ad.split(".")[-1]
+    k, tam = son.lower(), set(r[2] for r in bul)
+    ben = [r for r in tanimlar if r[2] not in tam and r[2].split(".")[-1] != son and k in r[2].split(".")[-1].lower()]
+    if ben:
+        print("BENZER AD (adi iceren; %d ad, %d tanim):" % (len(set(r[2].split(".")[-1] for r in ben)), len(ben)))
+        _adres_sinirli(ben, _ADRES_BENZER_TAVAN, lambda r: "  " + _adres_tanim_satiri(r))
+
+
+def _adres_ad_cevabi(tanimlar, isabet, ad, baslik):
+    """`adres <ad>` govdesi: tanimlar + cagiranlar. 0 bulundu · 1 bulunamadi."""
+    kip, bul = _adres_eslestir(tanimlar, ad)
+    if kip is None:
+        print("BULUNAMADI: %s" % ad)
+        yakin = _adres_yakin(tanimlar, ad)
+        print("  en yakin ad: %s" % (", ".join(yakin) if yakin else "(yok)"))
+        if baslik.get("disi", "-") != "-":
+            print("  (defter kapsami disi: %s)" % baslik["disi"])
+        if baslik.get("atlandi", "0") != "0":
+            print("  (defterde ATLANDI: %s dosya - o dosyalardaki tanimlar yok)" % baslik["atlandi"])
+        return 1
+    print("TANIM (%d%s):" % (len(bul), ", kismi eslesme" if kip == "kismi" else ""))
+    _adres_sinirli(bul, _ADRES_TANIM_TAVAN, lambda r: "  " + _adres_tanim_satiri(r))
+    adlar = sorted(set(r[2].split(".")[-1] for r in bul))
+    if kip == "tam":
+        _adres_benzer(tanimlar, ad, bul)
+    if len(adlar) != 1:
+        print("  %d farkli ad eslesti - cagiranlar icin TAM ad ver." % len(adlar))
+        return 0
+    grup = _adres_cagiranlar(tanimlar, isabet, adlar[0])
+    print("CAGIRANLAR (%d adres):" % len(grup) if grup else "CAGIRANLAR: yok")
+    _adres_sinirli(grup, _ADRES_CAGIRAN_TAVAN, lambda g: "  " + _adres_cagiran_satiri(g))
+    print("NOT: cagiranlar sozcuk eslesmesidir")
+    return 0
+
+
+def _adres_mahalle_cevabi(tanimlar, onek):
+    """`adres --mahalle <onek>`: o onekteki tanimlarin tek satirlik listesi (en cok 60 satir). 0 bulundu · 1 bos."""
+    onek = onek.replace("\\", "/")
+    while onek.startswith("./"):
+        onek = onek[2:]
+    onek = "" if onek == "." else onek
+    bul = [r for r in tanimlar if r[0].startswith(onek)]
+    if not bul:
+        print("BULUNAMADI: %s ile baslayan yolda tanim yok" % onek)
+        return 1
+    print("MAHALLE %s: %d tanim, %d dosya" % (onek, len(bul), len(set(r[0] for r in bul))))
+    butce, gosterilen, son_yol = _ADRES_MAHALLE_TAVAN, 0, None
+    for r in bul:
+        yeni = r[0] != son_yol
+        if butce < (2 if yeni else 1):
+            break
+        if yeni:
+            print("  " + r[0])
+            butce, son_yol = butce - 1, r[0]
+        print("    %s %s L%d-%d" % (r[1], r[2], r[3], r[4]))
+        butce, gosterilen = butce - 1, gosterilen + 1
+    if gosterilen < len(bul):
+        print("  +%d daha" % (len(bul) - gosterilen))
+    return 0
+
+
+def _adres_sorgu(kok, p, a):
+    durum, veri = _adres_defter_oku(p)
+    if durum != "tamam":
+        print("ADRES DEFTERI %s - hafiza.py adres --kur" % ("YOK" if durum == "yok" else "BOZUK (%s)" % veri))
+        return 1
+    baslik, tanimlar, dosyalar = veri
+    kod = _adres_yol_ayir(_adres_dosyalar(kok)[1])[0]
+    arama = None
+    if a.ad is not None:
+        bul = _adres_eslestir(tanimlar, a.ad)[1]
+        adlar = sorted(set(r[2].split(".")[-1] for r in bul))
+        arama = _adres_arama(adlar[0]) if len(adlar) == 1 else None
+    bugun, isabet = _adres_tara(kok, kod, arama)
+    bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != baslik.get("ozet")
+    if bayat:
+        print("ADRES DEFTERI BAYAT: %d dosya degisti - hafiza.py adres --kur" % _adres_bayat_sayisi(dosyalar, bugun))
+    if a.ad is not None:
+        kod_ = _adres_ad_cevabi(tanimlar, isabet, a.ad, baslik)
+    else:
+        kod_ = _adres_mahalle_cevabi(tanimlar, a.mahalle)
+    return 1 if (bayat or kod_) else 0
+
+
+def cmd_adres(a):
+    """`adres`: kod adres defteri. Tam olarak BIRI: `<ad>` (tanim + cagiranlar) · `--kur` (defteri uret) · `--mahalle <onek>`.
+
+    CIKIS KODLARI (yeni kod EKLENMEZ): 0 bulundu / kuruldu · 1 bulunamadi, defter YOK/BOZUK ya da BAYAT (cevap yine basilir) ·
+    2 kullanim hatasi · 3 arac kusuru (git cagrisi basarisiz, defter okunamadi, cikarici beklenmedik istisna)."""
+    kok = kok_bul(a.kok)
+    if a.ad is not None:
+        a.ad = a.ad.strip()
+    if (bool(a.ad) + bool(a.kur) + (a.mahalle is not None)) != 1:
+        oldur("adres: tam olarak BIRI gerekir: <ad> | --kur | --mahalle <onek>")
+    rc = rc_oku(kok) if os.path.isfile(os.path.join(kok, RC_AD)) else dict(VARSAYILAN_RC)
+    y = Y(kok, rc)
+    p = os.path.join(y.h, _ADRES_DEFTER)
+    yol_on_kontrol(y, dizinler=(y.h,), dosyalar=(p,), sessiz=True)
+    return _adres_kur(kok, y, p) if a.kur else _adres_sorgu(kok, p, a)
+# ==== ADRES DEFTERI (P2) SON ====
+
+
 def _boru_koptu_mu(e):
     """Bu OSError bir BORU KOPMASI mi, yoksa GERCEK bir yazma hatasi mi?
 
@@ -8701,6 +10428,16 @@ def main():
                        epilog=_PAKET_KODLAR, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--cikti", help="paketin yolu (varsayilan: <depo>/hafiza-kur.skill)")
     p.set_defaults(fn=cmd_paket)
+
+    p = alt.add_parser("adres", aliases=_takma_ad("adres"),
+                       help="kod adres defteri: tanim + cagiranlar (arsiv/hafiza/ADRES.tsv; Python/C#/Dart/TS-JS; "
+                            "stdlib, desen tabanli)",
+                       epilog=_ADRES_KODLAR, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--kok", default=argparse.SUPPRESS)          # `--kok X adres ...` (alt komuttan ONCE) de gecerli kalir
+    p.add_argument("ad", nargs="?", help="aranacak ad (tam ya da kismi; `Sinif.uye` nitelikli de olur)")
+    p.add_argument("--kur", action="store_true", help="ADRES.tsv'yi (yeniden) uretir: git'in IZLEDIGI kod dosyalari")
+    p.add_argument("--mahalle", help="dizin ya da yol oneki: o onekteki tanimlarin tek satirlik listesi")
+    p.set_defaults(fn=cmd_adres)
 
     p = alt.add_parser("hook", aliases=_takma_ad("hook"), help="git pre-commit kapisini kurar")
     p.add_argument("--kok")
