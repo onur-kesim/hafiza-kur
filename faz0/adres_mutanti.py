@@ -10,7 +10,8 @@ NEDEN VAR
 KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir — motor sabitinden DEGIL: paylasilan kural = paylasilan korluk)
   A-TANIM        dort dilin (py/cs/dart/ts) fikstur dosyalarinda bilinen DORT tanim dogru yol + satir araligiyla     [TANIM-PY|CS|DART|TS]
   A-CAGIRAN      bilinen cagri listede (CAGIRAN-VAR); cagri silinince listeden DUSER (CAGIRAN-DUSER); tanim satiri cagiran
-                 sayilmaz (CAGIRAN-TANIM-HARIC)CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
+                 sayilmaz (CAGIRAN-TANIM-HARIC)
+  A-PARMAK       govde degisince iz DEGISIR (PARMAK-DEGISIR); yalniz satir sonu bosluk (PARMAK-BOSLUK) / CRLF (PARMAK-CRLF) degisince AYNICIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
             2 OLCULEMEDI (git yok, capa uymadi, duzenek kurulamadi)
 """
 import io
@@ -34,8 +35,8 @@ _cikti_kodlamasini_guvenceye_al()
 
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
-KOL_SIRASI = ("A-TANIM", "A-CAGIRAN")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN"}
+KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -113,6 +114,10 @@ CAGIRAN_ANA = '''public class Kullan
 }
 '''
 CAGIRAN_SILINMIS = CAGIRAN_ANA.replace("return k.Ac(1);", "return 1;")
+PARMAK_PY = '''def f(a):
+    b = a + 1
+    return b
+'''
 
 
 # ------------------------------------------------------------------ yardimcilar
@@ -187,6 +192,10 @@ def tanimlar(kok, yol):
     return [(r[1], r[2], int(r[3]), int(r[4])) for r in defter(kok)[1] if r[0] == yol and r[1] != "dosya"]
 
 
+def iz(kok, yol, ad):
+    return [r[5] for r in defter(kok)[1] if r[0] == yol and r[2] == ad][0]
+
+
 # ------------------------------------------------------------------ KOLLAR (her biri [(etiket, mesaj)] = bulgular)
 
 def kol_tanim(motor, taban):
@@ -226,10 +235,33 @@ def kol_cagiran(motor, taban):
     return b
 
 
+def kol_parmak(motor, taban):
+    """A-PARMAK: govde degisince iz degisir; yalniz satir sonu bosluk / CRLF degisince AYNI."""
+    b = []
+    kok = proje(taban, "parmak", {"src/f.py": PARMAK_PY})
+    yol = os.path.join(kok, "src", "f.py")
+    kur(motor, kok)
+    ilk = iz(kok, "src/f.py", "f")
+    _yaz(yol, PARMAK_PY.replace("a + 1", "a + 2"))
+    kur(motor, kok)
+    if iz(kok, "src/f.py", "f") == ilk:
+        b.append(("PARMAK-DEGISIR", "govde degisti ama parmak izi AYNI (%s)" % ilk))
+    _yaz(yol, "".join(s + "   \t\n" for s in PARMAK_PY.split("\n")[:-1]))
+    kur(motor, kok)
+    if iz(kok, "src/f.py", "f") != ilk:
+        b.append(("PARMAK-BOSLUK", "yalniz satir sonu boslugu degisti ama iz DEGISTI (%s -> %s)" % (ilk, iz(kok, "src/f.py", "f"))))
+    _yaz(yol, PARMAK_PY, crlf=True)
+    kur(motor, kok)
+    if iz(kok, "src/f.py", "f") != ilk:
+        b.append(("PARMAK-CRLF", "yalniz CRLF'e cevrildi ama iz DEGISTI (%s -> %s)" % (ilk, iz(kok, "src/f.py", "f"))))
+    return b
+
+
 # kol adi -> kosucu(motor, kol_tabani, ad, motor_kaynagi) -> [(etiket, mesaj)]
 KOLLAR = {
     "A-TANIM": lambda m, t, _a, _k: kol_tanim(m, t),
     "A-CAGIRAN": lambda m, t, _a, _k: kol_cagiran(m, t),
+    "A-PARMAK": lambda m, t, _a, _k: kol_parmak(m, t),
 }
 
 
@@ -274,6 +306,15 @@ SABOTAJLAR = (
     ("M-C2 cagiranlar HIC aranmaz", "A-CAGIRAN", "CAGIRAN-VAR",
      "        arama = _adres_arama(adlar[0]) if len(adlar) == 1 else None\n",
      "        arama = None      # MUTANT\n"),
+    ("M-P1 satir sonu normallestirmesi KAPALI (CRLF + bosluk)", "A-PARMAK", "PARMAK-CRLF",
+     '    s = _ADRES_SON_BOSLUK.sub("", _ADRES_SATIR_SONU.sub("\\n", s))\n',
+     "    s = s      # MUTANT\n"),
+    ("M-P2 yalniz satir sonu BOSLUGU kirpilmaz (CRLF hala cevrilir)", "A-PARMAK", "PARMAK-BOSLUK",
+     '_ADRES_SON_BOSLUK = re.compile(r"(?<![ \\t])[ \\t]+(?=\\n|\\Z)")',
+     '_ADRES_SON_BOSLUK = re.compile(r"(?!)")  # MUTANT: '),
+    ("M-P3 parmak izi SABIT (govde degisince degismez)", "A-PARMAK", "PARMAK-DEGISIR",
+     '    return _adres_sha("\\n".join(satirlar[bas - 1:bit]))[:8]\n',
+     '    return "00000000"      # MUTANT\n'),
 )
 
 
