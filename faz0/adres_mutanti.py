@@ -14,7 +14,8 @@ KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir �
   A-PARMAK       govde degisince iz DEGISIR (PARMAK-DEGISIR); yalniz satir sonu bosluk (PARMAK-BOSLUK) / CRLF (PARMAK-CRLF) degisince AYNI
   A-BAYAT        dosya degisince ilk satir `ADRES DEFTERI BAYAT: 1 dosya degisti` + exit 1 (BAYAT-VAR); degismeyince sessiz exit 0 (BAYAT-YOK)
   A-DETERMINIZM  iki `--kur` bit-bit ayni (DETERMINIZM-AYNI); satirlar kanonik sirada (DETERMINIZM-SIRA: dort dil, adlari DIL SIRASINA
-                 ters serpistirilmis dosyalar — siralama kapaliysa dil gruplamasi gorunur)CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
+                 ters serpistirilmis dosyalar — siralama kapaliysa dil gruplamasi gorunur)
+  A-ETKI         adres cikaricisi BILEREK bozukken `kapi` · `kapi --siki` · `devral --kesif` ciktisi (exit + stdout + stderr) BAYT-BAYT ayni (ETKI)CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
             2 OLCULEMEDI (git yok, capa uymadi, duzenek kurulamadi)
 """
 import io
@@ -38,8 +39,8 @@ _cikti_kodlamasini_guvenceye_al()
 
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
-KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM"}
+KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-ETKI")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-ETKI": "ETKI"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -296,6 +297,50 @@ def kol_determinizm(motor, taban):
     return b
 
 
+def _kapi_kosusu(motor, kok):
+    cikti = []
+    for args in (("kapi",), ("kapi", "--siki"), ("devral", "--kesif")):
+        kod, o, e = kos(motor, kok, *args)
+        cikti.append((args, kod, o.replace(kok, "<KOK>"), e.replace(kok, "<KOK>")))
+    return cikti
+
+
+def kol_etki(motor, taban, bozuk_motor):
+    """A-ETKI: cikarici BILEREK bozukken (`bozuk_motor`: _adres_cikar istisna firlatir) `kapi`/`kapi --siki`/`devral --kesif`
+    ciktisi ILE bozulmamis motorunki bayt-bayt ayni olmali. Ayni baslangic durumu icin ayni projenin iki KOPYASI kosulur."""
+    b = []
+    ana = proje(taban, "etki", dict((yol, m) for yol, m in FIKSTUR.values()))
+    r = kos(motor, ana, "kur", "--ad", "ADR")
+    if r[0] != 0:
+        raise Kurulamadi("kur basarisiz (exit=%s): %s" % (r[0], (r[1] + r[2]).strip()[-160:]))
+    _git(ana, "add", "-A")
+    _git(ana, "commit", "-q", "-m", "hafiza")
+    kopya = os.path.join(taban, "etki_kopya")
+    shutil.copytree(ana, kopya)
+    saglam, bozuk = _kapi_kosusu(motor, ana), _kapi_kosusu(bozuk_motor, kopya)
+    for s, z in zip(saglam, bozuk):
+        if s != z:
+            b.append(("ETKI", "`%s` ciktisi adres cikaricisi bozukken DEGISTI: exit %s -> %s; ilk fark: %r" % (
+                " ".join(s[0]), s[1], z[1], [(x, y) for x, y in zip((s[2] + s[3]).split("\n"), (z[2] + z[3]).split("\n")) if x != y][:1])))
+    return b
+
+
+def _bozuk_motor_yaz(kaynak, hedef_dizin, ad):
+    """Cikaricisi BILEREK bozuk motor kopyasi (A-ETKI kontrolu)."""
+    ankor = '    if dil == "py":\n        return _ad_py(metin)\n'
+    if kaynak.count(ankor) != 1:
+        return None, "bozucu capa %d yerde gecti (1 olmali)" % kaynak.count(ankor)
+    metin = kaynak.replace(ankor, '    raise RuntimeError("bilerek bozuk adres cikaricisi")      # MUTANT\n' + ankor, 1)
+    return _motor_yaz(metin, hedef_dizin, ad)
+
+
+def kos_etki(motor, taban, ad, kaynak):
+    bozuk, hata = _bozuk_motor_yaz(kaynak, os.path.join(os.path.dirname(taban), "bozuk_" + ad), "bozuk_" + ad)
+    if bozuk is None:
+        raise Kurulamadi(hata)
+    return kol_etki(motor, taban, bozuk)
+
+
 # kol adi -> kosucu(motor, kol_tabani, ad, motor_kaynagi) -> [(etiket, mesaj)]
 KOLLAR = {
     "A-TANIM": lambda m, t, _a, _k: kol_tanim(m, t),
@@ -303,6 +348,7 @@ KOLLAR = {
     "A-PARMAK": lambda m, t, _a, _k: kol_parmak(m, t),
     "A-BAYAT": lambda m, t, _a, _k: kol_bayat(m, t),
     "A-DETERMINIZM": lambda m, t, _a, _k: kol_determinizm(m, t),
+    "A-ETKI": kos_etki,
 }
 
 
@@ -368,6 +414,10 @@ SABOTAJLAR = (
     ("M-D2 baslik surec numarasi tasir (iki kosum farkli)", "A-DETERMINIZM", "DETERMINIZM-AYNI",
      "% (_ADRES_BICIM, SURUM, kaynak,",
      "% (_ADRES_BICIM, SURUM + str(os.getpid()), kaynak,"),
+    ("M-E1 `kapi` adres cikaricisini cagirir", "A-ETKI", "ETKI",
+     "    kok = kok_bul(a.kok); _KAPI_KOK[0] = kok\n    rc = rc_oku(kok); y = Y(kok, rc)\n",
+     "    kok = kok_bul(a.kok); _KAPI_KOK[0] = kok\n    rc = rc_oku(kok); y = Y(kok, rc)\n"
+     '    _adres_cikar("py", "x = 1")      # MUTANT: kapi adres koduna baglandi\n'),
 )
 
 
