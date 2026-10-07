@@ -151,6 +151,62 @@ okunan motor kaynakla bit-bit, envanter süzülmüş kaynakla aynı, açıklama 
 Kaynakta dizin bağlantısı (symlink/junction) varsa `paket` **reddeder** — bağlantıyı izlemez,
 sessizce de düşürmez.
 
+**Kod adres defteri (`adres`)** — izlenen kod dosyalarındaki **tanımların adresi** (sınıf/arayüz/kayıt/yapı/enum,
+metot/fonksiyon/kurucu/özellik, ok-fonksiyon ataması, alan/sabit): `arsiv/hafiza/ADRES.tsv`. İlk dilim dört dil:
+Python (`ast`, kesin) · C# · Dart · TypeScript/JavaScript (stdlib desenleri + parantez dengeleme). Amaç: bir asistan
+"bu sembol nerede, kim çağırıyor?" sorusunu **bütün depoyu okumadan** cevaplasın; cevabın büyüklüğü sorunun büyüklüğü
+kadardır, projenin değil. Çıktı düz metindir (Claude'a bağlı değil).
+
+```bash
+python3 skill/scripts/hafiza.py adres --kok=<proje> --kur                  # defteri (yeniden) üretir
+python3 skill/scripts/hafiza.py adres --kok=<proje> ShouldResyncAsync      # tanım adresi + çağıranlar
+python3 skill/scripts/hafiza.py adres --kok=<proje> --mahalle src/Sync     # o önekteki tanımların listesi
+```
+
+- **`--kur`** git'in **izlediği** kod dosyalarını okur (git deposunun alt dizininde de; git yoksa dosya sistemi — `.gitignore`
+  saygısı YOK, budanan dizin adları ve atlanan bağlantı/okunamayan dizinler çıktıda **söylenir**). Satır: `yol` ⇥ `tür` ⇥
+  `nitelikli ad` ⇥ `başlangıç` ⇥ `bitiş` ⇥ `parmak izi (8 hex)`. Başlangıç = adın geçtiği satır, bitiş = gövde `}` ya da
+  bildirimi bitiren satır; nitelikli ad `Sınıf.üye` (iç içe `A.B.üye`; C# ad alanı ada GİRMEZ). **Parmak izi**, o
+  satırların (satır sonu boşlukları atılmış, LF) SHA-256'sının ilk 8 hex'idir: gövde değişince değişir, yalnız
+  boşluk/CRLF değişince **değişmez**; **adın ÖNCEKİ satırları** (attribute/decorator/ek açıklama/dönüş tipi bir üst
+  satırdaysa o) izin DIŞINDADIR. Her dosya için ayrıca bir `dosya` satırı vardır (ad sütunu = dosyanın tam SHA-256'sı:
+  bayatlık kararı buna bakar; tanım listelerinden süzülür). Aynı ağaç + aynı motor → `ADRES.tsv` bit-bit aynı (sıralı,
+  LF, UTF-8; Windows/Linux, Python 3.12/3.14'te ölçüldü); istisna: Python dosyası yorumlayıcı sürümüne özgü sözdizimi
+  taşıyorsa eski sürüm onu `ATLANDI sozdizimi` sayar. Başlık satırı: motor sürümü + kod ağacı özeti + dil başına
+  dosya/tanım sayısı. Dört dil dışındaki kaynak diller `KAPSAM DISI DIL: n dosya (.kt 12, .java 3)` olarak **sayılır**,
+  gizlenmez. UTF-16/UTF-32 (BOM'lu) çözülür; UTF-8 olmayan dosya latin-1 varsayılır ve `UYARI` basılır; NUL baytlı (ikili)
+  dosya `ATLANDI ikili`dir. Bir dosyada çıkarıcı **beklenmedik** istisna atarsa defter yine yazılır, çıktı `ARAC KUSURU`
+  der ve `exit 3` döner (dosyanın kendi sözdizimi hatası araç kusuru DEĞİLDİR: `ATLANDI sozdizimi`). Yol sütununda sekme/satır
+  sonu `%09`/`%0A`/`%0D` olur; adda gerçekten `%09`/`%0A`/`%0D`/`%25` dizisi varsa onun `%`si `%25` yazılır (kaçış tersinirdir:
+  iki ayrı dosya tek anahtara düşmez). Python'da `if/try/with/for/while/match` ve `except*` gövdeleri ile `type X = ...` (3.12)
+  de taranır; Python adlarını `ast` NFKC'ye çevirir (kaynakta `µ` yazılı bir ad defterde `μ`dür — bilinen sınır).
+- **`adres <ad>`** tanım(lar)ı ve **çağıranları** basar (çağıranın kendi adresine gruplanmış: `yol > Sınıf > üye:satır`;
+  tanım satırları hariç, aynı satırdaki geçişler tek; en çok 30 satır + `+N daha`). Ad kısmi verilebilir (`ShouldResync`
+  → tam eşleşme + `BENZER AD` olarak `ShouldResyncAsync`); eşleşme yoksa `exit 1` + en yakın 5 ad. Çıktı ayracı ASCII `>`
+  ve `-`'dir (iş emrindeki `›`/`—` yerine: KISIT "ASCII konsol çıktısı"); yol ve ad olduğu gibi basılır.
+- **Bayatlık gizlenemez:** kod ağacı (çalışma ağacındaki dosya içerikleri; `git ls-files -s` DEĞİL — commit'siz/stage'siz
+  düzenlemeyi görmez) değişip defter eskirse sorgu YİNE cevap verir ama ilk satır `ADRES DEFTERI BAYAT: <n> dosya
+  degisti` olur ve `exit 1` döner. Defter yoksa `ADRES DEFTERI YOK`, `exit 1`.
+- **`--mahalle <dizin ya da önek>`** o yol önekindeki tanımların tek satırlık listesi (en çok 60 satır + `+N daha`).
+
+`adres`: `0` bulundu / kuruldu · `1` bulunamadı, defter YOK ya da BOZUK, ya da BAYAT (cevap yine basılır) ·
+`2` kullanım hatası / `arsiv` bir dosya (yapı bozuk) · `3` araç kusuru (`git ls-files` başarısız, git alt dizininde
+`dubious ownership`, defter okunamadı, çıkarıcı beklenmedik istisna). Bozuk defter (sayısal ama anlamsız satır aralığı dahil)
+`exit 1 BOZUK`tur, asla `exit 3`/asılma. Takma adı yoktur (`hook` gibi).
+
+**Bilinen sınır (baştan yazılır):** C#/Dart/TS/JS çıkarımı **desen tabanlıdır, AST kadar kesin DEĞİL** — dinamik
+çağrı, aşırı yükleme, yansıma, string içi ad kaçar ya da fazla sayılır. Bilinen kayıplar: `#if` ile dengesiz süslü parantez,
+JS nesne literalindeki yöntemler, çok bildirimli `int a, b;` (yalnız ilk ad), tırnaklı/hesaplanan enum üyeleri, C# 14
+`extension(...)` blokları, adsız sınıf ifadesinin üyeleri, noktalı virgülsüz JS'te `(`/`[` ile başlayan satır devamı (JS'in
+kendi ASI kuralı; `}` ardından satır başı `(`/`[` de), ilkleyicisiz `let x` ardından `[`, tek ifadede `exports.a = 1, exports.b = 2`
+zincirinin yalnız ilk adı, ardışık `a<b` … `c>d` karşılaştırmaları (C# tür argümanı sanılır), TS'te bildirim başına ALAN adı olan
+tipsiz ve noktalı virgülsüz `private x?` / `private y` alan çifti, satır başındaki regex literali. JSX yalnız `.tsx/.jsx/.js`'te maskelenir ve 100'ü
+aşan iç içe JSX `ATLANDI sozdizimi` sayılır (kod sanılıp sonrası yutulmaz); tek bildirimde binlerce süslü literal (Dart `..a = {1}`
+zinciri, üretilmiş kod) ikinci dereceden yavaşlar. **"Çağıran" listesi sözcük
+eşleşmesidir, tip çözümlemesi DEĞİLDİR** (yorum ve string içindeki geçişler dahil); bu sınır çıktıda da basılır:
+`NOT: cagiranlar sozcuk eslesmesidir`. Her sorgu bayatlığı ölçmek için tüm kod dosyalarını okur (cevabın boyutu sorunun
+boyutuyla büyür; SÜRE projeyle büyür). Ölçüm: `faz0/adres_mutanti.py` (yedi kol, her biri ayrı eksende sabotajla sınanır).
+
 `kur`, ağaçta başka bir aracın defterini tanırsa (`CLAUDE.md`, `AGENTS.md`,
 `DURUM.md`, `memory-bank/` …) **durur** ve `devral` önerir — belge bunu zaten
 söylüyordu, artık kod da zorluyor. Bilerek geçmek için `--yine-de`; geçiş
