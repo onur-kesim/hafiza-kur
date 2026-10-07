@@ -8,7 +8,9 @@ NEDEN VAR
   bir EKSENDE sinar; her kolun sabotaji YALNIZ kendi ekseninde isirir, ortusme raporlanir (gizlenmez).
 
 KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir — motor sabitinden DEGIL: paylasilan kural = paylasilan korluk)
-  A-TANIM        dort dilin (py/cs/dart/ts) fikstur dosyalarinda bilinen DORT tanim dogru yol + satir araligiyla     [TANIM-PY|CS|DART|TS]CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
+  A-TANIM        dort dilin (py/cs/dart/ts) fikstur dosyalarinda bilinen DORT tanim dogru yol + satir araligiyla     [TANIM-PY|CS|DART|TS]
+  A-CAGIRAN      bilinen cagri listede (CAGIRAN-VAR); cagri silinince listeden DUSER (CAGIRAN-DUSER); tanim satiri cagiran
+                 sayilmaz (CAGIRAN-TANIM-HARIC)CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
             2 OLCULEMEDI (git yok, capa uymadi, duzenek kurulamadi)
 """
 import io
@@ -32,8 +34,8 @@ _cikti_kodlamasini_guvenceye_al()
 
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
-KOL_SIRASI = ("A-TANIM"),
-KOL_ETIKET = {"A-TANIM": "TANIM"}
+KOL_SIRASI = ("A-TANIM", "A-CAGIRAN")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -102,6 +104,15 @@ BEKLENEN = {
     "dart": [("sabit", "sabit", 1, 1), ("sinif", "Kasa", 3, 9), ("metot", "Kasa.ac", 4, 6), ("ozellik", "Kasa.ad", 8, 8)],
     "ts": [("sabit", "SABIT", 1, 1), ("sinif", "Kasa", 3, 7), ("metot", "Kasa.ac", 4, 6), ("fonksiyon", "hesapla", 9, 9)],
 }
+CAGIRAN_ANA = '''public class Kullan
+{
+    public int Calis(Kasa k)
+    {
+        return k.Ac(1);
+    }
+}
+'''
+CAGIRAN_SILINMIS = CAGIRAN_ANA.replace("return k.Ac(1);", "return 1;")
 
 
 # ------------------------------------------------------------------ yardimcilar
@@ -190,9 +201,35 @@ def kol_tanim(motor, taban):
     return b
 
 
+def _cagiranlar(cikti):
+    """`adres <ad>` ciktisinin CAGIRANLAR satirlari."""
+    bolum = cikti.split("CAGIRANLAR")
+    return [l.strip() for l in bolum[1].split("\n")[1:] if l.startswith("  ") and "NOT:" not in l] if len(bolum) > 1 else []
+
+
+def kol_cagiran(motor, taban):
+    """A-CAGIRAN: bilinen cagri listede · cagri silinince DUSER · tanim satiri kendini cagiran SAYILMAZ."""
+    b = []
+    kok = proje(taban, "cagiran", {"src/Kasa.cs": CS_FX, "src/Kullan.cs": CAGIRAN_ANA})
+    kur(motor, kok)
+    kod, o, _e = kos(motor, kok, "adres", "Ac")
+    liste = _cagiranlar(o)
+    if not any(l.startswith("src/Kullan.cs") and l.endswith(":5") for l in liste):
+        b.append(("CAGIRAN-VAR", "bilinen cagri (src/Kullan.cs:5) listede YOK: exit=%s liste=%r" % (kod, liste)))
+    if any(l.startswith("src/Kasa.cs") and ":7" in l for l in liste):
+        b.append(("CAGIRAN-TANIM-HARIC", "tanim satiri (src/Kasa.cs:7) kendini cagiran SAYILDI: %r" % liste))
+    _yaz(os.path.join(kok, "src", "Kullan.cs"), CAGIRAN_SILINMIS)
+    kur(motor, kok)
+    kod, o, _e = kos(motor, kok, "adres", "Ac")
+    if any(l.startswith("src/Kullan.cs") for l in _cagiranlar(o)):
+        b.append(("CAGIRAN-DUSER", "cagri silindi ama src/Kullan.cs hala cagiran: %r" % _cagiranlar(o)))
+    return b
+
+
 # kol adi -> kosucu(motor, kol_tabani, ad, motor_kaynagi) -> [(etiket, mesaj)]
 KOLLAR = {
     "A-TANIM": lambda m, t, _a, _k: kol_tanim(m, t),
+    "A-CAGIRAN": lambda m, t, _a, _k: kol_cagiran(m, t),
 }
 
 
@@ -231,6 +268,12 @@ SABOTAJLAR = (
     ("M-T4 TS/JS cikaricisi kapali", "A-TANIM", "TANIM-TS",
      "    S = _ad_hazirla(dil, metin)\n    cikti = []\n",
      '    if dil == "ts":      # MUTANT\n        return []\n    S = _ad_hazirla(dil, metin)\n    cikti = []\n'),
+    ("M-C1 tanim satiri HARIC tutulmaz (tanim kendini cagiran sanilir)", "A-CAGIRAN", "CAGIRAN-TANIM-HARIC",
+     "            if (yol, satir) not in tanim_satiri:\n",
+     "            if True:      # MUTANT\n"),
+    ("M-C2 cagiranlar HIC aranmaz", "A-CAGIRAN", "CAGIRAN-VAR",
+     "        arama = _adres_arama(adlar[0]) if len(adlar) == 1 else None\n",
+     "        arama = None      # MUTANT\n"),
 )
 
 
