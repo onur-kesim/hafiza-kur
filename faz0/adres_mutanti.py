@@ -15,7 +15,10 @@ KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir �
   A-BAYAT        dosya degisince ilk satir `ADRES DEFTERI BAYAT: 1 dosya degisti` + exit 1 (BAYAT-VAR); degismeyince sessiz exit 0 (BAYAT-YOK)
   A-DETERMINIZM  iki `--kur` bit-bit ayni (DETERMINIZM-AYNI); satirlar kanonik sirada (DETERMINIZM-SIRA: dort dil, adlari DIL SIRASINA
                  ters serpistirilmis dosyalar — siralama kapaliysa dil gruplamasi gorunur)
-  A-ETKI         adres cikaricisi BILEREK bozukken `kapi` · `kapi --siki` · `devral --kesif` ciktisi (exit + stdout + stderr) BAYT-BAYT ayni (ETKI)CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
+  A-ETKI         adres cikaricisi BILEREK bozukken `kapi` · `kapi --siki` · `devral --kesif` ciktisi (exit + stdout + stderr) BAYT-BAYT ayni (ETKI)
+  A-KOMUT-SATIRI YALNIZ Windows: 43.200 karakterlik yol kumesinde `--kur` COKMEZ, kaynak=git (KOMUT-SATIRI); Linux/macOS: OLCULEMEDI beyani
+
+CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
             2 OLCULEMEDI (git yok, capa uymadi, duzenek kurulamadi)
 """
 import io
@@ -39,8 +42,8 @@ _cikti_kodlamasini_guvenceye_al()
 
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
-KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-ETKI")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-ETKI": "ETKI"}
+KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-ETKI", "A-KOMUT-SATIRI")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-ETKI": "ETKI", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -341,6 +344,25 @@ def kos_etki(motor, taban, ad, kaynak):
     return kol_etki(motor, taban, bozuk)
 
 
+def kol_komut_satiri(motor, taban):
+    """A-KOMUT-SATIRI (YALNIZ Windows): toplam yol uzunlugu > 32.767 kr gercek git projesinde `--kur` COKMEZ ve kaynak=git."""
+    if os.name != "nt":
+        return None
+    yollar = ["veri/w%04d_%s.py" % (i, "q" * 56) for i in range(UZUN_YOL_ADET)]
+    kok = proje(taban, "uzun", dict((y, "def f():\n    return 1\n") for y in yollar))
+    if max(len(os.path.join(kok, *y.split("/"))) for y in yollar) >= 260:
+        raise Kurulamadi("tek yol >= 260 (TEMP kisa degil): %s" % kok)
+    kod, o, e = kos(motor, kok, "adres", "--kur")
+    if kod != 0 or "git (izlenen dosyalar)" not in o:
+        return [("KOMUT-SATIRI", "43.200 kr yol kumesinde `--kur` exit=%s; cikti=%r" % (kod, (o + e).strip()[:160]))]
+    return []
+
+
+def kos_komut_satiri(motor, taban, _ad, _kaynak):
+    w = kol_komut_satiri(motor, taban)
+    return [("OLCULEMEDI-WIN", "bu platformda sinir yok")] if w is None else w
+
+
 # kol adi -> kosucu(motor, kol_tabani, ad, motor_kaynagi) -> [(etiket, mesaj)]
 KOLLAR = {
     "A-TANIM": lambda m, t, _a, _k: kol_tanim(m, t),
@@ -349,6 +371,7 @@ KOLLAR = {
     "A-BAYAT": lambda m, t, _a, _k: kol_bayat(m, t),
     "A-DETERMINIZM": lambda m, t, _a, _k: kol_determinizm(m, t),
     "A-ETKI": kos_etki,
+    "A-KOMUT-SATIRI": kos_komut_satiri,
 }
 
 
@@ -418,6 +441,10 @@ SABOTAJLAR = (
      "    kok = kok_bul(a.kok); _KAPI_KOK[0] = kok\n    rc = rc_oku(kok); y = Y(kok, rc)\n",
      "    kok = kok_bul(a.kok); _KAPI_KOK[0] = kok\n    rc = rc_oku(kok); y = Y(kok, rc)\n"
      '    _adres_cikar("py", "x = 1")      # MUTANT: kapi adres koduna baglandi\n'),
+    ("M-K1 dosya listesi TEK git cagrisina dizilir", "A-KOMUT-SATIRI", "KOMUT-SATIRI",
+     '    r = _adres_git(kok, "ls-files", "-z")\n',
+     '    r = _adres_git(kok, "ls-files", "-z")\n'
+     '    r = _adres_git(kok, "ls-files", "-z", "--", *[x.decode("utf-8", "replace") for x in r.stdout.split(b"\\0") if x])  # MUTANT\n'),
 )
 
 
