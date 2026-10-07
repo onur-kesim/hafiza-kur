@@ -8526,7 +8526,7 @@ def _adres_iz(satirlar, bas, bit):
 
 _AD_BOS = re.compile(r"[^\n]")
 _AD_BOS_HEPSI = re.compile(r".", re.S)               # maskede dize/yorum ICI satir sonlari da bosluk olur (ASI yaniltilmaz)
-_AD_DESEN = {}
+_AD_DESEN = {}  # type: dict
 
 
 def _ad_desen(kapanis, kacis, delik, tek_satir):
@@ -8812,7 +8812,7 @@ _AD_JSX_ONCE = frozenset("([{,;=:?&|!.+*%^~")
 _AD_JSX_SOZ = frozenset(("return", "yield", "default", "case", "else", "do", "await", "throw", "typeof", "void", "in",
                          "instanceof", "delete"))
 _AD_JSX_DERIN = 100
-_AD_JSX_MEMO = {}                    # {`<` konumu: eleman SONU ya da None}: ayni konum ayni metinde iki kez DENENMEZ (ustel sure yok)
+_AD_JSX_MEMO = {}  # type: dict   # {`<` konumu: eleman SONU ya da None}: ayni konum ayni metinde iki kez DENENMEZ (ustel sure yok)
 
 
 def _ad_jsx_once_mi(t, k):
@@ -9654,7 +9654,7 @@ _ADRES_GIT_ORTAM_HARIC = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")
 def _adres_git(kok, *args):
     """`git -C kok ...` (yollar komut satirina DIZILMEZ — H14 dersi); baska deponun ortam degiskenleri susturulur."""
     ortam = dict((k, v) for k, v in os.environ.items() if k not in _ADRES_GIT_ORTAM_HARIC)
-    return subprocess.run(["git", "-C", kok] + list(args), capture_output=True, env=ortam)
+    return subprocess.run(["git", "-C", kok] + list(args), capture_output=True, env=ortam)  # noqa: S603  # nosec B603
 
 
 def _adres_git_dosyalari(kok):
