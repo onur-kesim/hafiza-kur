@@ -2367,6 +2367,42 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
+  # 2b-30c) ADRES MUTANTI — besli-paket/IS_EMRI_P2_ADRES_DEFTERI.md (Onur kilidi
+  #     6-7 Ekim 2026: P2 `hafiza.py` icine, SARTLI). `hafiza.py adres` (kod adres
+  #     defteri: tanim + cagiranlar) birden cok AYRI vaat tasir; `faz0/adres_mutanti.py`
+  #     her vaadi ayri KOLDA, ayri EKSENDE sinar ve her kolun sabotaji YALNIZ kendi
+  #     ekseninde isirmalidir (ortusme raporlanir). Kollar betigin basindaki
+  #     docstring'de; bu isin adimi tek komuttur, kol eklemek burayi DEGISTIRMEZ.
+  #     Betik motoru ALT SUREC olarak kosar (dosya listesi git'ten `ls-files -z`;
+  #     H14 dersi: yollar komut satirina DIZILMEZ). `A-KOMUT-SATIRI` kolu yalniz
+  #     Windows'ta isirir; Linux/macOS'ta `OLCULEMEDI: bu platformda sinir yok`
+  #     BEYAN eder (sessiz YESIL degil). 🔴 UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  adres_mutanti:
+    name: Adres mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: adres defteri kollari (tanim, cagiran, parmak izi, bayatlik, determinizm, etki, komut satiri) + sabotajlar
+        shell: bash
+        run: python faz0/adres_mutanti.py 2>&1 | tee adres-mutanti-cikti.txt
+      - name: adres mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adres-mutanti-${{ matrix.os }}
+          path: adres-mutanti-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
   # 2b-31) ISIR UYGULANMAZ MUTANTI — besli-paket/IS_EMRI_UYGULANMAZ.md KALEM 1
   #     (Onur kilidi 7 Eylul 2026): `isir`e git'li `mutant_git` kolu eklenince
   #     (M-H12g/M-H14g), git'SIZ projede (`t_y42`'nin `yeni()` fabrikasi gibi)
