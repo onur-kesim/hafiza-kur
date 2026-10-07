@@ -12,7 +12,9 @@ KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir �
   A-CAGIRAN      bilinen cagri listede (CAGIRAN-VAR); cagri silinince listeden DUSER (CAGIRAN-DUSER); tanim satiri cagiran
                  sayilmaz (CAGIRAN-TANIM-HARIC)
   A-PARMAK       govde degisince iz DEGISIR (PARMAK-DEGISIR); yalniz satir sonu bosluk (PARMAK-BOSLUK) / CRLF (PARMAK-CRLF) degisince AYNI
-  A-BAYAT        dosya degisince ilk satir `ADRES DEFTERI BAYAT: 1 dosya degisti` + exit 1 (BAYAT-VAR); degismeyince sessiz exit 0 (BAYAT-YOK)CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
+  A-BAYAT        dosya degisince ilk satir `ADRES DEFTERI BAYAT: 1 dosya degisti` + exit 1 (BAYAT-VAR); degismeyince sessiz exit 0 (BAYAT-YOK)
+  A-DETERMINIZM  iki `--kur` bit-bit ayni (DETERMINIZM-AYNI); satirlar kanonik sirada (DETERMINIZM-SIRA: dort dil, adlari DIL SIRASINA
+                 ters serpistirilmis dosyalar — siralama kapaliysa dil gruplamasi gorunur)CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
             2 OLCULEMEDI (git yok, capa uymadi, duzenek kurulamadi)
 """
 import io
@@ -36,8 +38,8 @@ _cikti_kodlamasini_guvenceye_al()
 
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
-KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT"}
+KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -273,12 +275,34 @@ def kol_bayat(motor, taban):
     return b
 
 
+SERPISTIR ={"a.ts": TS_FX, "b.py": PY_FX, "c.dart": DART_FX, "d.cs": CS_FX}       # alfabetik sira != dil sirasi (py cs dart ts)
+
+
+def kol_determinizm(motor, taban):
+    """A-DETERMINIZM: iki `--kur` bit-bit ayni; satirlar kanonik (yol, bas, -bit, tur, ad) sirasinda."""
+    b = []
+    kok = proje(taban, "det1", SERPISTIR)
+    kur(motor, kok)
+    p = os.path.join(kok, "arsiv", "hafiza", "ADRES.tsv")
+    ilk = open(p, "rb").read()
+    kur(motor, kok)
+    if open(p, "rb").read() != ilk:
+        b.append(("DETERMINIZM-AYNI", "ayni agacta iki `--kur` FARKLI bayt uretti"))
+    sat = defter(kok)[1]
+    anahtar = lambda r: (r[0], int(r[3]), -int(r[4]), r[1], r[2])
+    if sat != sorted(sat, key=anahtar):
+        b.append(("DETERMINIZM-SIRA", "satirlar kanonik (yol, bas, -bit, tur, ad) sirasinda DEGIL: ilk sapma %r" % (
+            [(x, y) for x, y in zip(sat, sorted(sat, key=anahtar)) if x != y][:1],)))
+    return b
+
+
 # kol adi -> kosucu(motor, kol_tabani, ad, motor_kaynagi) -> [(etiket, mesaj)]
 KOLLAR = {
     "A-TANIM": lambda m, t, _a, _k: kol_tanim(m, t),
     "A-CAGIRAN": lambda m, t, _a, _k: kol_cagiran(m, t),
     "A-PARMAK": lambda m, t, _a, _k: kol_parmak(m, t),
     "A-BAYAT": lambda m, t, _a, _k: kol_bayat(m, t),
+    "A-DETERMINIZM": lambda m, t, _a, _k: kol_determinizm(m, t),
 }
 
 
@@ -338,6 +362,12 @@ SABOTAJLAR = (
     ("M-B2 agac ozeti HER ZAMAN farkli (degismeyen agac bayat sanilir)", "A-BAYAT", "BAYAT-YOK",
      '    bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != baslik.get("ozet")\n',
      "    bayat = True      # MUTANT\n"),
+    ("M-D1 siralama KAPALI", "A-DETERMINIZM", "DETERMINIZM-SIRA",
+     "    sat.sort(key=lambda r: (r[0], r[3], -r[4], r[1], r[2]))\n",
+     "    pass      # MUTANT\n"),
+    ("M-D2 baslik surec numarasi tasir (iki kosum farkli)", "A-DETERMINIZM", "DETERMINIZM-AYNI",
+     "% (_ADRES_BICIM, SURUM, kaynak,",
+     "% (_ADRES_BICIM, SURUM + str(os.getpid()), kaynak,"),
 )
 
 
