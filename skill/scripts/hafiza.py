@@ -9677,12 +9677,13 @@ def _adres_git_icinde(kok):
     return r.returncode == 0 and r.stdout.strip() == b"true"
 
 
-def _adres_git_kokte_mi(kok):
-    """`_git_kokte_mi` ile ayni uc kademe; FARKI: baska deponun `GIT_DIR`/`GIT_WORK_TREE` ortami susturulur (git'siz klasor
+def _adres_kok_git_mi(kok):
+    """Taban git-koku sinamasiyla ayni uc kademe; FARKI: baska deponun `GIT_DIR`/`GIT_WORK_TREE` ortami susturulur (git'siz klasor
     `GIT_DIR` yuzunden 'git var' sanilmaz)."""
     if not shutil.which("git"):
         return False
-    if os.path.exists(os.path.join(kok, ".git")):
+    gitdir = os.path.join(kok, ".git")
+    if os.path.exists(gitdir):
         return True
     r = _adres_git(kok, "rev-parse", "--show-toplevel")
     tepe = r.stdout.decode("utf-8", "replace").strip() if r.returncode == 0 else ""
@@ -9711,14 +9712,14 @@ def _adres_yol_metni(yol):
 def _adres_fs_dosyalari(kok):
     """Git YOKSA: dosya sistemi (`.gitignore` saygisi YOK; `_ATIF_HARIC` adli dizinler, baglanti dizinleri budanir,
     okunamayan dizinler sayilir) -> (yollar, notlar): her budama BEYAN edilir."""
-    cikti, bud, baglanti, okunmaz = [], set(), 0, []
+    cikti, bud, atlanan, okunmaz = [], set(), 0, []
     for r0, d0, f0 in os.walk(kok, onerror=lambda e: okunmaz.append(e.filename)):
         kalan = []
         for d in d0:
             if d in _ATIF_HARIC:
                 bud.add(d)
             elif _adres_baglanti_mi(os.path.join(r0, d)):
-                baglanti += 1
+                atlanan += 1
             else:
                 kalan.append(d)
         d0[:] = kalan
@@ -9726,8 +9727,8 @@ def _adres_fs_dosyalari(kok):
     notlar = []
     if bud:
         notlar.append("budanan dizin adlari: %s" % ", ".join(sorted(bud)))
-    if baglanti:
-        notlar.append("baglanti (symlink/junction) dizini atlandi: %d" % baglanti)
+    if atlanan:
+        notlar.append("baglanti (symlink/junction) dizini atlandi: %d" % atlanan)
     if okunmaz:
         notlar.append("okunamayan dizin: %d (ilk: %s)" % (len(okunmaz), _adres_yol_metni(_rel(sorted(okunmaz)[0], kok))))
     return sorted(cikti), notlar
@@ -9735,7 +9736,7 @@ def _adres_fs_dosyalari(kok):
 
 def _adres_dosyalar(kok):
     """-> (kaynak: `git` | `git-alt` | `dosya`, yollar, notlar)."""
-    if _adres_git_kokte_mi(kok):
+    if _adres_kok_git_mi(kok):
         return "git", _adres_git_dosyalari(kok), []
     if _adres_git_icinde(kok):
         return "git-alt", _adres_git_dosyalari(kok), []
