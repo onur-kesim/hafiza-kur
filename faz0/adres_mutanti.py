@@ -11,7 +11,8 @@ KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir �
   A-TANIM        dort dilin (py/cs/dart/ts) fikstur dosyalarinda bilinen DORT tanim dogru yol + satir araligiyla     [TANIM-PY|CS|DART|TS]
   A-CAGIRAN      bilinen cagri listede (CAGIRAN-VAR); cagri silinince listeden DUSER (CAGIRAN-DUSER); tanim satiri cagiran
                  sayilmaz (CAGIRAN-TANIM-HARIC)
-  A-PARMAK       govde degisince iz DEGISIR (PARMAK-DEGISIR); yalniz satir sonu bosluk (PARMAK-BOSLUK) / CRLF (PARMAK-CRLF) degisince AYNICIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
+  A-PARMAK       govde degisince iz DEGISIR (PARMAK-DEGISIR); yalniz satir sonu bosluk (PARMAK-BOSLUK) / CRLF (PARMAK-CRLF) degisince AYNI
+  A-BAYAT        dosya degisince ilk satir `ADRES DEFTERI BAYAT: 1 dosya degisti` + exit 1 (BAYAT-VAR); degismeyince sessiz exit 0 (BAYAT-YOK)CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
             2 OLCULEMEDI (git yok, capa uymadi, duzenek kurulamadi)
 """
 import io
@@ -35,8 +36,8 @@ _cikti_kodlamasini_guvenceye_al()
 
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
-KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK"}
+KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -257,11 +258,27 @@ def kol_parmak(motor, taban):
     return b
 
 
+def kol_bayat(motor, taban):
+    """A-BAYAT: dosya degisince BAYAT + exit 1; degismeyince sessiz exit 0."""
+    b = []
+    kok = proje(taban, "bayat", {"src/fx.ts": TS_FX})
+    kur(motor, kok)
+    kod, o, _e = kos(motor, kok, "adres", "Kasa")
+    if kod != 0 or "BAYAT" in o:
+        b.append(("BAYAT-YOK", "degismeyen agacta exit=%s ya da BAYAT basildi: %r" % (kod, o.split("\n")[0])))
+    _yaz(os.path.join(kok, "src", "fx.ts"), TS_FX + "// yeni satir\n")
+    kod, o, _e = kos(motor, kok, "adres", "Kasa")
+    if kod != 1 or not o.startswith("ADRES DEFTERI BAYAT: 1 dosya degisti"):
+        b.append(("BAYAT-VAR", "dosya degisti ama exit=%s ilk satir=%r" % (kod, o.split("\n")[0])))
+    return b
+
+
 # kol adi -> kosucu(motor, kol_tabani, ad, motor_kaynagi) -> [(etiket, mesaj)]
 KOLLAR = {
     "A-TANIM": lambda m, t, _a, _k: kol_tanim(m, t),
     "A-CAGIRAN": lambda m, t, _a, _k: kol_cagiran(m, t),
     "A-PARMAK": lambda m, t, _a, _k: kol_parmak(m, t),
+    "A-BAYAT": lambda m, t, _a, _k: kol_bayat(m, t),
 }
 
 
@@ -315,6 +332,12 @@ SABOTAJLAR = (
     ("M-P3 parmak izi SABIT (govde degisince degismez)", "A-PARMAK", "PARMAK-DEGISIR",
      '    return _adres_sha("\\n".join(satirlar[bas - 1:bit]))[:8]\n',
      '    return "00000000"      # MUTANT\n'),
+    ("M-B1 agac ozeti karsilastirmasi KAPALI (bayat hic bildirilmez)", "A-BAYAT", "BAYAT-VAR",
+     '    bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != baslik.get("ozet")\n',
+     "    bayat = False      # MUTANT\n"),
+    ("M-B2 agac ozeti HER ZAMAN farkli (degismeyen agac bayat sanilir)", "A-BAYAT", "BAYAT-YOK",
+     '    bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != baslik.get("ozet")\n',
+     "    bayat = True      # MUTANT\n"),
 )
 
 
