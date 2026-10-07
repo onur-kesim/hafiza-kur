@@ -1,20 +1,20 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `f1822bb` CI #124 192/192, push YAPILDI; H14 PUSH'SUZ)
-Son güncelleme: 6 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `022f288` = main = origin, CI #125 195/195; P2 PUSH'SUZ)
+Son güncelleme: 7 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## SON İŞ — H14 komut satırı sınırı (Code O14, 6 Eki 2026) · PUSH YOK
-**Taban** `f1822bb`. `ec62cbe` motor (`_git_son_ct`, `_GIT_YOL_BUTCE`=8000) · `3b75556` YENİ `faz0/h14_parca_mutanti.py`+CI işi (kol MAX) · `bf712f2` SINIR · `4bcb07c` WIN-UZUN · `fb9ce11` belge. Sabotaj MAX 1 · SINIR 2 · WIN 1 (yalnız Win). Örtüşme: PM1→+PSINIR-TARIH · PW1→+PMAX/PSINIR-SAYI. `ci_kapsam` 50→51.
-**fxa kopyası:** `kapi` exit 3→1, `H14:` satırı basılı (2026-10-06); 8.335 yol→64 parça (≤8000), git tarafı = HEAD %ct. **L5032 DOKUNULMADI:** yolları `HAFIZA_*.md` kadar (fxa/Momentum 0).
-Çapa AYNEN (`cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79) · `sabotaj` **67/67** · **Tam tur (Win, 83 adım):** 72 OK · 9 KIRMIZI (bilinen) · 2 SKIP · regresyon 0. WSL: yeni betik YEŞİL (SINIRLI).
-**Sıradaki:** push Onur'da → Cowork: fxa yeni kopya `kapi` + kendi `git log` karşılaştırması.
-**AÇIK:** macOS · py3.11/3.13 · `devral` gömülü kapı çöküşünde exit 0 (kapsam DIŞI) · Win `t_y42` 1314 · M-H10c KACTI (ÖNCEDEN VAR)
+## SON İŞ — P2 `adres` kod adres defteri (Code O15, 7 Eki 2026) · PUSH YOK
+**Taban** `022f288`. `690a116` motor (`adres --kur`/`<ad>`/`--mahalle`; Python `ast`, C#/Dart/TS-JS desen) · `aa78918`→`8c82237` YENİ `faz0/adres_mutanti.py` 7 kol + CI işi · `ae72e6a` belge · `f04beda` çapa adları · `b3e10bd` lint farkı 0. Mutant Win 15/15 · Linux 14/14 (+M-K1 ÖLÇÜLEMEDİ).
+**Momentum** 2,7 s · 4.782 tanım · **fxa** 24,2 s · 29.618 tanım (KAPSAM DIŞI 9 / 655).
+Çapa AYNEN (`cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79) · `altin_cikti` FARK YOK · `sabotaj` **67/67** (81/81 mutant) · **Tam tur (Win, 84 adım):** 73 OK · 9 KIRMIZI (bilinen) · 2 SKIP · regresyon 0. İlk tur 2 GERÇEK regresyon (ortak metin çapaları) → `f04beda`.
+**Sıradaki:** push Onur'da → Cowork: taze klonda kabul 1-2 · 4 sembol · Graphify isabet · kör okuma KOD kolu.
+**AÇIK:** macOS · py3.11/3.13 · Python adları NFKC · `--kok X <komut>` sırası adres DIŞI komutlarda yok sayılır · M-H10c KACTI (ÖNCEDEN VAR)
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 K4 TAMAM (67/67), kör nokta **0**; **25 Ağu yazısı** KAPSAM DIŞI; **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**H14** (O14): git yolları parçalı (fxa exit 3 → H14 satırı) · **P1** (O13): `karar-kaynagi` ADR'leri 4 sınıfta.
+**P2** (O15): `adres` kod adres defteri 4 dil, 7 kol mutant · **H14** (O14): git yolları parçalı (fxa exit 3 → H14 satırı) · **P1** (O13): `karar-kaynagi` ADR'leri 4 sınıfta.
 **K-DURUM·K-GECIS·K-ISARET** (O12): `karar-kaynagi` her ADR'nin `[durum: …]`/BEYANSIZ'ı · kurulu projede `derle` karar dizinini bulur · kural evi canlı defter işaretçisi + `kapi` H19.
 **K-SATIR·K-YOL·K-BAYAT** (O11): H18 satır atfı kayması + `derle` `atif-kaymasi` · `devral` karar dizini → `karar-kaynagi`.
 **B1+B2** (O10): `isir` sahte KAPI KÖR · taze klonda H16 → `_gitkeep_yaz` · Cowork TUTTU (`OLCUM_RAPORU_05EKIM_B1B2.md`).
