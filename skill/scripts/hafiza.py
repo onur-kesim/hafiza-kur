@@ -24,10 +24,7 @@ KOK COZUMU (sessiz varsayim YOK):
 """
 
 import argparse
-import ast
-import bisect
 import datetime as _dt
-import difflib
 import errno as _errno
 import hashlib
 import json
@@ -41,7 +38,6 @@ import tempfile
 import threading as _threading
 import traceback as _tb
 import unicodedata
-import warnings
 
 SURUM = "2.5.0-dev"   # Faz A basladi. 2.4.1 DENETLENMIS bir bayt kumesidir (Fable 4.
 # tur tam onu olctu); baytlar degistigi anda ayni numarayi tasimak YALAN olur ve
@@ -8475,10 +8471,43 @@ _ADRES_KODLAR = ("CIKIS KODLARI: 0 bulundu / kuruldu; 1 bulunamadi, defter YOK y
                  "basilir); 2 kullanim hatasi; 3 arac kusuru (ornegin git cagrisi basarisiz)")
 
 
+# ---------------------------------------------------------------- tembel kurulum (YUKLEME ANI ETKISI YOK)
+# Modul yuklenirken adres koduna ait HICBIR desen DERLENMEZ, HICBIR desen tablosu kurulmaz, ast/bisect/difflib/warnings alinmaz.
+# Bu blokta modul duzeyinde yalniz sunlar vardir: def/class; saf literal (str/int/frozenset/tuple); tembel vekil nesneleri
+# (`_ad_re(...)` cagrilari: yalniz kaynak metni ve bayragi SAKLAR, re.compile ILK nitelik erisiminde calisir); ilk cagrida
+# dolan bos onbellek sozlukleri. Yani yuklemede "adres kodu calismaz" ifadesi su demektir: vekil nesneleri kurulur, desen
+# derlenmez, hata firlatabilecek bir sey calismaz. Yuklenirken patlayan bir adres kusuru `kapi`yi da dusururdu (TASARIM 6).
+# Her sey ILK `adres` cagrisinda kurulur; ondan once adres koduna dokunulmaz.
+
+_AD_RE_NITELIK = ("match", "search", "fullmatch", "sub", "subn", "split", "finditer", "findall", "pattern", "flags", "groups",
+                  "groupindex")
+
+
+class _AdRe:
+    """Tembel regex vekili: ilk nitelik erisiminde `re.compile` eder ve derlenmis desenin niteliklerini ORNEGE yazar (sonraki
+    cagrilar `__getattr__`e ugramaz). Gecersiz desen YUKLEMEDE degil, ilk KULLANIMDA patlar."""
+
+    def __init__(self, kaynak, bayrak):
+        self._k = kaynak
+        self._b = bayrak
+
+    def __getattr__(self, ad):
+        if ad.startswith("_"):
+            raise AttributeError(ad)
+        d = re.compile(self._k, self._b)
+        for a in _AD_RE_NITELIK:
+            setattr(self, a, getattr(d, a))
+        return getattr(d, ad)
+
+
+def _ad_re(kaynak, bayrak=0):
+    return _AdRe(kaynak, bayrak)
+
+
 # ---------------------------------------------------------------- metin yardimcilari
 
-_ADRES_SATIR_SONU = re.compile(r"\r\n?")
-_ADRES_SON_BOSLUK = re.compile(r"(?<![ \t])[ \t]+(?=\n|\Z)")        # DOGRUSAL: her bosluk dizisi yalniz BASINDAN taranir
+_ADRES_SATIR_SONU = _ad_re(r"\r\n?")
+_ADRES_SON_BOSLUK = _ad_re(r"(?<![ \t])[ \t]+(?=\n|\Z)")        # DOGRUSAL: her bosluk dizisi yalniz BASINDAN taranir
 
 
 def _adres_bom(ham):
@@ -8524,8 +8553,8 @@ def _adres_iz(satirlar, bas, bit):
 
 # ---------------------------------------------------------------- bosaltma (yorum + dize)
 
-_AD_BOS = re.compile(r"[^\n]")
-_AD_BOS_HEPSI = re.compile(r".", re.S)               # maskede dize/yorum ICI satir sonlari da bosluk olur (ASI yaniltilmaz)
+_AD_BOS = _ad_re(r"[^\n]")
+_AD_BOS_HEPSI = _ad_re(r".", re.S)               # maskede dize/yorum ICI satir sonlari da bosluk olur (ASI yaniltilmaz)
 _AD_DESEN = {}  # type: dict
 
 
@@ -8558,7 +8587,7 @@ def _ad_dize(t, i, desen, delik_ac):
         i = delik_ac(t, m.end()) if g == "h" else m.end()
 
 
-_AD_DELIK_PAR = re.compile(r"[{}\"'`]")
+_AD_DELIK_PAR = _ad_re(r"[{}\"'`]")
 
 
 def _ad_delik(t, i, ic_ac, par=_AD_DELIK_PAR):
@@ -8584,7 +8613,7 @@ def _ad_blok_yorum(t, m):
     return len(t) if j < 0 else j + 2
 
 
-_AD_DART_YB = re.compile(r"/\*|\*/")
+_AD_DART_YB = _ad_re(r"/\*|\*/")
 
 
 def _ad_dart_yorum(t, m):
@@ -8604,12 +8633,12 @@ def _ad_dart_blok(t, i):
 
 
 # ---- C#
-_AD_CS_CHAR = re.compile(r"'(?:[^'\\\n]|\\[^\n][^'\n]*)'")
-_AD_ANA_CS = re.compile(r"(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<pp>(?m:^)[ \t]*#[^\n]*)|(?P<ds>(?<![$@])[$@]*\"+)|(?P<ch>'(?:[^'\\\n]|\\[^\n][^'\n]*)')")
+_AD_CS_CHAR = _ad_re(r"'(?:[^'\\\n]|\\[^\n][^'\n]*)'")
+_AD_ANA_CS = _ad_re(r"(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<pp>(?m:^)[ \t]*#[^\n]*)|(?P<ds>(?<![$@])[$@]*\"+)|(?P<ch>'(?:[^'\\\n]|\\[^\n][^'\n]*)')")
 
 
-_AD_DELIK_PAR_CS = re.compile(r"[{}\"'/]")
-_AD_CS_ON = re.compile(r'[$@]*"+')
+_AD_DELIK_PAR_CS = _ad_re(r"[{}\"'/]")
+_AD_CS_ON = _ad_re(r'[$@]*"+')
 
 
 def _ad_cs_ic(t, k):
@@ -8655,7 +8684,7 @@ def _ad_cs_ac(t, m, _u):
 
 
 # ---- Dart
-_AD_ANA_DART = re.compile(r"(?P<sb>\A#![^\n]*)|(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<ds>(?:(?<![\w$])r)?(?:'''|\"\"\"|'|\"))")
+_AD_ANA_DART = _ad_re(r"(?P<sb>\A#![^\n]*)|(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<ds>(?:(?<![\w$])r)?(?:'''|\"\"\"|'|\"))")
 
 
 def _ad_dart_dize(t, i, q, ham):
@@ -8664,7 +8693,7 @@ def _ad_dart_dize(t, i, q, ham):
     return _ad_dize(t, i, _ad_desen(re.escape(q), kacis, delik, len(q) == 1), _ad_dart_delik)
 
 
-_AD_DELIK_PAR_DART = re.compile(r"[{}\"'/]")
+_AD_DELIK_PAR_DART = _ad_re(r"[{}\"'/]")
 
 
 def _ad_dart_ic(t, k):
@@ -8696,19 +8725,19 @@ def _ad_dart_ac(t, m, _u):
 
 
 # ---- TypeScript / JavaScript
-_AD_ANA_TS = re.compile(r"(?P<sb>\A#![^\n]*)|(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<t1>')|(?P<t2>\")|(?P<t3>`)|(?P<rx>/)")
-_AD_ANA_TSX = re.compile(r"(?P<sb>\A#![^\n]*)|(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<t1>')|(?P<t2>\")|(?P<t3>`)|(?P<rx>/)|(?P<jx><)")
-_AD_TS_SABLON = _ad_desen("`", r"\\.", r"\$\{", False)
-_AD_RX_PAR = re.compile(r"(?P<e>\\.)|(?P<s>\[)|(?P<c>\])|(?P<k>/)|(?P<n>\n)", re.S)
-_AD_RX_BAYRAK = re.compile(r"[A-Za-z]*")
+_AD_ANA_TS = _ad_re(r"(?P<sb>\A#![^\n]*)|(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<t1>')|(?P<t2>\")|(?P<t3>`)|(?P<rx>/)")
+_AD_ANA_TSX = _ad_re(r"(?P<sb>\A#![^\n]*)|(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<t1>')|(?P<t2>\")|(?P<t3>`)|(?P<rx>/)|(?P<jx><)")
+_AD_TS_SABLON = _ad_re(r"(?P<e>\\.)|(?P<k>`)|(?P<h>\$\{)", re.S)
+_AD_RX_PAR = _ad_re(r"(?P<e>\\.)|(?P<s>\[)|(?P<c>\])|(?P<k>/)|(?P<n>\n)", re.S)
+_AD_RX_BAYRAK = _ad_re(r"[A-Za-z]*")
 _AD_RX_ONCE = frozenset("([{,;=:!&|?+-*%<>~^")
 _AD_RX_SOZ = frozenset(("return", "typeof", "instanceof", "in", "of", "new", "delete", "void", "throw", "case", "do",
                         "else", "yield", "await", "default"))
-_AD_SON_KELIME = re.compile(r"[A-Za-z_$][\w$]*\Z")
+_AD_SON_KELIME = _ad_re(r"[A-Za-z_$][\w$]*\Z")
 
 
-_AD_DELIK_PAR_TS = re.compile(r"[{}\"'`/]")
-_AD_DELIK_PAR_TSX = re.compile(r"[{}\"'`/<]")
+_AD_DELIK_PAR_TS = _ad_re(r"[{}\"'`/]")
+_AD_DELIK_PAR_TSX = _ad_re(r"[{}\"'`/<]")
 
 
 def _ad_yorum_son(t, k):
@@ -8802,12 +8831,12 @@ def _ad_rx(t, a, u=None):
 
 
 # ---- JSX (yalniz .tsx/.jsx/.js): eleman govdesi `0` yigini olur; metin icindeki ' " ` // /* ve { } maskeyi BOZMAZ
-_AD_JSX_AD = re.compile(r"(?:[^\W\d]|\$)[\w$.:-]*")
-_AD_JSX_ETIKET = re.compile(r"//[^\n]*|/\*[\s\S]*?(?:\*/|\Z)|/>|>|\{|['\"]")
-_AD_JSX_COCUK = re.compile(r"<(?=[/>$]|[^\W\d])|\{")
-_AD_JSX_TUR = re.compile(r"[<>]")
-_AD_JSX_PAR = re.compile(r"[()]")
-_AD_JSX_DONUS = re.compile(r":[^;\n=]*=>")
+_AD_JSX_AD = _ad_re(r"(?:[^\W\d]|\$)[\w$.:-]*")
+_AD_JSX_ETIKET = _ad_re(r"//[^\n]*|/\*[\s\S]*?(?:\*/|\Z)|/>|>|\{|['\"]")
+_AD_JSX_COCUK = _ad_re(r"<(?=[/>$]|[^\W\d])|\{")
+_AD_JSX_TUR = _ad_re(r"[<>]")
+_AD_JSX_PAR = _ad_re(r"[()]")
+_AD_JSX_DONUS = _ad_re(r":[^;\n=]*=>")
 _AD_JSX_ONCE = frozenset("([{,;=:?&|!.+*%^~")
 _AD_JSX_SOZ = frozenset(("return", "yield", "default", "case", "else", "do", "await", "throw", "typeof", "void", "in",
                          "instanceof", "delete"))
@@ -9008,15 +9037,15 @@ def _ad_maske(t, ana, ac):
 
 # ---------------------------------------------------------------- yapi: govde eslesmesi + satir indeksi
 
-_AD_NL = re.compile(r"\n")
-_AD_BRC = re.compile(r"[{}]")
-_AD_BOSLUK = re.compile(r"\s*")
+_AD_NL = _ad_re(r"\n")
+_AD_BRC = _ad_re(r"[{}]")
+_AD_BOSLUK = _ad_re(r"\s*")
 
 
 def _ad_bosluk(m, i, b):
     """m[i:b] icinde ilk bosluk-olmayan konum (i >= b ise b)."""
     return b if i >= b else _AD_BOSLUK.match(m, i, b).end()
-_AD_PAR = re.compile(r"[()\[\]{}]")
+_AD_PAR = _ad_re(r"[()\[\]{}]")
 
 
 class _AdMetin:
@@ -9048,6 +9077,7 @@ def _ad_hazirla(dil, metin):
 
 
 def _ad_satir(S, konum):
+    import bisect
     return bisect.bisect_left(S.nl, konum) + 1
 
 
@@ -9080,12 +9110,12 @@ def _ad_son_harf(m, j, alt):
 
 # ---------------------------------------------------------------- bildirim gezisi (baslik -> govde -> siniflandirma)
 
-_AD_ARA = re.compile(r"[()\[\]{};]")
-_AD_ARA_TS = re.compile(r"[()\[\]{};\n]")
-_AD_ATAMA = re.compile(r"(?<![=!<>])=(?![=>])|=>")
-_AD_KURUCU_LISTE = re.compile(r"\)\s*:")
-_AD_OPERATOR = re.compile(r"\boperator\s*[^\s(\w]+")
-_AD_SWITCH = re.compile(r"\bswitch\s*\(\s*\)\s*\Z")
+_AD_ARA = _ad_re(r"[()\[\]{};]")
+_AD_ARA_TS = _ad_re(r"[()\[\]{};\n]")
+_AD_ATAMA = _ad_re(r"(?<![=!<>])=(?![=>])|=>")
+_AD_KURUCU_LISTE = _ad_re(r"\)\s*:")
+_AD_OPERATOR = _ad_re(r"\boperator\s*[^\s(\w]+")
+_AD_SWITCH = _ad_re(r"\bswitch\s*\(\s*\)\s*\Z")
 _AD_ASI_ON = frozenset(",=+-*/%&|^<?:.([{~")
 _AD_ASI_ARKA = frozenset(".,?:=+-*/%&|^<([{>)];")
 _AD_ASI_ON_SOZ = frozenset((
@@ -9097,8 +9127,8 @@ _AD_ASI_ISLEC = frozenset(",=+-*/%&|^<>?:.([!~")
 _AD_ASI_ARKA_SOZ = frozenset(("extends", "implements", "in", "of", "instanceof", "as", "satisfies", "else", "catch",
                               "finally", "is"))
 _AD_ASI_OZELLIK = frozenset(":?=,.;(){}<")
-_AD_ILK_SOZ = re.compile(r"[\w$]+")
-_AD_AS_ONCE = re.compile(r"\bas\s+\Z")
+_AD_ILK_SOZ = _ad_re(r"[\w$]+")
+_AD_AS_ONCE = _ad_re(r"\bas\s+\Z")
 
 
 def _ad_asi_on(m, p):
@@ -9140,11 +9170,11 @@ def _ad_asi(m, k, b, yeni_uye=False):
     return not (_ad_asi_on(m, p) or m[q] in _AD_ASI_ARKA or m[q:q + 2] == "!=" or _ad_asi_ark(m, q, b))
 
 
-_AD_ACIK = re.compile(r"=>|[<>]")
+_AD_ACIK = _ad_re(r"=>|[<>]")
 
 
-_AD_SAYI_SON = re.compile(r"(?<![\w$])\d[\w.]*\Z")                  # `1<`, `0x1F<`: sayi sabiti tur adi DEGILDIR
-_AD_UNMANAGED = re.compile(r"unmanaged\s*\[[^\]]*\]\s*\Z")
+_AD_SAYI_SON = _ad_re(r"(?<![\w$])\d[\w.]*\Z")                  # `1<`, `0x1F<`: sayi sabiti tur adi DEGILDIR
+_AD_UNMANAGED = _ad_re(r"unmanaged\s*\[[^\]]*\]\s*\Z")
 
 
 def _ad_acik_mi(isk, k):
@@ -9203,13 +9233,13 @@ def _ad_acik_bosalt(isk):
 
 
 _AD_TS_LIT_SOZ = frozenset(("is", "as", "satisfies", "extends", "keyof", "infer", "asserts"))
-_AD_TS_OZELLIK = re.compile(r"\s*(?:(?:public|private|protected|static|readonly|abstract|declare|override)\s+)*"
+_AD_TS_OZELLIK = _ad_re(r"\s*(?:(?:public|private|protected|static|readonly|abstract|declare|override)\s+)*"
                             r"[\w$#]+\s*\??\s*:")
-_AD_ATAMA_ESIT = re.compile(r"(?<![=!<>])=(?![=>])")
-_AD_TS_SINIF_IFADE = re.compile(r"(?:=\s*(?:new\s+)?class\b|\bextends\s*class\b)[^{;=]*\Z|=\s*<[^=;]*>\s*\Z")
-_AD_TS_TIP_TAKMA = re.compile(r"\s*(?:(?:export|declare)\s+)*type\s+[\w$]+")
-_AD_TS_KOSUL = re.compile(r"(?<![=!<>])=(?![=>])[^;{}]*?(?:\?(?![.:])|\|\||&&)")
-_AD_CONST_SOZ = re.compile(r"\b(?:const|new)\s*\Z")
+_AD_ATAMA_ESIT = _ad_re(r"(?<![=!<>])=(?![=>])")
+_AD_TS_SINIF_IFADE = _ad_re(r"(?:=\s*(?:new\s+)?class\b|\bextends\s*class\b)[^{;=]*\Z|=\s*<[^=;]*>\s*\Z")
+_AD_TS_TIP_TAKMA = _ad_re(r"\s*(?:(?:export|declare)\s+)*type\s+[\w$]+")
+_AD_TS_KOSUL = _ad_re(r"(?<![=!<>])=(?![=>])[^;{}]*?(?:\?(?![.:])|\|\||&&)")
+_AD_CONST_SOZ = _ad_re(r"\b(?:const|new)\s*\Z")
 
 
 def _ad_oncesi_tur(isk):
@@ -9265,7 +9295,7 @@ def _ad_ifade_mi(S, i, k):
     return atama or m[p] in ",=(["
 
 
-_AD_DART_NULL_TUR = re.compile(r"\b(?:as|is)\s+!?\s*[\w.$<>,\[\]()\s?]*[\w>\])]\?\s*\Z")
+_AD_DART_NULL_TUR = _ad_re(r"\b(?:as|is)\s+!?\s*[\w.$<>,\[\]()\s?]*[\w>\])]\?\s*\Z")
 
 
 def _ad_kurucu_listesi_mi(isk):
@@ -9277,7 +9307,7 @@ def _ad_kurucu_listesi_mi(isk):
     return ea is None or kl.start() < ea.start()
 
 
-_AD_ARA_TSV = re.compile(r"[()\[\]{};\n,]")
+_AD_ARA_TSV = _ad_re(r"[()\[\]{};\n,]")
 
 
 def _ad_virgul_bitirir(S, i, k):
@@ -9322,7 +9352,7 @@ def _ad_baslik(S, i, b, ust):
         d, k, son = _ad_adim(S, i, b, e.start(), e.group(), d, uye)
         if son:
             return k, son
-        k += 1
+        k = _ad_bosluk(S.m, k, b) if S.m[k:k + 1] == "\n" else k + 1   # bosluk dizisindeki satir sonlari AYNI hukmu verir: dizi tek adimda atlanir
 
 
 def _ad_surer_mi(S, c, q, ust):
@@ -9364,95 +9394,129 @@ _AD_TUR_KW = {"class": "sinif", "interface": "arayuz", "struct": "yapi", "record
               "global": "ad-alani", "mixin": "mixin", "extension": "uzanti", "type": "tip", "const": "sabit",
               "let": "alan", "var": "alan", "get": "ozellik", "set": "ozellik"}
 
+# Desen TABLOLARI (formatlanmis desen stringleri + derlemeler) dil basina kurucu fonksiyonlarda, YEREL degiskenlerle kurulur;
+# `_ad_tablo()` ilk cagrida kurup onbellekler. Modul duzeyinde yalniz SAF STRING parcalari kalir.
+
 # ---- C#
 _CS_MODW = ("public|private|protected|internal|static|virtual|override|abstract|sealed|async|extern|unsafe|new|partial|"
             "readonly|volatile|const|required|file|fixed|ref")
-_CS_MOD = r"(?:(?:%s)\s+)*" % _CS_MODW
-_CS_TIP = (r"(?:ref\s+(?:readonly\s+)?)?(?!(?:%s|event|operator|implicit|explicit|return|using|class|struct|interface|"
-           r"enum|namespace|record|this|base|where)\b|delegate\b(?!\s*\*))"
-           r"(?:delegate\s*\*\s*(?:(?:managed|unmanaged)\s*(?:\[[^\]]*\]\s*)?)?%s|(?:\w+::)?(?:\w+|\(\s*\))(?:%s)?"
-           r"(?:\s*\.\s*\w+(?:%s)?)*)(?:\s*(?:[?*]|\[[\s,]*\]))*" % (_CS_MODW, _G2, _G2, _G2))
-_CS_EI = r"(?:(?:\w+::)?\w+(?:%s)?\.)*" % _G2
 _CS_SP = r"(?:\s+|(?<=\*)\s*)"                          # tur ile ad arasi (`int *P`: `*` sonrasi bosluk serbest)
 _CS_ARKA = r"(?=\s*(?:$|=>|where\b|:|=(?!=)))"
 _CS_DIZI = r"(?:\s*\[\s*\])?"                                 # `fixed byte buf[16]`
-_CS_KAP = (re.compile(r"%s(?P<kw>class|struct|interface|enum|record(?:\s+(?:class|struct))?|namespace)\s+(?P<ad>%s)"
-                      % (_CS_MOD, _NP)), None, "k")
-_CS_DELEGATE = (re.compile(r"%sdelegate\s+%s\s+(?P<ad>%s)\s*(?:%s)?\(" % (_CS_MOD, _CS_TIP, _N, _G2)), "tip", "")
-_CS_UYE = (
-    _CS_KAP, _CS_DELEGATE,
-    (re.compile(r"%s(?P<ad>~?%s)\s*\(\s*\)(?=\s*(?:$|=>|:))" % (_CS_MOD, _N)), "kurucu", "c"),
-    (re.compile(r"%s%s%s%s(?P<ad>%s)\s*(?:%s)?\(\s*\)%s" % (_CS_MOD, _CS_TIP, _CS_SP, _CS_EI, _N, _G2, _CS_ARKA)), "metot", ""),
-    (re.compile(r"%sconst\s+%s\s+(?P<ad>%s)%s\s*(?:=|,|$)" % (_CS_MOD, _CS_TIP, _N, _CS_DIZI)), "sabit", "s"),
-    (re.compile(r"%sevent\s+%s\s+%s(?P<ad>%s)\s*$" % (_CS_MOD, _CS_TIP, _CS_EI, _N)), "alan", "b"),
-    (re.compile(r"%s%s%s%s(?P<ad>%s)\s*=>" % (_CS_MOD, _CS_TIP, _CS_SP, _CS_EI, _N)), "ozellik", ""),
-    (re.compile(r"%s%s%s%s(?P<ad>%s)\s*$" % (_CS_MOD, _CS_TIP, _CS_SP, _CS_EI, _N)), "ozellik", "b"),
-    (re.compile(r"%s(?:event\s+)?%s%s(?P<ad>(?!(?:this|operator)(?![\w$]))%s)%s\s*(?:=|,|$)"
-                % (_CS_MOD, _CS_TIP, _CS_SP, _N, _CS_DIZI)), "alan", "s"),
-)
+
+
+def _ad_kural_cs():
+    """C# kural tablosu: {(dil, baglam): kurallar}."""
+    mod = r"(?:(?:%s)\s+)*" % _CS_MODW
+    tip = (r"(?:ref\s+(?:readonly\s+)?)?(?!(?:%s|event|operator|implicit|explicit|return|using|class|struct|interface|"
+           r"enum|namespace|record|this|base|where)\b|delegate\b(?!\s*\*))"
+           r"(?:delegate\s*\*\s*(?:(?:managed|unmanaged)\s*(?:\[[^\]]*\]\s*)?)?%s|(?:\w+::)?(?:\w+|\(\s*\))(?:%s)?"
+           r"(?:\s*\.\s*\w+(?:%s)?)*)(?:\s*(?:[?*]|\[[\s,]*\]))*" % (_CS_MODW, _G2, _G2, _G2))
+    ei = r"(?:(?:\w+::)?\w+(?:%s)?\.)*" % _G2
+    kap = (re.compile(r"%s(?P<kw>class|struct|interface|enum|record(?:\s+(?:class|struct))?|namespace)\s+(?P<ad>%s)"
+                      % (mod, _NP)), None, "k")
+    delegate = (re.compile(r"%sdelegate\s+%s\s+(?P<ad>%s)\s*(?:%s)?\(" % (mod, tip, _N, _G2)), "tip", "")
+    uye = (
+        kap, delegate,
+        (re.compile(r"%s(?P<ad>~?%s)\s*\(\s*\)(?=\s*(?:$|=>|:))" % (mod, _N)), "kurucu", "c"),
+        (re.compile(r"%s%s%s%s(?P<ad>%s)\s*(?:%s)?\(\s*\)%s" % (mod, tip, _CS_SP, ei, _N, _G2, _CS_ARKA)), "metot", ""),
+        (re.compile(r"%sconst\s+%s\s+(?P<ad>%s)%s\s*(?:=|,|$)" % (mod, tip, _N, _CS_DIZI)), "sabit", "s"),
+        (re.compile(r"%sevent\s+%s\s+%s(?P<ad>%s)\s*$" % (mod, tip, ei, _N)), "alan", "b"),
+        (re.compile(r"%s%s%s%s(?P<ad>%s)\s*=>" % (mod, tip, _CS_SP, ei, _N)), "ozellik", ""),
+        (re.compile(r"%s%s%s%s(?P<ad>%s)\s*$" % (mod, tip, _CS_SP, ei, _N)), "ozellik", "b"),
+        (re.compile(r"%s(?:event\s+)?%s%s(?P<ad>(?!(?:this|operator)(?![\w$]))%s)%s\s*(?:=|,|$)"
+                    % (mod, tip, _CS_SP, _N, _CS_DIZI)), "alan", "s"),
+    )
+    return {("cs", "dosya"): (kap, delegate), ("cs", "uye"): uye}
+
 
 # ---- Dart
 _DA_MODW = ("static|external|abstract|covariant|late|final|const|var|factory|get|set|operator|async|sync|on|extends|"
             "implements|with|import|export|part|library|typedef|class|enum|mixin|extension|return|new")
-_DA_FN = r"Function\s*(?:%s)?\s*\(\s*\)\??" % _G2                # `Function(int)` (iskelette parantez ici bos)
-_DA_TIP = (r"(?!(?:%s)\b(?!\s*\.))(?:%s|[\w$]+(?:\s*\.\s*[\w$]+)*|\(\s*\))(?:%s)?(?:\s*\?)?(?:\s+%s)*"
-           % (_DA_MODW, _DA_FN, _G2, _DA_FN))
 _DA_ARKA = r"(?=\s*(?:$|=>|:|=(?!=)|async\b|sync\b))"
-_DA_KAP = (re.compile(r"(?:(?:abstract|base|final|interface|sealed|mixin|augment)\s+)*"
+
+
+def _ad_kural_dart():
+    """Dart kural tablosu: {(dil, baglam): kurallar}."""
+    fn = r"Function\s*(?:%s)?\s*\(\s*\)\??" % _G2                # `Function(int)` (iskelette parantez ici bos)
+    tip = (r"(?!(?:%s)\b(?!\s*\.))(?:%s|[\w$]+(?:\s*\.\s*[\w$]+)*|\(\s*\))(?:%s)?(?:\s*\?)?(?:\s+%s)*"
+           % (_DA_MODW, fn, _G2, fn))
+    kap = (re.compile(r"(?:(?:abstract|base|final|interface|sealed|mixin|augment)\s+)*"
                       r"(?P<kw>class|enum|mixin|extension)(?![\w$])(?!\s*\()(?:(?<=extension)\s+type\b|(?<=mixin)\s+class\b)?(?:\s+const\b)?"
                       r"\s*(?P<ad>(?!on\b|extends\b|with\b|implements\b|const\b)%s)?" % _N), None, "k")
-_DA_ORTAK = (
-    (re.compile(r"(?:import|export|part|library)(?![\w$])(?!\s*\()"), "-", "d"),
-    _DA_KAP,
-    (re.compile(r"typedef\s+(?:%s\s+)?(?P<ad>%s)\s*(?:%s)?\s*(?:=|\()" % (_DA_TIP, _N, _G2)), "tip", ""),
-    (re.compile(r"(?:(?:static|external|abstract)\s+)*(?:%s\s+)?(?P<kw>get|set)\s+(?P<ad>%s)" % (_DA_TIP, _N)), None, ""),
-    (re.compile(r"(?:(?:const|external|factory)\s+)*(?P<cls>%s)\s*\.\s*(?P<ad>%s)\s*(?:%s)?\(\s*\)" % (_N, _N, _G2)),
-     "kurucu", "n"),
-    (re.compile(r"(?:(?:const|external|factory)\s+)*(?P<ad>%s)\s*\(\s*\)%s" % (_N, _DA_ARKA)), "kurucu", "c"),
-    (re.compile(r"(?:(?:static|external|abstract)\s+)*(?:%s\s+)?\boperator(?![\w$])\s*(?P<ad>[^\s(]+)\s*\(" % _DA_TIP), "fm", ""),
-    (re.compile(r"(?:(?:static|external|abstract|covariant|late)\s+)*(?:%s\s+)?(?P<ad>%s)\s*(?:%s)?\(\s*\)%s"
-                % (_DA_TIP, _N, _G2, _DA_ARKA)), "fm", ""),
-    (re.compile(r"(?:(?:static|external)\s+)*const\s+(?:%s\s+)?(?P<ad>%s)\s*(?:=|,|$)" % (_DA_TIP, _N)), "sabit", "s"),
-    (re.compile(r"(?:(?:static|late|final|var|covariant|external|abstract)\s+)*(?:%s\s+)?(?P<ad>%s)\s*(?:=|,|$)"
-                % (_DA_TIP, _N)), "alan", "s"),
-)
+    ortak = (
+        (re.compile(r"(?:import|export|part|library)(?![\w$])(?!\s*\()"), "-", "d"),
+        kap,
+        (re.compile(r"typedef\s+(?:%s\s+)?(?P<ad>%s)\s*(?:%s)?\s*(?:=|\()" % (tip, _N, _G2)), "tip", ""),
+        (re.compile(r"(?:(?:static|external|abstract)\s+)*(?:%s\s+)?(?P<kw>get|set)\s+(?P<ad>%s)" % (tip, _N)), None, ""),
+        (re.compile(r"(?:(?:const|external|factory)\s+)*(?P<cls>%s)\s*\.\s*(?P<ad>%s)\s*(?:%s)?\(\s*\)" % (_N, _N, _G2)),
+         "kurucu", "n"),
+        (re.compile(r"(?:(?:const|external|factory)\s+)*(?P<ad>%s)\s*\(\s*\)%s" % (_N, _DA_ARKA)), "kurucu", "c"),
+        (re.compile(r"(?:(?:static|external|abstract)\s+)*(?:%s\s+)?\boperator(?![\w$])\s*(?P<ad>[^\s(]+)\s*\(" % tip), "fm", ""),
+        (re.compile(r"(?:(?:static|external|abstract|covariant|late)\s+)*(?:%s\s+)?(?P<ad>%s)\s*(?:%s)?\(\s*\)%s"
+                    % (tip, _N, _G2, _DA_ARKA)), "fm", ""),
+        (re.compile(r"(?:(?:static|external)\s+)*const\s+(?:%s\s+)?(?P<ad>%s)\s*(?:=|,|$)" % (tip, _N)), "sabit", "s"),
+        (re.compile(r"(?:(?:static|late|final|var|covariant|external|abstract)\s+)*(?:%s\s+)?(?P<ad>%s)\s*(?:=|,|$)"
+                    % (tip, _N)), "alan", "s"),
+    )
+    return {("dart", "dosya"): ortak, ("dart", "uye"): ortak}
+
 
 # ---- TypeScript / JavaScript
 _TS_P = r"(?:(?:export|default|declare)\s+|@[\w.$]+\s*(?:\(\s*\)\s*)?)*"
-_TS_FN = (r"(?:async\s+)?(?:function\b|(?:%s\s*)?\(\s*\)\s*(?::[^=;]*?)?=>|%s\s*=>)" % (_G2, _N))
 _TS_ANOT = r"(?:\s*:(?=(?P<anot>(?:[^=]|=>)*))(?P=anot))?"      # ATOMIK (geri izleme yok: ic ice buyuk tur nesnesinde dogrusal)
 _TS_ATAMA = r"\s*=(?![=>])\s*"
 _TS_MOD = r"(?:(?:public|private|protected|static|abstract|override|readonly|declare|async|accessor)(?:\s+|(?=[*#])))*"
-_TS_DOSYA = (
-    (re.compile(r"%s(?:(?:abstract|const)\s+)?(?P<kw>class|interface|enum|namespace|module)\s+"
-                r"(?P<ad>(?!extends\b|implements\b)%s)" % (_TS_P, _NP)), None, "k"),
-    (re.compile(r"%s(?:abstract\s+)?(?P<kw>class|namespace|module|global)\s*(?:(?:'\s*'|\"\s*\")\s*)?"
-                r"(?:\s(?:extends|implements)\b[\s\S]*)?$" % _TS_P), None, "kb"),
-    (re.compile(r"%s(?P<kw>type)\s+(?P<ad>%s)%s" % (_TS_P, _N, _NS)), None, ""),
-    (re.compile(r"%s(?:async\s+)?function\b\s*\*?\s*(?P<ad>%s)\s*(?:%s)?\(" % (_TS_P, _N, _G2)), "fonksiyon", ""),
-    (re.compile(r"%s(?:const|let|var)\s+(?P<ad>%s)%s%s%s%s" % (_TS_P, _N, _NS, _TS_ANOT, _TS_ATAMA, _TS_FN)), "fonksiyon", ""),
-    (re.compile(r"%s(?P<kw>const|let|var)\s+(?P<ad>%s)%s" % (_TS_P, _N, _NS)), None, ""),
-    (re.compile(r"(?:module\.)?exports\.(?P<ad>%s)%s%s" % (_N, _TS_ATAMA, _TS_FN)), "fonksiyon", ""),
-    (re.compile(r"(?:module\.)?exports\.(?P<ad>%s)\s*=" % _N), "alan", ""),
-    (re.compile(r"(?P<ad>%s\.prototype\.%s)%s(?:[\w$.]+%s)*%s" % (_N, _N, _TS_ATAMA, _TS_ATAMA, _TS_FN)), "metot", ""),
-    (re.compile(r"(?P<ad>%s\.prototype\.%s)\s*=(?![=>])" % (_N, _N)), "alan", ""),
-)
-_TS_UYE = (
-    (re.compile(r"%s(?P<ad>constructor)\s*(?:%s)?\(" % (_TS_MOD, _G2)), "kurucu", ""),
-    (re.compile(r"%s(?P<ad>%s)\s*[?!]?%s%s%s" % (_TS_MOD, _N, _TS_ANOT, _TS_ATAMA, _TS_FN)), "metot", ""),
-    (re.compile(r"%s(?:get|set)(?:\s+|(?=#))(?P<ad>%s)\s*(?:%s)?\(" % (_TS_MOD, _N, _G2)), "ozellik", ""),
-    (re.compile(r"%s\*?\s*(?!new\s*(?:%s)?\()(?P<ad>%s)\s*\??\s*(?:%s)?\(" % (_TS_MOD, _G2, _N, _G2)), "metot", "i"),
-    (re.compile(r"%s\*?\s*(?P<ad>%s)\s*\??\s*(?:%s)?\(" % (_TS_MOD, _N, _G2)), "metot", "j"),
-    (re.compile(r"%s(?P<ad>%s)\s*[?!]?\s*(?::|=|$)" % (_TS_MOD, _N)), "alan", "s"),
-)
+# DOGRUSALLIK: bosluk dizisi desende TEK yerde tuketilir (bitisik `\s*` ciftleri n^2, uclusu n^3 geri izleme verir; uzun bosluk
+# = maskelenmis govde/yorum). Bu yuzden asagidaki parcalarin BASINDA bosluk yoktur; onlardan once `\s*` gelir.
+_TS_GN = r"(?:<\s*>\s*)?"                                        # tur argumani listesi (iskelette icerigi bosluk)
+_TS_ANOT_B = r"(?::(?=(?P<anot>(?:[^=]|=>)*))(?P=anot))?"       # _TS_ANOT'un basindaki bosluksuz hali (ATOMIK)
 
-_AD_KURALLAR = {("cs", "dosya"): (_CS_KAP, _CS_DELEGATE), ("cs", "uye"): _CS_UYE,
-                ("dart", "dosya"): _DA_ORTAK, ("dart", "uye"): _DA_ORTAK,
-                ("ts", "dosya"): _TS_DOSYA, ("ts", "uye"): _TS_DOSYA[:2] + _TS_UYE}
-_AD_DEK_CS = re.compile(r"\s*(?:\[\s*\]\s*)*")
-_AD_DEK_AT = re.compile(r"\s*(?:@\s*[\w.$]+(?:%s)?(?:\.[\w$]+)?(?:\(\s*\))?\s*)*" % _G2)
-_AD_DEK = {"cs": _AD_DEK_CS, "dart": _AD_DEK_AT, "ts": _AD_DEK_AT}
-_AD_OGE = re.compile(_N.join(("(?P<ad>", ")")))
+
+def _ad_kural_ts():
+    """TypeScript/JavaScript kural tablosu: {(dil, baglam): kurallar}."""
+    fn = (r"(?:async\s+)?(?:function\b|%s\(\s*\)\s*(?::[^=;]*?)?=>|%s\s*=>)" % (_TS_GN, _N))      # hep TS_ATAMA'dan SONRA
+    dosya = (
+        (re.compile(r"%s(?:(?:abstract|const)\s+)?(?P<kw>class|interface|enum|namespace|module)\s+"
+                    r"(?P<ad>(?!extends\b|implements\b)%s)" % (_TS_P, _NP)), None, "k"),
+        (re.compile(r"%s(?:abstract\s+)?(?P<kw>class|namespace|module|global)\s*(?:(?:'\s*'|\"\s*\")\s*)?"
+                    r"(?:\s(?:extends|implements)\b[\s\S]*)?$" % _TS_P), None, "kb"),
+        (re.compile(r"%s(?P<kw>type)\s+(?P<ad>%s)%s" % (_TS_P, _N, _NS)), None, ""),
+        (re.compile(r"%s(?:async\s+)?function\b\s*(?:\*\s*)?(?P<ad>%s)\s*%s\(" % (_TS_P, _N, _TS_GN)), "fonksiyon", ""),
+        (re.compile(r"%s(?:const|let|var)\s+(?P<ad>%s)%s%s%s%s" % (_TS_P, _N, _NS, _TS_ANOT, _TS_ATAMA, fn)), "fonksiyon", ""),
+        (re.compile(r"%s(?P<kw>const|let|var)\s+(?P<ad>%s)%s" % (_TS_P, _N, _NS)), None, ""),
+        (re.compile(r"(?:module\.)?exports\.(?P<ad>%s)%s%s" % (_N, _TS_ATAMA, fn)), "fonksiyon", ""),
+        (re.compile(r"(?:module\.)?exports\.(?P<ad>%s)\s*=" % _N), "alan", ""),
+        (re.compile(r"(?P<ad>%s\.prototype\.%s)%s(?:[\w$.]+%s)*%s" % (_N, _N, _TS_ATAMA, _TS_ATAMA, fn)), "metot", ""),
+        (re.compile(r"(?P<ad>%s\.prototype\.%s)\s*=(?![=>])" % (_N, _N)), "alan", ""),
+    )
+    uye = (
+        (re.compile(r"%s(?P<ad>constructor)\s*%s\(" % (_TS_MOD, _TS_GN)), "kurucu", ""),
+        (re.compile(r"%s(?P<ad>%s)\s*(?:[?!]\s*)?%s=(?![=>])\s*%s" % (_TS_MOD, _N, _TS_ANOT_B, fn)), "metot", ""),
+        (re.compile(r"%s(?:get|set)(?:\s+|(?=#))(?P<ad>%s)\s*%s\(" % (_TS_MOD, _N, _TS_GN)), "ozellik", ""),
+        (re.compile(r"%s(?:\*\s*)?(?!new\s*%s\()(?P<ad>%s)\s*(?:\?\s*)?%s\(" % (_TS_MOD, _TS_GN, _N, _TS_GN)), "metot", "i"),
+        (re.compile(r"%s(?:\*\s*)?(?P<ad>%s)\s*(?:\?\s*)?%s\(" % (_TS_MOD, _N, _TS_GN)), "metot", "j"),
+        (re.compile(r"%s(?P<ad>%s)\s*(?:[?!]\s*)?(?::|=|$)" % (_TS_MOD, _N)), "alan", "s"),
+    )
+    return {("ts", "dosya"): dosya, ("ts", "uye"): dosya[:2] + uye}
+
+
+_AD_TABLO = {}  # type: dict
+
+
+def _ad_tablo():
+    """-> (kurallar, dek, oge): sinif/uye desen tablolari. ILK cagrida kurulur (bir kez), sonra onbellekten; yukleme aninda
+    HICBIR desen derlenmez. kurallar {(dil, baglam): kurallar} · dek {dil: bildirim oncesi sus (nitelik/dizi) deseni} ·
+    oge enum ogesi adi deseni."""
+    t = _AD_TABLO.get("t")
+    if t is None:
+        kurallar = {}
+        for kur in (_ad_kural_cs, _ad_kural_dart, _ad_kural_ts):
+            kurallar.update(kur())
+        dek_at = re.compile(r"\s*(?:@\s*[\w.$]+(?:%s)?(?:\.[\w$]+)?(?:\(\s*\))?\s*)*" % _G2)
+        dek = {"cs": re.compile(r"\s*(?:\[\s*\]\s*)*"), "dart": dek_at, "ts": dek_at}
+        t = _AD_TABLO["t"] = (kurallar, dek, re.compile(_N.join(("(?P<ad>", ")"))))
+    return t
 
 
 def _ad_bay_red(bay, mm, son, ust):
@@ -9480,8 +9544,9 @@ def _ad_ara(kurallar, isk, o, son, ust):
 def _ad_siniflandir(S, i, j, son, ust):
     """[i,j) basligi -> (tur, ad, ad konumu, kapsayici kw) ya da None (taninmayan bildirim)."""
     isk = _ad_acik_bosalt(_ad_iskelet(S.m[i:j]))
-    o = _AD_DEK[S.dil].match(isk).end()
-    r = _ad_ara(_AD_KURALLAR[(S.dil, ust[2])], isk, o, son, ust)
+    kurallar, dek, _oge = _ad_tablo()
+    o = dek[S.dil].match(isk).end()
+    r = _ad_ara(kurallar[(S.dil, ust[2])], isk, o, son, ust)
     if r is None or r[1] == "-":
         return None
     mm, tur, kap = r
@@ -9502,13 +9567,14 @@ def _ad_ust(S, kap, ad, ust):
     return (ust[0] + ad + ".", ad.split(".")[-1], ctx, kap)
 
 
-_AD_AYRAC = re.compile(r"[,;]")
+_AD_AYRAC = _ad_re(r"[,;]")
 
 
 def _ad_enum(S, a, b, ust, cikti):
     """Enum govdesi: her oge `sabit`; ogeler ISKELETTE (parantez/suslu/`<..>` icerigi bosaltilmis) `,` ile bolunur;
     Dart gelismis enum'da `;`'dan sonrasi uye bolgesidir."""
     z = _ad_acik_bosalt(_ad_iskelet(S.m[a:b]))
+    _kurallar, dek, oge = _ad_tablo()
     i, n = 0, len(z)
     while True:
         i = _ad_bosluk(z, i, n)
@@ -9516,7 +9582,7 @@ def _ad_enum(S, a, b, ust, cikti):
             return
         e = _AD_AYRAC.search(z, i)
         j = e.start() if e else n
-        mm = _AD_OGE.match(z, _AD_DEK[S.dil].match(z, i).end())
+        mm = oge.match(z, dek[S.dil].match(z, i).end())
         if mm is not None and mm.end() <= j:
             cikti.append(("sabit", ust[0] + mm.group("ad"), _ad_satir(S, a + mm.start("ad")),
                           _ad_satir(S, _ad_son_harf(S.m, a + j, a + i))))
@@ -9583,9 +9649,18 @@ def _ad_bolge(S, a, b, ust, cikti):
 
 # ---------------------------------------------------------------- Python (ast: kesin)
 
-_AD_PY_ICE = tuple(getattr(ast, ad) for ad in ("If", "For", "AsyncFor", "While", "With", "AsyncWith", "Try", "TryStar", "Match")
-                   if hasattr(ast, ad))          # TryStar (3.11) / Match (3.10): eski surumde yok
-_AD_PY_TIP = getattr(ast, "TypeAlias", ())       # `type X = ...` (3.12)
+_AD_PY_ONB = {}  # type: dict
+
+
+def _ad_py_turler():
+    """-> (ice, tip): `ast` dugum siniflari; ILK cagrida kurulur (yukleme aninda `ast` alinmaz)."""
+    t = _AD_PY_ONB.get("t")
+    if t is None:
+        import ast
+        ice = tuple(getattr(ast, ad) for ad in ("If", "For", "AsyncFor", "While", "With", "AsyncWith", "Try", "TryStar", "Match")
+                    if hasattr(ast, ad))          # TryStar (3.11) / Match (3.10): eski surumde yok
+        t = _AD_PY_ONB["t"] = (ice, getattr(ast, "TypeAlias", ()))       # `type X = ...` (3.12)
+    return t
 
 
 def _ad_py_alt(d):
@@ -9601,6 +9676,7 @@ def _ad_py_alt(d):
 
 
 def _ad_py_atama(d, onek, cikti):
+    import ast
     for h in (d.targets if isinstance(d, ast.Assign) else [d.target]):
         if isinstance(h, ast.Name):
             cikti.append(("sabit" if h.id.isupper() else "alan", onek + h.id, d.lineno, d.end_lineno))
@@ -9608,6 +9684,8 @@ def _ad_py_atama(d, onek, cikti):
 
 def _ad_py_gez(govde, onek, sinifta, cikti):
     """Python tanimlari (ast). ACIK YIGIN ile gezer: ~1000'den uzun `elif` zinciri (ic ice `If`) RecursionError vermez."""
+    import ast
+    ice, tip = _ad_py_turler()
     yigin = [(iter(govde), onek, sinifta)]
     while yigin:
         it, on, sf = yigin[-1]
@@ -9621,13 +9699,15 @@ def _ad_py_gez(govde, onek, sinifta, cikti):
             cikti.append(("metot" if sf else "fonksiyon", on + d.name, d.lineno, d.end_lineno))
         elif isinstance(d, (ast.Assign, ast.AnnAssign)):
             _ad_py_atama(d, on, cikti)
-        elif _AD_PY_TIP and isinstance(d, _AD_PY_TIP):
+        elif tip and isinstance(d, tip):
             cikti.append(("tip", on + d.name.id, d.lineno, d.end_lineno))
-        elif isinstance(d, _AD_PY_ICE):
+        elif isinstance(d, ice):
             yigin.append((iter(_ad_py_alt(d)), on, sf))
 
 
 def _ad_py(metin):
+    import ast
+    import warnings
     cikti = []
     with warnings.catch_warnings():                    # taranan kodun SyntaxWarning'i (gecersiz kacis dizisi...) motorun stderr'ine KARISMAZ
         warnings.simplefilter("ignore")
@@ -9778,7 +9858,7 @@ def _adres_oku(kok, yol):
     return _adres_duzle(metin), uyari
 
 
-_ADRES_YUZDE = re.compile(r"%(?=09|0A|0D|25)")
+_ADRES_YUZDE = _ad_re(r"%(?=09|0A|0D|25)")
 
 
 def _adres_alan(s):
@@ -10045,6 +10125,7 @@ def _adres_yakin(tanimlar, ad):
     """En yakin adlar; aday tavani (uzunlugu sorguya en yakin `_ADRES_YAKIN_ADAY` ad) yuz binlerce adli defterde sureyi sinirlar."""
     son = ad.split(".")[-1]
     adaylar = sorted(set(r[2].split(".")[-1] for r in tanimlar), key=lambda c: (abs(len(c) - len(son)), c))
+    import difflib
     return difflib.get_close_matches(son, adaylar[:_ADRES_YAKIN_ADAY], n=_ADRES_YAKIN_ADET, cutoff=0.3)
 
 

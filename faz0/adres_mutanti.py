@@ -9,13 +9,18 @@ NEDEN VAR
 
 KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir — motor sabitinden DEGIL: paylasilan kural = paylasilan korluk)
   A-TANIM        dort dilin (py/cs/dart/ts) fikstur dosyalarinda bilinen DORT tanim dogru yol + satir araligiyla     [TANIM-PY|CS|DART|TS]
+                 + bozuk TS girdisinde (bitmemis yorum = uzun bosluk dizisi; uzun satir sonu dizisi) `--kur` zaman asimina
+                 UGRAMAZ: sure DOGRUSAL (P2-ONCEDEN-01)                                                                [TANIM-TS-SURE]
   A-CAGIRAN      bilinen cagri listede (CAGIRAN-VAR); cagri silinince listeden DUSER (CAGIRAN-DUSER); tanim satiri cagiran
                  sayilmaz (CAGIRAN-TANIM-HARIC)
   A-PARMAK       govde degisince iz DEGISIR (PARMAK-DEGISIR); yalniz satir sonu bosluk (PARMAK-BOSLUK) / CRLF (PARMAK-CRLF) degisince AYNI
   A-BAYAT        dosya degisince ilk satir `ADRES DEFTERI BAYAT: 1 dosya degisti` + exit 1 (BAYAT-VAR); degismeyince sessiz exit 0 (BAYAT-YOK)
   A-DETERMINIZM  iki `--kur` bit-bit ayni (DETERMINIZM-AYNI); satirlar kanonik sirada (DETERMINIZM-SIRA: dort dil, adlari DIL SIRASINA
                  ters serpistirilmis dosyalar — siralama kapaliysa dil gruplamasi gorunur)
-  A-ETKI         adres cikaricisi BILEREK bozukken `kapi` · `kapi --siki` · `devral --kesif` ciktisi (exit + stdout + stderr) BAYT-BAYT ayni (ETKI)
+  A-ETKI         iki eksen. (1) CALISMA ANI: adres cikaricisi BILEREK bozukken `kapi` · `kapi --siki` · `devral --kesif` ciktisi (exit +
+                 stdout + stderr) BAYT-BAYT ayni (ETKI). (2) YUKLEME ANI (KALEM 1, P2.1): adres desen/tablo ogesine YUKLEMEDE patlayan
+                 gecersiz regex enjekte edilmis motorda `kapi` · `kapi --siki` · `devral --kesif` · `not` · `derle` ciktisi (kok yolu ve
+                 gun/saat normallestirilmis) temizle BAYT-BAYT ayni ve `adres --kur` exit 3 (ARAC KUSURU) (ETKI-YUKLEME)
   A-KOMUT-SATIRI YALNIZ Windows: 43.200 karakterlik yol kumesinde `--kur` COKMEZ, kaynak=git (KOMUT-SATIRI); Linux/macOS: OLCULEMEDI beyani
 
 CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
@@ -23,6 +28,7 @@ CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENM
 """
 import io
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -174,10 +180,10 @@ def proje(taban, ad, dosyalar):
     return kok
 
 
-def kos(motor, kok, *args):
-    """Motoru ALT SUREC olarak kosar -> (exit, stdout, stderr)."""
+def kos(motor, kok, *args, zaman_asimi=None):
+    """Motoru ALT SUREC olarak kosar -> (exit, stdout, stderr). `zaman_asimi` asilirsa subprocess.TimeoutExpired."""
     r = subprocess.run([sys.executable, "-X", "utf8", motor] + list(args) + ["--kok", kok], capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", env=_cikti_kodlamasi_ortami())
+                       encoding="utf-8", errors="replace", env=_cikti_kodlamasi_ortami(), timeout=zaman_asimi)
     return r.returncode, r.stdout, r.stderr
 
 
@@ -214,7 +220,27 @@ def kol_tanim(motor, taban):
         bulunan, beklenen = sorted(tanimlar(kok, yol)), sorted(BEKLENEN[dil])
         if bulunan != beklenen:
             b.append(("TANIM-%s" % dil.upper(), "%s: bulunan %r != beklenen %r" % (yol, bulunan, beklenen)))
-    return b
+    return b + kol_tanim_sure(motor, taban)
+
+
+# DOGRUSALLIK (P2-ONCEDEN-01): bozuk/bitmemis girdide sure dogrusal kalir. (1) bitmemis yorum = uzun BOSLUK dizisi: bitisik `\s*`
+# ciftleri/ucluleri desende n^2/n^3 geri izleme verir (eski motor 2 KB'de 30 s). (2) satir sonu dizisi: ASI hukmu dizinin HER satir
+# sonu icin yeniden hesaplanirsa n^2 (eski motor 16 KB'de 22 s). Zaman asimi SABOTAJ bayragidir; saglam motor milisaniyeler tutar.
+SURE_TS = {"src/yorum.ts": "class A {\n  async checkCu/*" + "x" * 4000 + "\n",
+           "src/satir.ts": "class A {\n  foo =" + "\n" * 40000 + " 1\n}\n"}
+SURE_ZAMAN_ASIMI = 20
+
+
+def kol_tanim_sure(motor, taban):
+    """A-TANIM (SURE): bozuk TS girdisinde `adres --kur` zaman asimina UGRAMAZ ve temiz biter."""
+    kok = proje(taban, "sure", SURE_TS)
+    try:
+        kod, o, e = kos(motor, kok, "adres", "--kur", zaman_asimi=SURE_ZAMAN_ASIMI)
+    except subprocess.TimeoutExpired:
+        return [("TANIM-TS-SURE", "bozuk TS girdisinde `adres --kur` %d s icinde BITMEDI (dogrusal degil)" % SURE_ZAMAN_ASIMI)]
+    if kod != 0:
+        return [("TANIM-TS-SURE", "bozuk TS girdisinde `adres --kur` exit=%s: %r" % (kod, (o + e).strip()[-120:]))]
+    return []
 
 
 def _cagiranlar(cikti):
@@ -328,6 +354,63 @@ def kol_etki(motor, taban, bozuk_motor):
     return b
 
 
+_TARIH = re.compile(r"\d{4}-\d{2}-\d{2}(?:-\d{4})?")     # `not`/`derle` ciktisinda degisken olan TEK sey: gun ve gunluk dosya adindaki SSDD
+YUKLEME_KOMUTLARI = (("kapi",), ("kapi", "--siki"), ("devral", "--kesif"),
+                     ("not", "--konu", "genel-durum", "--tur", "durum", "--metin", "yukleme ani sinamasi"), ("derle",))
+
+
+def _normalle(kok, metin):
+    return _TARIH.sub("<TARIH>", metin.replace(kok, "<KOK>"))
+
+
+def _yukleme_kosusu(motor, kok):
+    """`YUKLEME_KOMUTLARI`ni sirayla kosar -> [(args, exit, stdout, stderr)] (kok yolu ve gun/saat normallestirilmis)."""
+    cikti = []
+    for args in YUKLEME_KOMUTLARI:
+        kod, o, e = kos(motor, kok, *args)
+        cikti.append((args, kod, _normalle(kok, o), _normalle(kok, e)))
+    return cikti
+
+
+def kol_etki_yukleme(motor, taban, yukleme_bozuk):
+    """A-ETKI (YUKLEME ANI): adres desen/tablo ogesi YUKLEMEDE patlayan motorda (`yukleme_bozuk`) kapi/kapi --siki/devral --kesif/
+    not/derle ciktisi temiz motorunkiyle bayt-bayt ayni; `adres --kur` ise exit 3 (ARAC KUSURU)."""
+    b = []
+    ana = proje(taban, "yukleme", dict((yol, m) for yol, m in FIKSTUR.values()))
+    r = kos(motor, ana, "kur", "--ad", "ADR")
+    if r[0] != 0:
+        raise Kurulamadi("kur basarisiz (exit=%s): %s" % (r[0], (r[1] + r[2]).strip()[-160:]))
+    _git(ana, "add", "-A")
+    _git(ana, "commit", "-q", "-m", "hafiza")
+    kopya = os.path.join(taban, "yukleme_kopya")
+    shutil.copytree(ana, kopya)
+    saglam, bozuk = _yukleme_kosusu(motor, ana), _yukleme_kosusu(yukleme_bozuk, kopya)
+    for s, z in zip(saglam, bozuk):
+        if s != z:
+            b.append(("ETKI-YUKLEME", "`%s` ciktisi adres deseni YUKLEMEDE patlarken DEGISTI: exit %s -> %s; ilk fark: %r" % (
+                " ".join(s[0]), s[1], z[1], [(x, y) for x, y in zip((s[2] + s[3]).split("\n"), (z[2] + z[3]).split("\n")) if x != y][:1])))
+    kod, o, e = kos(yukleme_bozuk, kopya, "adres", "--kur")
+    if kod != 3:
+        b.append(("ETKI-YUKLEME", "yukleme-bozuk motorda `adres --kur` exit=%s (3 = ARAC KUSURU beklenir); cikti=%r" % (
+            kod, (o + e).strip()[-120:])))
+    return b
+
+
+YUKLEME_ANKOR_DESEN = '_AD_BRC = _ad_re(r"[{}]")\n'
+YUKLEME_ANKOR_TABLO = (r'    delegate = (re.compile(r"%sdelegate\s+%s\s+(?P<ad>%s)\s*(?:%s)?\(" % (mod, tip, _N, _G2)), "tip", "")' + "\n")
+
+
+def _yukleme_bozuk_yaz(kaynak, hedef_dizin, ad):
+    """Yukleme aninda patlayan motor kopyasi: bir MODUL DUZEYI desene (`_AD_BRC`) VE bir TABLO ogesine (C# `delegate` kurali) gecersiz
+    regex enjekte edilir. Tembel kurulumda ikisi de ilk `adres` kullanimina kadar patlamaz."""
+    for ankor in (YUKLEME_ANKOR_DESEN, YUKLEME_ANKOR_TABLO):
+        if kaynak.count(ankor) != 1:
+            return None, "yukleme bozucu capasi %d yerde gecti (1 olmali): %r" % (kaynak.count(ankor), ankor.strip()[:60])
+    metin = kaynak.replace(YUKLEME_ANKOR_DESEN, '_AD_BRC = _ad_re(r"[{")      # MUTANT: yukleme-bozuk desen\n', 1)
+    metin = metin.replace(YUKLEME_ANKOR_TABLO, '    delegate = (re.compile("(("), "tip", "")      # MUTANT: yukleme-bozuk tablo ogesi\n', 1)
+    return _motor_yaz(metin, hedef_dizin, ad)
+
+
 def _bozuk_motor_yaz(kaynak, hedef_dizin, ad):
     """Cikaricisi BILEREK bozuk motor kopyasi (A-ETKI kontrolu)."""
     ankor = '    if dil == "py":\n        return _ad_py(metin)\n'
@@ -341,7 +424,10 @@ def kos_etki(motor, taban, ad, kaynak):
     bozuk, hata = _bozuk_motor_yaz(kaynak, os.path.join(os.path.dirname(taban), "bozuk_" + ad), "bozuk_" + ad)
     if bozuk is None:
         raise Kurulamadi(hata)
-    return kol_etki(motor, taban, bozuk)
+    yukleme, hata = _yukleme_bozuk_yaz(kaynak, os.path.join(os.path.dirname(taban), "yukleme_" + ad), "yukleme_" + ad)
+    if yukleme is None:
+        raise Kurulamadi(hata)
+    return kol_etki(motor, taban, bozuk) + kol_etki_yukleme(motor, taban, yukleme)
 
 
 def kol_komut_satiri(motor, taban):
@@ -410,6 +496,12 @@ SABOTAJLAR = (
     ("M-T4 TS/JS cikaricisi kapali", "A-TANIM", "TANIM-TS",
      "    S = _ad_hazirla(dil, metin)\n    cikti = []\n",
      '    if dil == "ts":      # MUTANT\n        return []\n    S = _ad_hazirla(dil, metin)\n    cikti = []\n'),
+    ("M-T5 TS uye deseninde bitisik \\s* dizileri GERI gelir (kubik geri izleme)", "A-TANIM", "TANIM-TS-SURE",
+     r'        (re.compile(r"%s(?:\*\s*)?(?P<ad>%s)\s*(?:\?\s*)?%s\(" % (_TS_MOD, _N, _TS_GN)), "metot", "j"),' + "\n",
+     r'        (re.compile(r"%s\*?\s*(?P<ad>%s)\s*\??\s*(?:%s)?\(" % (_TS_MOD, _N, _G2)), "metot", "j"),' + "\n"),
+    ("M-T6 baslik taramasi bosluk dizisindeki HER satir sonunda ASI hesaplar (kuadratik)", "A-TANIM", "TANIM-TS-SURE",
+     r'        k = _ad_bosluk(S.m, k, b) if S.m[k:k + 1] == "\n" else k + 1',
+     "        k += 1"),
     ("M-C1 tanim satiri HARIC tutulmaz (tanim kendini cagiran sanilir)", "A-CAGIRAN", "CAGIRAN-TANIM-HARIC",
      "            if (yol, satir) not in tanim_satiri:\n",
      "            if True:      # MUTANT\n"),
@@ -420,8 +512,8 @@ SABOTAJLAR = (
      '    s = _ADRES_SON_BOSLUK.sub("", _ADRES_SATIR_SONU.sub("\\n", s))\n',
      "    s = s      # MUTANT\n"),
     ("M-P2 yalniz satir sonu BOSLUGU kirpilmaz (CRLF hala cevrilir)", "A-PARMAK", "PARMAK-BOSLUK",
-     '_ADRES_SON_BOSLUK = re.compile(r"(?<![ \\t])[ \\t]+(?=\\n|\\Z)")',
-     '_ADRES_SON_BOSLUK = re.compile(r"(?!)")  # MUTANT: '),
+     '_ADRES_SON_BOSLUK = _ad_re(r"(?<![ \\t])[ \\t]+(?=\\n|\\Z)")',
+     '_ADRES_SON_BOSLUK = _ad_re(r"(?!)")  # MUTANT: '),
     ("M-P3 parmak izi SABIT (govde degisince degismez)", "A-PARMAK", "PARMAK-DEGISIR",
      '    return _adres_sha("\\n".join(satirlar[bas - 1:bit]))[:8]\n',
      '    return "00000000"      # MUTANT\n'),
@@ -441,6 +533,15 @@ SABOTAJLAR = (
      "    kok = kok_bul(a.kok); _KAPI_KOK[0] = kok\n    rc = rc_oku(kok); y = Y(kok, rc)\n",
      "    kok = kok_bul(a.kok); _KAPI_KOK[0] = kok\n    rc = rc_oku(kok); y = Y(kok, rc)\n"
      '    _adres_cikar("py", "x = 1")      # MUTANT: kapi adres koduna baglandi\n'),
+    ("M-E2 tembel regex vekili EAGER (desenler yuklemede derlenir)", "A-ETKI", "ETKI-YUKLEME",
+     "    return _AdRe(kaynak, bayrak)\n",
+     "    return re.compile(kaynak, bayrak)      # MUTANT\n"),
+    ("M-E3 desen TABLOLARI modul duzeyinde kurulur", "A-ETKI", "ETKI-YUKLEME",
+     "def _ad_siniflandir(S, i, j, son, ust):\n",
+     "_ad_tablo()      # MUTANT: tablolar yuklemede kurulur\n\n\ndef _ad_siniflandir(S, i, j, son, ust):\n"),
+    ("M-E4 cikarici istisnasi `sozdizimi` sayilir (adres --kur exit 3 yerine 0)", "A-ETKI", "ETKI-YUKLEME",
+     '                atla.setdefault("cikarici", []).append(yol)\n',
+     '                atla.setdefault("sozdizimi", []).append(yol)      # MUTANT\n'),
     ("M-K1 dosya listesi TEK git cagrisina dizilir", "A-KOMUT-SATIRI", "KOMUT-SATIRI",
      '    r = _adres_git(kok, "ls-files", "-z")\n',
      '    r = _adres_git(kok, "ls-files", "-z")\n'
