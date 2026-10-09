@@ -25,6 +25,11 @@ KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir �
                  Python bicim belirteci (`f"{x:ad}"`) ve C# bicim belirteci (`$"{x,10:ad}"`; `global::` takma adi DEGIL) kod DEGIL, ic ice
                  `{..}` kod + 30 ic ice f-dize ZAMAN ASIMINA ugramaz (K-1) + maske ARAC KUSURU yutulmaz (exit 3)
                                                                                                   [MASKE|-GERCEK|-DELIK|-NOT|-HAM|-KUSUR|-DERIN]
+  A-ATLA         (KALEM 3, P2.1) gomulu/uretilmis dosyalar (.yarn/ node_modules/ vendor/ dist/ build/ dizin bilesenleri, *.min.js, *.cjs;
+                 izlenmis olsalar bile) TARANMAZ: tanim/cagiran listesinde YOK, defterde dosya satiri YOK, bayatlik saymaz; atlanma
+                 `--kur` konsolunda (`ATLANAN: n dosya (...)`) ve ADRES.tsv basliginda (`atlanan=`) BEYAN edilir; `src/build_tools/`
+                 ve `src/Dist/` (buyuk harf) atlanMAZ; atlama kapsam-disi sayimindan ONCE (atlanan dosya KAPSAM DISI'na girmez);
+                 git'siz dosya sistemi kipinde de ayni suzgec                                          [ATLA|-BEYAN|-BAYAT]
   A-ETKI         iki eksen. (1) CALISMA ANI: adres cikaricisi BILEREK bozukken `kapi` · `kapi --siki` · `devral --kesif` ciktisi (exit +
                  stdout + stderr) BAYT-BAYT ayni (ETKI). (2) YUKLEME ANI (KALEM 1, P2.1): adres desen/tablo ogesine YUKLEMEDE patlayan
                  gecersiz regex enjekte edilmis motorda `kapi` · `kapi --siki` · `devral --kesif` · `not` · `derle` ciktisi (kok yolu ve
@@ -56,8 +61,8 @@ _cikti_kodlamasini_guvenceye_al()
 
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
-KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-MASKE", "A-ETKI", "A-KOMUT-SATIRI")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ETKI": "ETKI", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
+KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-MASKE", "A-ATLA", "A-ETKI", "A-KOMUT-SATIRI")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -515,6 +520,97 @@ def kol_maske(motor, taban):
     return b
 
 
+# ------------------------------------------------------------------ A-ATLA (P2.1 KALEM 3): gomulu/uretilmis dosyalar taranmaz, atlanma BEYAN edilir
+# Her fikstur dosyasinda ayni ad `atlaHedef` (tanim + cagri). Beklentiler ELLE yazildi (motor sabitinden DEGIL).
+ATLA_IS = "function atlaHedef() {\n  return 1;\n}\natlaHedef();\n"
+ATLA_OK = "export function atlaHedef(): number {\n  return 1;\n}\nexport const t = atlaHedef();\n"
+ATLA_TEMEL = {".yarn/x.cjs": ATLA_IS, "node_modules/a/b.js": ATLA_IS, "src/ok.ts": ATLA_OK}
+ATLA_TEMEL_SATIR = "ATLANAN: 2 dosya (.yarn 1, node_modules 1)"
+ATLA_AYRINTI = {".yarn/x.cjs": ATLA_IS, ".yarn/p.kt": "fun atlaHedef() {}\n", "node_modules/a/b.js": ATLA_IS, "node_modules/a/package.json": "{}\n",
+                "vendor/v.ts": ATLA_OK, "dist/d.js": ATLA_IS, "lib/build/b.ts": ATLA_OK, "public/app.min.js": ATLA_IS, "tools/k.cjs": ATLA_IS,
+                "src/ok.ts": ATLA_OK, "src/build_tools/bt.ts": ATLA_OK, "src/Dist/up.ts": ATLA_OK, "src/m.mjs": ATLA_IS, "src/app.js": ATLA_IS,
+                "src/dist.ts": ATLA_OK, "src/x.kt": "fun atlaHedef() {}\n"}
+ATLA_AYRINTI_KALAN = ["src/Dist/up.ts", "src/app.js", "src/build_tools/bt.ts", "src/dist.ts", "src/m.mjs", "src/ok.ts"]
+ATLA_AYRINTI_SATIR = "ATLANAN: 8 dosya (.yarn 2, *.cjs 1, *.min.js 1, build 1, dist 1, node_modules 1, vendor 1)"
+ATLA_FS = {".yarn/x.cjs": ATLA_IS, "vendor/v.ts": ATLA_OK, "node_modules/a/b.js": ATLA_IS, "src/ok.ts": ATLA_OK}
+
+
+def _tanim_yollari(cikti):
+    """`adres <ad>` ciktisinin TANIM satirlarinin yollari (sirali)."""
+    bolum = cikti.split("TANIM (", 1)
+    yollar = []
+    for l in (bolum[1].split("\n")[1:] if len(bolum) > 1 else []):
+        if not l.startswith("  ") or l.startswith("  +"):
+            break
+        yollar.append(l.strip().split(" > ")[0])
+    return sorted(yollar)
+
+
+def _atla_sorgu(motor, kok, etiket, bekle_tanim, bekle_cagiran):
+    """`adres atlaHedef`: TANIM yollari ve CAGIRAN yollari ELLE beklentiyle esit olmali; bayat/yanlis exit yok. -> [(etiket, mesaj)]"""
+    kod, o, _e = kos(motor, kok, "adres", "atlaHedef")
+    b = []
+    if _tanim_yollari(o) != bekle_tanim:
+        b.append(("ATLA", "%s: TANIM yollari %r != beklenen %r" % (etiket, _tanim_yollari(o), bekle_tanim)))
+    yollar = sorted(set(l.split(" > ")[0] for l in _cagiranlar(o)))
+    if yollar != bekle_cagiran:
+        b.append(("ATLA", "%s: CAGIRAN yollari %r != beklenen %r" % (etiket, yollar, bekle_cagiran)))
+    if kod != 0 or "BAYAT" in o:
+        b.append(("ATLA-BAYAT", "%s: kurulmus defterde sorgu exit=%s ya da BAYAT basildi (kur ve sorgu AYNI suzgeci kullanmali): %r" % (
+            etiket, kod, o.split("\n")[0])))
+    return b
+
+
+def _atla_kur(motor, kok, etiket):
+    kod, o, e = kos(motor, kok, "adres", "--kur")
+    if kod != 0:
+        raise Kurulamadi("%s: adres --kur basarisiz (exit=%s): %s" % (etiket, kod, (o + e).strip()[-200:]))
+    return [l.strip() for l in o.split("\n")]
+
+
+def kol_atla(motor, taban):
+    """A-ATLA: atlanan dosya tanim/cagiran listesinde YOK (ATLA) · `--kur` konsolu + baslik ATLANAN'i BEYAN eder (ATLA-BEYAN) ·
+    atlanan dosyanin degismesi BAYAT yapmaz (ATLA-BAYAT) · `src/build_tools/` + `src/Dist/` atlanmaz, atlanan KAPSAM DISI'na girmez · git'siz kip."""
+    b = []
+    kok = proje(taban, "atla", ATLA_TEMEL)
+    satirlar = _atla_kur(motor, kok, "temel")
+    if ATLA_TEMEL_SATIR not in satirlar:
+        b.append(("ATLA-BEYAN", "temel: `--kur` ciktisinda %r yok: %r" % (ATLA_TEMEL_SATIR, [l for l in satirlar if "ATLANAN" in l])))
+    baslik, sat = defter(kok)
+    if not baslik.endswith(" atlanan=.yarn:1,node_modules:1"):
+        b.append(("ATLA-BEYAN", "temel: ADRES.tsv basliginda `atlanan=.yarn:1,node_modules:1` yok: ...%s" % baslik[-80:]))
+    sizan = sorted(set(r[0] for r in sat if r[0].startswith((".yarn/", "node_modules/"))))
+    if sizan:
+        b.append(("ATLA", "temel: defterde atlanan dosyalarin satiri VAR: %r" % sizan))
+    b += _atla_sorgu(motor, kok, "temel", ["src/ok.ts"], ["src/ok.ts"])
+    _yaz(os.path.join(kok, ".yarn", "x.cjs"), ATLA_IS + "// degisti\n")
+    b += _atla_sorgu(motor, kok, "temel (atlanan dosya degisti)", ["src/ok.ts"], ["src/ok.ts"])
+    kok = proje(taban, "atla_ayrinti", ATLA_AYRINTI)
+    satirlar = _atla_kur(motor, kok, "ayrinti")
+    if ATLA_AYRINTI_SATIR not in satirlar:
+        b.append(("ATLA-BEYAN", "ayrinti: %r yok: %r" % (ATLA_AYRINTI_SATIR, [l for l in satirlar if "ATLANAN" in l])))
+    if "KAPSAM DISI DIL: 1 dosya (.kt 1)" not in satirlar:
+        b.append(("ATLA", "ayrinti: atlanan .yarn/p.kt KAPSAM DISI'na girdi (ya da src/x.kt yok): %r" % [l for l in satirlar if "KAPSAM" in l]))
+    if not any(l.startswith("dosya  : 6, tanim") for l in satirlar):
+        b.append(("ATLA", "ayrinti: taranan dosya sayisi 6 degil: %r" % [l for l in satirlar if l.startswith("dosya")]))
+    b += _atla_sorgu(motor, kok, "ayrinti", ATLA_AYRINTI_KALAN, ATLA_AYRINTI_KALAN)
+    return b + kol_atla_fs(motor, taban)
+
+
+def kol_atla_fs(motor, taban):
+    """A-ATLA (git'siz dosya sistemi kipi): ayni suzgec; `node_modules` yuruyusce BUDANIR (not ile beyan)."""
+    kok = os.path.join(taban, "atla_fs")
+    for y, m in ATLA_FS.items():
+        _yaz(os.path.join(kok, *y.split("/")), m)
+    satirlar = _atla_kur(motor, kok, "fs")
+    b = []
+    if not any(l.startswith("kaynak : dosya sistemi") for l in satirlar):
+        raise Kurulamadi("atla_fs: git'siz kip kurulamadi (kaynak dosya sistemi degil): %r" % satirlar[:4])
+    if "ATLANAN: 2 dosya (.yarn 1, vendor 1)" not in satirlar:
+        b.append(("ATLA-BEYAN", "fs: `ATLANAN: 2 dosya (.yarn 1, vendor 1)` yok: %r" % [l for l in satirlar if "ATLANAN" in l]))
+    return b + _atla_sorgu(motor, kok, "fs", ["src/ok.ts"], ["src/ok.ts"])
+
+
 def _kapi_kosusu(motor, kok):
     cikti = []
     for args in (("kapi",), ("kapi", "--siki"), ("devral", "--kesif")):
@@ -646,6 +742,7 @@ KOLLAR = {
     "A-BAYAT": lambda m, t, _a, _k: kol_bayat(m, t),
     "A-DETERMINIZM": lambda m, t, _a, _k: kol_determinizm(m, t),
     "A-MASKE": lambda m, t, _a, _k: kol_maske(m, t),
+    "A-ATLA": lambda m, t, _a, _k: kol_atla(m, t),
     "A-ETKI": kos_etki,
     "A-KOMUT-SATIRI": kos_komut_satiri,
 }
@@ -746,6 +843,30 @@ SABOTAJLAR = (
     ("M-M16 C# `global::` takma adi bicim belirteci baslatir (delik icindeki cagri KAYBOLUR)", "A-MASKE", "MASKE-DELIK",
      '                if kolon == 2 and t[i:i + 1] == ":":\n',
      "                if False:      # MUTANT\n"),
+    ("M-A1 atlama KAPALI (gomulu/uretilmis dosyalar taranir)", "A-ATLA", "ATLA",
+     "        et = _adres_atla_etiketi(y)\n",
+     "        et = None      # MUTANT\n"),
+    ("M-A2 ATLANAN satiri basilmaz (SESSIZ atlama)", "A-ATLA", "ATLA-BEYAN",
+     '        print("  " + _adres_atlanan_satiri(atlanan))\n',
+     "        pass      # MUTANT\n"),
+    ("M-A3 baslikta atlanan alani yok (defterde SESSIZ atlama)", "A-ATLA", "ATLA-BEYAN",
+     "_adres_disi_metni(atlanan)))",
+     '"-"))      # MUTANT' + "\n"),
+    ("M-A4 dizin eslesmesi ALT DIZGE (src/build_tools/ de atlanir)", "A-ATLA", "ATLA",
+     "        if parca in _ADRES_ATLA_DIZIN:\n",
+     "        if any(d in parca for d in _ADRES_ATLA_DIZIN):      # MUTANT\n"),
+    ("M-A5 dizin eslesmesi buyuk/kucuk harf DUYARSIZ (src/Dist/ de atlanir)", "A-ATLA", "ATLA",
+     "        if parca in _ADRES_ATLA_DIZIN:\n",
+     "        if parca.lower() in _ADRES_ATLA_DIZIN:      # MUTANT\n"),
+    ("M-A6 atlanan kod-disi dosya KAPSAM DISI sayimina girer (atlama sayimdan SONRA)", "A-ATLA", "ATLA",
+     "        et = _adres_atla_etiketi(y)\n",
+     "        et = _adres_atla_etiketi(y) if uz in _ADRES_UZANTI else None      # MUTANT\n"),
+    ("M-A7 sorgu suzgeci YOK (bayatlik atlanan dosyalari sayar)", "A-ATLA", "ATLA-BAYAT",
+     "    kod = _adres_yol_ayir(_adres_dosyalar(kok)[1])[0]\n",
+     "    kod = dict((d, []) for d in _ADRES_DIL_SIRA)      # MUTANT: sorgu suzgeci yok\n"
+     "    for y in _adres_dosyalar(kok)[1]:\n"
+     "        if os.path.splitext(y)[1].lower() in _ADRES_UZANTI:\n"
+     "            kod[_ADRES_UZANTI[os.path.splitext(y)[1].lower()]].append(y)\n"),
     ("M-P1 satir sonu normallestirmesi KAPALI (CRLF + bosluk)", "A-PARMAK", "PARMAK-CRLF",
      '    s = _ADRES_SON_BOSLUK.sub("", _ADRES_SATIR_SONU.sub("\\n", s))\n',
      "    s = s      # MUTANT\n"),

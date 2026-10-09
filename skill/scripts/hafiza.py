@@ -8459,6 +8459,11 @@ _ADRES_DISI_UZANTI = frozenset((
     ".scala", ".lua", ".pl", ".pm", ".r", ".jl", ".ex", ".exs", ".erl", ".hs", ".clj", ".cljs", ".groovy", ".sh", ".bash",
     ".ps1", ".sql", ".vue", ".svelte", ".zig", ".nim", ".v", ".sol", ".tf", ".pyi", ".fs", ".fsx", ".vb", ".razor",
     ".cshtml", ".astro", ".coffee", ".ml", ".mli", ".elm"))
+# GOMULU / URETILMIS paket dosyalari (P2.1 KALEM 3): izlenmis olsalar bile TARANMAZ. TEK TABLO (README bunu aynen yazar); atlama
+# `--kur` basliginda VE konsolda BEYAN edilir (sessiz atlama yok). Dizinler: yolun HERHANGI bir seviyesinde ayni adli dizin BILESENI
+# (`src/build_tools/` eslesmez); sonekler: dosya adinin sonu. Buyuk/kucuk harf DUYARLI. Dizin sonekten once sayilir (`.yarn/x.cjs` -> .yarn).
+_ADRES_ATLA_DIZIN = frozenset((".yarn", "node_modules", "vendor", "dist", "build"))
+_ADRES_ATLA_SONEK = (".min.js", ".cjs")
 _ADRES_DOSYA_TAVAN = 8 * 1024 * 1024
 _ADRES_TANIM_TAVAN = 30
 _ADRES_CAGIRAN_TAVAN = 30
@@ -9964,16 +9969,33 @@ def _adres_dosyalar(kok):
     return "dosya", yollar, notlar
 
 
+def _adres_atla_etiketi(yol):
+    """Taranmayacak (gomulu/uretilmis) dosyanin etiketi (dizin adi ya da `*.sonek`); taranacaksa None. `yol` `/` ayiraclidir."""
+    for parca in yol.split("/")[:-1]:
+        if parca in _ADRES_ATLA_DIZIN:
+            return parca
+    for sonek in _ADRES_ATLA_SONEK:
+        if yol.endswith(sonek):
+            return "*" + sonek
+    return None
+
+
 def _adres_yol_ayir(yollar):
-    """Yollar -> ({dil: [yol]}, {kapsam disi uzanti: adet})."""
-    kod, disi = dict((d, []) for d in _ADRES_DIL_SIRA), {}
+    """Yollar -> ({dil: [yol]}, {kapsam disi uzanti: adet}, {atlanan etiket: adet}). TEK suzgec yeri: atlama kapsam-disi sayimindan
+    ONCE uygulanir; yalniz kod uzantili ya da kapsam disi uzantili dosyalar atlanan sayilir (README.md vb. hic sayilmaz)."""
+    kod, disi, atla = dict((d, []) for d in _ADRES_DIL_SIRA), {}, {}
     for y in yollar:
         uz = os.path.splitext(y)[1].lower()
-        if uz in _ADRES_UZANTI:
+        if uz not in _ADRES_UZANTI and uz not in _ADRES_DISI_UZANTI:
+            continue
+        et = _adres_atla_etiketi(y)
+        if et:
+            atla[et] = atla.get(et, 0) + 1
+        elif uz in _ADRES_UZANTI:
             kod[_ADRES_UZANTI[uz]].append(y)
-        elif uz in _ADRES_DISI_UZANTI:
+        else:
             disi[uz] = disi.get(uz, 0) + 1
-    return kod, disi
+    return kod, disi, atla
 
 
 def _adres_oku(kok, yol):
@@ -10071,13 +10093,13 @@ def _adres_disi_metni(disi):
     return ",".join("%s:%d" % (u, n) for u, n in sorted(disi.items(), key=lambda x: (-x[1], x[0])))
 
 
-def _adres_defter_metni(sat, kaynak, dosya, tanim, disi, atla):
+def _adres_defter_metni(sat, kaynak, dosya, tanim, disi, atla, atlanan):
     sat.sort(key=lambda r: (r[0], r[3], -r[4], r[1], r[2]))
     dosya_sat = [r for r in sat if r[1] == "dosya"]
     dil = " ".join("%s=%d/%d" % (d, dosya[d], tanim[d]) for d in _ADRES_DIL_SIRA)
-    baslik = ("# adres-defteri bicim=%s surum=%s kaynak=%s ozet=%s dosya=%d tanim=%d %s disi=%s atlandi=%d"
+    baslik = ("# adres-defteri bicim=%s surum=%s kaynak=%s ozet=%s dosya=%d tanim=%d %s disi=%s atlandi=%d atlanan=%s"
               % (_ADRES_BICIM, SURUM, kaynak, _adres_ozet(dosya_sat), len(dosya_sat), len(sat) - len(dosya_sat), dil,
-                 _adres_disi_metni(disi), sum(len(v) for v in atla.values())))
+                 _adres_disi_metni(disi), sum(len(v) for v in atla.values()), _adres_disi_metni(atlanan)))
     return "\n".join([baslik] + ["\t".join((r[0], r[1], r[2], str(r[3]), str(r[4]), r[5])) for r in sat]) + "\n"
 
 
@@ -10087,6 +10109,12 @@ def _adres_disi_satiri(disi, sinir=8):
     ek = len(sirali) - sinir
     ad = ", ".join("%s %d" % (u, n) for u, n in sirali[:sinir]) + (", +%d diger" % ek if ek > 0 else "")
     return "KAPSAM DISI DIL: %d dosya (%s)" % (sum(disi.values()), ad)
+
+
+def _adres_atlanan_satiri(atlanan):
+    """`ATLANAN: n dosya (.yarn 1, node_modules 12, *.cjs 2)` — gomulu/uretilmis dosyalarin atlanmasi GIZLENMEZ (n azalan, sonra ad)."""
+    sirali = sorted(atlanan.items(), key=lambda x: (-x[1], x[0]))
+    return "ATLANAN: %d dosya (%s)" % (sum(atlanan.values()), ", ".join("%s %d" % (e, n) for e, n in sirali))
 
 
 def _adres_sebep_satiri(baslik, sozluk):
@@ -10103,9 +10131,9 @@ def _adres_kur(kok, y, p):
     """`adres --kur`: `arsiv/hafiza/ADRES.tsv`yi yeniden uretir (deterministik; ayni agac + ayni motor + ayni Python
     surumu -> bayt-bayt ayni). 0 kuruldu · 3 bir dosyada cikarici BEKLENMEDIK istisna firlatti (defter yine yazilir)."""
     kaynak, yollar, notlar = _adres_dosyalar(kok)
-    kod, disi = _adres_yol_ayir(yollar)
+    kod, disi, atlanan = _adres_yol_ayir(yollar)
     sat, dosya, tanim, atla, uyari = _adres_dizinle(kok, kod)
-    metin = _adres_defter_metni(sat, kaynak, dosya, tanim, disi, atla)
+    metin = _adres_defter_metni(sat, kaynak, dosya, tanim, disi, atla, atlanan)
     try:
         os.makedirs(os.path.dirname(p), exist_ok=True)
     except OSError as e:
@@ -10119,6 +10147,8 @@ def _adres_kur(kok, y, p):
     print("  dil    : %s" % " ".join("%s %d/%d" % (d, dosya[d], tanim[d]) for d in _ADRES_DIL_SIRA))
     if disi:
         print("  " + _adres_disi_satiri(disi))
+    if atlanan:
+        print("  " + _adres_atlanan_satiri(atlanan))
     if atla:
         print("  " + _adres_sebep_satiri("ATLANDI", atla))
     if uyari:
@@ -10326,6 +10356,8 @@ def _adres_ad_cevabi(tanimlar, isabet, ad, baslik, notlar=(0, 0)):
             print("  (defter kapsami disi: %s)" % baslik["disi"])
         if baslik.get("atlandi", "0") != "0":
             print("  (defterde ATLANDI: %s dosya - o dosyalardaki tanimlar yok)" % baslik["atlandi"])
+        if baslik.get("atlanan", "-") != "-":
+            print("  (defter TARAMADI - gomulu/uretilmis dosyalar atlandi: %s)" % baslik["atlanan"])
         return 1
     print("TANIM (%d%s):" % (len(bul), ", kismi eslesme" if kip == "kismi" else ""))
     _adres_sinirli(bul, _ADRES_TANIM_TAVAN, lambda r: "  " + _adres_tanim_satiri(r))
