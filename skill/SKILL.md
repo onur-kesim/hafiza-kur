@@ -483,15 +483,26 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   (proje dosya sayısıyla büyümez; ~500 arşiv dosyasında sınıra yaklaşır) ve hata halinde exit 3 değil `None` döner.
   Sınır: `devral`'ın gömülü kapı çöküşünde exit 0 dönmesi bu işin kapsamı DIŞI. Kapı: `faz0/h14_parca_mutanti.py`
   (WIN-UZUN kolu yalnız Windows'ta ısırır; Linux/macOS'ta `OLCULEMEDI: bu platformda sinir yok` der).
-- **`adres` kod adres defteri DESEN TABANLIDIR (P2, 7 Eki 2026).** `hafiza.py adres --kur` → `arsiv/hafiza/ADRES.tsv`
+- **`adres` kod adres defteri DESEN TABANLIDIR (P2, 7 Eki 2026; P2.1, 10 Eki 2026).** `hafiza.py adres --kur` → `arsiv/hafiza/ADRES.tsv`
   (git'in İZLEDİĞİ kod dosyalarındaki tanımlar: `yol · tür · nitelikli ad · başlangıç · bitiş · parmak izi`); `adres <ad>`
   tanım adresi + çağıranlar; `adres --mahalle <önek>` o önekteki tanımların listesi. Python `ast` ile KESİN; C#/Dart/TS/JS
   stdlib desenleriyle çıkarılır ve **AST kadar kesin DEĞİLDİR**: dinamik çağrı, aşırı yükleme, yansıma, string içi ad
   kaçar/fazla sayılır; çok bildirimli `int a, b;` yalnız ilk adı verir; JS nesne literali yöntemleri ve `#if` ile dengesiz
   süslü parantez bilinmez; 100'ü aşan iç içe JSX dosyayı `ATLANDI sozdizimi` yapar; Python adları `ast`'ın NFKC'sine göre
-  yazılır. **"Çağıran" listesi SÖZCÜK EŞLEŞMESİDİR, tip çözümlemesi DEĞİL** (yorum/string geçişleri dahil):
-  çıktıda `NOT: cagiranlar sozcuk eslesmesidir` basılır. Defter gizlice eskimez: kod ağacı değişince sorgu
-  `ADRES DEFTERI BAYAT: <n> dosya degisti` + `exit 1` verir (cevap yine basılır). Dört dil dışındaki kaynak diller
-  `KAPSAM DISI DIL: n dosya (.kt 12, .java 3)` satırıyla SAYILIR. `kapi/derle/devral/not/isir` adres koduna HİÇ
-  dokunmaz (A-ETKI kolu ölçer); `adres` bir ÖLÇÜM kapısı değil, bir SORGU aracıdır. Kapı: `faz0/adres_mutanti.py`
-  (A-KOMUT-SATIRI kolu yalnız Windows'ta ısırır; Linux/macOS'ta `OLCULEMEDI: bu platformda sinir yok` der).
+  yazılır. **"Çağıran" listesi SÖZCÜK EŞLEŞMESİDİR, tip çözümlemesi DEĞİL**: yorum/string/biçim belirteci içindeki
+  geçişler SAYILMAZ (tanım çıkarıcıyla AYNI maske; enterpolasyon delikleri gerçek kod sayılır) ama sayılmadıkları
+  `NOT: n yorum/metin icindeki gecis sayilmadi` satırıyla söylenir; çıktıda ayrıca `NOT: cagiranlar sozcuk eslesmesidir`
+  basılır. Defter gizlice eskimez: kod ağacı değişince sorgu `ADRES DEFTERI BAYAT: <n> dosya degisti` + `exit 1` verir
+  (cevap yine basılır). **Gömülü/üretilmiş dosyalar ATLANIR** (izlenen olsalar bile): yolun herhangi bir seviyesinde
+  `.yarn` `node_modules` `vendor` `dist` `build` dizin bileşeni (büyük/küçük harfe duyarlı; `src/build_tools/` atlanmaz)
+  ya da `*.min.js` `*.cjs`; atlama sessiz değildir: `--kur` `ATLANAN: n dosya (.yarn 2, *.cjs 1, ...)` basar, deftere
+  `atlanan=...` yazılır. Dört dil dışındaki kaynak diller `KAPSAM DISI DIL: n dosya (.kt 12, .java 3)` satırıyla SAYILIR.
+  **Tembel kurulum:** adres koduna ait desenler ve tablolar motor yüklenirken kurulmaz, ilk `adres` çağrısında kurulur;
+  bozuk bir adres deseni yalnız `adres`i düşürür (`--kur` exit 3), `kapi/derle/devral/not/isir` çıktısı bayt bayt aynı
+  kalır. **Sorgu önbelleği:** bayatlık denetimi proje DIŞINDAKİ bir önbellek notuyla ucuz yoldan gider ((mtime, boyut,
+  değişiklik zamanı) aynıysa dosya yeniden özetlenmez; son 3 sn'de değişen dosya önbelleğe girmez; Windows'ta NTFS/ReFS
+  ChangeTime `ctypes` ile okunur; FAT/exFAT ya da değişiklik zamanı alınamayan dosya = tam yol, yanlış-negatif yok);
+  önbellek yalnız bir nottur, bayatlığı gizleyemez, ilk (soğuk) sorgu eskisinden yavaştır. `kapi/derle/devral/not/isir`
+  adres koduna HİÇ dokunmaz (A-ETKI kolu ölçer); `adres` bir ÖLÇÜM kapısı değil, bir SORGU aracıdır. Kapı:
+  `faz0/adres_mutanti.py` (dokuz kol, 57 sabotaj; A-KOMUT-SATIRI kolu yalnız Windows'ta ısırır; Linux/macOS'ta
+  `OLCULEMEDI: bu platformda sinir yok` der).

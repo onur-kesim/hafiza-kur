@@ -173,26 +173,78 @@ python3 skill/scripts/hafiza.py adres --kok=<proje> --mahalle src/Sync     # o �
   bayatlık kararı buna bakar; tanım listelerinden süzülür). Aynı ağaç + aynı motor → `ADRES.tsv` bit-bit aynı (sıralı,
   LF, UTF-8; Windows/Linux, Python 3.12/3.14'te ölçüldü); istisna: Python dosyası yorumlayıcı sürümüne özgü sözdizimi
   taşıyorsa eski sürüm onu `ATLANDI sozdizimi` sayar. Başlık satırı: motor sürümü + kod ağacı özeti + dil başına
-  dosya/tanım sayısı. Dört dil dışındaki kaynak diller `KAPSAM DISI DIL: n dosya (.kt 12, .java 3)` olarak **sayılır**,
-  gizlenmez. UTF-16/UTF-32 (BOM'lu) çözülür; UTF-8 olmayan dosya latin-1 varsayılır ve `UYARI` basılır; NUL baytlı (ikili)
+  dosya/tanım sayısı + `atlanan=` alanı (gömülü/üretilmiş dosyalar; aşağıda). Dört dil dışındaki kaynak diller
+  `KAPSAM DISI DIL: n dosya (.kt 12, .java 3)` olarak **sayılır**, gizlenmez. UTF-16/UTF-32 (BOM'lu) çözülür; UTF-8 olmayan dosya latin-1 varsayılır ve `UYARI` basılır; NUL baytlı (ikili)
   dosya `ATLANDI ikili`dir. Bir dosyada çıkarıcı **beklenmedik** istisna atarsa defter yine yazılır, çıktı `ARAC KUSURU`
   der ve `exit 3` döner (dosyanın kendi sözdizimi hatası araç kusuru DEĞİLDİR: `ATLANDI sozdizimi`). Yol sütununda sekme/satır
   sonu `%09`/`%0A`/`%0D` olur; adda gerçekten `%09`/`%0A`/`%0D`/`%25` dizisi varsa onun `%`si `%25` yazılır (kaçış tersinirdir:
   iki ayrı dosya tek anahtara düşmez). Python'da `if/try/with/for/while/match` ve `except*` gövdeleri ile `type X = ...` (3.12)
   de taranır; Python adlarını `ast` NFKC'ye çevirir (kaynakta `µ` yazılı bir ad defterde `μ`dür — bilinen sınır).
+- **Gömülü/üretilmiş paket dosyaları ATLANIR (P2.1).** İzlenen olsalar bile taranmaz: ne deftere ne çağıran listesine
+  girerler (fxa'da `.yarn/releases/yarn-4.9.2.cjs`, `parse`/`load`/`init` gibi adların çağıranlarına karışıyordu).
+  **Liste TEK tablodur ve budur:** yolun herhangi bir seviyesinde şu adlı bir dizin bileşeni — `.yarn`, `node_modules`,
+  `vendor`, `dist`, `build` — ya da dosya adının sonu `.min.js` / `.cjs`. Eşleşme tam bileşendir ve büyük/küçük harfe
+  DUYARLIDIR (`src/build_tools/` ve `src/Dist/` atlanmaz); dizin sonekten önce sayılır (`.yarn/x.cjs` → `.yarn`).
+  Liste `.hafizarc` ile genişletilemez. Atlama **sessiz değildir**: `--kur` konsolu `ATLANAN: 5 dosya (.yarn 2, *.cjs 1,
+  *.min.js 1, vendor 1)` basar (sayı azalan, sonra ad; yalnız kod ya da kapsam dışı uzantılı dosyalar sayılır —
+  `README.md`, `package.json` sayılmaz; atlama `KAPSAM DISI DIL` sayımından ÖNCE uygulanır, atlanan dosya orada da yoktur);
+  `ADRES.tsv` başlığına `atlanan=.yarn:2,*.cjs:1,…` (yoksa `atlanan=-`) yazılır; atlanan bir dosyadaki ad sorulup
+  bulunamazsa `BULUNAMADI` cevabının altında `(defter TARAMADI - gomulu/uretilmis dosyalar atlandi: .yarn:2,…)` basılır.
+  Sorgu, `--mahalle` ve bayatlık kararı AYNI süzgeci kullanır (atlanan bir dosyanın değişmesi defteri bayatlatmaz). Git
+  yokken dosya sistemi yürüyüşü `node_modules`/`dist`/`build`'i zaten budar (`not    : budanan dizin adlari`) ve onlar
+  ATLANAN'da sayılmaz; yalnız `.yarn`, `vendor`, `*.min.js`, `*.cjs` sayılır. Defter biçimi `1` kaldı: eski okuyucu yeni
+  alanı yok sayar, yeni okuyucu eski defteri okur — atlanan dosyaları kapsayan eski bir defter `ADRES DEFTERI BAYAT`
+  görünür (`--kur` yeniler).
+- **Yükleme anında etkisiz — tembel kurulum (P2.1).** `hafiza.py` yüklenirken adres koduna ait HİÇBİR desen derlenmez ve
+  HİÇBİR desen tablosu kurulmaz: desenler ilk kullanımda derlenen tembel vekillerdir, dil kural tabloları ilk `adres`
+  çağrısında bir kez kurulur, `ast`/`bisect`/`difflib`/`warnings` yalnız adres fonksiyonlarının içinde alınır (yükleme
+  sırasındaki `re.compile` çağrısı motor toplamında 120 → 29, adres bloğundan 0; 8 Eki 2026, `0d7ce4a` ölçümü). Sonuç:
+  bir adres deseni ya da tablosu bozulsa yalnız `adres` düşer (`--kur` → `exit 3`); `kapi`/`derle`/`devral`/`not`/`isir`
+  çıktısı ve çıkış kodu bayt bayt aynı kalır — `faz0/adres_mutanti.py` bunu yükleme anında bozulmuş desen ve tablo
+  enjekte ederek ölçer (A-ETKI kolu, `ETKI-YUKLEME` ekseni).
 - **`adres <ad>`** tanım(lar)ı ve **çağıranları** basar (çağıranın kendi adresine gruplanmış: `yol > Sınıf > üye:satır`;
   tanım satırları hariç, aynı satırdaki geçişler tek; en çok 30 satır + `+N daha`). Ad kısmi verilebilir (`ShouldResync`
   → tam eşleşme + `BENZER AD` olarak `ShouldResyncAsync`); eşleşme yoksa `exit 1` + en yakın 5 ad. Çıktı ayracı ASCII `>`
   ve `-`'dir (iş emrindeki `›`/`—` yerine: KISIT "ASCII konsol çıktısı"); yol ve ad olduğu gibi basılır.
+- **Yorum ve metin içindeki geçişler çağıran SAYILMAZ (P2.1).** Çağıran taraması, tanım çıkarıcının kullandığı AYNI maske
+  fonksiyonunu kullanır (ikinci kopya yok): yorum, dize ve biçim belirteci (`f"{x:ad}"`, `$"{x,10:D13}"`) içindeki geçişler
+  çağıran değildir; enterpolasyon delikleri (`f"{ad(1)}"`, `$"{Ad(1)}"`, Dart `'${ad(1)}'`) GERÇEK koddur ve sayılır.
+  Sayılmayan geçişler gizlenmez, tek satırla beyan edilir: `NOT: 7 yorum/metin icindeki gecis sayilmadi` (Momentum
+  `kanonikDize`: çağıran 5 adres → 1 adres; elenen 7 satırın hepsi yorum ya da dize, elle doğrulandı). Maske kurulamayan
+  dosya (iç içe dize derinliği Python'un özyineleme sınırını aşarsa) ham metinden taranır ve bu da söylenir: `NOT: n dosyada
+  maske kurulamadi - ham metin tarandi (o dosyada yorum/metin icindeki gecisler de sayildi)`. Maskenin başka bir istisnası
+  araç kusurudur (`exit 3`), yutulmaz.
 - **Bayatlık gizlenemez:** kod ağacı (çalışma ağacındaki dosya içerikleri; `git ls-files -s` DEĞİL — commit'siz/stage'siz
   düzenlemeyi görmez) değişip defter eskirse sorgu YİNE cevap verir ama ilk satır `ADRES DEFTERI BAYAT: <n> dosya
   degisti` olur ve `exit 1` döner. Defter yoksa `ADRES DEFTERI YOK`, `exit 1`.
+- **Sorgu hızı: ucuz bayatlık yolu ve önbellek (P2.1).** Eskiden her sorgu bütün izlenen kod ağacını yeniden okuyup
+  özetliyordu. Şimdi sorgu, **proje dışında** tutulan bir önbellek notuna dayanır (`<geçici dizin>/hafiza-adres-<proje
+  yolunun SHA-256'sının ilk 16 hex'i>.json`, POSIX'te `0600`): bir dosyanın (mtime, boyut, **değişiklik zamanı**)
+  önbellektekiyle aynıysa içeriği yeniden özetlenmez, çağıran araması yoksa (`--mahalle`) hiç okunmaz. Projeye dosya
+  EKLENMEZ (geçici dizin proje ağacının içindeyse önbellek kapalıdır) ve `ADRES.tsv`'nin içeriği ve biçimi DEĞİŞMEZ.
+  Önbellek yalnız bir nottur, bayatlığı gizleyemez: (1) defterin özetine bağlıdır (`--kur` defteri yenileyince eski önbellek
+  kendiliğinden düşer); (2) **racy koruması** (git'in racy-git mantığı): mtime'ı ya da değişiklik zamanı sorgunun başladığı
+  andan 3 sn'den yakın dosya önbelleğe GİRMEZ; (3) önbellek yok / bozuk / taşan sayılı / başka kullanıcıya ait /
+  yazılamaz ise komut tam yola düşer — komut DÜŞMEZ, çıkış kodu değişmez, yalnız yavaşlar; (4) POSIX'te anahtara `st_ctime`
+  girer: içerik yazmak da `os.utime`/`touch -r` ile mtime'ı GERİ almak da onu ilerletir (aynı boyut + eski mtime ile
+  değişiklik görülür); (5) **Windows'ta** stdlib'de değişiklik zamanı yoktur (`st_ctime` oluşturma zamanıdır), bu yüzden
+  NTFS/ReFS `ChangeTime` dosya başına `ctypes` ile (kernel32) okunur — dosya AÇILMAZ, yalnız nitelik tutamağı alınır.
+  `ctypes` yüklenemezse, birim NTFS/ReFS değilse (FAT/exFAT) ya da dosya açılamazsa (uzun yol, paylaşım ihlali) o dosya
+  önbelleğe girmez ve tam yoldan gider (yanlış-negatif yok). Çağıran aramasında ham bayt ön süzmesi vardır: ad ASCII ise
+  ve dosyanın ham baytlarında geçmiyorsa dosya metne çevrilmez; UTF-16/32 BOM'lu, ortasında U+FEFF olan ya da ASCII olmayan
+  adla latin-1 dosyada süzme KAPALIDIR (çağrı kaybolmaz). **Ölçüm** (10 Eki 2026, Windows, Python 3.12, sıralı-karışık 3
+  koşunun ortancası, makine gürültülü — tek makine, genellenmez): fxa kopyası (4.937 kod dosyası) `adres track` önbelleksiz
+  motorda 2,91 s → önbellekli SOĞUK (ilk sorgu, önbelleği kurar) 3,31 s → SICAK 1,52 s; Momentum (334 dosya) `adres
+  kanonikDize` 0,56 s → 0,60 s → 0,41 s. Çıktı soğukta ve sıcakta önbelleksiz motorla BAYT BAYT aynıdır. **İlk sorgu eskisinden
+  yavaştır** (önbelleği kurmanın bedeli); sorgu süresi yine projeyle büyür: her sorgu her kod dosyasını `lstat` eder ve
+  `adres <ad>` çağıran araması için dosyaları ham bayt olarak okumaya devam eder — düşen, değişmemiş dosyaların yeniden
+  özetlenmesi (SHA-256, metne çevirme) ve `--mahalle`'de okumanın kendisidir.
 - **`--mahalle <dizin ya da önek>`** o yol önekindeki tanımların tek satırlık listesi (en çok 60 satır + `+N daha`).
 
 `adres`: `0` bulundu / kuruldu · `1` bulunamadı, defter YOK ya da BOZUK, ya da BAYAT (cevap yine basılır) ·
 `2` kullanım hatası / `arsiv` bir dosya (yapı bozuk) · `3` araç kusuru (`git ls-files` başarısız, git alt dizininde
-`dubious ownership`, defter okunamadı, çıkarıcı beklenmedik istisna). Bozuk defter (sayısal ama anlamsız satır aralığı dahil)
-`exit 1 BOZUK`tur, asla `exit 3`/asılma. Takma adı yoktur (`hook` gibi).
+`dubious ownership`, defter okunamadı, çıkarıcı ya da çağıran maskesi beklenmedik istisna). Bozuk defter (sayısal ama
+anlamsız satır aralığı dahil) `exit 1 BOZUK`tur, asla `exit 3`/asılma. Takma adı yoktur (`hook` gibi).
 
 **Bilinen sınır (baştan yazılır):** C#/Dart/TS/JS çıkarımı **desen tabanlıdır, AST kadar kesin DEĞİL** — dinamik
 çağrı, aşırı yükleme, yansıma, string içi ad kaçar ya da fazla sayılır. Bilinen kayıplar: `#if` ile dengesiz süslü parantez,
@@ -203,9 +255,23 @@ zincirinin yalnız ilk adı, ardışık `a<b` … `c>d` karşılaştırmaları (
 tipsiz ve noktalı virgülsüz `private x?` / `private y` alan çifti, satır başındaki regex literali. JSX yalnız `.tsx/.jsx/.js`'te maskelenir ve 100'ü
 aşan iç içe JSX `ATLANDI sozdizimi` sayılır (kod sanılıp sonrası yutulmaz); tek bildirimde binlerce süslü literal (Dart `..a = {1}`
 zinciri, üretilmiş kod) ikinci dereceden yavaşlar. **"Çağıran" listesi sözcük
-eşleşmesidir, tip çözümlemesi DEĞİLDİR** (yorum ve string içindeki geçişler dahil); bu sınır çıktıda da basılır:
-`NOT: cagiranlar sozcuk eslesmesidir`. Her sorgu bayatlığı ölçmek için tüm kod dosyalarını okur (cevabın boyutu sorunun
-boyutuyla büyür; SÜRE projeyle büyür). Ölçüm: `faz0/adres_mutanti.py` (yedi kol, her biri ayrı eksende sabotajla sınanır).
+eşleşmesidir, tip çözümlemesi DEĞİLDİR** (farklı tiplerin aynı adlı üyeleri ayrılmaz; yorum ve string içindeki geçişler
+P2.1'den beri sayılmaz, ama sayılmadıkları `NOT:` ile söylenir); bu sınır çıktıda da basılır:
+`NOT: cagiranlar sozcuk eslesmesidir`. Cevabın boyutu sorunun boyutuyla büyür; SÜRE projeyle büyür (sorgu hızı:
+yukarıda). Ölçüm: `faz0/adres_mutanti.py` (dokuz kol — A-TANIM, A-CAGIRAN, A-PARMAK, A-BAYAT, A-DETERMINIZM, A-MASKE,
+A-ATLA, A-ETKI, A-KOMUT-SATIRI; 57 sabotaj, her biri ayrı eksende sınanır).
+
+**P2.1 ile eklenen sınırlar (ölçüldü, gizlenmez):** ağır patolojik girdi yine yavaştır — iç içe f-dize/`$"…"` derinlik ×
+boyut ile ikinci dereceden büyür (100 iç içe dize × 20 KB = 39,9 s), Dart/C# desenlerinde çok uzun boşluk dizisi de ikinci
+derecedendir (n=16000 ≈ 1,4 s/dosya) ve dosya başına zaman aşımı YOKTUR. TS/JS desenlerindeki kübik ve ikinci dereceden
+geri izleme (bitmemiş yorum + uzun boşluk dizisi) kapatıldı (n=16000: 0,00–0,04 s; `TANIM-TS-SURE` ekseni 20 s zaman
+aşımıyla ölçer). C# biçim belirtecinde kaçışlı çift tırnak (`\"`) çok nadir bir sınıfta yanlış okunur; parantezsiz `?:`
+üçlü ifadesi belirteç sayılır (C# derleyicisi onu zaten reddeder). Atlama: `--mahalle <atlanan önek>` `BULUNAMADI` basar
+ama `TARAMADI` notunu basmaz (not yalnız `adres <ad>` dalındadır); sonek eşleşmesi büyük/küçük harfe duyarlıdır (`A.CJS`
+taranır) ve Windows'ta `a.MIN.js` ile `a.min.js` aynı dosyadır (dosya sistemi). Önbellek: proje ağacının içinde başka
+birime bağlanmış (mount/junction) dizin denetlenmez; FAT/exFAT'ta Windows ChangeTime yolu kapalıdır (yalnız benzetimle
+sınandı), Linux vfat/exfat'ta `st_ctime` güvenilirliği, `ChangeTime`'ı bilerek geri yazan araç (yönetici) ve macOS (POSIX
+ile aynı kod yolu) ayrıca **ÖLÇÜLEMEDİ**.
 
 `kur`, ağaçta başka bir aracın defterini tanırsa (`CLAUDE.md`, `AGENTS.md`,
 `DURUM.md`, `memory-bank/` …) **durur** ve `devral` önerir — belge bunu zaten
