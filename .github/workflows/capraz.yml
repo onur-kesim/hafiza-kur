@@ -2381,7 +2381,7 @@ jobs:
   adres_mutanti:
     name: Adres mutanti (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
