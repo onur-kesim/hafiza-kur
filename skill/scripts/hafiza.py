@@ -9998,26 +9998,38 @@ def _adres_yol_ayir(yollar):
     return kod, disi, atla
 
 
-def _adres_oku(kok, yol):
-    """-> (normallestirilmis metin, uyari) ya da (None, sebep). sebep: `link` · `buyuk` · `ikili` · `okunamadi`;
-    uyari: None ya da `kodlama` (UTF-8 degil: latin-1 varsayildi)."""
+def _adres_ham_oku(kok, yol, uygun=False):
+    """-> (baytlar, None) ya da (None, sebep). sebep: `link` · `buyuk` · `okunamadi`. `uygun`: arayan lstat ile dosyanin duzenli,
+    link olmayan ve tavan altinda oldugunu ZATEN dogruladi (ikinci stat atlanir)."""
     p = os.path.join(kok, *yol.split("/"))
     try:
-        if os.path.islink(p):
-            return None, "link"
-        st = os.stat(p)
-        if not stat.S_ISREG(st.st_mode):
-            return None, "okunamadi"
-        if st.st_size > _ADRES_DOSYA_TAVAN:
-            return None, "buyuk"
+        if not uygun:
+            if os.path.islink(p):
+                return None, "link"
+            st = os.stat(p)
+            if not stat.S_ISREG(st.st_mode):
+                return None, "okunamadi"
+            if st.st_size > _ADRES_DOSYA_TAVAN:
+                return None, "buyuk"
         with open(p, "rb") as f:
-            ham = f.read()
+            return f.read(), None
     except OSError:
         return None, "okunamadi"
+
+
+def _adres_metne(ham):
+    """Baytlar -> (normallestirilmis metin, uyari) ya da (None, `ikili`); uyari: None ya da `kodlama` (UTF-8 degil: latin-1)."""
     if b"\x00" in ham[:8192] and _adres_bom(ham) is None:
         return None, "ikili"
     metin, uyari = _adres_coz(ham)
     return _adres_duzle(metin), uyari
+
+
+def _adres_oku(kok, yol):
+    """-> (normallestirilmis metin, uyari) ya da (None, sebep). sebep: `link` · `buyuk` · `ikili` · `okunamadi`;
+    uyari: None ya da `kodlama` (UTF-8 degil: latin-1 varsayildi)."""
+    ham, sebep = _adres_ham_oku(kok, yol)
+    return (None, sebep) if ham is None else _adres_metne(ham)
 
 
 _ADRES_YUZDE = _ad_re(r"%(?=09|0A|0D|25)")
@@ -10207,23 +10219,211 @@ def _adres_defter_oku(p):
     return "tamam", (baslik, tanim, dosya)
 
 
-def _adres_tara(kok, kod, arama):
-    """Izlenen kod dosyalarini BIR kez okur -> ({yol: tam SHA-256}, {yol: [satir]}, [maskeli gecis, maske kurulamayan dosya]);
-    `arama` = (on suzme deseni, sozcuk deseni) ya da None. Maske YALNIZ ham metinde ad SOZCUK olarak gectiginde kurulur."""
-    bugun, isabet, notlar = {}, {}, [0, 0]
+# ---------------------------------------------------------------- sorgu onbellegi (P2.1 KALEM 4): UCUZ bayatlik yolu
+# Her sorgu butun agaci yeniden ozetlemesin diye {yol: (mtime_ns, boyut, ctime_ns, tam SHA-256)} PROJE DISINDA tutulur (`tempfile.gettempdir()`;
+# anahtar = proje kokunun realpath SHA-256'sinin ilk 16 hex'i) — projeye dosya EKLENMEZ, ADRES.tsv ICERIGI/bicimi DEGISMEZ (mtime
+# ortama ozgudur: deftere yazilamaz). Onbellek yalniz BIR NOTTUR: (mtime_ns, boyut, ctime_ns) ayniysa icerik ozetlenmez, degilse ya da girdi
+# yoksa icerik okunur. DOGRULUK KURALLARI: (1) deftere BAGLI: onbellegin `ozet`i defter basligindakiyle ayni degilse HIC kullanilmaz
+# (`--kur` defteri yenileyince eski onbellek kendiliginden duser); (2) RACY (git'in racy-git mantigi): mtime'i (POSIX'te ctime'i de) taramanin basladigi ana
+# `_ADRES_ONB_PAY`'dan daha yakin (ya da ilerideki) dosya onbellege GIRMEZ — ayni boyut + korunmus mtime ile icerik degisikligi
+# yeniden ozetlenir; (3) yok / bozuk / baska kullanicinin / yazilamayan onbellek = TAM yol (komutu DUSURMEZ, exit degismez);
+# (4) POSIX'te anahtara ctime (degisiklik zamani) da girer: icerik yazmak da os.utime/touch -r ile mtime'i GERI almak da ctime'i
+# ilerletir, yani "ayni boyut + eski mtime" degisikligi GORULUR; izin degisikligi (chmod/setfacl) de ctime'i ilerletir: okunamaz olan dosya yeniden okunmayi dener.
+# (5) WINDOWS: stdlib stat'ta degisiklik zamani YOKTUR (st_ctime = olusturma zamani); ChangeTime dosya basina ctypes ile
+# (kernel32 CreateFileW + GetFileInformationByHandleEx/FileBasicInfo) okunur — os.utime/robocopy /COPY:T de onu ilerletir. YALNIZ NTFS/ReFS
+# birimlerinde (`_adres_nt_ntfs_mi`; FAT/exFAT'ta ChangeTime yazma zamanidir: anlamsiz). ctypes yuklenemez / birim NTFS degil / dosya acilamaz
+# (uzun yol, paylasim ihlali) ise anahtar None: o dosya onbellege GIRMEZ, tam yol (KAPALI hata, yanlis negatif yok).
+# BILINEN SINIR (beyanli): proje agacinin icinde BASKA birime baglanmis (mount/junction) dizin NTFS olmayabilir: orasi denetlenmez.
+_ADRES_ONB_SURUM = 2
+_ADRES_ONB_PAY = 3 * 10 ** 9              # ns (3 sn): FAT'in 2 sn mtime cozunurlugunu da kapsar
+_ADRES_ONB_ATLA = "-"                     # sha yerine: dosya IKILI (cagiran taramasinda atlanir)
+
+
+def _adres_onb_yolu(kok):
+    """Onbellek dosyasinin yolu; gecici dizin yoksa ya da PROJE AGACININ ICINDEYSE (gettempdir hicbir aday dizine yazamazsa cwd'ye
+    duser) None (onbellek KAPALI, tam yol: projeye dosya EKLENMEZ)."""
+    try:
+        dizin = tempfile.gettempdir()
+    except OSError:
+        return None
+    gercek = os.path.normcase(os.path.realpath(kok))
+    try:
+        icinde = os.path.commonpath([os.path.normcase(os.path.realpath(dizin)), gercek]) == gercek
+    except ValueError:
+        icinde = False                        # farkli surucu: proje icinde olamaz
+    if icinde:
+        return None
+    return os.path.join(dizin, "hafiza-adres-%s.json" % hashlib.sha256(os.fsencode(gercek)).hexdigest()[:16])
+
+
+def _adres_onb_oku(yol, ozet):
+    """-> {yol: (mtime_ns, boyut, ctime_ns, sha)}. Yok / bozuk (1e999 gibi tasan sayi dahil) / baska deftere (ozet) ait / BASKA
+    kullanicinin dosyasi -> {} (tam yol)."""
+    try:
+        if hasattr(os, "getuid") and os.stat(yol).st_uid != os.getuid():
+            return {}
+        with open(yol, encoding="utf-8") as f:
+            v = json.load(f)
+        if v["surum"] != _ADRES_ONB_SURUM or v["ozet"] != ozet:
+            return {}
+        return dict((y, (int(g[0]), int(g[1]), int(g[2]), str(g[3]))) for y, g in v["dosyalar"].items())
+    except (OSError, ValueError, KeyError, TypeError, IndexError, AttributeError, RecursionError, OverflowError):
+        return {}
+
+
+def _adres_onb_yaz(yol, ozet, dosyalar):
+    """Atomik yazar (gecici dosya + os.replace; yalniz sahibi okur). HER hata sessizdir: onbellek yazilamazsa komut DUSMEZ."""
+    import time
+    veri = json.dumps({"surum": _ADRES_ONB_SURUM, "ozet": ozet, "yazildi_ns": time.time_ns(), "dosyalar": dosyalar})
+    gecici = "%s.%d.tmp" % (yol, os.getpid())
+    try:
+        fd = os.open(gecici, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0), 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(veri)
+        os.replace(gecici, yol)
+    except OSError:
+        try:
+            os.unlink(gecici)
+        except OSError:
+            return
+
+
+_ADRES_NT: dict = {}                          # Windows: kernel32 baglari ve birim (NTFS/ReFS) hukmu; surec basina bir kez
+
+
+def _adres_nt_baglar():
+    """Windows: kernel32 baglari (ctypes) ya da None (yuklenemedi; Windows degil)."""
+    if sys.platform != "win32":
+        return None
+    if "k" not in _ADRES_NT:
+        try:
+            import ctypes
+            k = ctypes.WinDLL("kernel32", use_last_error=True)
+            vp, u32, wp = ctypes.c_void_p, ctypes.c_uint32, ctypes.c_wchar_p
+            k.CreateFileW.restype = vp
+            k.CreateFileW.argtypes = [wp, u32, u32, vp, u32, u32, vp]
+            k.GetFileInformationByHandleEx.argtypes = [vp, ctypes.c_int, vp, u32]
+            k.CloseHandle.argtypes = [vp]
+            k.GetVolumePathNameW.argtypes = [wp, wp, u32]
+            k.GetVolumeInformationW.argtypes = [wp, vp, u32, vp, vp, vp, wp, u32]
+        except (ImportError, AttributeError, OSError):
+            k = None
+        _ADRES_NT["k"] = k
+    return _ADRES_NT["k"]
+
+
+def _adres_nt_ntfs_mi(kok):
+    """Proje kokunun birimi NTFS/ReFS mi (ChangeTime yalniz orada anlamli). Okunamazsa False (onbellek kapali: tam yol)."""
+    k = _adres_nt_baglar()
+    if k is None:
+        return False
+    if kok not in _ADRES_NT:
+        import ctypes
+        kokyol, ad, ok = ctypes.create_unicode_buffer(1024), ctypes.create_unicode_buffer(64), False
+        if k.GetVolumePathNameW(os.path.abspath(kok), kokyol, 1024):
+            ok = bool(k.GetVolumeInformationW(kokyol.value, None, 0, None, None, None, ad, 64)) and ad.value.upper() in ("NTFS", "REFS")
+        _ADRES_NT[kok] = ok
+    return _ADRES_NT[kok]
+
+
+def _adres_nt_degisim_ns(kok, p):
+    """Windows: dosyanin ChangeTime'i (unix epoch ns) ya da None (NTFS/ReFS degil, acilamadi: onbellege GIRMEZ). Dosyayi ACMAZ (yalniz
+    nitelik tutamaci: FILE_READ_ATTRIBUTES, paylasim tam, reparse noktasi izlenmez)."""
+    if not _adres_nt_ntfs_mi(kok):
+        return None
+    import ctypes
+    k = _adres_nt_baglar()
+    p = os.path.abspath(p)
+    if len(p) > 240 and not p.startswith("\\\\"):
+        p = "\\\\?\\" + p
+    h = k.CreateFileW(p, 0x80, 7, None, 3, 0x80 | 0x00200000, None)
+    if h is None or h == ctypes.c_void_p(-1).value:
+        return None
+    try:
+        b = (ctypes.c_int64 * 5)()               # FILE_BASIC_INFO: Creation, LastAccess, LastWrite, Change (100 ns, 1601) + nitelik
+        if not k.GetFileInformationByHandleEx(h, 0, ctypes.byref(b), ctypes.sizeof(b)):
+            return None
+        return (b[3] - 116444736000000000) * 100
+    finally:
+        k.CloseHandle(h)
+
+
+def _adres_onb_anahtar(kok, yol):
+    """-> (mtime_ns, boyut, ctime_ns) ya da None (link / duzensiz / buyuk / okunamadi: onbellege GIRMEZ, tam yol). ctime_ns = DEGISIKLIK
+    zamani (POSIX st_ctime; Windows ChangeTime, `_adres_nt_degisim_ns`: alinamazsa None)."""
+    p = os.path.join(kok, *yol.split("/"))
+    try:
+        st = os.lstat(p)
+    except OSError:
+        return None
+    if not stat.S_ISREG(st.st_mode) or st.st_size > _ADRES_DOSYA_TAVAN:
+        return None
+    ct = _adres_nt_degisim_ns(kok, p) if os.name == "nt" else st.st_ctime_ns
+    return None if ct is None else (st.st_mtime_ns, st.st_size, ct)
+
+
+def _adres_onb_taze_mi(anahtar, t0):
+    """RACY korumasi: mtime ya da ctime taramanin basladigi andan (t0) en az PAY once degilse girdi onbellege GIRMEZ (her zaman
+    yeniden ozetlenir)."""
+    return max(anahtar[0], anahtar[2]) < t0 - _ADRES_ONB_PAY
+
+
+def _adres_ara(ham, metin, yol, dil, arama):
+    """Bir dosyada adin cagri isabetleri -> (satirlar, maskeli gecis, maske kurulamadi). `metin` None ise ham baytlar ONCE suzulur:
+    ad ASCII + BOM yok + ortada U+FEFF yok + ham baytlarda ad yoksa dosya metne CEVRILMEZ (UTF-16/32 BOM'lu ya da UTF-8 olmayan
+    dosyada suzme KAPALI: metne cevrilir)."""
+    if arama is None:
+        return [], 0, 0
+    if metin is None:
+        if arama[2] is not None and arama[2] not in ham and _adres_bom(ham) is None and ham.find(b"\xef\xbb\xbf", 1) < 0:
+            return [], 0, 0
+        metin = _adres_metne(ham)[0]
+    if metin is None or not arama[0].search(metin):
+        return [], 0, 0
+    return _adres_dosya_isabeti(metin, _adres_cikarici_dili(yol, dil), arama[1])
+
+
+def _adres_dosya_tara(kok, yol, dil, arama, onb, t0):
+    """Bir kod dosyasi -> (tam SHA-256 ya da None, cagiran satirlari, maskeli gecis, maske kurulamadi, onbellek girdisi ya da None).
+    UCUZ YOL: (mtime_ns, boyut, ctime_ns) onbellektekiyle ayniysa icerik OZETLENMEZ; cagiran aramasi yoksa dosya HIC okunmaz."""
+    anahtar = _adres_onb_anahtar(kok, yol)
+    g = onb.get(yol)
+    sha = g[3] if (anahtar is not None and g is not None and g[:3] == anahtar) else None
+    if sha is not None and (arama is None or sha == _ADRES_ONB_ATLA):
+        return (None if sha == _ADRES_ONB_ATLA else sha), [], 0, 0, g
+    ham = _adres_ham_oku(kok, yol, anahtar is not None)[0]
+    if ham is None:
+        return None, [], 0, 0, None
+    metin = None
+    if sha is None:
+        metin = _adres_metne(ham)[0]
+        sha = _ADRES_ONB_ATLA if metin is None else _adres_sha(metin)
+        g = (anahtar + (sha,)) if anahtar is not None and _adres_onb_taze_mi(anahtar, t0) else None
+    if sha == _ADRES_ONB_ATLA:
+        return None, [], 0, 0, g
+    return (sha,) + _adres_ara(ham, metin, yol, dil, arama) + (g,)
+
+
+def _adres_tara(kok, kod, arama, onb):
+    """Izlenen kod dosyalarini BIR kez gezer -> ({yol: tam SHA-256}, {yol: [satir]}, [maskeli gecis, maske kurulamayan dosya],
+    {yol: onbellek girdisi}); `arama` = (on suzme deseni, sozcuk deseni, ham bayt ipucu) ya da None. Maske YALNIZ ham metinde ad
+    SOZCUK olarak gectiginde kurulur. `onb` = `_adres_onb_oku` sonucu ({} = onbellek yok: tam yol)."""
+    import time
+    bugun, isabet, notlar, yeni = {}, {}, [0, 0], {}
+    t0 = time.time_ns()
     for dil in _ADRES_DIL_SIRA:
         for yol in kod[dil]:
-            metin = _adres_oku(kok, yol)[0]
-            if metin is None:
+            sha, sat, say, hata, g = _adres_dosya_tara(kok, yol, dil, arama, onb, t0)
+            if g is not None:
+                yeni[yol] = g
+            if sha is None:
                 continue
-            bugun[_adres_alan(yol)] = _adres_sha(metin)
-            if arama is not None and arama[0].search(metin):
-                sat, say, hata = _adres_dosya_isabeti(metin, _adres_cikarici_dili(yol, dil), arama[1])
-                notlar[0] += say
-                notlar[1] += hata
-                if sat:
-                    isabet[_adres_alan(yol)] = sat
-    return bugun, isabet, notlar
+            bugun[_adres_alan(yol)] = sha
+            notlar[0] += say
+            notlar[1] += hata
+            if sat:
+                isabet[_adres_alan(yol)] = sat
+    return bugun, isabet, notlar, yeni
 
 
 def _adres_dosya_isabeti(metin, dil, desen):
@@ -10251,10 +10451,23 @@ def _adres_satir_isabetleri(metin, desen, maske=None):
     return sat
 
 
+def _adres_tara_onbellekli(kok, kod, arama, ozet):
+    """`_adres_tara` + sorgu onbellegi: defterin `ozet`ine bagli onbellegi okur, taramadan sonra DEGISTIYSE yeniden yazar
+    (yazilamazsa sessiz: komut ve exit degismez) -> (bugun, isabet, notlar)."""
+    yol = _adres_onb_yolu(kok)
+    onb = _adres_onb_oku(yol, ozet) if yol else {}
+    bugun, isabet, notlar, yeni = _adres_tara(kok, kod, arama, onb)
+    if yol and yeni != onb:
+        _adres_onb_yaz(yol, ozet, yeni)
+    return bugun, isabet, notlar
+
+
 def _adres_arama(ad):
-    """(on suzme deseni, sozcuk deseni). On suzme `$ad`i (Dart ic ekleme) de yakalar; maske pahali oldugundan YALNIZ ad SOZCUK olarak
-    gecen dosyalarda kurulur (alt metin eslesmesi yaygin adlarda cok daha fazla dosyada maske kurardi)."""
-    return re.compile(r"(?<!\w)%s(?![\w$])" % re.escape(ad)), re.compile(r"(?<![\w$])%s(?![\w$])" % re.escape(ad))
+    """(on suzme deseni, sozcuk deseni, ham bayt ipucu). On suzme `$ad`i (Dart ic ekleme) de yakalar; maske pahali oldugundan YALNIZ ad
+    SOZCUK olarak gecen dosyalarda kurulur (alt metin eslesmesi yaygin adlarda cok daha fazla dosyada maske kurardi). Ipucu: ad ASCII
+    ise bayt hali (ham baytlarda yoksa dosya metne cevrilmez; `_adres_ara`), degilse None."""
+    return (re.compile(r"(?<!\w)%s(?![\w$])" % re.escape(ad)), re.compile(r"(?<![\w$])%s(?![\w$])" % re.escape(ad)),
+            ad.encode("ascii") if ad.isascii() else None)
 
 
 def _adres_bayat_sayisi(dosyalar, bugun):
@@ -10413,7 +10626,7 @@ def _adres_sorgu(kok, p, a):
         bul = _adres_eslestir(tanimlar, a.ad)[1]
         adlar = sorted(set(r[2].split(".")[-1] for r in bul))
         arama = _adres_arama(adlar[0]) if len(adlar) == 1 else None
-    bugun, isabet, notlar = _adres_tara(kok, kod, arama)
+    bugun, isabet, notlar = _adres_tara_onbellekli(kok, kod, arama, baslik.get("ozet"))
     bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != baslik.get("ozet")
     if bayat:
         print("ADRES DEFTERI BAYAT: %d dosya degisti - hafiza.py adres --kur" % _adres_bayat_sayisi(dosyalar, bugun))

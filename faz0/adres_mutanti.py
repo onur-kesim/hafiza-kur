@@ -13,8 +13,22 @@ KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir �
                  UGRAMAZ: sure DOGRUSAL (P2-ONCEDEN-01)                                                                [TANIM-TS-SURE]
   A-CAGIRAN      bilinen cagri listede (CAGIRAN-VAR); cagri silinince listeden DUSER (CAGIRAN-DUSER); tanim satiri cagiran
                  sayilmaz (CAGIRAN-TANIM-HARIC)
+                 + (KALEM 4) ham bayt on suzmesi hem soguk hem SICAK onbellekte cagriyi KACIRMAZ: UTF-16 BOM'lu dosya (CAGIRAN-KODLAMA) ·
+                 ad baytlarini bolen ortadaki U+FEFF (CAGIRAN-FEFF) · ASCII-disi ad + latin-1 dosya (CAGIRAN-ASCII-DISI)
   A-PARMAK       govde degisince iz DEGISIR (PARMAK-DEGISIR); yalniz satir sonu bosluk (PARMAK-BOSLUK) / CRLF (PARMAK-CRLF) degisince AYNI
   A-BAYAT        dosya degisince ilk satir `ADRES DEFTERI BAYAT: 1 dosya degisti` + exit 1 (BAYAT-VAR); degismeyince sessiz exit 0 (BAYAT-YOK)
+                 + (KALEM 4, P2.1) sorgu onbellegi dogrulugu DEGISTIRMEZ: SICAK onbellekle degisiklik (BAYAT-VAR) · git add (BAYAT-STAGE) ·
+                 commit (BAYAT-COMMIT) · ayni mtime + farkli boyut (BAYAT-BOYUT) · ayni boyut + korunmus mtime, onbellek taze = RACY
+                 (BAYAT-ZAMAN) · icerik degisti + `--kur` yenilendi, eski deftere bagli onbellek kullanilmaz, BAYAT YOK (BAYAT-KUR) ·
+                 bozuk onbellek (BAYAT-ONB-BOZUK) / yazilamayan onbellek (BAYAT-ONB-YAZ) TAM yola duser, komut dusmez · gecici dizin
+                 proje icindeyse onbellek KAPALI, projeye dosya eklenmez (BAYAT-ONB-PROJE). `adres` icin TEMP projeye ozel dizine yonlenir.
+                 + PAY'dan ESKI dosyada ayni boyut + os.utime ile GERI ALINMIS mtime ile icerik degisikligi GORULUR (POSIX ve WINDOWS):
+                 anahtara degisiklik zamani girer (POSIX st_ctime; Windows NTFS/ReFS ChangeTime, ctypes) (BAYAT-CTIME) · POSIX: ctime
+                 kaymasi okunamaz (chmod 000) dosyayi da yeniden okutur (BAYAT-OKUNMAZ) · 1e999 gibi tasan sayili bozuk onbellek TAM
+                 yola duser (BAYAT-ONB-BOZUK). Racy korumasi ve `--kur` baglamasi degisiklik zamaninin YANINDA sinanir: bu iki
+                 sabotaj onu da kor eder (aksi halde o onlari ortuk korurdu).
+                 BILINEN SINIR (sabotajla DEGIL, beyanla; Windows): NTFS/ReFS DISI birimde (FAT/exFAT) ChangeTime anlamsiz: onbellek
+                 KAPALI, tam yol (dogruluk korunur, hiz kazanci yok). FAT'ta bu kapali yol OLCULEMEDI (FAT birimi yok).
   A-DETERMINIZM  iki `--kur` bit-bit ayni (DETERMINIZM-AYNI); satirlar kanonik sirada (DETERMINIZM-SIRA: dort dil, adlari DIL SIRASINA
                  ters serpistirilmis dosyalar — siralama kapaliysa dil gruplamasi gorunur)
   A-MASKE        (KALEM 2, P2.1) cagiran listesinde yorum/dize ici gecis YOK: ayni ad bir gercek cagri + bir yorumda + bir dizede +
@@ -40,6 +54,7 @@ CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENM
             2 OLCULEMEDI (git yok, capa uymadi, duzenek kurulamadi)
 """
 import io
+import json
 import os
 import re
 import shutil
@@ -47,6 +62,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 
 
 def _cikti_kodlamasini_guvenceye_al():   # Y-2 KORUMASI
@@ -140,6 +156,10 @@ CAGIRAN_ANA = '''public class Kullan
 }
 '''
 CAGIRAN_SILINMIS = CAGIRAN_ANA.replace("return k.Ac(1);", "return 1;")
+CAGIRAN_FEFF = CAGIRAN_ANA.replace("k.Ac(1)", "k.A﻿c(1)")       # ortada U+FEFF: ham baytlarda `Ac` YOK; metne cevrilince U+FEFF silinir
+KAFE_AD = "Café"                                                # ASCII-disi ad
+KAFE_CS = "public class Kafe\n{\n    public int %s()\n    {\n        return 1;\n    }\n}\n" % KAFE_AD
+KAFE_CAGIRAN = ("public class KafeKullan\n{\n    public int Calis(Kafe k)\n    {\n        return k.%s();\n    }\n}\n" % KAFE_AD)   # latin-1 yazilir
 PARMAK_PY = '''def f(a):
     b = a + 1
     return b
@@ -193,10 +213,30 @@ def proje(taban, ad, dosyalar):
     return kok
 
 
-def kos(motor, kok, *args, zaman_asimi=None):
-    """Motoru ALT SUREC olarak kosar -> (exit, stdout, stderr). `zaman_asimi` asilirsa subprocess.TimeoutExpired."""
+def onb_dizini(kok):
+    """`adres` sorgu onbellegi (motor: `tempfile.gettempdir()`) bu projeye OZEL dizine yonlenir: sistem TEMP'i kirlenmez, onbellek
+    dosyasi bu dizinden bulunur (motorun anahtar hesabi KOPYALANMAZ: paylasilan kural = paylasilan korluk)."""
+    d = kok.rstrip("/\\") + "_onb"
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def onb_dosyasi(kok):
+    """Projenin onbellek dosyasi (yoksa None)."""
+    d = onb_dizini(kok)
+    bul = sorted(x for x in os.listdir(d) if x.startswith("hafiza-adres-") and not x.endswith(".tmp"))
+    return os.path.join(d, bul[0]) if bul else None
+
+
+def kos(motor, kok, *args, zaman_asimi=None, tmp=None):
+    """Motoru ALT SUREC olarak kosar -> (exit, stdout, stderr). `zaman_asimi` asilirsa subprocess.TimeoutExpired.
+    `tmp`: `adres` icin gecici dizin (varsayilan: projeye ozel `onb_dizini`)."""
+    ortam = _cikti_kodlamasi_ortami()
+    if args[:1] == ("adres",):
+        d = tmp or onb_dizini(kok)
+        ortam.update(TMPDIR=d, TEMP=d, TMP=d)
     r = subprocess.run([sys.executable, "-X", "utf8", motor] + list(args) + ["--kok", kok], capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", env=_cikti_kodlamasi_ortami(), timeout=zaman_asimi)
+                       encoding="utf-8", errors="replace", env=ortam, timeout=zaman_asimi)
     return r.returncode, r.stdout, r.stderr
 
 
@@ -278,6 +318,58 @@ def kol_cagiran(motor, taban):
     kod, o, _e = kos(motor, kok, "adres", "Ac")
     if any(l.startswith("src/Kullan.cs") for l in _cagiranlar(o)):
         b.append(("CAGIRAN-DUSER", "cagri silindi ama src/Kullan.cs hala cagiran: %r" % _cagiranlar(o)))
+    return b + kol_cagiran_kodlama(motor, taban)
+
+
+def _platform_sinir(etiket):
+    """Etiketin ekseni bu platformda/kullanicida OLCULEMIYORSA nedeni (sabotaj da fikstur de atlanir, beyan edilir), yoksa None."""
+    if etiket == "KOMUT-SATIRI" and os.name != "nt":
+        return "bu platformda sinir yok (yalniz Windows'ta isirir)"
+    if etiket == "BAYAT-OKUNMAZ" and (os.name == "nt" or os.geteuid() == 0):
+        return "okuma izni yalniz POSIX'te ve root olmayan kullanicida sinanir"
+    return None
+
+
+CTIME_BEKLE_SN = 3.3        # motorun racy payi (3 sn) + pay: fikstur dosyalarinin degisiklik zamani da "eski" olsun
+
+
+def _ctime_yasla():
+    """utime/yazma degisiklik zamanini (POSIX ctime, Windows ChangeTime) ILERLETIR (ayarlanamaz): onbellek girdisi olusabilmesi icin
+    onun racy payindan eski olmasi beklenir (HER platformda)."""
+    time.sleep(CTIME_BEKLE_SN)
+
+
+def kol_cagiran_kodlama(motor, taban):
+    """A-CAGIRAN (KALEM 4): cagiran aramasinin ham bayt on suzmesi cagriyi KACIRMAZ: UTF-16 BOM'lu dosya (ad baytlari NUL'larla ayrik;
+    CAGIRAN-KODLAMA) · ad baytlarini bolen ortadaki U+FEFF (metne cevrilince silinir; CAGIRAN-FEFF) · ASCII-disi ad + latin-1 dosya
+    (ad UTF-8 baytlariyla aranirsa dosya atlanir; CAGIRAN-ASCII-DISI). Dosyalar 1 saat ESKI: ucuncu sorgu SICAK onbellekten (on suzme
+    yalniz orada isler; ikinci sorgu degisiklik zamani payi bekledikten sonra onbellegi doldurur). Her cagiran 5. satirda, her sorguda."""
+    kok = proje(taban, "cagiran_kodlama", {"src/Kasa.cs": CS_FX})
+    with io.open(os.path.join(kok, "src", "Kullan16.cs"), "wb") as f:
+        f.write(CAGIRAN_ANA.encode("utf-16"))
+    _yaz(os.path.join(kok, "src", "KullanFeff.cs"), CAGIRAN_FEFF)
+    _yaz(os.path.join(kok, "src", "Kafe.cs"), KAFE_CS)
+    with io.open(os.path.join(kok, "src", "KafeKullan.cs"), "wb") as f:
+        f.write(KAFE_CAGIRAN.encode("latin-1"))
+    eski = time.time_ns() - 3600 * 10 ** 9
+    for ad in ("Kasa.cs", "Kullan16.cs", "KullanFeff.cs", "Kafe.cs", "KafeKullan.cs"):
+        os.utime(os.path.join(kok, "src", ad), ns=(eski, eski))
+    _git(kok, "add", "-A")
+    _git(kok, "commit", "-q", "-m", "kodlama")
+    kur(motor, kok)
+    b = []
+    sorgular = (("Ac", "src/Kullan16.cs", "CAGIRAN-KODLAMA", "UTF-16 BOM'lu"),
+                ("Ac", "src/KullanFeff.cs", "CAGIRAN-FEFF", "ortada U+FEFF'li"),
+                (KAFE_AD, "src/KafeKullan.cs", "CAGIRAN-ASCII-DISI", "latin-1 (ASCII-disi ad)"))
+    for ne in ("soguk", "isinma", "sicak"):
+        if ne == "isinma":
+            _ctime_yasla()
+        for ad, yol, etiket, ne_dosya in sorgular:
+            kod, o, _e = kos(motor, kok, "adres", ad)
+            if not any(l.startswith(yol) and l.endswith(":5") for l in _cagiranlar(o)):
+                b.append((etiket, "%s onbellek: %s %s:5 cagirani listede YOK: exit=%s liste=%r" % (ne, ne_dosya, yol, kod, _cagiranlar(o))))
+        if ne == "isinma" and onb_dosyasi(kok) is None:
+            raise Kurulamadi("cagiran_kodlama: isinma turunda onbellek dosyasi YAZILMADI (sicak tur sicak olmaz)")
     return b
 
 
@@ -315,7 +407,166 @@ def kol_bayat(motor, taban):
     kod, o, _e = kos(motor, kok, "adres", "Kasa")
     if kod != 1 or not o.startswith("ADRES DEFTERI BAYAT: 1 dosya degisti"):
         b.append(("BAYAT-VAR", "dosya degisti ama exit=%s ilk satir=%r" % (kod, o.split("\n")[0])))
+    return b + kol_bayat_onbellek(motor, taban)
+
+
+# KALEM 4 (P2.1): sorgu onbellegi. Onbellek YALNIZ hiz icindir; bayatlik hukmu onunla DEGISMEZ. Eksenler (hepsi `fx.ts` tek dosya):
+#   SICAK fikstur = dosya 1 saat ESKI (mtime) -> `--kur` -> bir sorgu (onbellek DOLAR: girdi racy degil). Onbellek girdisi BULUNUR.
+ESKI_SANIYE = 3600
+YENI_SATIR = TS_FX + "// yeni satir\n"
+AYNI_BOYUT = TS_FX.replace("SABIT = 5", "SABIT = 6")        # ayni bayt sayisi, farkli icerik
+YAN_TS = "export const YAN = 1;\n"
+BAYAT_BIR = "ADRES DEFTERI BAYAT: 1 dosya degisti"
+
+
+def _zamanla(yol, ns):
+    os.utime(yol, ns=(ns, ns))
+
+
+def _bayat_sorgu(motor, kok):
+    kod, o, _e = kos(motor, kok, "adres", "Kasa")
+    return kod, o
+
+
+def _bayat_hukum(b, etiket, ne, sonuc, bayat):
+    """`sonuc` = (exit, stdout). bayat=True: ilk satir `BAYAT: 1 dosya degisti` + exit 1. bayat=False: BAYAT YOK + exit 0."""
+    kod, o = sonuc
+    ilk = o.split("\n")[0]
+    if bayat and (kod != 1 or not ilk.startswith(BAYAT_BIR)):
+        b.append((etiket, "%s: exit=%s ilk satir=%r (BAYAT + exit 1 beklenir)" % (ne, kod, ilk)))
+    if not bayat and (kod != 0 or "BAYAT" in o):
+        b.append((etiket, "%s: exit=%s ilk satir=%r (sessiz exit 0 beklenir)" % (ne, kod, ilk)))
+
+
+SICAK_ADLAR = ("bayat_sicak", "bayat_boyut", "bayat_kur", "bayat_bozuk", "bayat_proje", "bayat_ctime", "bayat_okunmaz")
+
+
+def _sicak_kur(motor, taban, ad):
+    """-> (kok, fx.ts yolu, eski mtime ns). Dosya ESKI -> `--kur`. (Onbellegi `_sicak_isit` doldurur.)"""
+    kok = proje(taban, ad, {"src/fx.ts": TS_FX, "src/yan.ts": YAN_TS})
+    yol = os.path.join(kok, "src", "fx.ts")
+    eski = time.time_ns() - ESKI_SANIYE * 10 ** 9
+    _zamanla(yol, eski)
+    _zamanla(os.path.join(kok, "src", "yan.ts"), eski)      # degismeyen ESKI dosya: onbellek bos kalmaz (yazma denemesi olur)
+    kur(motor, kok)
+    return kok, yol, eski
+
+
+def _sicak_isit(motor, kok):
+    """Bir sorgu: onbellek dolar (degismeyen agac temiz)."""
+    ilk = _bayat_sorgu(motor, kok)
+    if onb_dosyasi(kok) is None:                       # exit'e BAKILMAZ: hukmu BAYAT-YOK kolu verir (sabotajli motorda 1 olabilir)
+        raise Kurulamadi("sicak fikstur: ilk sorgu (exit=%s) onbellek dosyasi YAZMADI (%r)" % (ilk[0], ilk[1][:80]))
+
+
+def _sicak_projeler(motor, taban):
+    """Butun sicak fiksturleri BIR KEZ kurar: hepsi `--kur`lanir, degisiklik zamani payi BIR kez beklenir, sonra her biri isitilir
+    (fikstur basina bekleme olmasin). -> {ad: (kok, fx.ts yolu, eski mtime ns)}."""
+    p = dict((ad, _sicak_kur(motor, taban, ad)) for ad in SICAK_ADLAR)
+    _ctime_yasla()
+    for kok, _yol, _eski in p.values():
+        _sicak_isit(motor, kok)
+    return p
+
+
+def kol_bayat_onbellek(motor, taban):
+    """A-BAYAT (KALEM 4): onbellekli ucuz yol dogrulugu DEGISTIRMEZ. Sicak onbellekle: sessiz agac temiz (BAYAT-YOK) · degisiklik
+    (BAYAT-VAR) · `git add` (BAYAT-STAGE) · commit (BAYAT-COMMIT) · ayni mtime + FARKLI boyut (BAYAT-BOYUT) · ayni boyut + korunmus
+    mtime, onbellek taze (BAYAT-ZAMAN: racy) · icerik `--kur`dan once degisti (BAYAT-KUR: eski deftere bagli onbellek kullanilmaz)
+    · ayni boyut + GERI ALINMIS ESKI mtime (BAYAT-CTIME; Windows'ta NTFS ChangeTime) · okunamaz dosya (BAYAT-OKUNMAZ, POSIX, root degil)
+    · bozuk / yazilamayan onbellek TAM yola duser (BAYAT-ONB-BOZUK / BAYAT-ONB-YAZ)."""
+    b = []
+    sp = _sicak_projeler(motor, taban)
+    kok, yol, eski = sp["bayat_sicak"]
+    _bayat_hukum(b, "BAYAT-YOK", "sicak onbellek, degismeyen agac", _bayat_sorgu(motor, kok), False)
+    _yaz(yol, YENI_SATIR)
+    _bayat_hukum(b, "BAYAT-VAR", "sicak onbellek, dosya degisti", _bayat_sorgu(motor, kok), True)
+    _git(kok, "add", "-A")
+    _bayat_hukum(b, "BAYAT-STAGE", "degisiklik git add edildi", _bayat_sorgu(motor, kok), True)
+    _git(kok, "commit", "-q", "-m", "degisti")
+    _bayat_hukum(b, "BAYAT-COMMIT", "degisiklik commit edildi", _bayat_sorgu(motor, kok), True)
+    return b + kol_bayat_ctime(motor, sp) + kol_bayat_zaman(motor, taban, sp)
+
+
+def kol_bayat_ctime(motor, sp):
+    """A-BAYAT (K4-02/K4-04/K4-W1 duzeltmesi): sicak onbellekle ayni boyut + os.utime ile GERI ALINMIS ESKI mtime -> BAYAT (anahtarda
+    degisiklik zamani var: icerik yazmak onu ilerletir, utime geri alamaz; Windows'ta NTFS ChangeTime) · POSIX: okunamaz dosya (`chmod 000`: ctime kayar) cagiransiz sorguda da
+    BAYAT sayilir (dosya yeniden okunmayi dener, okunamayinca bugunden duser)."""
+    b = []
+    if not _platform_sinir("BAYAT-CTIME"):
+        kok, yol, eski = sp["bayat_ctime"]
+        _yaz(yol, AYNI_BOYUT)
+        _zamanla(yol, eski)                            # mtime GERI ALINDI: yalniz ctime ilerledi
+        _bayat_hukum(b, "BAYAT-CTIME", "ayni boyut + geri alinmis ESKI mtime, onbellek sicak", _bayat_sorgu(motor, kok), True)
+    if not _platform_sinir("BAYAT-OKUNMAZ"):
+        kok, _yol, _eski = sp["bayat_okunmaz"]
+        yan = os.path.join(kok, "src", "yan.ts")
+        os.chmod(yan, 0)
+        try:
+            kod, o, _e = kos(motor, kok, "adres", "--mahalle", "src")
+        finally:
+            os.chmod(yan, stat.S_IRUSR | stat.S_IWUSR)
+        _bayat_hukum(b, "BAYAT-OKUNMAZ", "sicak onbellek, src/yan.ts okunamaz (chmod 000), cagiransiz sorgu", (kod, o), True)
     return b
+
+
+def kol_bayat_zaman(motor, taban, sp):
+    """A-BAYAT (KALEM 4) devami: mtime tuzaklari + `--kur` baglama + bozuk/yazilamayan onbellek."""
+    b = []
+    kok, yol, eski = sp["bayat_boyut"]
+    _yaz(yol, YENI_SATIR)
+    _zamanla(yol, eski)
+    _bayat_hukum(b, "BAYAT-BOYUT", "mtime ayni, boyut farkli", _bayat_sorgu(motor, kok), True)
+    kok = proje(taban, "bayat_zaman", {"src/fx.ts": TS_FX})
+    yol = os.path.join(kok, "src", "fx.ts")
+    kur(motor, kok)
+    os.utime(yol, None)                                # mtime = SIMDI: onbellek yazildigi ana yakin (racy)
+    mtime = os.stat(yol).st_mtime_ns
+    _bayat_hukum(b, "BAYAT-YOK", "taze dosya, degismeyen agac", _bayat_sorgu(motor, kok), False)
+    _yaz(yol, AYNI_BOYUT)
+    _zamanla(yol, mtime)
+    _bayat_hukum(b, "BAYAT-ZAMAN", "ayni boyut + korunmus mtime, onbellek taze", _bayat_sorgu(motor, kok), True)
+    kok, yol, eski = sp["bayat_kur"]
+    _yaz(yol, AYNI_BOYUT)
+    _zamanla(yol, eski)                                # onbellek (eski defter) bunu GOREMEZ; `--kur` defteri yeniler
+    kur(motor, kok)
+    _bayat_hukum(b, "BAYAT-KUR", "icerik degisti, `--kur` yenilendi", _bayat_sorgu(motor, kok), False)
+    return b + kol_bayat_onbellek_bozuk(motor, sp)
+
+
+def kol_bayat_onbellek_bozuk(motor, sp):
+    """A-BAYAT (KALEM 4) devami: onbellek dosyasi bozuk (JSON degil / yanlis tur / 1e999 gibi tasan sayi) ya da yazilamaz (yerinde dizin
+    var) -> TAM yol, degisiklik yine BAYAT, komut dusmez."""
+    b = []
+    kok, yol, _eski = sp["bayat_bozuk"]
+    _yaz(yol, YENI_SATIR)
+    with io.open(onb_dosyasi(kok), encoding="utf-8") as f:
+        gecerli = json.load(f)
+    gecerli["dosyalar"]["src/fx.ts"][0] = "@@TASAN@@"
+    tasan = json.dumps(gecerli).replace('"@@TASAN@@"', "1e999")      # `int(inf)` -> OverflowError (JSON'da gecerli degil ama Python okur)
+    for icerik in (tasan, "{bozuk", "[]", '{"surum": 2, "ozet": null, "dosyalar": 5}'):
+        _yaz(onb_dosyasi(kok), icerik)
+        _bayat_hukum(b, "BAYAT-ONB-BOZUK", "onbellek icerigi %r" % icerik[-60:], _bayat_sorgu(motor, kok), True)
+    onb = onb_dosyasi(kok)
+    os.remove(onb)
+    os.mkdir(onb)                                      # yazma hedefi DIZIN: os.replace basarisiz olur
+    _bayat_hukum(b, "BAYAT-ONB-YAZ", "onbellek yolu dizin (yazilamaz)", _bayat_sorgu(motor, kok), True)
+    return b + kol_bayat_proje_ici(motor, sp)
+
+
+def kol_bayat_proje_ici(motor, sp):
+    """A-BAYAT (KALEM 4) devami: gecici dizin PROJE AGACININ ICINDEYSE (tempfile hicbir adaya yazamazsa cwd'ye duser) onbellek
+    KAPALI: projeye dosya EKLENMEZ, sorgu yine dogru (BAYAT-ONB-PROJE)."""
+    kok, yol, _eski = sp["bayat_proje"]
+    ic = os.path.join(kok, "tmpic")
+    os.makedirs(ic)
+    _yaz(yol, YENI_SATIR)
+    kod, o, _e = kos(motor, kok, "adres", "Kasa", tmp=ic)
+    if os.listdir(ic):
+        return [("BAYAT-ONB-PROJE", "gecici dizin proje icindeyken projeye dosya yazildi: %r" % os.listdir(ic))]
+    if kod != 1 or not o.startswith(BAYAT_BIR):
+        return [("BAYAT-ONB-PROJE", "gecici dizin proje icindeyken sorgu exit=%s ilk satir=%r" % (kod, o.split("\n")[0]))]
+    return []
 
 
 SERPISTIR ={"a.ts": TS_FX, "b.py": PY_FX, "c.dart": DART_FX, "d.cs": CS_FX}       # alfabetik sira != dil sirasi (py cs dart ts)
@@ -770,6 +1021,11 @@ def hepsi(motor, taban, ad, kaynak, kollar):
 
 # ------------------------------------------------------------------ SABOTAJLAR
 # (ad, kol, etiket, ankor, yeni): ankor motorda TAM 1 kez gecmeli (aksi OLCULEMEDI). `etiket` = o sabotajin KENDI ekseni.
+# ankor/yeni ayni uzunlukta TUPLE olabilir: sabotaj birden cok yerde birlikte uygulanir (her ankor TAM 1 kez).
+# degisiklik zamanini (POSIX ctime / Windows ChangeTime) anahtardan cikarir: "ayni boyut + geri alinmis mtime" ve eski deftere bagli onbellek onun YUZUNDEN gorulur; racy ve ozet
+# baglama sabotajlari kendi eksenlerinde ISIRABILSIN diye ctime'i de kor eder (aksi halde ctime onlari ortuk korurdu).
+CTIME_ANKOR = 'ct = _adres_nt_degisim_ns(kok, p) if os.name == "nt" else st.st_ctime_ns'
+CTIME_KOR = "ct = 0"
 SABOTAJLAR = (
     ("M-T1 Python cikaricisi kapali", "A-TANIM", "TANIM-PY",
      '    if dil == "py":\n        return _ad_py(metin)\n',
@@ -882,6 +1138,44 @@ SABOTAJLAR = (
     ("M-B2 agac ozeti HER ZAMAN farkli (degismeyen agac bayat sanilir)", "A-BAYAT", "BAYAT-YOK",
      '    bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != baslik.get("ozet")\n',
      "    bayat = True      # MUTANT\n"),
+    ("M-B3 RACY korumasi KAPALI (taze dosya da onbellege girer; ctime de kor: racy tek koruma kalsin)", "A-BAYAT", "BAYAT-ZAMAN",
+     ("    return max(anahtar[0], anahtar[2]) < t0 - _ADRES_ONB_PAY\n", CTIME_ANKOR),
+     ("    return True      # MUTANT\n", CTIME_KOR)),
+    ("M-B4 ucuz yol HER ZAMAN guvenir (anahtar karsilastirmasi yok; dosya degisti)", "A-BAYAT", "BAYAT-VAR",
+     "    sha = g[3] if (anahtar is not None and g is not None and g[:3] == anahtar) else None\n",
+     "    sha = g[3] if g is not None else None      # MUTANT\n"),
+    ("M-B5 ucuz yol HER ZAMAN guvenir (anahtar karsilastirmasi yok; git add)", "A-BAYAT", "BAYAT-STAGE",
+     "    sha = g[3] if (anahtar is not None and g is not None and g[:3] == anahtar) else None\n",
+     "    sha = g[3] if g is not None else None      # MUTANT\n"),
+    ("M-B6 ucuz yol HER ZAMAN guvenir (anahtar karsilastirmasi yok; commit)", "A-BAYAT", "BAYAT-COMMIT",
+     "    sha = g[3] if (anahtar is not None and g is not None and g[:3] == anahtar) else None\n",
+     "    sha = g[3] if g is not None else None      # MUTANT\n"),
+    ("M-B7 anahtar yalniz mtime (boyut yok sayilir)", "A-BAYAT", "BAYAT-BOYUT",
+     "    sha = g[3] if (anahtar is not None and g is not None and g[:3] == anahtar) else None\n",
+     "    sha = g[3] if (anahtar is not None and g is not None and g[0] == anahtar[0]) else None      # MUTANT\n"),
+    ("M-B8 onbellek eski deftere (ozet) BAGLANMAZ (ctime de kor: tek koruma ozet baglamasi kalsin)", "A-BAYAT", "BAYAT-KUR",
+     ('        if v["surum"] != _ADRES_ONB_SURUM or v["ozet"] != ozet:\n', CTIME_ANKOR),
+     ('        if v["surum"] != _ADRES_ONB_SURUM:      # MUTANT\n', CTIME_KOR)),
+    ("M-B9 bozuk onbellek istisnasi YUTULMAZ (komut duser)", "A-BAYAT", "BAYAT-ONB-BOZUK",
+     "    except (OSError, ValueError, KeyError, TypeError, IndexError, AttributeError, RecursionError, OverflowError):\n",
+     "    except OSError:      # MUTANT\n"),
+    ("M-B12 ctime anahtarda YOK (ayni boyut + geri alinmis eski mtime GORULMEZ)", "A-BAYAT", "BAYAT-CTIME",
+     CTIME_ANKOR, CTIME_KOR),
+    ("M-B13 tasan sayili (1e999) onbellek OverflowError ile komutu dusurur", "A-BAYAT", "BAYAT-ONB-BOZUK",
+     "RecursionError, OverflowError):\n", "RecursionError):      # MUTANT\n"),
+    ("M-B10 onbellek YAZMA hatasi komutu dusurur", "A-BAYAT", "BAYAT-ONB-YAZ",
+     "        os.replace(gecici, yol)\n    except OSError:\n",
+     "        os.replace(gecici, yol)\n    except KeyError:      # MUTANT\n"),
+    ("M-B11 gecici dizin PROJE ICINDE olsa da onbellek yazilir (proje agacina dosya EKLENIR)", "A-BAYAT", "BAYAT-ONB-PROJE",
+     "    if icinde:\n        return None\n",
+     "    if False:      # MUTANT\n        return None\n"),
+    ("M-C3 ham bayt on suzmesi BOM'a bakmaz (UTF-16 dosyadaki cagri KAYBOLUR)", "A-CAGIRAN", "CAGIRAN-KODLAMA",
+     "arama[2] not in ham and _adres_bom(ham) is None and ",
+     "arama[2] not in ham and "),
+    ("M-C4 ham bayt on suzmesi ortadaki U+FEFF'e bakmaz (`A<FEFF>c` cagrisi KAYBOLUR)", "A-CAGIRAN", "CAGIRAN-FEFF",
+     r' and ham.find(b"\xef\xbb\xbf", 1) < 0:', ":      # MUTANT"),
+    ("M-C5 ASCII-disi ad da UTF-8 bayt ipucuyla aranir (latin-1 dosyadaki cagri KAYBOLUR)", "A-CAGIRAN", "CAGIRAN-ASCII-DISI",
+     'ad.encode("ascii") if ad.isascii() else None', 'ad.encode("utf-8")'),
     ("M-D1 siralama KAPALI", "A-DETERMINIZM", "DETERMINIZM-SIRA",
      "    sat.sort(key=lambda r: (r[0], r[3], -r[4], r[1], r[2]))\n",
      "    pass      # MUTANT\n"),
@@ -947,15 +1241,20 @@ def main():
         for sira, (ad, kol, etiket, ankor, yeni) in enumerate(SABOTAJLAR, 1):
             if kol not in kollar:
                 continue
-            if etiket == "KOMUT-SATIRI" and os.name != "nt":
-                print("  %-60s -> OLCULEMEDI: bu platformda sinir yok (yalniz Windows'ta isirir)" % ad)
+            sinir = _platform_sinir(etiket)
+            if sinir:
+                print("  %-60s -> OLCULEMEDI: %s" % (ad, sinir))
                 olculemeyen.append(ad)
                 continue
-            n = s.count(ankor)
-            if n != 1:
-                print("SONUC: OLCULEMEDI — %s: capa %d yerde gecti (1 olmali): %r" % (ad, n, ankor.strip()[:70]))
-                return 2
-            sab, hata = _motor_yaz(s.replace(ankor, yeni, 1), os.path.join(taban, "s%d" % sira), "s%d" % sira)
+            ankorlar, yeniler = (ankor, yeni) if isinstance(ankor, tuple) else ((ankor,), (yeni,))      # tuple: BIRDEN cok yerde sabotaj
+            sabotajli = s
+            for a1, y1 in zip(ankorlar, yeniler):
+                n = s.count(a1)
+                if n != 1:
+                    print("SONUC: OLCULEMEDI — %s: capa %d yerde gecti (1 olmali): %r" % (ad, n, a1.strip()[:70]))
+                    return 2
+                sabotajli = sabotajli.replace(a1, y1, 1)
+            sab, hata = _motor_yaz(sabotajli, os.path.join(taban, "s%d" % sira), "s%d" % sira)
             if sab is None:
                 print("SONUC: OLCULEMEDI — %s: %s" % (ad, hata))
                 return 2
@@ -976,7 +1275,7 @@ def main():
             print("SONUC: KIRMIZI — KACTI: %s" % "; ".join(kacan))
             return 1
         if olculemeyen:
-            print("SONUC: YESIL (SINIRLI) — olculebilen her sabotaj ISIRDI; %d OLCULEMEDI (Windows'a ozgu)." % len(olculemeyen))
+            print("SONUC: YESIL (SINIRLI) — olculebilen her sabotaj ISIRDI; %d OLCULEMEDI (platforma/kullaniciya ozgu)." % len(olculemeyen))
         else:
             print("SONUC: YESIL — tum kollar temiz, %d sabotaj AYRI eksende ISIRDI." % len(SABOTAJLAR))
         return 0
