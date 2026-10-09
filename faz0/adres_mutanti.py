@@ -17,6 +17,14 @@ KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir �
   A-BAYAT        dosya degisince ilk satir `ADRES DEFTERI BAYAT: 1 dosya degisti` + exit 1 (BAYAT-VAR); degismeyince sessiz exit 0 (BAYAT-YOK)
   A-DETERMINIZM  iki `--kur` bit-bit ayni (DETERMINIZM-AYNI); satirlar kanonik sirada (DETERMINIZM-SIRA: dort dil, adlari DIL SIRASINA
                  ters serpistirilmis dosyalar — siralama kapaliysa dil gruplamasi gorunur)
+  A-MASKE        (KALEM 2, P2.1) cagiran listesinde yorum/dize ici gecis YOK: ayni ad bir gercek cagri + bir yorumda + bir dizede +
+                 bir interpolasyon deliginde (gercek cagri) -> liste yalniz gercekleri sayar, "NOT: 2 yorum/metin icindeki gecis
+                 sayilmadi" beyan edilir; dort dil (C# Dart Python TS/TSX) + Dart `$ad` + maske kurulamayan dosya (ham taranir, BILDIRILIR)
+                 + JSX bilesen etiketi (`<Kart/>` `</Kart>`) GERCEK cagri, kucuk harfli HTML etiketi (`<sekme/>`) degil + Python dize
+                 onek harfi (`f"..` `rb".."`) dizenin parcasi + C# ham interpolasyonlu dize deligi (`$$` + 3 tirnak + `{{X()}}`) kod, metni degil +
+                 Python bicim belirteci (`f"{x:ad}"`) ve C# bicim belirteci (`$"{x,10:ad}"`; `global::` takma adi DEGIL) kod DEGIL, ic ice
+                 `{..}` kod + 30 ic ice f-dize ZAMAN ASIMINA ugramaz (K-1) + maske ARAC KUSURU yutulmaz (exit 3)
+                                                                                                  [MASKE|-GERCEK|-DELIK|-NOT|-HAM|-KUSUR|-DERIN]
   A-ETKI         iki eksen. (1) CALISMA ANI: adres cikaricisi BILEREK bozukken `kapi` · `kapi --siki` · `devral --kesif` ciktisi (exit +
                  stdout + stderr) BAYT-BAYT ayni (ETKI). (2) YUKLEME ANI (KALEM 1, P2.1): adres desen/tablo ogesine YUKLEMEDE patlayan
                  gecersiz regex enjekte edilmis motorda `kapi` · `kapi --siki` · `devral --kesif` · `not` · `derle` ciktisi (kok yolu ve
@@ -48,8 +56,8 @@ _cikti_kodlamasini_guvenceye_al()
 
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
-KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-ETKI", "A-KOMUT-SATIRI")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-ETKI": "ETKI", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
+KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-MASKE", "A-ETKI", "A-KOMUT-SATIRI")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ETKI": "ETKI", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -326,6 +334,187 @@ def kol_determinizm(motor, taban):
     return b
 
 
+# ------------------------------------------------------------------ A-MASKE (P2.1 KALEM 2): cagiran listesinde yorum/metin gurultusu yok
+# Her fikstur dosyasinda ayni ad: BIR gercek cagri · BIR yorumda · BIR dizede · BIR interpolasyon deliginde gercek cagri.
+# Beklenen (ELLE, motor sabitinden DEGIL): cagiran satirlari = gercek + delik; "NOT: 2 yorum/metin icindeki gecis sayilmadi".
+CS_MASKE = '''public class M
+{
+    public int HedefCs(int x) => x;
+
+    public int Kos()
+    {
+        var a = HedefCs(1);
+        // HedefCs yorumda
+        var b = "HedefCs metinde";
+        var c = $"{HedefCs(2)}";
+        var d = $$"""{"k":"{{HedefCs(3)}}"}""";
+        var e = $$"""HedefCs ham metinde""";
+        var bf = $"{a,10:HedefCs}";
+        var bg = $"{HedefCs(4):N}";
+        var bh = $"{global::System.Math.Max(HedefCs(5), 1)}";
+        return a + b.Length + c.Length + d.Length + e.Length + bf.Length + bg.Length + bh.Length;
+    }
+}
+'''
+DART_MASKE = '''class M {
+  int hedefDart(int x) => x;
+  int sayacDart = 0;
+
+  int kos() {
+    var a = hedefDart(1);
+    // hedefDart yorumda; sayacDart de yorumda
+    var b = 'hedefDart metinde';
+    var c = '${hedefDart(2)}';
+    var d = '$sayacDart';
+    var e = 'sayacDart metinde';
+    return a + b.length + c.length + d.length + e.length;
+  }
+}
+'''
+PY_MASKE = '''def hedef_py(x):
+    return x
+
+
+def kos():
+    a = hedef_py(1)
+    # hedef_py yorumda
+    b = "hedef_py metinde"
+    c = f"{hedef_py(2)}"
+    d = f"{a:>{hedef_py(3)}}"
+    e = f"{a:hedef_py}"
+    return a, b, c, d, e
+'''
+TS_MASKE = '''export function hedefTs(x: number): number {
+  return x;
+}
+
+export function kos(): number {
+  const a = hedefTs(1);
+  // hedefTs yorumda
+  const b = 'hedefTs metinde';
+  const c = `${hedefTs(2)}`;
+  return a + b.length + c.length;
+}
+'''
+TSX_MASKE = '''export function hedefTsx(x: number): number {
+  return x;
+}
+
+export const Kos = () => {
+  const a = hedefTsx(1);
+  // hedefTsx yorumda
+  return <div title="hedefTsx">{hedefTsx(a)}</div>;
+};
+'''
+# JSX bilesen etiketi: acilis + kapanis adi GERCEK cagri; ozellik dizesi ve {/* */} yorumu degil; kucuk harfli `<sekme />` HTML etiketi
+KART_MASKE = '''export function HedefKart(p: { a: number }) {
+  return <span>{p.a}</span>;
+}
+
+export const Sayfa = () => (
+  <section title="HedefKart">
+    <HedefKart a={1} />
+    {/* HedefKart yorumda */}
+    <HedefKart a={2}>x</HedefKart>
+  </section>
+);
+
+export function sekme() {
+  return 1;
+}
+
+export const Y = () => <sekme />;
+'''
+# Python dize onek harfleri (f"" rb"") dizenin parcasidir: `f` / `rb` adli islevin cagiranlari yalniz gercek cagrilar
+ONEK_MASKE = '''def f(x):
+    return x
+
+
+def rb(x):
+    return x
+
+
+a = f(1)
+b = f"metin {a}"
+c = rb"ham"
+d = rb(2)
+'''
+# 30 ic ice f-dize; 2. satir: ayni derinlikte bicim belirteci DELIKLERI icinde (`F` oneki: `f` adli islev sayaclarina karismaz). Eski motor icte yeniden tarayip 2^30 is yapardi
+IC_MASKE = ("a = " + 'F"{' * 30 + "hedef_ic(1)" + '}"' * 30 + "\n" +
+            "b = " + 'F"{a:>{(' * 30 + "hedef_ic(2)" + ')}}"' * 30 + "\n")
+HAM_MASKE = "export function hedefHam(): number {\n  return 1;\n}\n"
+# 150 ic ice JSX elemani = JSX derinlik siniri (100) asilir: maske KURULAMAZ, dosya ham taranir ve bu BILDIRILIR
+DERIN_MASKE = "export const D = " + "<a>" * 150 + "x" + "</a>" * 150 + ";\n// hedefHam yorumda\nhedefHam();\n"
+MASKE_DOSYALAR = {"src/M.cs": CS_MASKE, "src/m.dart": DART_MASKE, "src/m.py": PY_MASKE, "src/m.ts": TS_MASKE, "src/m.tsx": TSX_MASKE,
+                  "src/ham.ts": HAM_MASKE, "src/derin.tsx": DERIN_MASKE, "src/kart.tsx": KART_MASKE, "src/onek.py": ONEK_MASKE,
+                  "src/ic_tanim.py": "def hedef_ic(x):\n    return x\n", "src/ic.py": IC_MASKE}
+# (ad, gercek cagri satirlari, interpolasyon deligindeki gercek cagri satirlari, beklenen "sayilmadi" sayisi): ELLE
+MASKE_BEKLENEN = (
+    ("HedefCs", {7}, {10, 11, 14, 15}, 4),      # 4 = yorum + dize + ham dize metni + bicim belirteci (`{a,10:HedefCs}` kod DEGIL)
+    ("hedefDart", {6}, {9}, 2),
+    ("sayacDart", set(), {10}, 2),
+    ("hedef_py", {6}, {9, 10}, 3),      # 3 = yorum + dize + bicim belirteci (`{a:hedef_py}` kod DEGIL)
+    ("hedefTs", {6}, {9}, 2),
+    ("hedefTsx", {6}, {8}, 2),
+    ("HedefKart", {7, 9}, set(), 2),
+    ("sekme", set(), set(), 1),
+    ("f", {9}, set(), 4),      # 4 = m.py:9,10,11 + onek.py:10 (`f"` onek harfi)
+    ("rb", {12}, set(), 1),
+)
+MASKE_KUSUR_ANKOR = "    kayit = _AD_KAYIT[0] = [] if delik_kod else None\n"
+
+
+def _cagiran_satirlari(cikti):
+    """`adres <ad>` ciktisindaki cagiran satir numaralari (kume)."""
+    return set(int(x) for l in _cagiranlar(cikti) for x in re.findall(r"\d+", l.rsplit(":", 1)[1]))
+
+
+def kol_maske(motor, taban):
+    """A-MASKE: yorum/dize icindeki gecis cagiran SAYILMAZ (MASKE) · interpolasyon deliginin gercek cagrisi SAYILIR (MASKE-DELIK) ·
+    gercek cagri kaybolmaz (MASKE-GERCEK) · maskelenen gecis sayisi "NOT" satiriyla BEYAN edilir (MASKE-NOT) · maske kurulamayan
+    dosya ham taranir ve BILDIRILIR (MASKE-HAM)."""
+    b = []
+    kok = proje(taban, "maske", MASKE_DOSYALAR)
+    kur(motor, kok)
+    for ad, gercek, delik, say in MASKE_BEKLENEN:
+        _kod, o, _e = kos(motor, kok, "adres", ad)
+        sat = _cagiran_satirlari(o)
+        if sat - gercek - delik:
+            b.append(("MASKE", "%s: yorum/dize icindeki gecis cagiran SAYILDI: fazla satirlar %s (liste %s)" % (ad, sorted(sat - gercek - delik), sorted(sat))))
+        if gercek - sat:
+            b.append(("MASKE-GERCEK", "%s: gercek cagri listede YOK: %s (liste %s)" % (ad, sorted(gercek - sat), sorted(sat))))
+        if delik - sat:
+            b.append(("MASKE-DELIK", "%s: interpolasyon deligindeki gercek cagri listede YOK: %s (liste %s)" % (ad, sorted(delik - sat), sorted(sat))))
+        satirlar, beklenen = o.split("\n"), "NOT: %d yorum/metin icindeki gecis sayilmadi" % say
+        son = satirlar.index("NOT: cagiranlar sozcuk eslesmesidir") if "NOT: cagiranlar sozcuk eslesmesidir" in satirlar else -1
+        if beklenen not in satirlar or not 0 <= satirlar.index(beklenen) < son:
+            b.append(("MASKE-NOT", "%s: %r satiri (\"NOT: cagiranlar...\" satirindan ONCE) yok: %r" % (ad, beklenen, [l for l in satirlar if l.startswith("NOT:")])))
+    try:
+        _kod, o, _e = kos(motor, kok, "adres", "hedef_ic", zaman_asimi=SURE_ZAMAN_ASIMI)
+    except subprocess.TimeoutExpired:
+        b.append(("MASKE-DERIN", "30 ic ice f-dize: `adres hedef_ic` %d s icinde BITMEDI (maske suresi dogrusal/karesel degil)" % SURE_ZAMAN_ASIMI))
+    else:
+        if "maske kurulamadi" in o or "yorum/metin icindeki" in o or _cagiran_satirlari(o) != {1, 2}:
+            b.append(("MASKE-DERIN", "30 ic ice f-dize: deligin gercek cagrilari (src/ic.py:1,2) tek cagiran olmali, maske kurulmali, gecis sayilmamali: %r" % (o,)))
+    kaynak = io.open(motor, encoding="utf-8", newline="").read()
+    if kaynak.count(MASKE_KUSUR_ANKOR) != 1:
+        raise Kurulamadi("maske kusuru capasi %d yerde gecti (1 olmali)" % kaynak.count(MASKE_KUSUR_ANKOR))
+    bozuk, hata = _motor_yaz(kaynak.replace(MASKE_KUSUR_ANKOR, '    if delik_kod:      # MUTANT: maske ARAC KUSURU\n        raise ValueError("bilerek bozuk maske")\n' + MASKE_KUSUR_ANKOR, 1),
+                             os.path.join(taban, "maske_bozuk"), "maske_bozuk")
+    if bozuk is None:
+        raise Kurulamadi(hata)
+    kod, o, e = kos(bozuk, kok, "adres", "hedefTs")
+    if kod != 3:
+        b.append(("MASKE-KUSUR", "maske ARAC KUSURU (beklenmedik istisna) firlatirken `adres hedefTs` exit=%s (3 = ARAC KUSURU beklenir); cikti=%r" % (
+            kod, (o + e).strip()[-120:])))
+    _kod, o, _e = kos(motor, kok, "adres", "hedefHam")
+    if "NOT: 1 dosyada maske kurulamadi" not in o:
+        b.append(("MASKE-HAM", "JSX derinlik siniri asildi (maske kurulamaz) ama maske-kurulamadi NOTU yok: %r" % (o,)))
+    if 3 not in _cagiran_satirlari(o):
+        b.append(("MASKE-GERCEK", "hedefHam: maskesi kurulamayan dosyada gercek cagri (src/derin.tsx:3) listede YOK: %r" % (o,)))
+    return b
+
+
 def _kapi_kosusu(motor, kok):
     cikti = []
     for args in (("kapi",), ("kapi", "--siki"), ("devral", "--kesif")):
@@ -456,6 +645,7 @@ KOLLAR = {
     "A-PARMAK": lambda m, t, _a, _k: kol_parmak(m, t),
     "A-BAYAT": lambda m, t, _a, _k: kol_bayat(m, t),
     "A-DETERMINIZM": lambda m, t, _a, _k: kol_determinizm(m, t),
+    "A-MASKE": lambda m, t, _a, _k: kol_maske(m, t),
     "A-ETKI": kos_etki,
     "A-KOMUT-SATIRI": kos_komut_satiri,
 }
@@ -508,6 +698,54 @@ SABOTAJLAR = (
     ("M-C2 cagiranlar HIC aranmaz", "A-CAGIRAN", "CAGIRAN-VAR",
      "        arama = _adres_arama(adlar[0]) if len(adlar) == 1 else None\n",
      "        arama = None      # MUTANT\n"),
+    ("M-M1 cagiran taramasi MASKESIZ (ham metin taranir)", "A-MASKE", "MASKE",
+     "        maske = _ad_maske(metin, ana, ac, True)\n",
+     "        maske = metin      # MUTANT\n"),
+    ("M-M2 Python dosyalarinda maske YOK (yalniz py ham taranir)", "A-MASKE", "MASKE",
+     "        maske = _ad_maske(metin, ana, ac, True)\n",
+     '        maske = metin if dil == "py" else _ad_maske(metin, ana, ac, True)      # MUTANT\n'),
+    ("M-M3 interpolasyon delikleri MASKELENIR (delik_kod kapali)", "A-MASKE", "MASKE-DELIK",
+     "        maske = _ad_maske(metin, ana, ac, True)\n",
+     "        maske = _ad_maske(metin, ana, ac)      # MUTANT\n"),
+    ("M-M4 Dart `$ad` basit ic eklemesi MASKELENIR", "A-MASKE", "MASKE-DELIK",
+     r'    delik = None if ham else r"\$\{|\$(?=[A-Za-z_])"' + "\n",
+     r'    delik = None if ham else r"\$\{"      # MUTANT' + "\n"),
+    ("M-M5 maskelenen gecis NOTU basilmaz", "A-MASKE", "MASKE-NOT",
+     '        print("NOT: %d yorum/metin icindeki gecis sayilmadi" % notlar[0])\n',
+     "        pass      # MUTANT\n"),
+    ("M-M6 maskelenen gecis sayisi YANLIS (+1)", "A-MASKE", "MASKE-NOT",
+     "    maskeli = sum(",
+     "    maskeli = 1 + sum("),
+    ("M-M7 maske kurulamadi NOTU basilmaz (ham tarama SESSIZ)", "A-MASKE", "MASKE-HAM",
+     '        print("NOT: %d dosyada maske kurulamadi - ham metin tarandi (o dosyada yorum/metin icindeki gecisler de sayildi)" % notlar[1])\n',
+     "        pass      # MUTANT\n"),
+    ("M-M8 JSX etiket adlari MASKELENIR (bilesen kullanimi cagiran sayilmaz)", "A-MASKE", "MASKE-GERCEK",
+     '    if ad and ("." in ad or not "a" <= ad[0] <= "z"):\n',
+     "    if False:      # MUTANT\n"),
+    ("M-M9 kucuk harfli HTML etiket adlari da KOD sayilir", "A-MASKE", "MASKE",
+     '    if ad and ("." in ad or not "a" <= ad[0] <= "z"):\n',
+     "    if ad:      # MUTANT\n"),
+    ("M-M10 Python/Dart dize ONEK harfi maskede KALIR", "A-MASKE", "MASKE",
+     '    p = len(seg) - len(seg.lstrip(_AD_HARF)) if kod and g == "ds" else 0\n',
+     "    p = 0      # MUTANT\n"),
+    ("M-M11 maske ARAC KUSURU yutulur (ham taramaya duser, exit 0)", "A-MASKE", "MASKE-KUSUR",
+     "    except RecursionError:\n        return _adres_satir_isabetleri(metin, desen), 0, 1\n",
+     "    except Exception:      # MUTANT\n        return _adres_satir_isabetleri(metin, desen), 0, 1\n"),
+    ("M-M12 C# ham interpolasyonlu dizenin delikleri taranmaz (delik icindeki cagri KAYBOLUR)", "A-MASKE", "MASKE-DELIK",
+     "    if nq >= 3 and dolar:  ",
+     "    if False:  "),
+    ("M-M13 Python bicim belirteci KOD sayilir (`f\"{x:ad}\"` adli cagiran sizar)", "A-MASKE", "MASKE",
+     "    return _ad_delik(t, i, _ad_pm_ic, _AD_DELIK_PAR_PY, 1)\n",
+     "    return _ad_delik(t, i, _ad_pm_ic, _AD_DELIK_PAR, 1)      # MUTANT: `:` aranmaz\n"),
+    ("M-M14 f-dize deligi IKI KEZ taranir (ic ice dizelerde ustel sure)", "A-MASKE", "MASKE-DERIN",
+     "    return _ad_delik(t, i, _ad_pm_ic, _AD_DELIK_PAR_PY, 1)\n",
+     "    _ad_delik(t, i, _ad_pm_ic, _AD_DELIK_PAR_PY, 1)      # MUTANT\n    return _ad_delik(t, i, _ad_pm_ic, _AD_DELIK_PAR_PY, 1)\n"),
+    ("M-M15 C# bicim belirteci KOD sayilir (`$\"{x,10:ad}\"` adli cagiran sizar)", "A-MASKE", "MASKE",
+     "    return _ad_delik(t, i, _ad_cs_ic, _AD_DELIK_PAR_CS_K, 2)\n",
+     "    return _ad_delik(t, i, _ad_cs_ic, _AD_DELIK_PAR_CS)      # MUTANT\n"),
+    ("M-M16 C# `global::` takma adi bicim belirteci baslatir (delik icindeki cagri KAYBOLUR)", "A-MASKE", "MASKE-DELIK",
+     '                if kolon == 2 and t[i:i + 1] == ":":\n',
+     "                if False:      # MUTANT\n"),
     ("M-P1 satir sonu normallestirmesi KAPALI (CRLF + bosluk)", "A-PARMAK", "PARMAK-CRLF",
      '    s = _ADRES_SON_BOSLUK.sub("", _ADRES_SATIR_SONU.sub("\\n", s))\n',
      "    s = s      # MUTANT\n"),

@@ -8556,6 +8556,14 @@ def _adres_iz(satirlar, bas, bit):
 _AD_BOS = _ad_re(r"[^\n]")
 _AD_BOS_HEPSI = _ad_re(r".", re.S)               # maskede dize/yorum ICI satir sonlari da bosluk olur (ASI yaniltilmaz)
 _AD_DESEN = {}  # type: dict
+_AD_KAYIT = [None]  # type: list   # None: deligin KONUMU tutulmaz (tanim cikaricisi) · liste: `_ad_delik` her kapanan deligin (bas, bit) kod araligini ekler
+
+
+def _ad_kayit(bas, bit):
+    """Bir dize/JSX deliginin kod araligini (bas: ilk harf, bit: kapanis `}` ya da deligin SONU) kayda ekler (kayit aciksa)."""
+    k = _AD_KAYIT[0]
+    if k is not None:
+        k.append((bas, bit))
 
 
 def _ad_desen(kapanis, kacis, delik, tek_satir):
@@ -8590,22 +8598,44 @@ def _ad_dize(t, i, desen, delik_ac):
 _AD_DELIK_PAR = _ad_re(r"[{}\"'`]")
 
 
-def _ad_delik(t, i, ic_ac, par=_AD_DELIK_PAR):
+def _ad_delik(t, i, ic_ac, par=_AD_DELIK_PAR, kolon=0):
     """Dize deligi (`${...}` / `{...}`) icinden: eslesen `}`'in SONRASI. Ic ice dizeler (TS: yorum/regex de) `ic_ac(t, konum)`
-    ile atlanir; `par` ozel karakterleri secer."""
-    d = 1
+    ile atlanir; `par` ozel karakterleri secer. Kapanan delik `_ad_kayit`a (ilk harf, `}` konumu) olarak EKLENIR.
+    `kolon` (1 Python f-dize · 2 C#; `par` `()[]:` de secer): parantez/kume DISINDAKI ilk `:` bicim belirtecinin basidir (`{x:N}`,
+    `{x,10:D13}`), kayit araligi `:`da biter (belirtec kod DEGIL); C#'ta `::` (takma ad) belirtec baslatmaz; Python belirtecindeki
+    `{..}` ayri delik cercevesidir. TEK GECIS: hicbir ic dize/delik ikinci kez taranmaz (ic ice derinlikte ustel sure olmaz)."""
+    yigin = [[i, -1, 0, 0]]                           # delik cerceveleri: [bas, `:` konumu, parantez, kume]
     while True:
         m = par.search(t, i)
         if m is None:
             return len(t)
-        c = m.group()
-        if c not in "{}":
-            i = max(ic_ac(t, m.start()), m.start() + 1)
-            continue
-        d += 1 if c == "{" else -1
-        i = m.end()
-        if d == 0:
-            return i
+        c, i = m.group(), m.end()
+        f = yigin[-1]
+        if c == "{":
+            if f[1] >= 0 and kolon == 1:
+                yigin.append([i, -1, 0, 0])
+            else:
+                f[3] += 1
+        elif c == "}":
+            if f[3]:
+                f[3] -= 1
+            else:
+                _ad_kayit(f[0], i - 1 if f[1] < 0 else f[1])
+                yigin.pop()
+                if not yigin:
+                    return i
+        elif c == ":":
+            if f[1] < 0 and not (f[2] or f[3]):
+                if kolon == 2 and t[i:i + 1] == ":":
+                    i += 1
+                else:
+                    f[1] = m.start()
+        elif c in "([":
+            f[2] += 1
+        elif c in ")]":
+            f[2] -= 1
+        else:
+            i = max(ic_ac(t, m.start()), i)
 
 
 def _ad_blok_yorum(t, m):
@@ -8655,8 +8685,13 @@ def _ad_cs_ic(t, k):
     return _ad_cs_dize(t, _AD_CS_ON.match(t, j))
 
 
+_AD_DELIK_PAR_CS_K = _ad_re(r"[(){}\[\]\"'/:]")
+
+
 def _ad_cs_delik(t, i):
-    return _ad_delik(t, i, _ad_cs_ic, _AD_DELIK_PAR_CS)
+    if _AD_KAYIT[0] is None:                          # tanim maskesi: delik konumu tutulmaz, belirtec ayrimi gereksiz
+        return _ad_delik(t, i, _ad_cs_ic, _AD_DELIK_PAR_CS)
+    return _ad_delik(t, i, _ad_cs_ic, _AD_DELIK_PAR_CS_K, 2)
 
 
 def _ad_cs_dize(t, m):
@@ -8668,6 +8703,8 @@ def _ad_cs_dize(t, m):
     if "@" in on:                                     # ad-hoc birebir dize: `""` kacis, cok satirli
         i = m.start() + len(on) - nq + 1
         return _ad_dize(t, i, _ad_desen('"', kacis + '""', delik, False), _ad_cs_delik)
+    if nq >= 3 and dolar:                             # ham interpolasyonlu dize (`$$"""..{{x}}.."""`): `$` sayisi kadar `{` deligi acar
+        return _ad_dize(t, m.end(), _ad_desen('"' * nq, None, r"\{" * on.count("$"), False), _ad_cs_delik)
     if nq >= 3:                                       # ham dize: ayni sayida tirnakla kapanir
         j = t.find('"' * nq, m.end())
         return len(t) if j < 0 else j + nq
@@ -8689,7 +8726,7 @@ _AD_ANA_DART = _ad_re(r"(?P<sb>\A#![^\n]*)|(?P<yo>//[^\n]*)|(?P<yb>/\*)|(?P<ds>(
 
 def _ad_dart_dize(t, i, q, ham):
     kacis = None if ham else r"\\."
-    delik = None if ham else r"\$\{"
+    delik = None if ham else r"\$\{|\$(?=[A-Za-z_])"
     return _ad_dize(t, i, _ad_desen(re.escape(q), kacis, delik, len(q) == 1), _ad_dart_delik)
 
 
@@ -8708,7 +8745,15 @@ def _ad_dart_ic(t, k):
     return _ad_dart_dize(t, k + len(q), q, ham)
 
 
+_AD_DART_AD = _ad_re(r"[A-Za-z_]\w*")
+
+
 def _ad_dart_delik(t, i):
+    """`${...}` deligi ya da `$ad` basit ic ekleme (i `$`den hemen SONRA: ad harfleri dize kapanisini/kacisi icermez, tarama sonucu degismez)."""
+    if t[i - 1] == "$":
+        j = _AD_DART_AD.match(t, i).end()
+        _ad_kayit(i, j)
+        return j
     return _ad_delik(t, i, _ad_dart_ic, _AD_DELIK_PAR_DART)
 
 
@@ -8927,6 +8972,13 @@ def _ad_jsx_etiket(t, i):
             i = j + 1
 
 
+def _ad_jsx_ad_kaydet(t, bas, ad):
+    """Etiket adi (`<Kart ..>` · `</Kart>` · `<Ui.Kart>`, `bas`: ilk harf) GERCEK koddur (bilesen kullanimi = cagri): delik gibi kayda
+    eklenir. Noktasiz ve KUCUK harfle baslayan ad (`<div>` · `<my-el>`) HTML ogesidir, kod DEGIL: `0` yiginda kalir."""
+    if ad and ("." in ad or not "a" <= ad[0] <= "z"):
+        _ad_kayit(bas, bas + len(ad))
+
+
 def _ad_jsx_cocuk(t, i, derin, ad):
     """Eleman cocuklarinin sonu (kapanis etiketi dahil) ya da None; kapanis etiketi ACILIS ADIYLA eslesmezse JSX DEGILDIR."""
     while True:
@@ -8937,7 +8989,11 @@ def _ad_jsx_cocuk(t, i, derin, ad):
             i = _ad_tsx_delik(t, m.end())
         elif t[m.end():m.end() + 1] == "/":
             j = t.find(">", m.end())
-            return j + 1 if j >= 0 and t[m.end() + 1:j].strip() == ad else None
+            if j < 0 or t[m.end() + 1:j].strip() != ad:
+                return None
+            ic = t[m.end() + 1:j]
+            _ad_jsx_ad_kaydet(t, m.end() + 1 + len(ic) - len(ic.lstrip()), ad)
+            return j + 1
         else:
             i = _ad_jsx_son(t, m.start(), derin + 1)
             if i is None:
@@ -8949,9 +9005,13 @@ def _ad_jsx_son(t, a, derin):
     GORUNUR atlanir (sessizce kod sanilmaz)."""
     if derin > _AD_JSX_DERIN:
         raise RecursionError("JSX ic ice derinligi %d'i asti" % _AD_JSX_DERIN)
+    kayit = _AD_KAYIT[0]
     if a in _AD_JSX_MEMO:
-        return _AD_JSX_MEMO[a]
-    r = None
+        r, eski = _AD_JSX_MEMO[a]
+        if kayit is not None and r is not None:
+            kayit.extend(eski)                                     # bellekten donen eleman kayitlarini (delik · etiket adi) yine tasir
+        return r
+    n, r = len(kayit) if kayit is not None else 0, None
     if t[a + 1:a + 2] == ">":                                      # `<>` fragman: etiket yok, kapanis `</>`
         r = _ad_jsx_cocuk(t, a + 2, derin, "")
     else:
@@ -8959,7 +9019,9 @@ def _ad_jsx_son(t, a, derin):
         e = _ad_jsx_etiket(t, _ad_jsx_tur(t, g.end())) if g else None
         if e is not None:
             r = e[0] if e[1] else _ad_jsx_cocuk(t, e[0], derin, g.group())
-    _AD_JSX_MEMO[a] = r
+            if r is not None:
+                _ad_jsx_ad_kaydet(t, g.start(), g.group())
+    _AD_JSX_MEMO[a] = (r, kayit[n:] if kayit is not None else ())
     return r
 
 
@@ -8993,30 +9055,106 @@ def _ad_tsx_ac(t, m, u):
     return _ad_ts_ac(t, m, u, True)
 
 
+# ---- Python (YALNIZ cagiran taramasi icin maske: tanim cikaricisi `ast` kullanir)
+_AD_ANA_PY = _ad_re(r"(?P<yo>#[^\n]*)|(?P<ds>(?:(?<!\w)[rRbBuUfF]{1,2})?(?:'''|\"\"\"|'|\"))")
+_AD_DELIK_PAR_PY = _ad_re(r"[(){}\[\]\"'#:]")
+_AD_PM_ONEK = "rRbBuUfF"
+
+
+def _ad_pm_dize(t, i, q, on):
+    """Python dizesinin ICERIGI (i); `on` = harf on eki. f-dizede `{..}` delik (`{{` kacis, `\\N{..}` adli karakter); kapanisin SONRASI."""
+    on = on.lower()
+    f = "f" in on
+    kacis = r"\\." if not f else (r"\\[^{]|\{\{" if "r" in on else r"\\N\{[^}]*\}|\\[^{]|\{\{")
+    return _ad_dize(t, i, _ad_desen(re.escape(q), kacis, r"\{" if f else None, len(q) == 1), _ad_pm_delik)
+
+
+def _ad_pm_ic(t, k):
+    """f-dize deligi icinde `k`daki ozel karakter: yorum (`#` ONCESINDE bosluk: `{x:#x}` bicim belirteci yorum DEGIL) ya da dize."""
+    c = t[k]
+    if c == "#":
+        j = t.find("\n", k) if t[k - 1:k].isspace() else k + 1
+        return len(t) if j < 0 else j
+    j = k
+    while j > 0 and k - j < 2 and t[j - 1] in _AD_PM_ONEK:
+        j -= 1
+    if j > 0 and (t[j - 1].isalnum() or t[j - 1] == "_"):
+        j = k
+    q = t[k:k + 3] if t[k:k + 3] in ("'''", '"""') else c
+    return _ad_pm_dize(t, k + len(q), q, t[j:k])
+
+
+def _ad_pm_delik(t, i):
+    """f-dize deligi. `:` ARDINDAKI bicim belirteci (`{x:unicode}`) kod DEGILDIR (`_ad_delik` kolon=1): delik yalniz `:`a kadar;
+    belirtectaki ic `{..}` yine koddur."""
+    return _ad_delik(t, i, _ad_pm_ic, _AD_DELIK_PAR_PY, 1)
+
+
+def _ad_pm_ac(t, m, _u):
+    if m.lastgroup == "yo":
+        return m.end()
+    on = m.group()
+    q = on.lstrip(_AD_PM_ONEK)
+    return _ad_pm_dize(t, m.end(), q, on[:len(on) - len(q)])
+
+
 _AD_DIL_AYAR = {"cs": (_AD_ANA_CS, _ad_cs_ac), "dart": (_AD_ANA_DART, _ad_dart_ac), "ts": (_AD_ANA_TS, _ad_ts_ac),
-                "tsx": (_AD_ANA_TSX, _ad_tsx_ac)}
+                "tsx": (_AD_ANA_TSX, _ad_tsx_ac), "py": (_AD_ANA_PY, _ad_pm_ac)}
 
 
 _AD_YORUM_GRUP = frozenset(("yo", "yb", "pp", "sb"))
 
 
-def _ad_maske_parca(seg, g):
+def _ad_maske_parca(seg, g, kod=False):
     """Tek bolgenin maskesi. Yorum: tamami bosluk. Dize: IC bosluk, acilis/kapanis tirnagi KALIR (ifade `"..."` ile
-    bitiyor — ASI/yeni bildirim kararinin dayandigi son harf kaybolmasin). Regex literali: `0` yigini (bolme `/` kalir)."""
+    bitiyor — ASI/yeni bildirim kararinin dayandigi son harf kaybolmasin). Regex literali: `0` yigini (bolme `/` kalir).
+    `kod` (cagiran taramasi): dize ONEK HARFLERI (`f"..` `r'..` `rb"..`) dizenin parcasidir, bosluk olur (tanim maskesi: ayni)."""
     bos = _AD_BOS_HEPSI.sub(" ", seg)
     if g in _AD_YORUM_GRUP:
         return bos
     if g == "rx" or g == "jx":
         return seg if len(seg) == 1 else "0" * len(seg)
-    if len(seg) >= 2 and seg[-1] in "\"'`":
-        return seg[0] + bos[1:-1] + seg[-1]
+    p = len(seg) - len(seg.lstrip(_AD_HARF)) if kod and g == "ds" else 0
+    if len(seg) - p >= 2 and seg[-1] in "\"'`":
+        return bos[:p] + seg[p] + bos[p + 1:-1] + seg[-1]
     return bos
 
 
-def _ad_maske(t, ana, ac):
+_AD_HARF = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+_AD_DELIKSIZ_GRUP = frozenset(("yo", "yb", "pp", "sb", "rx", "ch"))      # bunlarin icinde interpolasyon deligi YOK
+
+
+def _ad_delik_ayir(kayit, n, a, b, g):
+    """`kayit[n:]` (bu bolgenin ac() cagrisinda kapanan delikler) icinden [a, b) bolgesindeki EN DIS delikler (artan; ic ice ya da
+    ortusenler atilir). `kayit` n'e kirpilir: bir sonraki bolge kendi deliklerini yeniden toplar."""
+    yeni = sorted(set(kayit[n:]))
+    del kayit[n:]
+    cikti, son = [], a
+    for s, e in ([] if g in _AD_DELIKSIZ_GRUP else yeni):
+        if s >= son and e <= b:
+            cikti.append((s, e))
+            son = e
+    return cikti
+
+
+def _ad_parca_ekle(parca, t, a, b, g, delikler, kod=False):
+    """Bolge maskesini `parca`ya ekler; her deligin yerine (bas, bit) cifti konur (icerigi sonradan maskelenip yazilir)."""
+    maske, p = _ad_maske_parca(t[a:b], g, kod), a
+    for s, e in delikler:
+        if g == "jx":                       # JSX `0` yigini sozcuk harfidir: delik sinirindaki `{` `}` bosluk olur (`0ad(` kod sanilmasin)
+            maske = maske[:s - a - 1] + " " + maske[s - a:e - a] + " " + maske[e - a + 1:]
+        parca += [maske[p - a:s - a], (s, e)]
+        p = e
+    parca.append(maske[p - a:])
+
+
+def _ad_maske(t, ana, ac, delik_kod=False):
     """t ile AYNI uzunlukta: yorum ve dize bolgeleri bosaltilmis (satir sonlari korunur). `ac(t, m, u)`: `u` = `m`den ONCEKI son
-    anlamli harfin konumu (yorumlar ATLANIR, yoksa -1): regex/JSX karari bir yorum satirindan ETKILENMEZ."""
+    anlamli harfin konumu (yorumlar ATLANIR, yoksa -1): regex/JSX karari bir yorum satirindan ETKILENMEZ.
+    `delik_kod`: dize/JSX ICINDEKI interpolasyon delikleri (`{..}` `${..}` `$ad`) GERCEK koddur: iceriklerine (ic ice yorum/dize
+    maskelenerek, ozyinelemeli) dokunulmaz. Varsayilan False: tanim cikaricisi icin cikti BIT-BIT eskisi."""
     _AD_JSX_MEMO.clear()
+    kayit = _AD_KAYIT[0] = [] if delik_kod else None
     parca, son, pos, u = [], 0, 0, -1
     while True:
         m = ana.search(t, pos)
@@ -9025,14 +9163,16 @@ def _ad_maske(t, ana, ac):
         a = m.start()
         ara = t[son:a].rstrip()
         u = son + len(ara) - 1 if ara else u
+        n = len(kayit) if delik_kod else 0
         b = max(ac(t, m, u), a + 1)
         parca.append(t[son:a])
-        parca.append(_ad_maske_parca(t[a:b], m.lastgroup))
+        _ad_parca_ekle(parca, t, a, b, m.lastgroup, _ad_delik_ayir(kayit, n, a, b, m.lastgroup) if delik_kod else (), delik_kod)
         if m.lastgroup not in _AD_YORUM_GRUP:
             u = b - 1
         son = pos = b
     parca.append(t[son:])
-    return "".join(parca)
+    _AD_KAYIT[0] = None
+    return "".join(x if x.__class__ is str else _ad_maske(t[x[0]:x[1]], ana, ac, True) for x in parca)
 
 
 # ---------------------------------------------------------------- yapi: govde eslesmesi + satir indeksi
@@ -10038,24 +10178,42 @@ def _adres_defter_oku(p):
 
 
 def _adres_tara(kok, kod, arama):
-    """Izlenen kod dosyalarini BIR kez okur -> ({yol: tam SHA-256}, {yol: [satir]}); `arama` = (alt metin, sozcuk deseni) ya da None."""
-    bugun, isabet = {}, {}
+    """Izlenen kod dosyalarini BIR kez okur -> ({yol: tam SHA-256}, {yol: [satir]}, [maskeli gecis, maske kurulamayan dosya]);
+    `arama` = (on suzme deseni, sozcuk deseni) ya da None. Maske YALNIZ ham metinde ad SOZCUK olarak gectiginde kurulur."""
+    bugun, isabet, notlar = {}, {}, [0, 0]
     for dil in _ADRES_DIL_SIRA:
         for yol in kod[dil]:
             metin = _adres_oku(kok, yol)[0]
             if metin is None:
                 continue
             bugun[_adres_alan(yol)] = _adres_sha(metin)
-            sat = _adres_satir_isabetleri(metin, arama[1]) if arama is not None and arama[0] in metin else None
-            if sat:
-                isabet[_adres_alan(yol)] = sat
-    return bugun, isabet
+            if arama is not None and arama[0].search(metin):
+                sat, say, hata = _adres_dosya_isabeti(metin, _adres_cikarici_dili(yol, dil), arama[1])
+                notlar[0] += say
+                notlar[1] += hata
+                if sat:
+                    isabet[_adres_alan(yol)] = sat
+    return bugun, isabet, notlar
 
 
-def _adres_satir_isabetleri(metin, desen):
-    """Sozcuk isabetlerinin satir numaralari (artan; AYNI satirdaki birden cok gecis TEK kez)."""
+def _adres_dosya_isabeti(metin, dil, desen):
+    """Bir dosyada adin CAGRI isabetleri -> (satirlar, yorum/dize icinde kalip sayilmayan gecis sayisi, maske kurulamadi mi).
+    Maske tanim cikaricisininkiyle AYNI fonksiyondur (`_ad_maske`; interpolasyon delikleri gercek kod). YALNIZ bilinen sinir
+    (ic ice derinlik: RecursionError) ham metne duser ve SAYILIP bildirilir; baska her istisna ARAC KUSURUDUR (exit 3), yutulmaz."""
+    ana, ac = _AD_DIL_AYAR[dil]
+    try:
+        maske = _ad_maske(metin, ana, ac, True)
+    except RecursionError:
+        return _adres_satir_isabetleri(metin, desen), 0, 1
+    maskeli = sum(1 for m in desen.finditer(metin) if maske[m.start():m.end()] != m.group())      # ham metinde gecip maskede KOD olmayan
+    return _adres_satir_isabetleri(metin, desen, maske), maskeli, 0
+
+
+def _adres_satir_isabetleri(metin, desen, maske=None):
+    """Sozcuk isabetlerinin satir numaralari (artan; AYNI satirdaki birden cok gecis TEK kez). Isabetler `maske`de (yoksa `metin`de)
+    aranir; satir numarasi ORIJINAL metinden sayilir (maskede dize/yorum ici satir sonlari bosluk olur, uzunluk ayni)."""
     sat, son, say = [], 0, 1
-    for m in desen.finditer(metin):
+    for m in desen.finditer(metin if maske is None else maske):
         say += metin.count("\n", son, m.start())
         son = m.start()
         if not sat or sat[-1] != say:
@@ -10064,7 +10222,9 @@ def _adres_satir_isabetleri(metin, desen):
 
 
 def _adres_arama(ad):
-    return ad, re.compile(r"(?<![\w$])%s(?![\w$])" % re.escape(ad))
+    """(on suzme deseni, sozcuk deseni). On suzme `$ad`i (Dart ic ekleme) de yakalar; maske pahali oldugundan YALNIZ ad SOZCUK olarak
+    gecen dosyalarda kurulur (alt metin eslesmesi yaygin adlarda cok daha fazla dosyada maske kurardi)."""
+    return re.compile(r"(?<!\w)%s(?![\w$])" % re.escape(ad)), re.compile(r"(?<![\w$])%s(?![\w$])" % re.escape(ad))
 
 
 def _adres_bayat_sayisi(dosyalar, bugun):
@@ -10147,7 +10307,15 @@ def _adres_benzer(tanimlar, ad, bul):
         _adres_sinirli(ben, _ADRES_BENZER_TAVAN, lambda r: "  " + _adres_tanim_satiri(r))
 
 
-def _adres_ad_cevabi(tanimlar, isabet, ad, baslik):
+def _adres_maske_notlari(notlar):
+    """Maskenin gizlenemez beyani: yorum/dize icinde kalip sayilmayan gecisler · maskesi kurulamayan (ham taranan) dosyalar."""
+    if notlar[0]:
+        print("NOT: %d yorum/metin icindeki gecis sayilmadi" % notlar[0])
+    if notlar[1]:
+        print("NOT: %d dosyada maske kurulamadi - ham metin tarandi (o dosyada yorum/metin icindeki gecisler de sayildi)" % notlar[1])
+
+
+def _adres_ad_cevabi(tanimlar, isabet, ad, baslik, notlar=(0, 0)):
     """`adres <ad>` govdesi: tanimlar + cagiranlar. 0 bulundu · 1 bulunamadi."""
     kip, bul = _adres_eslestir(tanimlar, ad)
     if kip is None:
@@ -10170,6 +10338,7 @@ def _adres_ad_cevabi(tanimlar, isabet, ad, baslik):
     grup = _adres_cagiranlar(tanimlar, isabet, adlar[0])
     print("CAGIRANLAR (%d adres):" % len(grup) if grup else "CAGIRANLAR: yok")
     _adres_sinirli(grup, _ADRES_CAGIRAN_TAVAN, lambda g: "  " + _adres_cagiran_satiri(g))
+    _adres_maske_notlari(notlar)
     print("NOT: cagiranlar sozcuk eslesmesidir")
     return 0
 
@@ -10212,12 +10381,12 @@ def _adres_sorgu(kok, p, a):
         bul = _adres_eslestir(tanimlar, a.ad)[1]
         adlar = sorted(set(r[2].split(".")[-1] for r in bul))
         arama = _adres_arama(adlar[0]) if len(adlar) == 1 else None
-    bugun, isabet = _adres_tara(kok, kod, arama)
+    bugun, isabet, notlar = _adres_tara(kok, kod, arama)
     bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != baslik.get("ozet")
     if bayat:
         print("ADRES DEFTERI BAYAT: %d dosya degisti - hafiza.py adres --kur" % _adres_bayat_sayisi(dosyalar, bugun))
     if a.ad is not None:
-        kod_ = _adres_ad_cevabi(tanimlar, isabet, a.ad, baslik)
+        kod_ = _adres_ad_cevabi(tanimlar, isabet, a.ad, baslik, notlar)
     else:
         kod_ = _adres_mahalle_cevabi(tanimlar, a.mahalle)
     return 1 if (bayat or kod_) else 0
