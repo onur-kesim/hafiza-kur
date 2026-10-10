@@ -1,12 +1,12 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `022f288` = main = origin, CI #125 195/195; P2 PUSH'SUZ)
-Son güncelleme: 7 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `5888404` = main = origin; P2.1 PUSH'SUZ)
+Son güncelleme: 10 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## SON İŞ — P2 `adres` kod adres defteri (Code O15, 7 Eki 2026) · PUSH YOK
-**Taban** `022f288`. `690a116` motor (`adres --kur`/`<ad>`/`--mahalle`; Python `ast`, C#/Dart/TS-JS desen) · `aa78918`→`8c82237` YENİ `faz0/adres_mutanti.py` 7 kol + CI işi · `ae72e6a` belge · `f04beda` çapa adları · `b3e10bd` lint farkı 0. Mutant Win 15/15 · Linux 14/14 (+M-K1 ÖLÇÜLEMEDİ).
-**Momentum** 2,7 s · 4.782 tanım · **fxa** 24,2 s · 29.618 tanım (KAPSAM DIŞI 9 / 655).
-Çapa AYNEN (`cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79) · `altin_cikti` FARK YOK · `sabotaj` **67/67** (81/81 mutant) · **Tam tur (Win, 84 adım):** 73 OK · 9 KIRMIZI (bilinen) · 2 SKIP · regresyon 0. İlk tur 2 GERÇEK regresyon (ortak metin çapaları) → `f04beda`.
-**Sıradaki:** push Onur'da → Cowork: taze klonda kabul 1-2 · 4 sembol · Graphify isabet · kör okuma KOD kolu.
+## SON İŞ — P2.1 `adres` sağlamlaştırma (Code O16, 10 Eki 2026) · PUSH YOK
+**Taban** `5888404`. K1 `0d7ce4a` tembel kurulum (A-ETKI) · K2 `d13e504` çağıran maskesi (A-MASKE) · K3 `0683377` üretilmiş dosya atlama (A-ATLA) · K4 `5d38686` sorgu hızı (A-BAYAT) · `226841a` win_dal. Mutant 9 kol / 57 sabotaj ISIRDI.
+**Momentum:** gövde P2 ile AYNI · `kanonikDize` 4 gerçek çağrı (+7 maskelendi). **fxa:** `--kur` 14,3 s · ATLANAN 5 · `track` 1,50 s, `.yarn` yok.
+Çapa AYNEN (`cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79) · `altin_cikti` FARK YOK · `sabotaj` **67/67** · **Tam tur (Win):** 72 OK · 10 KIRMIZI = 9 bilinen + `win_dal_mutanti` (K4 platform dalı; gerçek regresyon → `226841a`, driver OK).
+**Sıradaki:** push Onur'da → Cowork: `kanonikDize` kaynağa karşı · fxa `ATLANAN` · taze klon kabul.
 **AÇIK:** macOS · py3.11/3.13 · Python adları NFKC · `--kok X <komut>` sırası adres DIŞI komutlarda yok sayılır · M-H10c KACTI (ÖNCEDEN VAR)
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
@@ -14,7 +14,7 @@ K4 TAMAM (67/67), kör nokta **0**; **25 Ağu yazısı** KAPSAM DIŞI; **Deneme*
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**P2** (O15): `adres` kod adres defteri 4 dil, 7 kol mutant · **H14** (O14): git yolları parçalı (fxa exit 3 → H14 satırı) · **P1** (O13): `karar-kaynagi` ADR'leri 4 sınıfta.
+**P2.1** (O16): `adres` tembel kurulum · maske · atlama · sorgu hızı · **P2** (O15): `adres` 4 dil · **H14** (O14): git yolları parçalı (fxa exit 3 → H14 satırı) · **P1** (O13): `karar-kaynagi` ADR'leri 4 sınıfta.
 **K-DURUM·K-GECIS·K-ISARET** (O12): `karar-kaynagi` her ADR'nin `[durum: …]`/BEYANSIZ'ı · kurulu projede `derle` karar dizinini bulur · kural evi canlı defter işaretçisi + `kapi` H19.
 **K-SATIR·K-YOL·K-BAYAT** (O11): H18 satır atfı kayması + `derle` `atif-kaymasi` · `devral` karar dizini → `karar-kaynagi`.
 **B1+B2** (O10): `isir` sahte KAPI KÖR · taze klonda H16 → `_gitkeep_yaz` · Cowork TUTTU (`OLCUM_RAPORU_05EKIM_B1B2.md`).
