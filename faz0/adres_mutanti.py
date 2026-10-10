@@ -50,6 +50,8 @@ KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir �
                  gun/saat normallestirilmis) temizle BAYT-BAYT ayni ve `adres --kur` exit 3 (ARAC KUSURU) (ETKI-YUKLEME)
   A-KOMUT-SATIRI YALNIZ Windows: 43.200 karakterlik yol kumesinde `--kur` COKMEZ, kaynak=git (KOMUT-SATIRI); Linux/macOS: OLCULEMEDI beyani
   A-EZME, A-EKSIK (P5 K0) ve P5-DAMGA / P5-H20 / P5-DOGUS (P5 K1-K3): ilgili kol fonksiyonlarinin docstring'inde aciklanir.
+  P5-SABIT       (P5.2 K5) dil sabitleri (`true false null None True False nil this self void undefined`) aday DEGIL: satir/damga/H20
+                 sayimi YOK (tanimli `void` bile); listede OLMAYAN `trueValue`/`TRUE` COZULEMEDI der  [SABIT-VAR|-TAM|-H20]
   P5-BIRLESIK    (P5.2 K4) ad 2-5 tanima cozulunce BIRLESIK damga: `[k tanim]` damga + tekil ad K1 iziyle bayt-ayni; bir tanim degisince /
                  eklenince / silinince H20 `GOVDE DEGISTI`; dosya yeniden adlandirilinca iz DEGISMEZ; 6+ tanim damga YOK + COKLU + K3
                  beyani; aday dosya arizaliysa KISMI iz yazilmaz; K3 `<k> tanimdan <x>'u`   [BIRLESIK-VAR|-TEKIL|-DEGISTI|-EKLENDI|-YOL|-TAVAN|-COKLU|-ARIZA|-DOGUS]
@@ -83,8 +85,8 @@ _cikti_kodlamasini_guvenceye_al()
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
 KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-MASKE", "A-ATLA", "A-ETKI", "A-EZME", "A-EKSIK",
-             "P5-DAMGA", "P5-H20", "P5-DOGUS", "P5-BIRLESIK", "A-KOMUT-SATIRI")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-EZME": "EZME", "A-EKSIK": "EKSIK", "P5-DAMGA": "DAMGA", "P5-H20": "H20", "P5-DOGUS": "DOGUS", "P5-BIRLESIK": "BIRLESIK", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
+             "P5-DAMGA", "P5-H20", "P5-DOGUS", "P5-BIRLESIK", "P5-SABIT", "A-KOMUT-SATIRI")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-EZME": "EZME", "A-EKSIK": "EKSIK", "P5-DAMGA": "DAMGA", "P5-H20": "H20", "P5-DOGUS": "DOGUS", "P5-BIRLESIK": "BIRLESIK", "P5-SABIT": "SABIT", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -2004,6 +2006,55 @@ def kos_birlesik(motor, taban, ad, kaynak):
     return kol_birlesik(motor, taban, _bozuk_motor(taban, "bir_" + ad, kaynak))
 
 
+# ------------------------------------------------------------------ P5-SABIT (P5.2 KALEM 5): dil sabitleri aday DEGIL
+# Liste (README'de ACIK): true false null None True False nil this self void undefined — backtick'li olsa da tanimlayici adayi SAYILMAZ
+# (`ATIF COZULEMEDI: true` gurultusu biter). Listede OLMAYAN her cozulemeyen ad (`trueValue`, `TRUE`: tam eslesme, buyuk/kucuk harf
+# AYNEN) bugunku gibi COZULEMEDI der. `void` bu fiksturde TANIMLI bir islev: sabit olarak dislanir (cozulebilse de damga/sayim YOK).
+SABIT_PY = "def void(x):\n    return x\n"
+SABIT_METIN = "\n".join((
+    "1. `true` `false` `null` `None` `True` `False` `this` `self` `void` `undefined` `nil` sabit.",
+    "2. `trueValue` tanimsiz; `TRUE` listede degil; `Nonexistent` yok.",
+))
+SABIT_COZULEMEDI = ["ATIF COZULEMEDI: Nonexistent", "ATIF COZULEMEDI: TRUE", "ATIF COZULEMEDI: trueValue"]
+SABIT_DESEN = re.compile(r"\b(?:true|false|null|None|True|False|this|self|void|undefined|nil)\b")
+
+
+def kol_sabit(motor, taban):
+    """P5-SABIT: dil sabitleri (`true false null None True False nil this self void undefined`) backtick'li olsa da aday DEGIL: satir
+    YOK, damga YOK, H20 sayimi YOK — TANIMLI bir ad (`void`) olsa bile (SABIT-VAR) · listede OLMAYAN ad (`trueValue`, `TRUE`:
+    tam eslesme, buyuk/kucuk harf AYNEN) bugunku gibi COZULEMEDI der (SABIT-TAM) · sabit canli defterde H20'yi ATESLEMEZ (SABIT-H20)."""
+    b = []
+    kok = _hafiza_proje(motor, taban, "sabit", {"src/v.py": SABIT_PY})
+    kur(motor, kok)
+    kod, o, e, govde, _ad = _not_kos(motor, kok, SABIT_METIN)
+    sat = _atif_satirlari(o)
+    if kod != 0 or govde != SABIT_METIN:
+        b.append(("SABIT-VAR", "sabitler damgalanmamali / metin AYNI kalmali: exit=%s govde=%r cikti=%r" % (kod, govde, o[-200:])))
+    if any(SABIT_DESEN.search(l) for l in sat):
+        b.append(("SABIT-VAR", "dil sabiti icin `not` satiri uretildi: %r" % sat))
+    if sat != SABIT_COZULEMEDI:
+        b.append(("SABIT-TAM", "listede OLMAYAN adlar COZULEMEDI demeli (beklenen %r): %r" % (SABIT_COZULEMEDI, sat)))
+    kos(motor, kok, "derle")
+    _git(kok, "add", "-A")
+    _git(kok, "commit", "-q", "-m", "sabit")
+    kod, o, e = kos(motor, kok, "kapi")
+    if _h20_satirlari_al(o):
+        b.append(("SABIT-H20", "dil sabitleri H20'yi atesledi (sayilmamali): %r" % _h20_satirlari_al(o)))
+    # DAMGALI sabit adli belirtec (eski `None`#hex: C# enum uyesi) GIZLENMEZ: damga acik bir isarettir
+    ms = _hafiza_proje(motor, taban, "sabit_damgali", {"src/Mode.cs": "public enum Mode\n{\n    None,\n    Read\n}\n"})
+    kur(motor, ms)
+    kos(motor, ms, *(DAMGA_NOT_ARGS + ("1. `None`#816e08d4 eski damga.",)))
+    kos(motor, ms, "derle")
+    kod, o, e = kos(motor, ms, "kapi")
+    if not any(l.startswith("H20: 1 atif | ") for l in _h20_satirlari_al(o)):
+        b.append(("SABIT-DAMGALI", "damgali sabit adli belirtec H20'den gizlendi (`1 atif` beklenir): %r" % _h20_satirlari_al(o)))
+    return b
+
+
+def kos_sabit(motor, taban, _ad, _kaynak):
+    return kol_sabit(motor, taban)
+
+
 def _kapi_kosusu(motor, kok):
     cikti = []
     for args in (("kapi",), ("kapi", "--siki"), ("devral", "--kesif")):
@@ -2143,6 +2194,7 @@ KOLLAR = {
     "P5-H20": kos_h20,
     "P5-DOGUS": kos_dogus,
     "P5-BIRLESIK": kos_birlesik,
+    "P5-SABIT": kos_sabit,
     "A-KOMUT-SATIRI": kos_komut_satiri,
 }
 
@@ -2588,6 +2640,18 @@ SABOTAJLAR = (
     ("M-U28 `yol:N` COKLU'su da `tavan 5` metniyle basilir (tavan ile ilgisi yok)", "P5-BIRLESIK", "BIRLESIK-COKLU",
      "_BIRLESIK_TAVAN) if tur == \"ad\"\n",
      "_BIRLESIK_TAVAN) if True      # MUTANT\n"),
+    ("M-S1 dil sabiti listesi BOS (sabitler aday: `true` COZULEMEDI gurultusu, tanimli `void` damgalanir)", "P5-SABIT", "SABIT-VAR",
+     '_DAMGA_SABIT = frozenset(("true", "false", "null", "None", "True", "False", "nil", "this", "self", "void", "undefined"))\n',
+     "_DAMGA_SABIT = frozenset()      # MUTANT\n"),
+    ("M-S2 sabit listesi ALT DIZE eslesmesiyle genisler (`trueValue` de yutulur: her sey sabit)", "P5-SABIT", "SABIT-TAM",
+     'if tur == "ad" and t in _DAMGA_SABIT and d is None:\n',
+     'if tur == "ad" and any(k_ in t for k_ in _DAMGA_SABIT) and d is None:      # MUTANT\n'),
+    ("M-S3 sabit eslesmesi buyuk/kucuk harfe DUYARSIZ (`TRUE` de yutulur, `None` aday kalir)", "P5-SABIT", "SABIT-TAM",
+     'if tur == "ad" and t in _DAMGA_SABIT and d is None:\n',
+     'if tur == "ad" and t.lower() in _DAMGA_SABIT and d is None:      # MUTANT\n'),
+    ("M-S4 DAMGALI sabit adli belirtec de filtrelenir (eski `None`#hex H20'den GIZLENIR)", "P5-SABIT", "SABIT-DAMGALI",
+     'if tur == "ad" and t in _DAMGA_SABIT and d is None:\n',
+     'if tur == "ad" and t in _DAMGA_SABIT:      # MUTANT\n'),
     ("M-K1 dosya listesi TEK git cagrisina dizilir", "A-KOMUT-SATIRI", "KOMUT-SATIRI",
      '    r = _adres_git(kok, "ls-files", "-z")\n',
      '    r = _adres_git(kok, "ls-files", "-z")\n'

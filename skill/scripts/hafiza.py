@@ -10758,6 +10758,7 @@ def cmd_adres(a):
 
 _DAMGA_HEX = _ad_re(r"#[0-9a-f]{8}(?![0-9A-Za-z_])")
 _DAMGA_KELIME = _ad_re(r"[0-9A-Za-z_]")
+_DAMGA_SABIT = frozenset(("true", "false", "null", "None", "True", "False", "nil", "this", "self", "void", "undefined"))
 _DAMGA_YUZDE = _ad_re(r"%(09|0A|0D|25)")
 _DAMGA_ADET_TAVAN = 10                    # `ATIF DAMGALANDI` satirinda en cok bu kadar belirtec + `+N daha`
 _BIRLESIK_TAVAN = 5                       # bir ad en cok bu kadar tanima cozulurse BIRLESIK iz uretilir (6+: COKLU, damga YOK)
@@ -10768,7 +10769,10 @@ def _damga_jetonlar(satir):
     """Bir satirdaki backtick'li belirtecler -> [(kapanis backtick'inin SONU, metin, tur `ad`|`yol`, damga `#xxxxxxxx` ya da None,
     damgalanabilir mi)]. Damga eklenecek konum = kapanis backtick'inin hemen sonu. Cift/uclu backtick araliklari (``x``) ATLANIR
     (damga backtick kosusunu boler). Kapanis backtick'ine bitisik sozcuk karakteri (apostrofsuz ek) varsa belirtec taninir ama
-    DAMGALANAMAZ: yeni damga sonekle birlesip bir sonraki `not`ta damga olarak taninmaz (idempotans bozulur)."""
+    DAMGALANAMAZ: yeni damga sonekle birlesip bir sonraki `not`ta damga olarak taninmaz (idempotans bozulur). DIL SABITLERI
+    (`_DAMGA_SABIT`: true false null None True False nil this self void undefined; tam eslesme, buyuk/kucuk harf AYNEN) DAMGASIZ
+    belirtec olarak aday SAYILMAZ (K5): `ATIF COZULEMEDI: true` gurultusu, damga ve H20 DAMGASIZ sayimi yok. DAMGALI olan (`None`#hex)
+    okunur: damga acik bir isarettir, gizlenemez. H18 (`_atif_cikar`) bu listeden ETKILENMEZ."""
     cikti = []
     for m in _ATIF_BT.finditer(satir):
         once = satir[m.start() - 1] if m.start() > 0 else ""
@@ -10779,6 +10783,8 @@ def _damga_jetonlar(satir):
         tur = "yol" if _ATIF_YOL.fullmatch(t) else ("ad" if _ATIF_TANIM.fullmatch(t) else None)
         if tur:
             d = _DAMGA_HEX.match(satir, m.end())
+            if tur == "ad" and t in _DAMGA_SABIT and d is None:
+                continue
             cikti.append((m.end(), t, tur, d.group() if d else None, d is not None or not _DAMGA_KELIME.match(sonra)))
     return cikti
 
