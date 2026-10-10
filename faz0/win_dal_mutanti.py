@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""FAZ 0 — WINDOWS DALI MUTANTI (uc kapi + dort mutant).
+"""FAZ 0 — WINDOWS DALI MUTANTI (uc kapi + bes mutant).
 
 NEDEN VAR (olculdu 14 Agu 2026)
   `hafiza.py`'de `sys.platform == "win32"` yalnizca IKI yerde geciyor (sat. 899
@@ -17,6 +17,12 @@ NEDEN VAR (olculdu 14 Agu 2026)
     DAL B  `_boru_koptu_mu` win32 kolu                (Y-3)
            Windows'ta kirik boru `BrokenPipeError` degil ham `OSError` EINVAL(22)
            atar. Dal sokulurse `kapi | head` KIRMIZI hukmu YUTAR (exit 120 / 3).
+    DAL C  `_adres_onb_anahtar` os.name == "nt" kolu  (KALEM 4, sorgu hizi onbellegi)
+           Windows'ta `st_ctime_ns` DEGISIKLIK zamani degil OLUSTURMA zamanidir;
+           degisim zamani (ChangeTime) `_adres_nt_degisim_ns`'ten gelir. Dal
+           sokulurse onbellek anahtari Windows'ta yerinde-degisen ama mtime'i
+           geri alinmis dosyayi GORMEZ (bayat adres hukmu). Bu dal 14 Agu
+           olcumunden SONRA dogdu (ustteki "IKI yer" o gunun olcumudur).
 
 NE OLCER — UC AYRI YUZEY
   KAPI-1 (ENVANTER, depo metni, uc platformda)
@@ -35,6 +41,11 @@ NE OLCER — UC AYRI YUZEY
       H-c  BORU        : EINVAL win32'de boru kopmasi SAYILIR, POSIX'te SAYILMAZ
                          (D-1: POSIX'te EINVAL bambaska bir seydir, yutmak gercek
                           hatayi gizler); EPIPE her iki platformda sayilir.
+      H-d  ANAHTAR     : `_adres_onb_anahtar` ucuncu bileseni os.name == "nt" iken
+                         `_adres_nt_degisim_ns`'ten, POSIX'te st.st_ctime_ns'den
+                         gelir; nt'de degisim zamani alinamazsa (None) anahtar da
+                         None'dur (onbellege GIRMEZ). Sahte os + sahte lstat +
+                         sahte degisim zamani: GERCEK dosya sistemi gerekmez.
 
   KAPI-3 (CANLI, GERCEK ctypes, YALNIZ gercek win32'de)
       Kendi pid'i -> True · bitmis cocuk pid -> False. win32 disinda OLCULEMEDI
@@ -50,9 +61,13 @@ NE OLCMEZ (hukum degil, SINIR — gizlenmez)
      surec 'yasiyor' gorunur. Motorun bilinen siniri, bu arac onu olcmez.
   4. Simulasyon gercek Windows'u olcmez. Gercek hukum KAPI-3'ten ve CI'nin
      windows-latest isinden gelir.
+  5. H-d yalniz YONLENDIRMEYI olcer (hangi kaynaktan okundugunu). Gercek
+     ChangeTime'in dogru okundugunu (`_adres_nt_degisim_ns`, ctypes, NTFS/ReFS
+     ayrimi) KAPI-3 de olcmez; o, adres onbellek bataryasinin ve CI'nin
+     windows-latest isinin isidir.
 
 CIKIS KODLARI
-  0  uc kapi da temiz (KAPI-3 win32 disinda OLCULEMEDI) VE 4/4 mutant AYRI eksende ISIRDI
+  0  uc kapi da temiz (KAPI-3 win32 disinda OLCULEMEDI) VE 5/5 mutant AYRI eksende ISIRDI
   1  bir kapi kirmizi, ya da bir mutant KACTI/ORTUSTU (kapi kor)
   2  olculemedi (motor okunamadi, govde bulunamadi) — sessiz PASS verilmez
 """
@@ -60,6 +75,7 @@ import errno as _errno
 import io
 import os
 import re
+import stat
 import subprocess
 import sys
 
@@ -86,7 +102,7 @@ VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                           "..", "skill", "scripts", "hafiza.py")
 
 # Platform dalinin MESRU olarak yasayabilecegi govdeler. Kural ADLA taniml.
-BILINEN_YUZEYLER = ("_surec_yasiyor", "_boru_koptu_mu")
+BILINEN_YUZEYLER = ("_surec_yasiyor", "_boru_koptu_mu", "_adres_onb_anahtar")
 
 # Platform dalinin butun idiomlari — biri otekiyle GIZLENEMESIN diye.
 _PLATFORM = re.compile(r'sys\.platform\s*==\s*["\']win32["\']'
@@ -160,6 +176,25 @@ class _SahteOs(object):
             raise self._atilacak
 
 
+class _SahteStat(object):
+    """os.lstat sonucu yerine: duzenli dosya; mtime 111, boyut 5, st_ctime 333 (POSIX degisim zamani)."""
+    st_mode = stat.S_IFREG | 0o644
+    st_size = 5
+    st_mtime_ns = 111
+    st_ctime_ns = 333
+
+
+class _SahteOsAnahtar(object):
+    """`_adres_onb_anahtar`in dokundugu os yuzeyi: `name`, `path`, `lstat` (GERCEK dosya sistemi yok)."""
+
+    def __init__(self, ad):
+        self.name = ad
+        self.path = os.path
+
+    def lstat(self, p):
+        return _SahteStat()
+
+
 class _Fn(object):
     """oznitelik atanabilen cagrilabilir (k32.OpenProcess.restype = ... icin)."""
 
@@ -221,12 +256,13 @@ def _yukle(kaynak_govde, ns_ekstra, sahte_modul=None, modul_adi="ctypes"):
 
 # ------------------------------------------------------------------- KAPI-2
 def kapi2_davranis(s):
-    """H-a · H-b · H-c — her hal TEK bir seyi olcer."""
+    """H-a · H-b · H-c · H-d — her hal TEK bir seyi olcer."""
     bulgu = []
     try:
         g_yasiyor = govde_metni(s, "_surec_yasiyor")
         g_win = govde_metni(s, "_surec_yasiyor_win")
         g_boru = govde_metni(s, "_boru_koptu_mu")
+        g_anahtar = govde_metni(s, "_adres_onb_anahtar")
     except LookupError as e:
         return [("H-*", "ÖLÇÜLEMEDİ: %s" % e)]
 
@@ -292,6 +328,38 @@ def kapi2_davranis(s):
             bulgu.append(("H-c", "winerror 109 win32'de sayilmadi"))
     except Exception as e:                                   # noqa: BLE001
         bulgu.append(("H-c", "COKTU: %s" % e))
+
+    # ---- H-d ANAHTAR: ucuncu bilesen nt'de degisim zamanindan, POSIX'te st_ctime_ns'den
+    try:
+        cagri = []
+
+        def _degisim(kok, p, deger):
+            cagri.append(p)
+            return deger
+
+        sinav = (
+            # (os.name, _adres_nt_degisim_ns degeri, beklenen anahtar, mesaj)
+            ("nt", 777, (111, 5, 777), "nt'de 3. bilesen degisim zamanindan (777) gelmedi"),
+            ("posix", 777, (111, 5, 333), "POSIX'te 3. bilesen st_ctime_ns'den (333) gelmedi"),
+            ("nt", None, None, "nt'de degisim zamani alinamayinca anahtar None olmadi"),
+            ("posix", None, (111, 5, 333), "POSIX'te nt degisim zamani anahtari etkiledi"),
+        )
+        for ad, deger, beklenen, mesaj in sinav:
+            del cagri[:]
+            ns = _yukle(g_anahtar, {
+                "os": _SahteOsAnahtar(ad), "stat": stat,
+                "_ADRES_DOSYA_TAVAN": 10 ** 9,
+                "_adres_nt_degisim_ns": (lambda k, p, d=deger: _degisim(k, p, d)),
+            })
+            g = ns["_adres_onb_anahtar"]("/kok", "a/b.py")
+            if g != beklenen:
+                bulgu.append(("H-d", "%s: beklenen %r, gelen %r" % (mesaj, beklenen, g)))
+            elif ad == "posix" and cagri:
+                bulgu.append(("H-d", "POSIX'te Windows degisim zamani YINE sorgulandi"))
+            elif ad == "nt" and not cagri:
+                bulgu.append(("H-d", "nt'de degisim zamani HIC sorgulanmadi"))
+    except Exception as e:                                   # noqa: BLE001
+        bulgu.append(("H-d", "COKTU: %s" % e))
     return bulgu
 
 
@@ -323,7 +391,7 @@ def kapi3_canli(s, kaynak_govde=None):
 
 
 # --------------------------------------------------------------- MUTANTLAR
-# DORT AYRI EKSEN. Ikisi ayni hukmu ateslerse ORTUSEN TESPIT KORLUGU olur ve bir
+# BES AYRI EKSEN. Ikisi ayni hukmu ateslerse ORTUSEN TESPIT KORLUGU olur ve bir
 # eksen olculmemis kalir; beklenti asagida YAZILIDIR ve tutmazsa kirmizi yanar.
 def m1_listelenmemis_yuzey(s):
     """UCUNCU bir platform dali dogar, mutanti yoktur -> KAPI-1 isirmali.
@@ -365,11 +433,23 @@ def m4_einval_kosulsuz(s):
     return s.replace(hedef, yeni, 1) if hedef in s else None
 
 
+def m5_ctime_her_platformda(s):
+    """DAL C sokulur: Windows'ta da st_ctime_ns (= OLUSTURMA zamani) kullanilir -> KAPI-2/H-d isirmali.
+
+    KALEM 4 ekseni (anahtarin ucuncu kaynagi). KAPI-1'i ATESLEMEZ: platform dali
+    silinir, yenisi dogmaz. m2/m4 ile ortusmez: onlar surec/boru yuzeyidir."""
+    hedef = ('    ct = _adres_nt_degisim_ns(kok, p) if os.name == "nt" '
+             'else st.st_ctime_ns\n')
+    yeni = '    ct = st.st_ctime_ns      # MUTANT: nt dali sokuldu\n'
+    return s.replace(hedef, yeni, 1) if hedef in s else None
+
+
 MUTANTLAR = [
     ("M-1 listelenmemis platform dali", m1_listelenmemis_yuzey, "KAPI-1"),
     ("M-2 win yonlendirmesi yok (Y-1)", m2_yonlendirme_yok, "KAPI-2/H-a"),
     ("M-3 her handle YASIYOR", m3_her_handle_yasiyor, "KAPI-2/H-b"),
     ("M-4 EINVAL kosulsuz yutulur (D-1)", m4_einval_kosulsuz, "KAPI-2/H-c"),
+    ("M-5 onbellek ctime her platformda", m5_ctime_her_platformda, "KAPI-2/H-d"),
 ]
 
 
@@ -398,7 +478,7 @@ def main():
              if not k1 else "KIRMIZI — %d listelenmemis dal" % len(k1)))
     for satir, ad, metin in k1:
         print("      ! satir %d, `%s` icinde: %s" % (satir, ad, metin))
-    print("  KAPI-2 DAVRANIS : %s" % ("YESIL (H-a · H-b · H-c gecti)" if not k2 else
+    print("  KAPI-2 DAVRANIS : %s" % ("YESIL (H-a · H-b · H-c · H-d gecti)" if not k2 else
                                       "KIRMIZI — %d hal" % len(k2)))
     for hal, ne in k2:
         print("      ! %s: %s" % (hal, ne))
