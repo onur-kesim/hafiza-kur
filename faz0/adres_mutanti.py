@@ -50,6 +50,8 @@ KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir �
                  gun/saat normallestirilmis) temizle BAYT-BAYT ayni ve `adres --kur` exit 3 (ARAC KUSURU) (ETKI-YUKLEME)
   A-KOMUT-SATIRI YALNIZ Windows: 43.200 karakterlik yol kumesinde `--kur` COKMEZ, kaynak=git (KOMUT-SATIRI); Linux/macOS: OLCULEMEDI beyani
   A-EZME, A-EKSIK (P5 K0) ve P5-DAMGA / P5-H20 / P5-DOGUS (P5 K1-K3): ilgili kol fonksiyonlarinin docstring'inde aciklanir.
+  P5-SAYIM       (P5.2 K6) damgasiz belirtec arac kusurunda DUSMEZ: ad belirteci de `yol:N` de OLCULEMEDI'ye gecer, ayrim gorunur, siniflarin
+                 toplami AZALMAZ (yalniz `yok` olan kadar artar), asiri yuklu `yol:N` COKLU    [SAYIM-ENJEKSIYON|-TOPLAM|-AYRIM|-AD|-YOK|-COKLU]
   P5-SABIT       (P5.2 K5) dil sabitleri (`true false null None True False nil this self void undefined`) aday DEGIL: satir/damga/H20
                  sayimi YOK (tanimli `void` bile); listede OLMAYAN `trueValue`/`TRUE` COZULEMEDI der  [SABIT-VAR|-TAM|-H20]
   P5-BIRLESIK    (P5.2 K4) ad 2-5 tanima cozulunce BIRLESIK damga: `[k tanim]` damga + tekil ad K1 iziyle bayt-ayni; bir tanim degisince /
@@ -85,8 +87,8 @@ _cikti_kodlamasini_guvenceye_al()
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
 KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-MASKE", "A-ATLA", "A-ETKI", "A-EZME", "A-EKSIK",
-             "P5-DAMGA", "P5-H20", "P5-DOGUS", "P5-BIRLESIK", "P5-SABIT", "A-KOMUT-SATIRI")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-EZME": "EZME", "A-EKSIK": "EKSIK", "P5-DAMGA": "DAMGA", "P5-H20": "H20", "P5-DOGUS": "DOGUS", "P5-BIRLESIK": "BIRLESIK", "P5-SABIT": "SABIT", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
+             "P5-DAMGA", "P5-H20", "P5-DOGUS", "P5-BIRLESIK", "P5-SABIT", "P5-SAYIM", "A-KOMUT-SATIRI")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-EZME": "EZME", "A-EKSIK": "EKSIK", "P5-DAMGA": "DAMGA", "P5-H20": "H20", "P5-DOGUS": "DOGUS", "P5-BIRLESIK": "BIRLESIK", "P5-SABIT": "SABIT", "P5-SAYIM": "SAYIM", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -1357,7 +1359,7 @@ def kol_h20(motor, taban, bozuk, istisnali):
     _yaz(yol, H20_A)
     # arizali cikarici (RuntimeError) ve H20'nin KENDI istisnasi: H20 OLCULEMEDI; diger HER satir + exit ayni
     for etiket, m, bekle in (("H20-CIKARICI", bozuk,
-                              "H20: 2 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 2 OLCULEMEDI [CIKARICI:2] | 0 COKLU | 1 DAMGASIZ"),
+                              "H20: 2 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 3 OLCULEMEDI (damgali 2, damgasiz 1) [CIKARICI:3] | 0 COKLU | 0 DAMGASIZ"),
                              ("H20-ISTISNA", istisnali, "H20: OLCULEMEDI (RuntimeError)")):
         kod, o, e = _h20_kapi(m, kok)
         if _h20_satirlari_al(o)[:1] != [bekle]:
@@ -2055,6 +2057,104 @@ def kos_sabit(motor, taban, _ad, _kaynak):
     return kol_sabit(motor, taban)
 
 
+# ------------------------------------------------------------------ P5-SAYIM (P5.2 KALEM 6): damgasiz belirtec arac kusurunda DUSMEZ
+# Degismez (defter TAMAMKEN, numarali madde ici COZULEBILIR aday belirtecler): damgali · COKLU · DAMGASIZ · damgasiz-OLCULEMEDI toplami arac
+# kusuru enjeksiyonuyla AZALMAZ; yalniz saglamken `yok` olanlar (kod adresi olmayan satira bakan `yol:N`) kadar ARTABILIR — kusur `yok`
+# hukmunu veremez. Sinif, `not`ta basilan K1 hukmuyle (`_damga_karar`) AYNI karardan gelir (ad belirteci de arizada OLCULEMEDI'dir).
+SAYIM_ONCE = "\n".join((
+    "3. `ikinci_islev` damgasiz.",
+    "4. `a.py:6` damgasiz yol.",
+    "5. `a.py:11` damgasiz yol 2.",
+))
+SAYIM_YOK = "6. `a.py:3` bos satir (hicbir tanimda DEGIL)."
+SAYIM_SAGLAM = "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 0 OLCULEMEDI | 0 COKLU | 3 DAMGASIZ"
+SAYIM_ARIZALI = "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 4 OLCULEMEDI (damgali 1, damgasiz 3) [CIKARICI:4] | 0 COKLU | 0 DAMGASIZ"
+SAYIM_YOK_SAGLAM = "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 0 OLCULEMEDI | 0 COKLU | 3 DAMGASIZ"
+SAYIM_YOK_ARIZALI = "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 5 OLCULEMEDI (damgali 1, damgasiz 4) [CIKARICI:5] | 0 COKLU | 0 DAMGASIZ"
+
+
+def _h20_sinif_toplami(satir):
+    """H20 ozet satiri -> damgali + COKLU + DAMGASIZ + damgasiz-OLCULEMEDI (siniflarin toplami; ayrim yoksa OLCULEMEDI hep damgali)."""
+    m = re.match(r"H20: (\d+) atif \| \d+ GOVDE DEGISTI \| \d+ SEMBOL YOK \| \d+ OLCULEMEDI(?: \(damgali \d+, damgasiz (\d+)\))?(?: \[[^\]]*\])? "
+                 r"\| (\d+) COKLU \| (\d+) DAMGASIZ$", satir)
+    if not m:
+        return None
+    a, ou, c, z = m.groups()
+    return int(a) + int(c) + int(z) + int(ou or 0)
+
+
+def _sayim_proje(motor, taban, ad, metin_once, dosyalar=None):
+    """Damgasiz notlar (defter YOKKEN) + `adres --kur` + damgali not + derle + commit -> kok."""
+    kok = _hafiza_proje(motor, taban, ad, dosyalar or {"src/a.py": H20_A})
+    kod, o, e = kos(motor, kok, "not", "--konu", "damgasiz-not", "--yeni-konu", "SAYIM fiksturu: damgasiz belirtec", "--tur", "durum",
+                    "--metin", metin_once)
+    if kod != 0:
+        raise Kurulamadi("damgasiz not basarisiz: %r" % (o + e)[-160:])
+    kur(motor, kok)
+    kod, o, e = kos(motor, kok, *(DAMGA_NOT_ARGS + ("1. `tekil_islev` ilk iddia.",)))
+    kod, o2, e = kos(motor, kok, "derle")
+    if kod != 0:
+        raise Kurulamadi("derle basarisiz: exit=%s %r" % (kod, (o2 + e)[-200:]))
+    _git(kok, "add", "-A")
+    _git(kok, "commit", "-q", "-m", "sayim")
+    return kok
+
+
+def _sayim_karsilastir(b, etiket_toplam, kok, motor, bozuk, saglam_bekle, arizali_bekle, artis):
+    """Saglam ve arizali motorda H20 ozeti: literaller + siniflarin toplami (`artis`: arizada beklenen +n) + H20 DISI satirlar/exit ayni."""
+    kod0, o0, _e0 = _h20_kapi(motor, kok)
+    h0 = _h20_satirlari_al(o0)
+    if h0 != [saglam_bekle]:
+        b.append(("SAYIM-ENJEKSIYON", "saglam motor: H20 satirlari %r != [%r]" % (h0, saglam_bekle)))
+    kod, o, e = _h20_kapi(bozuk, kok)
+    h1 = _h20_satirlari_al(o)
+    if h1[:1] != [arizali_bekle]:
+        b.append(("SAYIM-ENJEKSIYON", "cikarici arizali motor: H20 ozeti %r != %r" % (h1[:1], arizali_bekle)))
+    t0, t1 = (_h20_sinif_toplami(h0[0]) if h0 else None), (_h20_sinif_toplami(h1[0]) if h1 else None)
+    if t0 is None or t1 is None or t1 != t0 + artis:
+        b.append((etiket_toplam, "siniflarin toplami: saglam=%s arizali=%s (arizada +%d beklenir; AZALMAMALI)" % (t0, t1, artis)))
+    if kod != kod0 or _kapi_diger(o) != _kapi_diger(o0):
+        b.append(("SAYIM-ENJEKSIYON", "H20 disindaki `kapi` satirlari / exit degisti: exit %s -> %s" % (kod0, kod)))
+    return h1
+
+
+def kol_sayim(motor, taban, bozuk):
+    """P5-SAYIM: saglam motorda damgasiz cozulebilir belirtecler DAMGASIZ; cikarici arizali motorda ad belirteci de `yol:N` de OLCULEMEDI'ye
+    gecer, `(damgali X, damgasiz Y)` ayrimi gorunur (SAYIM-ENJEKSIYON / SAYIM-AYRIM / SAYIM-AD) · siniflarin TOPLAMI enjeksiyonla
+    AZALMAZ (SAYIM-TOPLAM) · yalniz saglamken `yok` olan belirtec kadar ARTAR (SAYIM-YOK) · asiri yuklu `yol:N` K1'de oldugu gibi COKLU
+    (SAYIM-COKLU)."""
+    b = []
+    if _calissin("SAYIM-ENJEKSIYON", "SAYIM-TOPLAM", "SAYIM-AYRIM", "SAYIM-AD"):
+        kok = _sayim_proje(motor, taban, "sayim", SAYIM_ONCE)
+        h1 = _sayim_karsilastir(b, "SAYIM-TOPLAM", kok, motor, bozuk, SAYIM_SAGLAM, SAYIM_ARIZALI, 0)
+        if h1[:1] and "(damgali 1, damgasiz 3)" not in h1[0]:
+            b.append(("SAYIM-AYRIM", "OLCULEMEDI satirinda damgali/damgasiz ayrimi gorunmuyor: %r" % h1[:1]))
+        if h1[:1] and "| 0 DAMGASIZ" not in h1[0]:
+            b.append(("SAYIM-AD", "ARIZADA tek bir damgasiz belirtec (ad dahil) DAMGASIZ kalmamali: %r" % h1[:1]))
+    if _calissin("SAYIM-YOK"):
+        ky = _sayim_proje(motor, taban, "sayim_yok", SAYIM_ONCE + "\n" + SAYIM_YOK)
+        _sayim_karsilastir(b, "SAYIM-YOK", ky, motor, bozuk, SAYIM_YOK_SAGLAM, SAYIM_YOK_ARIZALI, 1)
+    if _calissin("SAYIM-COKLU"):
+        kc = _hafiza_proje(motor, taban, "sayim_coklu", {"src/Hesap.cs": DAMGA_CS, "src/a.py": H20_A})
+        kod, o, e = kos(motor, kc, "not", "--konu", "damgasiz-not", "--yeni-konu", "SAYIM fiksturu: asiri yuk", "--tur", "durum",
+                        "--metin", "1. `Hesap.cs:3` asiri yuklu.")
+        kur(motor, kc)
+        kos(motor, kc, *(DAMGA_NOT_ARGS + ("2. `tekil_islev` ilk iddia.",)))
+        kos(motor, kc, "derle")
+        _git(kc, "add", "-A")
+        _git(kc, "commit", "-q", "-m", "sayim")
+        _h20_hukum_say(b, "SAYIM-COKLU", "asiri yuklu `yol:N` (K1'de COKLU) H20'de de COKLU", motor, kc,
+                       "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 0 OLCULEMEDI | 1 COKLU | 0 DAMGASIZ", None)
+    return b
+
+
+def kos_sayim(motor, taban, ad, kaynak):
+    bozuk, hata = _bozuk_motor_yaz(kaynak, os.path.join(os.path.dirname(taban), "sayim_bozuk_" + ad), "sayim_bozuk_" + ad)
+    if bozuk is None:
+        raise Kurulamadi(hata)
+    return kol_sayim(motor, taban, bozuk)
+
+
 def _kapi_kosusu(motor, kok):
     cikti = []
     for args in (("kapi",), ("kapi", "--siki"), ("devral", "--kesif")):
@@ -2195,6 +2295,7 @@ KOLLAR = {
     "P5-DOGUS": kos_dogus,
     "P5-BIRLESIK": kos_birlesik,
     "P5-SABIT": kos_sabit,
+    "P5-SAYIM": kos_sayim,
     "A-KOMUT-SATIRI": kos_komut_satiri,
 }
 
@@ -2487,16 +2588,16 @@ SABOTAJLAR = (
      "    except (Exception, SystemExit) as e:  # noqa: BLE001 - KISIT 6-3: H20",
      "    except KeyError as e:  # noqa: BLE001 - KISIT 6-3: H20"),
     ("M-H4 DAMGASIZ sayilmaz (gizlenir)", "P5-H20", "H20-DAMGASIZ",
-     '                z += s in ("tek", "birlesik")\n',
-     "                z += 0      # MUTANT\n"),
+     '            z += sinif == "damgasiz"\n',
+     "            z += 0      # MUTANT\n"),
     ("M-H5 silinen sembol `ayni` sayilir (SEMBOL YOK ayrimi yok)", "P5-H20", "H20-YOK",
      '        return ("olculemedi", v) if sonuc == "olculemedi" else ("yok", None)\n',
      '        return ("olculemedi", v) if sonuc == "olculemedi" else ("ayni", None)      # MUTANT\n'),
     ("M-H6 defter yokken damgali atif SESSIZ (OLCULEMEDI gizlenir)", "P5-H20", "H20-DEFTER",
-     '        return _h20_satirlari(a, [], [], {"DEFTER_" + durum.upper(): a} if a else {}, 0, 0)\n',
+     '        return _h20_satirlari(a, [], [], {"DEFTER_" + durum.upper(): a} if a else {}, {}, 0, 0)\n',
      "        return []      # MUTANT\n"),
     ("M-H7 bos H20 de basilir (atifsiz projede gurultu: kapi ciktisi DEGISIR)", "P5-H20", "H20-SESSIZ",
-     "    if not a and not z and not c:\n        return []\n",
+     "    if not a and not z and not c and not olu:\n        return []\n",
      "    if False:      # MUTANT\n        return []\n"),
     ("M-H8 yalniz MADDE icindeki damgali atif okunur (numarasiz satirdaki damga GIZLENIR)", "P5-H20", "H20-SATIR",
      "    return [(madde.get(i), i + 1, m, t, d) for i, s in enumerate(L) if not ic[i] for (_son, m, t, d, _o) in _damga_jetonlar(s)]\n",
@@ -2566,8 +2667,8 @@ SABOTAJLAR = (
      "_BIRLESIK_TAVAN = 5 ",
      "_BIRLESIK_TAVAN = 50 "),
     ("M-U4 COKLU H20 ozetinde SAYILMAZ (6+ tanimli ad gorunmez)", "P5-BIRLESIK", "BIRLESIK-COKLU",
-     '                c += s == "coklu"\n',
-     "                c += 0      # MUTANT\n"),
+     '            c += sinif == "coklu"\n',
+     "            c += 0      # MUTANT\n"),
     ("M-U5 H20 defter-satiri tavani YOK (defter 6 satir / canli 5: COKLU_TAVAN yerine DEFTER_BAYAT)", "P5-BIRLESIK", "BIRLESIK-TAVAN",
      '    if len(satirlar_) > _BIRLESIK_TAVAN:\n        return "olculemedi", "COKLU_TAVAN"\n',
      '    if False:      # MUTANT\n        return "olculemedi", "COKLU_TAVAN"\n'),
@@ -2652,6 +2753,28 @@ SABOTAJLAR = (
     ("M-S4 DAMGALI sabit adli belirtec de filtrelenir (eski `None`#hex H20'den GIZLENIR)", "P5-SABIT", "SABIT-DAMGALI",
      'if tur == "ad" and t in _DAMGA_SABIT and d is None:\n',
      'if tur == "ad" and t in _DAMGA_SABIT:      # MUTANT\n'),
+    ("M-Y1 damgasiz belirtec arac kusurunda DUSER (eski davranis: hicbir sayiya girmez)", "P5-SAYIM", "SAYIM-ENJEKSIYON",
+     '            if sinif == "olculemedi":\n                olu[v] = olu.get(v, 0) + 1\n',
+     '            if False:      # MUTANT\n                olu[v] = olu.get(v, 0) + 1\n'),
+    ("M-Y2 damgasiz-OLCULEMEDI DAMGASIZ'a eklenir (toplam korunur ama OLCULEMEDI gizlenir)", "P5-SAYIM", "SAYIM-ENJEKSIYON",
+     '            z += sinif == "damgasiz"\n',
+     '            z += sinif in ("damgasiz", "olculemedi")      # MUTANT\n'),
+    ("M-Y3 damgasiz olculemeyen DAMGALI kovasina yazilir (ayrim gorunmez)", "P5-SAYIM", "SAYIM-AYRIM",
+     "                olu[v] = olu.get(v, 0) + 1\n",
+     "                olc[v] = olc.get(v, 0) + 1      # MUTANT\n"),
+    ("M-Y4 damgali/damgasiz ayrimi HIC basilmaz", "P5-SAYIM", "SAYIM-AYRIM",
+     '    ayrim = " (damgali %d, damgasiz %d)" % (sum(olc.values()), sum(olu.values())) if olu else ""\n',
+     '    ayrim = ""      # MUTANT\n'),
+    ("M-Y5 ad belirteci sinifi yalniz defterden (K1'in canli hukmu yerine: arizada DAMGASIZ kalir)", "P5-SAYIM", "SAYIM-AD",
+     "    d, v, _k = _damga_karar(kok, _damga_coz(kok, indeks, onbellek, m, t), onbellek)\n",
+     "    c_ = _damga_coz(kok, indeks, onbellek, m, t)      # MUTANT\n"
+     '    d, v, _k = ("damga", None, 1) if c_[0] in ("tek", "birlesik") and t == "ad" else _damga_karar(kok, c_, onbellek)\n'),
+    ("M-Y6 asiri yuklu `yol:N` H20'de DAMGASIZ sayilir (K1 COKLU der)", "P5-SAYIM", "SAYIM-COKLU",
+     '    return {"damga": "damgasiz", "coklu": "coklu", "olculemedi": "olculemedi"}.get(d), v if d == "olculemedi" else None\n',
+     '    return {"damga": "damgasiz", "coklu": "damgasiz", "olculemedi": "olculemedi"}.get(d), v if d == "olculemedi" else None      # MUTANT\n'),
+    ("M-Y7 `yok` belirtec (tanim disi satir) SAYILIR (kod adresi olmayan sinifa girer)", "P5-SAYIM", "SAYIM-YOK",
+     '    return {"damga": "damgasiz", "coklu": "coklu", "olculemedi": "olculemedi"}.get(d), v if d == "olculemedi" else None\n',
+     '    return {"damga": "damgasiz", "coklu": "coklu", "olculemedi": "olculemedi", "yok": "damgasiz"}.get(d), v if d == "olculemedi" else None      # MUTANT\n'),
     ("M-K1 dosya listesi TEK git cagrisina dizilir", "A-KOMUT-SATIRI", "KOMUT-SATIRI",
      '    r = _adres_git(kok, "ls-files", "-z")\n',
      '    r = _adres_git(kok, "ls-files", "-z")\n'

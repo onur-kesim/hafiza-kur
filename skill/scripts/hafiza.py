@@ -11075,19 +11075,29 @@ def _h20_hukum(kok, indeks, onbellek, metin, tur, damga):
     return "degisti", (iz, len(v), len(v) > 1 and damga[1:] in v)
 
 
+def _h20_sinif(kok, indeks, onbellek, m, t):
+    """DAMGASIZ belirtecin sinifi = `not`ta BASILAN K1 hukmu (`_damga_karar`: tek karar, ikinci kopya yok) -> ('damgasiz', None)
+    [damga uretilebilir] · ('coklu', None) · ('olculemedi', sebep) [cozum SIRASINDA arac kusuru ya da kisman kayip: damgasiz ama
+    OLCULEMEDI] · (None, None) [cozulemedi: kod adresi degil, SAYILMAZ]."""
+    d, v, _k = _damga_karar(kok, _damga_coz(kok, indeks, onbellek, m, t), onbellek)
+    return {"damga": "damgasiz", "coklu": "coklu", "olculemedi": "olculemedi"}.get(d), v if d == "olculemedi" else None
+
+
 def _h20_say(kok, indeks, jetonlar):
-    """-> (degisen [(yer, metin, eski damga, (yeni iz, k))], yok [(yer, metin, damga)], olc {sebep: n}, damgasiz sayisi, coklu sayisi).
-    `yer` = `md.N` (madde icinde) ya da `satir N`. DAMGASIZ/COKLU yalniz MADDE icindeki (H18'in atif maddesi) belirteclerdir:
-    DAMGASIZ = TEK/BIRLESIK tanima cozulebilen, COKLU = tavan asilan / birden cok dosya / esit en dar tanim (bugun HICBIR sayiya
-    girmiyordu). SEMBOL YOK yalniz defter TAM kapsamliyken (ATLANDI dosya yok) hukumdur; aksi halde OLCULEMEDI (eksik kapsam
-    sembolu gizlemis olabilir)."""
-    onbellek, degisen, yok, olc, z, c = {}, [], [], {}, 0, 0
+    """-> (degisen [(yer, metin, eski damga, (yeni iz, k, kume notu))], yok [(yer, metin, damga)], olc {sebep: n} [DAMGALI atif], olu
+    {sebep: n} [damgasiz belirtec: arac kusuru], damgasiz sayisi, coklu sayisi). `yer` = `md.N` (madde icinde) ya da `satir N`.
+    DAMGASIZ/COKLU/damgasiz-OLCULEMEDI yalniz MADDE icindeki (H18'in atif maddesi) belirteclerdir: defter tamamken her COZULEBILIR aday
+    belirtec TAM BIR sinifa duser (damgali · COKLU · DAMGASIZ · damgasiz-OLCULEMEDI); arac kusuru sinif toplamini AZALTMAZ, yalniz
+    saglamken `yok` olanlar kadar ARTIRABILIR (kusur `yok` hukmunu veremez). SEMBOL YOK yalniz defter TAM kapsamliyken (ATLANDI dosya
+    yok) hukumdur; aksi halde OLCULEMEDI (eksik kapsam sembolu gizlemis olabilir)."""
+    onbellek, degisen, yok, olc, olu, z, c = {}, [], [], {}, {}, 0, 0
     for no, satir, m, t, d in jetonlar:
         if d is None:
-            if no is not None:
-                s = _damga_coz(kok, indeks, onbellek, m, t)[0]
-                z += s in ("tek", "birlesik")
-                c += s == "coklu"
+            sinif, v = _h20_sinif(kok, indeks, onbellek, m, t) if no is not None else (None, None)
+            z += sinif == "damgasiz"
+            c += sinif == "coklu"
+            if sinif == "olculemedi":
+                olu[v] = olu.get(v, 0) + 1
             continue
         yer = "md.%d" % no if no is not None else "satir %d" % satir
         h, v = _h20_hukum(kok, indeks, onbellek, m, t, d)
@@ -11099,16 +11109,22 @@ def _h20_say(kok, indeks, jetonlar):
             yok.append((yer, m, d))
         elif h == "olculemedi":
             olc[v] = olc.get(v, 0) + 1
-    return degisen, yok, olc, z, c
+    return degisen, yok, olc, olu, z, c
 
 
-def _h20_satirlari(a, degisen, yok, olc, z, c):
-    """H20 ozeti + ayrinti satirlari (en cok `_H20_LISTE_TAVAN`; HEPSI sayilir). Bos H20 (atif yok, damgasiz/coklu yok) -> []."""
-    if not a and not z and not c:
+def _h20_satirlari(a, degisen, yok, olc, olu, z, c):
+    """H20 ozeti + ayrinti satirlari (en cok `_H20_LISTE_TAVAN`; HEPSI sayilir). Bos H20 (atif yok, damgasiz/coklu yok) -> [].
+    OLCULEMEDI alani damgali + damgasiz olculemeyenlerin toplamidir; damgasiz olculemeyen VARSA ayrim `(damgali X, damgasiz Y)` ile
+    GORUNUR (yoksa hepsi damgalidir: eski cikti BAYT-BAYT)."""
+    if not a and not z and not c and not olu:
         return []
-    sebep = " [%s]" % ", ".join("%s:%d" % (k, v) for k, v in sorted(olc.items())) if olc else ""
-    cikti = ["H20: %d atif | %d GOVDE DEGISTI | %d SEMBOL YOK | %d OLCULEMEDI%s | %d COKLU | %d DAMGASIZ"
-             % (a, len(degisen), len(yok), sum(olc.values()), sebep, c, z)]
+    tum = dict(olc)
+    for k_, v_ in olu.items():
+        tum[k_] = tum.get(k_, 0) + v_
+    ayrim = " (damgali %d, damgasiz %d)" % (sum(olc.values()), sum(olu.values())) if olu else ""
+    sebep = " [%s]" % ", ".join("%s:%d" % (k, v) for k, v in sorted(tum.items())) if tum else ""
+    cikti = ["H20: %d atif | %d GOVDE DEGISTI | %d SEMBOL YOK | %d OLCULEMEDI%s%s | %d COKLU | %d DAMGASIZ"
+             % (a, len(degisen), len(yok), sum(tum.values()), ayrim, sebep, c, z)]
     ayrinti = ["H20: %s `%s`%s %s -> #%s%s IDDIA KODDAN ESKI OLABILIR" % (
         yer, m, " [%d tanim]" % yeni[1] if yeni[1] > 1 else "", d, yeni[0],
         " TANIM SAYISI DEGISTI (damgali govde duruyor) -" if yeni[2] else "") for yer, m, d, yeni in degisen]
@@ -11128,7 +11144,7 @@ def _h20_hesapla(kok, y):
     a = sum(1 for j in jetonlar if j[4] is not None)
     durum, indeks = _damga_defter(y)
     if durum != "tamam":
-        return _h20_satirlari(a, [], [], {"DEFTER_" + durum.upper(): a} if a else {}, 0, 0)
+        return _h20_satirlari(a, [], [], {"DEFTER_" + durum.upper(): a} if a else {}, {}, 0, 0)
     return _h20_satirlari(a, *_h20_say(kok, indeks, jetonlar))
 
 
