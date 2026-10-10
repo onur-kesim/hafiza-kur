@@ -53,6 +53,7 @@ KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir �
 CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
             2 OLCULEMEDI (git yok, capa uymadi, duzenek kurulamadi)
 """
+import hashlib
 import io
 import json
 import os
@@ -78,8 +79,8 @@ _cikti_kodlamasini_guvenceye_al()
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
 KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-MASKE", "A-ATLA", "A-ETKI", "A-EZME", "A-EKSIK",
-             "A-KOMUT-SATIRI")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-EZME": "EZME", "A-EKSIK": "EKSIK", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
+             "P5-DAMGA", "A-KOMUT-SATIRI")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-EZME": "EZME", "A-EKSIK": "EKSIK", "P5-DAMGA": "DAMGA", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -995,6 +996,237 @@ def kos_eksik(motor, taban, ad, kaynak):
     return kol_eksik(motor, taban, _bozuk_motor(taban, "eksik_" + ad, kaynak))
 
 
+# ------------------------------------------------------------------ P5-DAMGA (P5 KALEM 1): `not` aninda satir ici parmak izli atif
+# Beklentiler FIKSTURDEN ELLE: iz = fikstur satirlarinin SHA-256'sinin ilk 8 hex'i (motordan DEGIL hashlib'den). Tekil ad ve `yol:N` ->
+# damga; ayni ad iki dosyada / ayni dosyada asiri yuklu -> damga YOK + COKLU; ikinci `not` damgali metinle -> cift damga YOK; `derle`
+# damgayi oldugu gibi tasir; kod citi / cift backtick ici damgalanmaz; bitisik sonek damgalanmaz; BAYAT defterde `yol:N` CANLI dosyaya
+# gore cozulur; defter yok/eksik/bozuk, arizali cikarici, istisna -> OLCULEMEDI (`not` exit 0, fragman yazilir); sonuc DETERMINIST.
+DAMGA_A = '''def tekil_islev(x):
+    return x + 1
+
+
+def ortak_islev(x):
+    return x
+
+
+class Kasa:
+    def kapat_kasa(self):
+        return 0
+'''
+DAMGA_B = '''def ortak_islev(y):
+    return y * 2
+'''
+DAMGA_CS = '''public class Hesap
+{
+    public int Hesapla(int x) => x;
+    public int Hesapla(string s) => 0;
+}
+'''
+DAMGA_DOSYALAR = {"src/a.py": DAMGA_A, "src/b.py": DAMGA_B, "src/Fx.cs": CS_FX, "src/Hesap.cs": DAMGA_CS}
+DAMGA_IZ = hashlib.sha256("def tekil_islev(x):\n    return x + 1".encode("utf-8")).hexdigest()[:8]       # a.py L1-2
+DAMGA_IC_IZ = hashlib.sha256("    def kapat_kasa(self):\n        return 0".encode("utf-8")).hexdigest()[:8]     # a.py L10-11 (sinif DEGIL uye)
+DAMGA_METIN = "\n".join((
+    "1. `tekil_islev` degisti.",
+    "2. `ortak_islev` iki yerde; `Hesapla` asiri yuklu.",
+    "3. `a.py:2` bu satira bakiyor; `a.py:11` metodun icinde; `a.py:1-2` aralik; `a.py:2-1` ters aralik.",
+    "4. `yok_boyle_ad` yok.",
+    "5. `x` kisa; `src/b.py` yol degil.",
+    "6. ``kapat_kasa`` cift backtick.",
+    "7. `kapat_kasa`un bitisik sonek.",
+    "```",
+    "`tekil_islev` cit icinde",
+    "```",
+))
+DAMGA_BEKLENEN = (DAMGA_METIN.replace("`tekil_islev` degisti", "`tekil_islev`#%s degisti" % DAMGA_IZ)
+                  .replace("`a.py:2` bu", "`a.py:2`#%s bu" % DAMGA_IZ).replace("`a.py:11` met", "`a.py:11`#%s met" % DAMGA_IC_IZ)
+                  .replace("`a.py:1-2` ara", "`a.py:1-2`#%s ara" % DAMGA_IZ))
+DAMGA_NOT_ARGS = ("not", "--konu", "genel-durum", "--tur", "durum", "--metin")
+DAMGA_ISTISNA_ANKOR = "def _damga_uygula_ic(kok, y, govde):\n"
+DAMGA_YASAK_CAGRI = ("oldur", "yaz", "kilit_al", "zincir_halka", "_arsive_tasi", "exit")
+
+
+def _gunluk_adlari(kok):
+    d = os.path.join(kok, "gunluk")
+    return set(x for x in os.listdir(d) if x.endswith(".md"))
+
+
+def _not_kos(motor, kok, metin):
+    """`not` -> (exit, stdout, stderr, yeni fragmanin govdesi ya da None, fragman adi). Fragman sirasi dosya adindan DEGIL, once/sonra farkindan."""
+    once = _gunluk_adlari(kok)
+    kod, o, e = kos(motor, kok, *(DAMGA_NOT_ARGS + (metin,)))
+    yeni = sorted(_gunluk_adlari(kok) - once)
+    if len(yeni) != 1:
+        return kod, o, e, None, None
+    ham = io.open(os.path.join(kok, "gunluk", yeni[0]), encoding="utf-8", newline="").read()
+    return kod, o, e, ham.split("\n---\n\n", 1)[1].rstrip("\n"), yeni[0]
+
+
+def _hafiza_proje(motor, taban, ad, dosyalar):
+    """`dosyalar` + `kur` + commit -> kok."""
+    kok = proje(taban, ad, dosyalar)
+    kod, o, e = kos(motor, kok, "kur", "--ad", "ADR")
+    if kod != 0:
+        raise Kurulamadi("kur basarisiz (exit=%s): %s" % (kod, (o + e).strip()[-160:]))
+    _git(kok, "add", "-A")
+    _git(kok, "commit", "-q", "-m", "hafiza")
+    return kok
+
+
+def _atif_satirlari(o):
+    """`not` ciktisinin FRAGMAN satirindan SONRAKI satirlari (damga/atif/dogusta bayat bildirimleri)."""
+    s = o.split("\n")
+    i = next((k for k, l in enumerate(s) if l.startswith("FRAGMAN: ")), -1)
+    return [l for l in s[i + 1:] if l.strip()]
+
+
+def _blok_cagrilari(kaynak, bas, son):
+    """Motor kaynaginda `bas`..`son` isaretleri arasindaki (P5 blogu) HER cagri adi (AST): `oldur`/`yaz` gibi hukum-yan etkili cagrilar."""
+    import ast
+    i, j = kaynak.index(bas), kaynak.index(son)
+    govde = "\n".join(kaynak[i:j].split("\n"))
+    adlar = set()
+    for n in ast.walk(ast.parse(govde)):
+        if isinstance(n, ast.Call):
+            adlar.add(n.func.id if isinstance(n.func, ast.Name) else getattr(n.func, "attr", ""))
+    return adlar
+
+
+def kol_damga(motor, taban, bozuk, istisnali):
+    """P5-DAMGA: tekil ad + `yol:N` + `yol:N-M` damgalanir (DAMGA-VAR) · ic ice tanimda en dar tanim (DAMGA-IC) · COKLU: iki dosya +
+    asiri yuklu (DAMGA-COKLU) · bulunamayan / ters aralik COZULEMEDI (DAMGA-COZULEMEDI / DAMGA-ARALIK) · ikinci `not` damgali metinle
+    cift damga uretmez (DAMGA-TEKRAR) · kod citi (DAMGA-CIT) · cift backtick (DAMGA-CIFT) · bitisik sonek (DAMGA-SONEK) ici damgalanmaz ·
+    `derle` damgayi oldugu gibi tasir (DAMGA-DERLE) · BAYAT defterde `yol:N` CANLI dosyaya gore (DAMGA-BAYAT) · defter yok (DAMGA-YOK) /
+    eksik (DAMGA-EKSIK) / bozuk (DAMGA-BOZUK) -> OLCULEMEDI · kok disina kacan defter yolu okunmaz (DAMGA-YOL) · sonuc DETERMINIST
+    (DAMGA-DETERMINIZM) · blok `oldur`/`yaz` cagirmaz (DAMGA-OLDUR) · cikarici kusuru / istisna `not`u DUSURMEZ (DAMGA-CIKARICI /
+    DAMGA-ISTISNA)."""
+    b = []
+    kok = _hafiza_proje(motor, taban, "damga", DAMGA_DOSYALAR)
+    kod, o, e, govde, ad0 = _not_kos(motor, kok, DAMGA_METIN)
+    if kod != 0 or govde != DAMGA_METIN or "ATIF OLCULEMEDI: adres defteri YOK" not in o:
+        b.append(("DAMGA-YOK", "defter YOKKEN: exit=%s govde ayni=%s cikti=%r (exit 0 + metin AYNI + OLCULEMEDI beklenir)" % (
+            kod, govde == DAMGA_METIN, (o + e)[-160:])))
+    os.remove(os.path.join(kok, "gunluk", ad0))
+    kur(motor, kok)
+    kod, o, e, govde, ad1 = _not_kos(motor, kok, DAMGA_METIN)
+    sat = o.split("\n")
+    govde = govde or ""
+    beklenen_satir = "ATIF DAMGALANDI: 4 (a.py:1-2#%s, a.py:11#%s, a.py:2#%s, tekil_islev#%s)" % (DAMGA_IZ, DAMGA_IC_IZ, DAMGA_IZ, DAMGA_IZ)
+    if kod != 0 or "`tekil_islev`#%s degisti" % DAMGA_IZ not in govde or "`a.py:2`#%s bu" % DAMGA_IZ not in govde:
+        b.append(("DAMGA-VAR", "tekil ad ya da `yol:N` damgalanmadi (beklenen iz %s): exit=%s govde=%r" % (DAMGA_IZ, kod, govde[:200])))
+    if beklenen_satir not in sat:
+        b.append(("DAMGA-VAR", "%r satiri yok: %r" % (beklenen_satir, o[-300:])))
+    if "`a.py:11`#%s met" % DAMGA_IC_IZ not in govde:
+        b.append(("DAMGA-IC", "ic ice tanimda `yol:N` EN DAR tanima (uye) damgalanmali, sinifa degil (beklenen iz %s): %r" % (DAMGA_IC_IZ, govde[:200])))
+    if "ATIF COKLU: ortak_islev (2 tanim) - damgalanmadi" not in sat or "ATIF COKLU: Hesapla (2 tanim) - damgalanmadi" not in sat \
+            or "`ortak_islev` iki yerde; `Hesapla` asiri" not in govde:
+        b.append(("DAMGA-COKLU", "ayni ad iki dosyada / asiri yuklu: damga YOK + COKLU satirlari beklenir: govde=%r cikti=%r" % (govde[:160], o[-240:])))
+    if "ATIF COZULEMEDI: yok_boyle_ad" not in sat:
+        b.append(("DAMGA-COZULEMEDI", "bulunamayan ad icin COZULEMEDI satiri yok: %r" % o[-200:]))
+    if "ATIF COZULEMEDI: a.py:2-1" not in sat or "`a.py:2-1` ters" not in govde:
+        b.append(("DAMGA-ARALIK", "ters aralik (`a.py:2-1`) COZULEMEDI olmali, damgalanmamali: govde=%r cikti=%r" % (govde[:200], o[-240:])))
+    if "`tekil_islev` cit icinde" not in govde.split("\n"):
+        b.append(("DAMGA-CIT", "kod citi icindeki belirtec DAMGALANDI: %r" % govde[-80:]))
+    if "``kapat_kasa`` cift backtick" not in govde:
+        b.append(("DAMGA-CIFT", "cift backtick araligi bozuldu / damgalandi: %r" % govde[-160:]))
+    if "`kapat_kasa`un bitisik" not in govde or "ATIF OLCULEMEDI: kapat_kasa (bitisik sonek - damgalanmadi)" not in sat:
+        b.append(("DAMGA-SONEK", "bitisik soneki olan belirtec DAMGALANDI ya da OLCULEMEDI satiri yok: govde=%r cikti=%r" % (govde[-120:], o[-240:])))
+    if govde != DAMGA_BEKLENEN:
+        b.append(("DAMGA-VAR", "fragman govdesi beklenenle ayni degil:\n    %r\n    %r" % (govde, DAMGA_BEKLENEN)))
+    kod, o2, e, ikinci, _ad2 = _not_kos(motor, kok, govde)             # ikinci `not`: DAMGALI metinle
+    if ikinci != DAMGA_BEKLENEN or kod != 0 or "ATIF DAMGALANDI" in o2:
+        b.append(("DAMGA-TEKRAR", "damgali metin yeniden damgalandi / exit=%s: %r" % (kod, (ikinci or "")[:200])))
+    sonuclar = [_atif_satirlari(o)] + [_atif_satirlari(_not_kos(motor, kok, DAMGA_METIN)[1]) for _ in range(3)]
+    if any(x != sonuclar[0] for x in sonuclar):
+        b.append(("DAMGA-DETERMINIZM", "ayni metin + ayni agac: `not` bildirimleri calismalar arasi FARKLI: %r" % (sonuclar,)))
+    kod, o3, e = kos(motor, kok, "derle")
+    canli = io.open(os.path.join(kok, "PROJE_HAFIZA.md"), encoding="utf-8", newline="").read()
+    if "`tekil_islev`#%s degisti" % DAMGA_IZ not in canli or "`a.py:2`#%s bu" % DAMGA_IZ not in canli:
+        b.append(("DAMGA-DERLE", "`derle` damgayi canliya oldugu gibi tasimadi (exit=%s): damgali satir canlida yok" % kod))
+    kaynak = io.open(motor, encoding="utf-8", newline="").read()
+    cagri = _blok_cagrilari(kaynak, "# ==== PARMAK IZLI ATIF (P5) BASLANGIC ====", "# ==== PARMAK IZLI ATIF (P5) SON ====") & set(DAMGA_YASAK_CAGRI)
+    if cagri:
+        b.append(("DAMGA-OLDUR", "P5 blogu hukum-yan etkili cagri iceriyor (KISIT: yalniz uyari uretir): %s" % sorted(cagri)))
+    return b + kol_damga_defter(motor, taban) + kol_damga_arizali(motor, taban, bozuk, istisnali)
+
+
+def kol_damga_defter(motor, taban):
+    """Defter durumlari: BAYAT defterde `yol:N` canli dosyaya gore (DAMGA-BAYAT) · EKSIK/BOZUK defter -> OLCULEMEDI (DAMGA-EKSIK/-BOZUK) ·
+    defterdeki kok disina kacan yol okunmaz (DAMGA-YOL)."""
+    b = []
+    kok = _hafiza_proje(motor, taban, "damga_bayat", {"src/a.py": DAMGA_A})
+    kur(motor, kok)
+    _yaz(os.path.join(kok, "src", "a.py"), "# bir\n# iki\n# uc\n" + DAMGA_A)            # tekil_islev artik L4-5; defter ESKI
+    kod, o, e, govde, _ad = _not_kos(motor, kok, "1. `a.py:5` yeni yeri; `a.py:2` artik tanim DISI.")
+    if kod != 0 or govde != "1. `a.py:5`#%s yeni yeri; `a.py:2` artik tanim DISI." % DAMGA_IZ or "ATIF COZULEMEDI: a.py:2" not in o:
+        b.append(("DAMGA-BAYAT", "bayat defter: `yol:N` CANLI dosyaya gore cozulmeli (a.py:5 -> tekil_islev, a.py:2 -> tanim disi): exit=%s govde=%r cikti=%r" % (
+            kod, govde, o[-200:])))
+    _yaz(os.path.join(kok, "src", "a.py"), DAMGA_A)
+    # EKSIK defter (arizali motorla kuruldu) ve BOZUK defter
+    eksik = _hafiza_proje(motor, taban, "damga_eksik", DAMGA_DOSYALAR)
+    kos(_BOZUK_ADRES[0], eksik, "adres", "--kur")
+    kod, o, e, govde, _ad = _not_kos(motor, eksik, "1. `tekil_islev` degisti.")
+    if kod != 0 or govde != "1. `tekil_islev` degisti." or "ATIF OLCULEMEDI: adres defteri EKSIK" not in o:
+        b.append(("DAMGA-EKSIK", "EKSIK defter: exit=%s govde=%r cikti=%r (metin AYNI + `adres defteri EKSIK` beklenir)" % (kod, govde, o[-200:])))
+    bozuk = _hafiza_proje(motor, taban, "damga_bozuk", DAMGA_DOSYALAR)
+    os.makedirs(os.path.dirname(_defter_yolu(bozuk)), exist_ok=True)
+    _yaz(_defter_yolu(bozuk), "bu bir defter degil\n")
+    kod, o, e, govde, _ad = _not_kos(motor, bozuk, "1. `tekil_islev` degisti.")
+    if kod != 0 or govde != "1. `tekil_islev` degisti." or "ATIF OLCULEMEDI: adres defteri BOZUK" not in o:
+        b.append(("DAMGA-BOZUK", "BOZUK defter: exit=%s govde=%r cikti=%r" % (kod, govde, o[-200:])))
+    # kok disina kacan defter yolu
+    yol = _hafiza_proje(motor, taban, "damga_yol", {"src/a.py": DAMGA_A})
+    kur(motor, yol)
+    dis = os.path.join(os.path.dirname(yol), "dis_proje")
+    _yaz(os.path.join(dis, "x.py"), "def dis_islev(x):\n    return x\n")
+    sha = hashlib.sha256(b"def dis_islev(x):\n    return x").hexdigest()
+    p = _defter_yolu(yol)
+    metin = io.open(p, encoding="utf-8", newline="").read()
+    _yaz(p, metin + "../dis_proje/x.py\tdosya\t%s\t1\t2\t%s\n../dis_proje/x.py\tfonksiyon\tdis_islev\t1\t2\t%s\n" % (sha, sha[:8], sha[:8]))
+    kod, o, e, govde, _ad = _not_kos(motor, yol, "1. `dis_islev` kok disinda.")
+    if kod != 0 or govde != "1. `dis_islev` kok disinda." or "ATIF OLCULEMEDI: dis_islev (YOL_GECERSIZ)" not in o:
+        b.append(("DAMGA-YOL", "defterdeki kok disi yol okundu / damgalandi: exit=%s govde=%r cikti=%r" % (kod, govde, o[-200:])))
+    return b
+
+
+_BOZUK_ADRES = [None]
+
+
+def kol_damga_arizali(motor, taban, bozuk, istisnali):
+    """Arizali cikarici (C# tablosu patlar) ve damga adiminin KENDI istisnasi `not`u DUSURMEZ: exit 0, fragman YAZILIR, traceback YOK.
+    Cikarici kusuru DOSYA basina OLCULEMEDI'dir (DAMGA-CIKARICI): ayni metindeki saglam Python sembolu YINE damgalanir; damga
+    adiminin kendi istisnasinda (DAMGA-ISTISNA) metin DEGISMEZ. Defter SAGLAM motorla kuruludur."""
+    b = []
+    ana = _hafiza_proje(motor, taban, "damga_ariza", DAMGA_DOSYALAR)
+    kur(motor, ana)
+    kok = os.path.join(taban, "damga_cikarici")
+    shutil.copytree(ana, kok)
+    metin = "1. `tekil_islev` py'de; `Kapat` cs'te."
+    kod, o, e, govde, _ad = _not_kos(bozuk, kok, metin)
+    beklenen = "1. `tekil_islev`#%s py'de; `Kapat` cs'te." % DAMGA_IZ
+    if kod != 0 or govde != beklenen or "ATIF OLCULEMEDI: Kapat (CIKARICI)" not in o or "Traceback" in (o + e):
+        b.append(("DAMGA-CIKARICI", "arizali cikarici: exit=%s govde=%r cikti=%r (exit 0 + saglam sembol damgali + `Kapat (CIKARICI)` beklenir)" % (
+            kod, govde, (o + e)[-200:])))
+    kok = os.path.join(taban, "damga_istisna")
+    shutil.copytree(ana, kok)
+    kod, o, e, govde, _ad = _not_kos(istisnali, kok, metin)
+    if kod != 0 or govde != metin or "ATIF OLCULEMEDI: RuntimeError" not in o or "Traceback" in (o + e):
+        b.append(("DAMGA-ISTISNA", "damga adimi istisnasi: exit=%s govde=%r cikti=%r (exit 0 + metin AYNI + `OLCULEMEDI: RuntimeError` beklenir)" % (
+            kod, govde, (o + e)[-200:])))
+    return b
+
+
+def kos_damga(motor, taban, ad, kaynak):
+    bozuk = _bozuk_motor(taban, "damga_" + ad, kaynak)
+    _BOZUK_ADRES[0] = bozuk
+    if kaynak.count(DAMGA_ISTISNA_ANKOR) != 1:
+        raise Kurulamadi("damga istisna capasi %d yerde gecti (1 olmali)" % kaynak.count(DAMGA_ISTISNA_ANKOR))
+    istisnali, hata = _motor_yaz(kaynak.replace(DAMGA_ISTISNA_ANKOR, DAMGA_ISTISNA_ANKOR + '    raise RuntimeError("bilerek bozuk damga adimi")      # MUTANT\n', 1),
+                                 os.path.join(os.path.dirname(taban), "istisna_" + ad), "istisna_" + ad)
+    if istisnali is None:
+        raise Kurulamadi(hata)
+    return kol_damga(motor, taban, bozuk, istisnali)
+
+
 def _kapi_kosusu(motor, kok):
     cikti = []
     for args in (("kapi",), ("kapi", "--siki"), ("devral", "--kesif")):
@@ -1130,6 +1362,7 @@ KOLLAR = {
     "A-ETKI": kos_etki,
     "A-EZME": kos_ezme,
     "A-EKSIK": kos_eksik,
+    "P5-DAMGA": kos_damga,
     "A-KOMUT-SATIRI": kos_komut_satiri,
 }
 
@@ -1360,6 +1593,55 @@ SABOTAJLAR = (
      '        print("ADRES DEFTERI EKSIK: %d dosyada cikarici istisnasi (yeniden kurma denendi: hala eksik) - hafiza.py adres --kur"\n'
      '              % len(atla["cikarici"]))\n',
      "        pass      # MUTANT\n"),
+    ("M-D1 cozum atlanir (belirtec hic cozulmez: damga YOK)", "P5-DAMGA", "DAMGA-VAR",
+     "    cozum = dict(((m, t), _damga_coz(kok, indeks, onbellek, m, t)) for m, t in tum)\n",
+     '    cozum = dict(((m, t), ("yok", None, None)) for m, t in tum)      # MUTANT\n'),
+    ("M-D2 TEK kurali YOK (ayni ad iki dosyada ilkine damgalanir)", "P5-DAMGA", "DAMGA-COKLU",
+     '        return ("tek", a[0][0], a[0][1]) if len(a) == 1 else (("coklu", len(a), None) if a else ("yok", None, None))\n',
+     '        return ("tek", a[0][0], a[0][1]) if a else ("yok", None, None)      # MUTANT\n'),
+    ("M-D3 idempotent DEGIL (damgali belirtec yeniden damgalanir)", "P5-DAMGA", "DAMGA-TEKRAR",
+     ('    aday = sorted({(j[1], j[2]) for _i, j in jetonlar if j[3] is None and j[4]})\n',
+      '    for i, (son, m, t, _d, olur) in reversed([(i, j) for i, j in jetonlar if j[3] is None]):\n'),
+     ('    aday = sorted({(j[1], j[2]) for _i, j in jetonlar if j[4]})      # MUTANT\n',
+      '    for i, (son, m, t, _d, olur) in reversed(jetonlar):      # MUTANT\n')),
+    ("M-D4 kod citi ici de damgalanir", "P5-DAMGA", "DAMGA-CIT",
+     "    jetonlar = [(i, j) for i, s in enumerate(L) if not ic[i] for j in _damga_jetonlar(s)]\n",
+     "    jetonlar = [(i, j) for i, s in enumerate(L) for j in _damga_jetonlar(s)]      # MUTANT\n"),
+    ("M-D5 damga adimi istisnasi `not`a SIZAR (yakalama dar)", "P5-DAMGA", "DAMGA-ISTISNA",
+     "    except (Exception, SystemExit) as e:  # noqa: BLE001 - KISIT 6-3: damga/dogus",
+     "    except KeyError as e:  # noqa: BLE001 - KISIT 6-3: damga/dogus"),
+    ("M-D6 yol:N EN GENIS kapsayan tanima damgalanir (uye degil sinif)", "P5-DAMGA", "DAMGA-IC",
+     "    en_dar = min(k[0] for k in kap)\n",
+     "    en_dar = max(k[0] for k in kap)      # MUTANT\n"),
+    ("M-D7 cikarici kusuru yutulmaz (per-dosya yakalama dar: `not` exit != 0)", "P5-DAMGA", "DAMGA-CIKARICI",
+     "    except Exception:  # noqa: BLE001 - cikarici kusuru",
+     "    except KeyError:  # noqa: BLE001 - cikarici kusuru"),
+    ("M-D8 `yol:N` satir eslemesi CANLI dosyadan degil commit'li (BAYAT) surumden yapilir", "P5-DAMGA", "DAMGA-BAYAT",
+     "    return _damga_ham_satirlar(yol, ham, dil)\n\n\ndef _damga_satirlar(kok, yol, onbellek):\n",
+     '    r_ = _adres_git(kok, "show", "HEAD:./" + yol)      # MUTANT: canli yerine commit\'li surum\n'
+     "    ham = r_.stdout if r_.returncode == 0 else ham\n"
+     "    return _damga_ham_satirlar(yol, ham, dil)\n\n\ndef _damga_satirlar(kok, yol, onbellek):\n"),
+    ("M-D9 kapanis backtick'ine bitisik sonekli belirtec de damgalanir (idempotans bozulur)", "P5-DAMGA", "DAMGA-SONEK",
+     "d is not None or not _DAMGA_KELIME.match(sonra)",
+     "True"),
+    ("M-D10 cift/uclu backtick araligi atlanmaz (damga backtick kosusunu boler)", "P5-DAMGA", "DAMGA-CIFT",
+     '        if once == "`" or sonra == "`":\n            continue\n',
+     "        if False:      # MUTANT\n            continue\n"),
+    ("M-D11 ters aralik (M<N) cozulur (ilgisiz sembole damgalanir)", "P5-DAMGA", "DAMGA-ARALIK",
+     "    if son < bas or len(dosya) != 1:\n",
+     "    if len(dosya) != 1:      # MUTANT\n"),
+    ("M-D12 EKSIK defter kullanilir (cikarici kusuru gizlenir)", "P5-DAMGA", "DAMGA-EKSIK",
+     '    if _adres_eksik_mi(veri[0]):\n        return "eksik", "adres defteri EKSIK (cikarici kusuru) - hafiza.py adres --kur"\n',
+     '    if False:      # MUTANT\n        return "eksik", "adres defteri EKSIK (cikarici kusuru) - hafiza.py adres --kur"\n'),
+    ("M-D13 defterdeki kok disi yol (`..`) reddedilmez", "P5-DAMGA", "DAMGA-YOL",
+     '    if yol.startswith("/") or ".." in yol.split("/"):\n        return None, "YOL_GECERSIZ"\n',
+     '    if False:      # MUTANT\n        return None, "YOL_GECERSIZ"\n'),
+    ("M-D14 belirtec sirasi KUMEYE birakilir (calismalar arasi sira degisir: determinizm bozulur)", "P5-DAMGA", "DAMGA-DETERMINIZM",
+     '    aday = sorted({(j[1], j[2]) for _i, j in jetonlar if j[3] is None and j[4]})\n',
+     '    aday = list({(j[1], j[2]) for _i, j in jetonlar if j[3] is None and j[4]})      # MUTANT\n'),
+    ("M-D15 damga blogu `oldur` cagirir (stderr'e HATA basar, cikis yolu acilir)", "P5-DAMGA", "DAMGA-OLDUR",
+     "    d, yol, tam = cozum\n",
+     '    d, yol, tam = cozum\n    oldur("MUTANT: damga blogundan oldur")      # MUTANT\n'),
     ("M-K1 dosya listesi TEK git cagrisina dizilir", "A-KOMUT-SATIRI", "KOMUT-SATIRI",
      '    r = _adres_git(kok, "ls-files", "-z")\n',
      '    r = _adres_git(kok, "ls-files", "-z")\n'

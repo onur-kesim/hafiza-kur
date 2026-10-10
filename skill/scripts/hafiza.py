@@ -2145,9 +2145,12 @@ def cmd_not(a):
     # fragman derlenirken arsivdeki ilkini eziyordu (log append-only DEGILDI).
     ad = _bos_ad(y.gunluk, "%s-%s.md" % (simdi_damga(), konu), y.gunluk_ars)
     p = os.path.join(y.gunluk, ad)
+    govde, atif_notlari = _damga_uygula(kok, y, govde)     # P5: satir ici parmak izi damgasi + dogusta bayat (istisna `not`u DUSURMEZ)
     yaz(p, "---\nkonu: %s\ntur: %s\ntarih: %s\noturum: %s\n---\n\n%s\n"
         % (konu, tur, bugun(), a.oturum or "-", govde.strip()))
     print("FRAGMAN: " + _rel(p, kok))
+    for sat_ in atif_notlari:
+        print(sat_)
 
 BOLUM_HEDEF = {"durum": "## GUNCEL DURUM", "sonraki": "## SONRAKI ADIM",
                "karar": "## KARAR GUNLUGU", "bulgu": "## ACIK KARARLAR",
@@ -10727,6 +10730,235 @@ def cmd_adres(a):
     yol_on_kontrol(y, dizinler=(y.h,), dosyalar=(p,), sessiz=True)
     return _adres_kur(kok, y, p) if a.kur else _adres_sorgu(kok, p, a)
 # ==== ADRES DEFTERI (P2) SON ====
+
+
+# ==== PARMAK IZLI ATIF (P5) BASLANGIC ====
+# P5 (besli-paket/IS_EMRI_P5_PARMAK_IZLI_ATIF.md, TASARIM P5, Onur kilitleri 10 Eki 2026): `not` aninda backtick'li kod adreslerine
+# K1: `not` aninda SATIR ICI DAMGA (govde parmak izi, `ad`#a3f9c1d2) · K2: `kapi` H20 (damgali atifta govde degisti mi) · K3: `not` aninda
+# DOGUSTA BAYAT (son N commit'te degisti mi).
+# KISIT (TASARIM §6-3): adres kodunu artik `adres` komutu VE bu blok cagirir; blogun HER istisnasi (`SystemExit` dahil) `OLCULEMEDI`ye
+# cevrilir ve `not`/`kapi`nin diger hukumlerini ETKILEYEMEZ. `fail`/`F`/`O` kanallari, `oldur` cagrilari ve platform dallari
+# (`os.name`/`sys.platform`) BILEREK YOK: bu blok yalniz uyari uretir. Yukleme aninda etkisiz: modul duzeyinde yalniz def + literal.
+# Govde parmak izi `ADRES.tsv`yi ureten AYNI fonksiyondan gelir (`_adres_dosya_satirlari` -> `_adres_iz`): ikinci hash kodu YOK.
+# Belirtec tanimi H18'in `_atif_cikar` kurallariyla AYNI (`_ATIF_BT`/`_ATIF_TANIM`/`_ATIF_YOL`): ikinci kopya yazilmaz.
+# Bilinen sinirlar: ANLAM olculmez (yalniz "dayandigi kod degisti" soylenir) · ad -> dosya eslemesi ADRES.tsv'den gelir (defter
+# bayatsa tasinmis sembol bulunamaz; satir -> sembol eslemesi (`yol:N`) dosyanin CANLI cikarimindan yapilir) · yol:N damgasi N.
+# satiri kapsayan EN DAR tanimindir · birden cok tanima cozulen ad (COKLU) damgalanmaz.
+
+_DAMGA_HEX = _ad_re(r"#[0-9a-f]{8}(?![0-9A-Za-z_])")
+_DAMGA_KELIME = _ad_re(r"[0-9A-Za-z_]")
+_DAMGA_YUZDE = _ad_re(r"%(09|0A|0D|25)")
+_DAMGA_ADET_TAVAN = 10                    # `ATIF DAMGALANDI` satirinda en cok bu kadar belirtec + `+N daha`
+
+
+def _damga_jetonlar(satir):
+    """Bir satirdaki backtick'li belirtecler -> [(kapanis backtick'inin SONU, metin, tur `ad`|`yol`, damga `#xxxxxxxx` ya da None,
+    damgalanabilir mi)]. Damga eklenecek konum = kapanis backtick'inin hemen sonu. Cift/uclu backtick araliklari (``x``) ATLANIR
+    (damga backtick kosusunu boler). Kapanis backtick'ine bitisik sozcuk karakteri (apostrofsuz ek) varsa belirtec taninir ama
+    DAMGALANAMAZ: yeni damga sonekle birlesip bir sonraki `not`ta damga olarak taninmaz (idempotans bozulur)."""
+    cikti = []
+    for m in _ATIF_BT.finditer(satir):
+        once = satir[m.start() - 1] if m.start() > 0 else ""
+        sonra = satir[m.end()] if m.end() < len(satir) else ""
+        if once == "`" or sonra == "`":
+            continue
+        t = m.group(1).strip()
+        tur = "yol" if _ATIF_YOL.fullmatch(t) else ("ad" if _ATIF_TANIM.fullmatch(t) else None)
+        if tur:
+            d = _DAMGA_HEX.match(satir, m.end())
+            cikti.append((m.end(), t, tur, d.group() if d else None, d is not None or not _DAMGA_KELIME.match(sonra)))
+    return cikti
+
+
+def _damga_cit_ici(L):
+    """Her satir icin: kod citi (``` / ~~~) ICINDE mi (cit satirlari dahil)? `kod_disi` ile AYNI `_cit` durum makinesi."""
+    ic, acik = [], None
+    for s in L:
+        m = _cit(s)
+        if m is not None:
+            if acik is None:
+                acik = (m[0], m[1])
+            elif m[0] == acik[0] and m[1] >= acik[1] and not m[2].strip():
+                acik = None
+            ic.append(True)
+        else:
+            ic.append(acik is not None)
+    return ic
+
+
+def _damga_defter(y):
+    """-> ('tamam', (taban {taban ad: [yol]}, ad {kisa ad: [(yol, tam ad)]}, tam kapsam mi)) ya da
+    ('yok'|'bozuk'|'eksik'|'okunamadi', sebep). `tam kapsam`: defterde ATLANDI dosya yok (yoksa bir sembolun YOKLUGU kanitlanamaz).
+    `oldur` YOK (sessiz): arac kusuru da OLCULEMEDI sebebidir."""
+    p = os.path.join(y.h, _ADRES_DEFTER)
+    if os.path.islink(p) or not duzenli_dosya(p):
+        return "yok", "adres defteri YOK - hafiza.py adres --kur"
+    try:
+        with open(p, encoding="utf-8", errors="replace", newline="") as f:
+            satirlar = f.read().split("\n")
+    except OSError:
+        return "okunamadi", "adres defteri OKUNAMADI"
+    durum, veri = _adres_defter_coz(satirlar)
+    if durum != "tamam":
+        return "bozuk", "adres defteri BOZUK (%s)" % veri
+    if _adres_eksik_mi(veri[0]):
+        return "eksik", "adres defteri EKSIK (cikarici kusuru) - hafiza.py adres --kur"
+    taban, ad = {}, {}
+    for yol in veri[2]:
+        taban.setdefault(yol.rsplit("/", 1)[-1], []).append(yol)
+    for yol, _tur, tam, _bas, _bit, _iz in veri[1]:
+        ad.setdefault(tam.rsplit(".", 1)[-1], []).append((yol, tam))
+    return "tamam", (taban, ad, veri[0].get("atlandi", "0") in ("", "0"))
+
+
+def _damga_ham_satirlar(yol, ham, dil):
+    """Dosya BAYTLARI -> ([(tam ad, bas, bit, iz)], None) ya da (None, sebep). Defteri ureten fonksiyonlar: `_adres_metne` (kodlama +
+    satir sonu normallestirme) + `_adres_dosya_satirlari` -> ayni govde, ayni parmak izi (calisma agaci VE git surumleri icin TEK yol)."""
+    metin = _adres_metne(ham)[0]
+    if metin is None:
+        return None, "IKILI"
+    try:
+        satirlar = _adres_dosya_satirlari(yol, metin, dil)
+    except (SyntaxError, ValueError, RecursionError, MemoryError):
+        return None, "SOZDIZIMI"
+    except Exception:  # noqa: BLE001 - cikarici kusuru: OLCULEMEDI (CIKARICI); `not`/`kapi` dusmez
+        return None, "CIKARICI"
+    return [(r[2], r[3], r[4], r[5]) for r in satirlar if r[1] != "dosya"], None
+
+
+def _damga_dosya_satirlari(kok, yol):
+    """Dosyanin CANLI cikarimi (bellekte; diske YAZILMAZ) -> ([(tam ad, bas, bit, iz)], None) ya da (None, sebep). `yol` defterden
+    gelir (sutun kacisi cozulur; kok disina kacan yol reddedilir)."""
+    yol = _DAMGA_YUZDE.sub(lambda m: {"09": "\t", "0A": "\n", "0D": "\r", "25": "%"}[m.group(1)], yol)
+    if yol.startswith("/") or ".." in yol.split("/"):
+        return None, "YOL_GECERSIZ"
+    dil = _ADRES_UZANTI.get(os.path.splitext(yol)[1].lower())
+    if dil is None:
+        return None, "DIL_YOK"
+    if not os.path.lexists(os.path.join(kok, *yol.split("/"))):
+        return None, "DOSYA_YOK"
+    ham, sebep = _adres_ham_oku(kok, yol)
+    if ham is None:
+        return None, sebep.upper()
+    return _damga_ham_satirlar(yol, ham, dil)
+
+
+def _damga_satirlar(kok, yol, onbellek):
+    """`_damga_dosya_satirlari` + cagri basina dosya onbellegi."""
+    if yol not in onbellek:
+        onbellek[yol] = _damga_dosya_satirlari(kok, yol)
+    return onbellek[yol]
+
+
+def _damga_izler(kok, yol, onbellek):
+    """-> ({tam ad: [iz]}, None) ya da (None, sebep): dosyanin CANLI sembol izleri."""
+    satirlar, sebep = _damga_satirlar(kok, yol, onbellek)
+    if satirlar is None:
+        return None, sebep
+    izler = {}
+    for tam, _bas, _bit, iz in satirlar:
+        izler.setdefault(tam, []).append(iz)
+    return izler, None
+
+
+def _damga_coz(kok, indeks, onbellek, metin, tur):
+    """Belirtec -> ('tek', yol, tam ad) · ('coklu', n, None) · ('yok', None, None) · ('olculemedi', sebep, None).
+    Ad: defterde `tam ad` ya da `Tur.uye` SON EKI (ad -> dosya eslemesi defterden). `yol:N`: dosya sonek eslesmesiyle (`_atif_coz`)
+    TEK dosyaya cozulur; satir -> tanim eslemesi dosyanin CANLI cikarimindan yapilir (bayat defterin eski satir araliklari yanlis
+    sembole damga basmasin); N..M araligini KAPSAYAN EN DAR tanim secilir (ic ice tanimlarda sinif degil uye); esit en dar birden
+    cok tanim COKLU; ters aralik (M<N) COZULEMEZ."""
+    taban, ad, _tam = indeks
+    if tur == "ad":
+        a = ad.get(metin, [])
+        return ("tek", a[0][0], a[0][1]) if len(a) == 1 else (("coklu", len(a), None) if a else ("yok", None, None))
+    m = _ATIF_YOL.fullmatch(metin)
+    bas = int(m.group(2))
+    son = int(m.group(3) or bas)
+    dosya = _atif_coz(taban, m.group(1))
+    if son < bas or len(dosya) != 1:
+        return ("coklu", len(dosya), None) if len(dosya) > 1 else ("yok", None, None)
+    satirlar, sebep = _damga_satirlar(kok, dosya[0], onbellek)
+    if satirlar is None:
+        return "olculemedi", sebep, None
+    kap = [(e - b, tam) for tam, b, e, _iz in satirlar if b <= bas and son <= e]
+    if not kap:
+        return "yok", None, None
+    en_dar = min(k[0] for k in kap)
+    dar = [tam for uz, tam in kap if uz == en_dar]
+    return ("tek", dosya[0], dar[0]) if len(dar) == 1 else ("coklu", len(dar), None)
+
+
+def _damga_karar(kok, cozum, onbellek):
+    """Bir belirtecin COZUMU (`_damga_coz`) icin tek karar -> ('damga', iz) · ('coklu', n) · ('yok', None) · ('olculemedi', sebep)."""
+    d, yol, tam = cozum
+    if d != "tek":
+        return d, yol
+    izler, sebep = _damga_izler(kok, yol, onbellek)
+    if izler is None:
+        return "olculemedi", sebep
+    a = izler.get(tam, [])
+    if len(a) == 1:
+        return "damga", a[0]
+    return ("coklu", len(a)) if a else ("yok", None)
+
+
+def _damga_notu(metin, karar):
+    d, v = karar
+    if d == "coklu":
+        return "ATIF COKLU: %s (%d tanim) - damgalanmadi" % (metin, v)
+    if d == "yok":
+        return "ATIF COZULEMEDI: %s" % metin
+    return "ATIF OLCULEMEDI: %s (%s)" % (metin, v)
+
+
+def _damga_ekle(L, jetonlar, karar):
+    """Karari `damga` olan, damgalanabilir ve damgasiz belirteclere `#iz` ekler (sagdan sola: onceki konumlar kaymaz)."""
+    for i, (son, m, t, _d, olur) in reversed([(i, j) for i, j in jetonlar if j[3] is None]):
+        if olur and karar[(m, t)][0] == "damga":
+            L[i] = L[i][:son] + "#" + karar[(m, t)][1] + L[i][son:]
+
+
+def _damga_notlari(aday, sonekli, karar):
+    """K1 konsol satirlari: `ATIF DAMGALANDI` (en basta) + her damgalanamayan icin COKLU/COZULEMEDI/OLCULEMEDI."""
+    notlar = [_damga_notu(m, karar[(m, t)]) for m, t in aday if karar[(m, t)][0] != "damga"]
+    notlar += ["ATIF OLCULEMEDI: %s (bitisik sonek - damgalanmadi)" % m for m in sonekli]
+    damgali = ["%s#%s" % (m, karar[(m, t)][1]) for m, t in aday if karar[(m, t)][0] == "damga"]
+    if damgali:
+        fazla = len(damgali) - _DAMGA_ADET_TAVAN
+        notlar.insert(0, "ATIF DAMGALANDI: %d (%s%s)" % (len(damgali), ", ".join(damgali[:_DAMGA_ADET_TAVAN]),
+                                                        ", +%d daha" % fazla if fazla > 0 else ""))
+    return notlar
+
+
+def _damga_uygula_ic(kok, y, govde):
+    L = govde.split("\n")
+    ic = _damga_cit_ici(L)
+    jetonlar = [(i, j) for i, s in enumerate(L) if not ic[i] for j in _damga_jetonlar(s)]
+    tum = sorted({(j[1], j[2]) for _i, j in jetonlar})
+    aday = sorted({(j[1], j[2]) for _i, j in jetonlar if j[3] is None and j[4]})
+    sonekli = sorted({j[1] for _i, j in jetonlar if j[3] is None and not j[4]})
+    if not tum:
+        return govde, []
+    durum, indeks = _damga_defter(y)
+    if durum != "tamam":
+        return govde, (["ATIF OLCULEMEDI: " + indeks] if aday or sonekli else [])
+    onbellek = {}
+    cozum = dict(((m, t), _damga_coz(kok, indeks, onbellek, m, t)) for m, t in tum)
+    karar = dict(((m, t), _damga_karar(kok, cozum[(m, t)], onbellek)) for m, t in aday)
+    _damga_ekle(L, jetonlar, karar)
+    return "\n".join(L), _damga_notlari(aday, sonekli, karar)
+
+
+def _damga_uygula(kok, y, govde):
+    """`not` fragman metnindeki backtick'li belirteclere satir ici parmak izi damgasi ekler -> (yeni govde, konsol satirlari).
+    Aday belirtec yoksa (govde, []) — cikti BAYT-BAYT eski. Hicbir istisna disari sizmaz: `not`un yazma/exit yolu ETKILENMEZ."""
+    try:
+        return _damga_uygula_ic(kok, y, govde)
+    except (Exception, SystemExit) as e:  # noqa: BLE001 - KISIT 6-3: damga/dogus adimi `not`u DUSUREMEZ (OLCULEMEDI)
+        return govde, ["ATIF OLCULEMEDI: %s" % type(e).__name__]
+
+
+# ==== PARMAK IZLI ATIF (P5) SON ====
 
 
 def _boru_koptu_mu(e):
