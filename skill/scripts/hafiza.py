@@ -3971,7 +3971,7 @@ def _kapi_govde(a, F, N, O):
     _kapi_h15(F, N, O, rc, y)
     _kapi_h14(F, N, O, kok, rc, y, t_son)
     _kapi_h17(F, N, O, y)
-    _kapi_h18(N, kok, y)
+    _kapi_uyarilar(N, kok, y)
 
 
 # --------------------------------------------------------- KAPI GOVDELERI
@@ -5488,6 +5488,23 @@ _ATIF_DOSYA_TAVAN = 8 * 1024 * 1024
 _ATIF_LISTE_TAVAN = 20
 
 
+def _atif_maddeler(L):
+    """[(madde_no, [satirlar], [satir indeksleri])] — MADDE = numarali satir (`N. ...`) + onu izleyen 4-bosluk girintili devam
+    satirlari; bos ya da girintisiz satir maddeyi KAPATIR. `_atif_cikar` (H18) ve H20 AYNI kurali okur (tek tanim). Saf fonksiyon."""
+    maddeler, acik = [], None
+    for i, s in enumerate(L):
+        m = _ATIF_MADDE.match(s)
+        if m:
+            acik = (int(m.group(1)), [s], [i])
+            maddeler.append(acik)
+        elif acik and s.startswith("    "):
+            acik[1].append(s)
+            acik[2].append(i)
+        else:
+            acik = None
+    return maddeler
+
+
 def _atif_cikar(L):
     """[(madde_no, atif_metni, yol, bas, son, tanimlayicilar)] — canli satirlarindan, SIRALI.
 
@@ -5496,18 +5513,8 @@ def _atif_cikar(L):
     backtick'li, TAMAMI `yol:N` ya da `yol:N-M` olan belirtec. TANIMLAYICI = ayni maddedeki
     backtick'li, TAMAMI `[A-Za-z_][A-Za-z0-9_]{3,}` olan belirtec. Kod citi icindeki maddeler
     AYIRT EDILMEZ (README bilinen sinir). Saf fonksiyon: disk/surec yok."""
-    maddeler, acik = [], None
-    for s in L:
-        m = _ATIF_MADDE.match(s)
-        if m:
-            acik = (int(m.group(1)), [s])
-            maddeler.append(acik)
-        elif acik and s.startswith("    "):
-            acik[1].append(s)
-        else:
-            acik = None
     out = []
-    for no, sat in maddeler:
+    for no, sat, _ix in _atif_maddeler(L):
         tok = [t.strip() for t in _ATIF_BT.findall("\n".join(sat))]
         tan = tuple(sorted({t for t in tok if _ATIF_TANIM.fullmatch(t)}))
         for t in tok:
@@ -10956,6 +10963,127 @@ def _damga_uygula(kok, y, govde):
         return _damga_uygula_ic(kok, y, govde)
     except (Exception, SystemExit) as e:  # noqa: BLE001 - KISIT 6-3: damga/dogus adimi `not`u DUSUREMEZ (OLCULEMEDI)
         return govde, ["ATIF OLCULEMEDI: %s" % type(e).__name__]
+
+
+# ---------------------------------------------------------------- H20 GOVDE DEGISTI (P5 KALEM 2)
+# `kapi`: canli defterdeki DAMGALI atiflari (`ad`#a3f9c1d2 · `yol:N`#a3f9c1d2) okur (H18 gibi yalniz `canli`). Ad -> dosya `ADRES.tsv`den;
+# GUNCEL govde parmak izi o dosyanin CANLI cikarimindan (bellekte, diske YAZMADAN): bayat/ezilmis defter hukmu BOZMAZ. UYARIDIR: yalniz
+# N kanalina yazar — `fail`/`O` YOK, cikis kodu DEGISMEZ (`--siki` dahil). Blogun her istisnasi `OLCULEMEDI`dir. Damgasiz ama cozulebilir
+# (TEK tanima) belirtecler DAMGASIZ olarak SAYILIR (gizlenemez; geriye donuk damgalama KAPSAM DISI).
+_H20_LISTE_TAVAN = 20
+
+
+def _h20_jetonlar(L):
+    """Canli satirlari -> [(madde no | None, satir no, metin, tur, damga)]; kod citi icindeki satirlar HARIC. DAMGALI belirtec HER
+    satirda aranir (damga acik bir isarettir: gizlenemez); madde no H18'in kuraliyla (`_atif_maddeler`, HAM satirlar: H18 ile ayni
+    madde sinirlari; madde disinda None)."""
+    ic = _damga_cit_ici(L)
+    madde = {}
+    for no, _sat, ix in _atif_maddeler(L):
+        madde.update((i, no) for i in ix)
+    return [(madde.get(i), i + 1, m, t, d) for i, s in enumerate(L) if not ic[i] for (_son, m, t, d, _o) in _damga_jetonlar(s)]
+
+
+def _h20_yol(kok, indeks, onbellek, metin, damga):
+    """Damgali `yol:N` -> ('ayni', None) · ('degisti', yeni iz) · ('yok', None) · ('olculemedi', sebep). Damga dosyadaki HERHANGI bir
+    tanimin canli izine esitse govde AYNI (satir kaymasi/tasinma degistirmez); degilse N. satiri kapsayan en dar tanimin izi."""
+    m = _ATIF_YOL.fullmatch(metin)
+    bas = int(m.group(2))
+    son = int(m.group(3) or bas)
+    dosya = _atif_coz(indeks[0], m.group(1))
+    if len(dosya) != 1:
+        return ("olculemedi", "COKLU") if dosya else ("yok", None)
+    satirlar, sebep = _damga_satirlar(kok, dosya[0], onbellek)
+    if satirlar is None:
+        return ("yok", None) if sebep == "DOSYA_YOK" else ("olculemedi", sebep)
+    if any(iz == damga[1:] for _t, _b, _e, iz in satirlar):
+        return "ayni", None
+    kap = sorted((e - b, iz) for _t, b, e, iz in satirlar if b <= bas and son <= e)
+    return ("degisti", kap[0][1]) if kap and son >= bas else ("yok", None)
+
+
+def _h20_hukum(kok, indeks, onbellek, metin, tur, damga):
+    """Damgali belirtec -> ('ayni', None) · ('degisti', yeni iz) · ('yok', None) · ('olculemedi', sebep). Ad: defterdeki TUM adaylar;
+    damga adaylardan BIRININ canli izine esitse govde AYNI (satir kaymasi/tasinma degistirmez)."""
+    if tur == "yol":
+        return _h20_yol(kok, indeks, onbellek, metin, damga)
+    bulunan, hata = [], None
+    for yol, tam in indeks[1].get(metin, []):
+        izler, sebep = _damga_izler(kok, yol, onbellek)
+        if izler is None:
+            hata = hata or (None if sebep == "DOSYA_YOK" else sebep)
+            continue
+        bulunan += izler.get(tam, [])
+    if damga[1:] in bulunan:
+        return "ayni", None
+    if bulunan:
+        return ("degisti", bulunan[0]) if len(bulunan) == 1 else ("olculemedi", "COKLU")
+    return ("olculemedi", hata) if hata else ("yok", None)
+
+
+def _h20_say(kok, indeks, jetonlar):
+    """-> (degisen [(yer, metin, eski damga, yeni iz)], yok [(yer, metin, damga)], olc {sebep: n}, damgasiz sayisi). `yer` = `md.N`
+    (madde icinde) ya da `satir N`. DAMGASIZ yalniz MADDE icindeki (H18'in atif maddesi) TEK tanima cozulebilir belirteclerdir.
+    SEMBOL YOK yalniz defter TAM kapsamliyken (ATLANDI dosya yok) hukumdur; aksi halde OLCULEMEDI (eksik kapsam sembolu gizlemis olabilir)."""
+    onbellek, degisen, yok, olc, z = {}, [], [], {}, 0
+    for no, satir, m, t, d in jetonlar:
+        if d is None:
+            z += no is not None and _damga_coz(kok, indeks, onbellek, m, t)[0] == "tek"
+            continue
+        yer = "md.%d" % no if no is not None else "satir %d" % satir
+        h, v = _h20_hukum(kok, indeks, onbellek, m, t, d)
+        if h == "yok" and not indeks[2]:
+            h, v = "olculemedi", "DEFTER_ATLANDI"
+        if h == "degisti":
+            degisen.append((yer, m, d, v))
+        elif h == "yok":
+            yok.append((yer, m, d))
+        elif h == "olculemedi":
+            olc[v] = olc.get(v, 0) + 1
+    return degisen, yok, olc, z
+
+
+def _h20_satirlari(a, degisen, yok, olc, z):
+    """H20 ozeti + ayrinti satirlari (en cok `_H20_LISTE_TAVAN`; HEPSI sayilir). Bos H20 (atif yok, damgasiz yok) -> []."""
+    if not a and not z:
+        return []
+    sebep = " [%s]" % ", ".join("%s:%d" % (k, v) for k, v in sorted(olc.items())) if olc else ""
+    cikti = ["H20: %d atif | %d GOVDE DEGISTI | %d SEMBOL YOK | %d OLCULEMEDI%s | %d DAMGASIZ"
+             % (a, len(degisen), len(yok), sum(olc.values()), sebep, z)]
+    ayrinti = ["H20: %s `%s` %s -> #%s IDDIA KODDAN ESKI OLABILIR" % (yer, m, d, yeni) for yer, m, d, yeni in degisen]
+    ayrinti += ["H20: %s `%s` %s SEMBOL YOK - IDDIA KODDAN ESKI OLABILIR" % (yer, m, d) for yer, m, d in yok]
+    cikti += ayrinti[:_H20_LISTE_TAVAN]
+    if len(ayrinti) > _H20_LISTE_TAVAN:
+        cikti.append("H20: ... +%d daha (ekranda kirpildi, HEPSI sayildi)" % (len(ayrinti) - _H20_LISTE_TAVAN))
+    return cikti
+
+
+def _h20_hesapla(kok, y):
+    """H20 N satirlari ([] = sessiz). Canlida aday belirtec yoksa; ya da defter yok/bozuk/eksikken damgali atif da yoksa SESSIZ
+    (damgasiz projelerde `kapi` ciktisi BAYT-BAYT eski)."""
+    jetonlar = _h20_jetonlar(satirlar(y.canli))
+    if not jetonlar:
+        return []
+    a = sum(1 for j in jetonlar if j[4] is not None)
+    durum, indeks = _damga_defter(y)
+    if durum != "tamam":
+        return _h20_satirlari(a, [], [], {"DEFTER_" + durum.upper(): a} if a else {}, 0)
+    return _h20_satirlari(a, *_h20_say(kok, indeks, jetonlar))
+
+
+def _kapi_h20(N, kok, y):
+    """H20 GOVDE DEGISTI (besli-paket/IS_EMRI_P5_PARMAK_IZLI_ATIF.md, KALEM 2). UYARI: yalniz N; `fail`/`O` YOK. Hicbir istisna
+    (`SystemExit` dahil) `kapi`nin diger hukumlerini ETKILEYEMEZ: `OLCULEMEDI` olarak basilir (TASARIM §6-3)."""
+    try:
+        N.extend(_h20_hesapla(kok, y))
+    except (Exception, SystemExit) as e:  # noqa: BLE001 - KISIT 6-3: H20 istisnasi OLCULEMEDI'dir
+        N.append("H20: OLCULEMEDI (%s)" % type(e).__name__)
+
+
+def _kapi_uyarilar(N, kok, y):
+    """`_kapi_govde`nin TEK uyari cagrisi (TASARIM §6-2: govde 80 satir tavaninda): H18 (+ icinde H19) · H20. Yalniz N kanali."""
+    _kapi_h18(N, kok, y)
+    _kapi_h20(N, kok, y)
 
 
 # ==== PARMAK IZLI ATIF (P5) SON ====

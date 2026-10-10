@@ -79,8 +79,8 @@ _cikti_kodlamasini_guvenceye_al()
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
 KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-MASKE", "A-ATLA", "A-ETKI", "A-EZME", "A-EKSIK",
-             "P5-DAMGA", "A-KOMUT-SATIRI")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-EZME": "EZME", "A-EKSIK": "EKSIK", "P5-DAMGA": "DAMGA", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
+             "P5-DAMGA", "P5-H20", "A-KOMUT-SATIRI")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-EZME": "EZME", "A-EKSIK": "EKSIK", "P5-DAMGA": "DAMGA", "P5-H20": "H20", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -1227,6 +1227,238 @@ def kos_damga(motor, taban, ad, kaynak):
     return kol_damga(motor, taban, bozuk, istisnali)
 
 
+# ------------------------------------------------------------------ P5-H20 (P5 KALEM 2): `kapi` H20 — govde degisti mi (UYARI, exit DEGISMEZ)
+# Beklentiler FIKSTURDEN ELLE (izler hashlib'den, motordan DEGIL). Taban durum: iki damgali atif (tekil_islev, kapat_kasa) + bir
+# damgasiz cozulebilir belirtec (ikinci_islev): `2 atif | 0 | 0 | 0 | 1 DAMGASIZ`.
+H20_A = '''def tekil_islev(x):
+    return x + 1
+
+
+def ikinci_islev(x):
+    return x * 2
+
+
+class Kasa:
+    def kapat_kasa(self):
+        return 0
+'''
+H20_DEGISEN = H20_A.replace("def tekil_islev(x):\n    return x + 1\n", "def tekil_islev(x):\n    x = x + 0\n    return x + 1\n")
+H20_KAYAN = "# yorum bir\n# yorum iki\n\n" + H20_A
+H20_KOMSU = H20_A.replace("return x * 2", "return x * 3")
+H20_SILINEN = H20_A.replace("    def kapat_kasa(self):\n        return 0\n", "    pass\n")
+H20_IZ = hashlib.sha256("def tekil_islev(x):\n    return x + 1".encode("utf-8")).hexdigest()[:8]
+H20_YENI_IZ = hashlib.sha256("def tekil_islev(x):\n    x = x + 0\n    return x + 1".encode("utf-8")).hexdigest()[:8]
+H20_KAPAT_IZ = hashlib.sha256("    def kapat_kasa(self):\n        return 0".encode("utf-8")).hexdigest()[:8]
+H20_TABAN = "H20: 2 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 0 OLCULEMEDI | 1 DAMGASIZ"
+H20_ISTISNA_ANKOR = "def _h20_hesapla(kok, y):\n"
+H20_TOPLU = "\n".join("def toplu_islev_%02d(x):\n    return x + %d\n" % (i, i) for i in range(22))
+
+
+def _h20_satirlari_al(o):
+    return ["H20:" + l.split("H20:", 1)[1].rstrip() for l in o.split("\n") if "H20:" in l]
+
+
+def _kapi_diger(o):
+    """`kapi` ciktisinin H20 DISINDAki satirlari (kok yolu normallestirilmis)."""
+    return [l for l in o.split("\n") if "H20:" not in l]
+
+
+def _h20_proje(motor, taban, ad):
+    """Taban durum: defter YOKKEN damgasiz not + `adres --kur` + damgali not + derle + commit -> (kok, kurulum bulgulari). Kurulum
+    adimlari sabotajli motorda beklenen damgayi uretmeyebilir: bu bir BULGUDUR (H20-KURULUM), duzenegin cokmesi DEGIL."""
+    b = []
+    kok = _hafiza_proje(motor, taban, ad, {"src/a.py": H20_A, "src/Fx.cs": CS_FX})
+    kod, o, e = kos(motor, kok, "not", "--konu", "damgasiz-not", "--yeni-konu", "H20 fiksturu: damgasiz belirtec", "--tur", "durum",
+                    "--metin", "3. `ikinci_islev` damgasiz.")
+    if kod != 0:
+        raise Kurulamadi("damgasiz not basarisiz: %r" % (o + e)[-160:])
+    kur(motor, kok)
+    kod, o, e = kos(motor, kok, *(DAMGA_NOT_ARGS + ("1. `tekil_islev` ilk iddia.\n2. `kapat_kasa` ikinci iddia.",)))
+    if kod != 0 or ("ATIF DAMGALANDI: 2 (kapat_kasa#%s, tekil_islev#%s)" % (H20_KAPAT_IZ, H20_IZ)) not in o:
+        b.append(("H20-KURULUM", "damgali not beklenen damgalari uretmedi: exit=%s %r" % (kod, o[-200:])))
+    kod, o, e = kos(motor, kok, "derle")
+    if kod != 0:
+        raise Kurulamadi("derle basarisiz: exit=%s %r" % (kod, (o + e)[-200:]))
+    _git(kok, "add", "-A")
+    _git(kok, "commit", "-q", "-m", "h20")
+    return kok, b
+
+
+def _h20_kapi(motor, kok, *args):
+    kod, o, e = kos(motor, kok, "kapi", *args)
+    return kod, o.replace(kok, "<KOK>"), e
+
+
+def _h20_hukum_say(b, etiket, ne, motor, kok, beklenen_satir, exit0, ayrinti=None):
+    """Tek durum: H20 ozet satiri BIREBIR `beklenen_satir`, (varsa) ayrinti satiri, exit `exit0` ile ayni (UYARI: exit DEGISMEZ)."""
+    kod, o, e = _h20_kapi(motor, kok)
+    h20 = _h20_satirlari_al(o)
+    if not h20 or h20[0] != beklenen_satir:
+        b.append((etiket, "%s: H20 ozeti %r != beklenen %r" % (ne, h20[:1], beklenen_satir)))
+    if ayrinti is not None and ayrinti not in h20:
+        b.append((etiket, "%s: ayrinti satiri %r yok: %r" % (ne, ayrinti, h20)))
+    if exit0 is not None and kod != exit0:
+        b.append(("H20-EXIT", "%s: kapi exit=%s (H20 UYARIDIR, exit degismemeli: %s)" % (ne, kod, exit0)))
+    return kod, o
+
+
+def kol_h20(motor, taban, bozuk, istisnali):
+    """P5-H20: damgali fikstur sessiz (H20-AYNI) ve damgasiz sayilir (H20-DAMGASIZ) · govdeye satir eklenir -> `GOVDE DEGISTI 1` + ayrinti
+    (H20-DEGISTI) · govde ayni, yalniz satir kayar -> 0 (H20-KAYMA) · BASKA sembol degisir -> 0 (H20-KOMSU) · sembol silinir ->
+    `SEMBOL YOK 1` (H20-YOK) · `--siki`de de UYARI (H20-SIKI) · defter YOKKEN damgali atif OLCULEMEDI sayilir, gizlenmez (H20-DEFTER)
+    · atifsiz/damgasiz proje SESSIZ (H20-SESSIZ) · cikarici kusuru / H20 istisnasi OLCULEMEDI'dir ve diger TUM `kapi` satirlari + exit
+    ayni (H20-CIKARICI / H20-ISTISNA)."""
+    b = []
+    kok, kurulum = _h20_proje(motor, taban, "h20")
+    b += kurulum
+    yol = os.path.join(kok, "src", "a.py")
+    kod0, o0, _e0 = _h20_kapi(motor, kok)
+    h20 = _h20_satirlari_al(o0)
+    if h20 != [H20_TABAN]:
+        b.append(("H20-AYNI", "damgali + degismemis fikstur: H20 satirlari %r != [%r]" % (h20, H20_TABAN)))
+        if not any(l.endswith("| 1 DAMGASIZ") for l in h20):
+            b.append(("H20-DAMGASIZ", "damgasiz cozulebilir belirtec (ikinci_islev) 1 DAMGASIZ olarak SAYILMADI: %r" % h20))
+    siki0 = kos(motor, kok, "kapi", "--siki")[0]
+    _yaz(yol, H20_DEGISEN)
+    ayr = "H20: md.1 `tekil_islev` #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (H20_IZ, H20_YENI_IZ)
+    _h20_hukum_say(b, "H20-DEGISTI", "govdeye satir eklendi", motor, kok,
+                   "H20: 2 atif | 1 GOVDE DEGISTI | 0 SEMBOL YOK | 0 OLCULEMEDI | 1 DAMGASIZ", kod0, ayr)
+    kod_s, o_s, _e = kos(motor, kok, "kapi", "--siki")
+    if "1 GOVDE DEGISTI" not in o_s or kod_s != siki0:
+        b.append(("H20-SIKI", "`kapi --siki`: exit=%s (taban %s), H20 `1 GOVDE DEGISTI` satiri %s" % (kod_s, siki0, "var" if "1 GOVDE DEGISTI" in o_s else "YOK")))
+    _yaz(yol, H20_KAYAN)
+    _h20_hukum_say(b, "H20-KAYMA", "govde ayni, satirlar kaydi", motor, kok, H20_TABAN, kod0)
+    _yaz(yol, H20_KOMSU)
+    _h20_hukum_say(b, "H20-KOMSU", "baska sembol degisti", motor, kok, H20_TABAN, kod0)
+    _yaz(yol, H20_SILINEN)
+    _h20_hukum_say(b, "H20-YOK", "sembol silindi", motor, kok,
+                   "H20: 2 atif | 0 GOVDE DEGISTI | 1 SEMBOL YOK | 0 OLCULEMEDI | 1 DAMGASIZ", kod0,
+                   "H20: md.2 `kapat_kasa` #%s SEMBOL YOK - IDDIA KODDAN ESKI OLABILIR" % H20_KAPAT_IZ)
+    _yaz(yol, H20_A)
+    # arizali cikarici (RuntimeError) ve H20'nin KENDI istisnasi: H20 OLCULEMEDI; diger HER satir + exit ayni
+    for etiket, m, bekle in (("H20-CIKARICI", bozuk, "H20: 2 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 2 OLCULEMEDI [CIKARICI:2] | 1 DAMGASIZ"),
+                             ("H20-ISTISNA", istisnali, "H20: OLCULEMEDI (RuntimeError)")):
+        kod, o, e = _h20_kapi(m, kok)
+        if _h20_satirlari_al(o)[:1] != [bekle]:
+            b.append((etiket, "H20 satiri %r != beklenen %r (cikti %r)" % (_h20_satirlari_al(o)[:2], bekle, (o + e)[-160:])))
+        if kod != kod0 or _kapi_diger(o) != _kapi_diger(o0) or "Traceback" in e:
+            b.append((etiket, "H20 istisnasi `kapi`nin DIGER hukumlerini etkiledi: exit %s -> %s; ilk fark: %r" % (
+                kod0, kod, [(x, y) for x, y in zip(_kapi_diger(o0), _kapi_diger(o)) if x != y][:1])))
+    # EKSIK defter: damgali atif OLCULEMEDI [DEFTER_EKSIK]; BOZUK defter [DEFTER_BOZUK]
+    p = os.path.join(kok, "arsiv", "hafiza", "ADRES.tsv")
+    saglam = io.open(p, encoding="utf-8", newline="").read()
+    os.remove(p)
+    kos(_BOZUK_ADRES[0], kok, "adres", "--kur")
+    _h20_hukum_say(b, "H20-EKSIK", "defter EKSIK", motor, kok,
+                   "H20: 2 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 2 OLCULEMEDI [DEFTER_EKSIK:2] | 0 DAMGASIZ", kod0)
+    _yaz(p, "bozuk\n")
+    _h20_hukum_say(b, "H20-BOZUK", "defter BOZUK", motor, kok,
+                   "H20: 2 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 2 OLCULEMEDI [DEFTER_BOZUK:2] | 0 DAMGASIZ", kod0)
+    os.remove(p)
+    # defter YOK: damgali atif OLCULEMEDI olarak SAYILIR (gizlenmez)
+    _h20_hukum_say(b, "H20-DEFTER", "defter YOK", motor, kok,
+                   "H20: 2 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 2 OLCULEMEDI [DEFTER_YOK:2] | 0 DAMGASIZ", kod0)
+    _yaz(p, saglam)
+    return b + kol_h20_ayrinti(motor, taban) + kol_h20_sessiz(motor, taban)
+
+
+def kol_h20_ayrinti(motor, taban):
+    """P5-H20 ayrintilari: numarasiz satirdaki damgali atif okunur (H20-SATIR) · damgali `yol:N` govde degisince YAKALANIR, satir
+    kayinca AYNI (H20-YOL) · ekran tavani 20, HEPSI sayilir (H20-TAVAN) · kod citi icindeki damgali belirtec sayilmaz (H20-CIT) ·
+    defter ATLANDI dosya tasirken kayip sembol SEMBOL YOK degil OLCULEMEDI [DEFTER_ATLANDI] (H20-ATLANDI)."""
+    b = []
+    sat, _k = _h20_proje(motor, taban, "h20_satir")
+    _yaz(os.path.join(sat, "src", "a.py"), H20_A)
+    kos(motor, sat, *(DAMGA_NOT_ARGS + ("- `kapat_kasa` numarasiz satir (madde DEGIL).",)))
+    kos(motor, sat, "derle")
+    _yaz(os.path.join(sat, "src", "a.py"), H20_A.replace("        return 0\n", "        return 7\n"))
+    _kod, o, _e = _h20_kapi(motor, sat)
+    h20 = _h20_satirlari_al(o)
+    yeni = hashlib.sha256("    def kapat_kasa(self):\n        return 7".encode("utf-8")).hexdigest()[:8]
+    if not any(l.startswith("H20: satir ") and "`kapat_kasa`" in l and l.endswith(" -> #%s IDDIA KODDAN ESKI OLABILIR" % yeni) for l in h20):
+        b.append(("H20-SATIR", "numarasiz satirdaki damgali atif okunmadi: %r" % h20))
+    # `yol:N`
+    yp = _hafiza_proje(motor, taban, "h20_yol", {"src/a.py": H20_A})
+    kur(motor, yp)
+    kos(motor, yp, *(DAMGA_NOT_ARGS + ("1. `a.py:2` tekil_islev'in govdesi.",)))
+    kos(motor, yp, "derle")
+    _git(yp, "add", "-A")
+    _git(yp, "commit", "-q", "-m", "yol")
+    _yaz(os.path.join(yp, "src", "a.py"), H20_KAYAN)
+    kod, o, _e = _h20_kapi(motor, yp)
+    if _h20_satirlari_al(o)[:1] != ["H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 0 OLCULEMEDI | 0 DAMGASIZ"]:
+        b.append(("H20-YOL", "damgali `yol:N`, govde ayni + satirlar kaydi: %r" % _h20_satirlari_al(o)[:2]))
+    _yaz(os.path.join(yp, "src", "a.py"), H20_DEGISEN)
+    kod, o, _e = _h20_kapi(motor, yp)
+    if _h20_satirlari_al(o)[:2] != ["H20: 1 atif | 1 GOVDE DEGISTI | 0 SEMBOL YOK | 0 OLCULEMEDI | 0 DAMGASIZ",
+                                    "H20: md.1 `a.py:2` #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (H20_IZ, H20_YENI_IZ)]:
+        b.append(("H20-YOL", "damgali `yol:N`, govde degisti: %r" % _h20_satirlari_al(o)[:2]))
+    # tavan 20: 22 damgali atif, hepsi degisir
+    tp = _hafiza_proje(motor, taban, "h20_tavan", {"src/t.py": H20_TOPLU})
+    kur(motor, tp)
+    metin = "\n".join("%d. `toplu_islev_%02d` iddia." % (i + 1, i) for i in range(22))
+    kos(motor, tp, *(DAMGA_NOT_ARGS + (metin,)))
+    kos(motor, tp, "derle")
+    _yaz(os.path.join(tp, "src", "t.py"), H20_TOPLU.replace("return x +", "return 9 * x +"))
+    kod, o, _e = _h20_kapi(motor, tp)
+    h20 = _h20_satirlari_al(o)
+    if h20[:1] != ["H20: 22 atif | 22 GOVDE DEGISTI | 0 SEMBOL YOK | 0 OLCULEMEDI | 0 DAMGASIZ"] or len(h20) != 22 \
+            or h20[-1] != "H20: ... +2 daha (ekranda kirpildi, HEPSI sayildi)":
+        b.append(("H20-TAVAN", "22 degisen atif: ozet 22 sayilmali, 20 satir + `+2 daha`: ilk=%r uzunluk=%d son=%r" % (h20[:1], len(h20), h20[-1:])))
+    # kod citi icindeki damgali belirtec SAYILMAZ
+    cp = _hafiza_proje(motor, taban, "h20_cit", {"src/a.py": H20_A})
+    kur(motor, cp)
+    canli = os.path.join(cp, "PROJE_HAFIZA.md")
+    _yaz(canli, io.open(canli, encoding="utf-8", newline="").read() + "\n```\n1. `tekil_islev`#%s cit icinde\n```\n" % H20_IZ)
+    _yaz(os.path.join(cp, "src", "a.py"), H20_DEGISEN)
+    kod, o, _e = _h20_kapi(motor, cp)
+    if _h20_satirlari_al(o):
+        b.append(("H20-CIT", "kod citi icindeki damgali belirtec H20'ye GIRDI: %r" % _h20_satirlari_al(o)[:2]))
+    # ATLANDI dosya (sozdizimi hatali) varken kayip sembol SEMBOL YOK DEGIL OLCULEMEDI
+    ap = _hafiza_proje(motor, taban, "h20_atlandi", {"src/a.py": H20_A, "src/kotu.py": "def (:\n"})
+    kur(motor, ap)
+    kos(motor, ap, *(DAMGA_NOT_ARGS + ("1. `kapat_kasa` iddia.",)))
+    kos(motor, ap, "derle")
+    _yaz(os.path.join(ap, "src", "a.py"), H20_SILINEN)
+    kod, o, _e = _h20_kapi(motor, ap)
+    if _h20_satirlari_al(o)[:1] != ["H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [DEFTER_ATLANDI:1] | 0 DAMGASIZ"]:
+        b.append(("H20-ATLANDI", "defter ATLANDI tasirken sembol YOK hukmu verildi: %r" % _h20_satirlari_al(o)[:2]))
+    return b
+
+
+def kol_h20_sessiz(motor, taban):
+    """Atifsiz ya da damgasiz projelerde H20 SESSIZDIR (H20-SESSIZ): hic belirtec yok · belirtec var (canlida, `derle` ile) ama defter
+    yok ve damga yok."""
+    b = []
+    bos = _hafiza_proje(motor, taban, "h20_bos", {"src/a.py": H20_A})
+    _kod, o, _e = kos(motor, bos, "kapi")
+    ikinci = _hafiza_proje(motor, taban, "h20_defter_yok", {"src/a.py": H20_A})
+    kos(motor, ikinci, "not", "--konu", "genel-durum", "--tur", "durum", "--metin", "1. `tekil_islev` damgasiz ve defter yok.")
+    kod, o_d, _e = kos(motor, ikinci, "derle")
+    canli = io.open(os.path.join(ikinci, "PROJE_HAFIZA.md"), encoding="utf-8", newline="").read()
+    if "`tekil_islev` damgasiz ve defter yok" not in canli:
+        raise Kurulamadi("H20-SESSIZ duzenegi: belirtec canliya girmedi (derle exit=%s)" % kod)
+    _kod2, o2, _e2 = kos(motor, ikinci, "kapi")
+    if "H20" in o or "H20" in o2:
+        b.append(("H20-SESSIZ", "atifsiz / damgasiz-defterisiz projede H20 satiri basildi: %r %r" % (_h20_satirlari_al(o), _h20_satirlari_al(o2))))
+    return b
+
+
+
+def kos_h20(motor, taban, ad, kaynak):
+    bozuk, hata = _bozuk_motor_yaz(kaynak, os.path.join(os.path.dirname(taban), "h20_bozuk_" + ad), "h20_bozuk_" + ad)
+    if bozuk is None:
+        raise Kurulamadi(hata)
+    _BOZUK_ADRES[0] = _bozuk_motor(taban, "h20_tablo_" + ad, kaynak)       # EKSIK defter kurmak icin (C# tablosu patlar)
+    if kaynak.count(H20_ISTISNA_ANKOR) != 1:
+        raise Kurulamadi("h20 istisna capasi %d yerde gecti (1 olmali)" % kaynak.count(H20_ISTISNA_ANKOR))
+    istisnali, hata = _motor_yaz(kaynak.replace(H20_ISTISNA_ANKOR, H20_ISTISNA_ANKOR + '    raise RuntimeError("bilerek bozuk H20")      # MUTANT\n', 1),
+                                 os.path.join(os.path.dirname(taban), "h20_istisna_" + ad), "h20_istisna_" + ad)
+    if istisnali is None:
+        raise Kurulamadi(hata)
+    return kol_h20(motor, taban, bozuk, istisnali)
+
+
 def _kapi_kosusu(motor, kok):
     cikti = []
     for args in (("kapi",), ("kapi", "--siki"), ("devral", "--kesif")):
@@ -1363,6 +1595,7 @@ KOLLAR = {
     "A-EZME": kos_ezme,
     "A-EKSIK": kos_eksik,
     "P5-DAMGA": kos_damga,
+    "P5-H20": kos_h20,
     "A-KOMUT-SATIRI": kos_komut_satiri,
 }
 
@@ -1642,6 +1875,48 @@ SABOTAJLAR = (
     ("M-D15 damga blogu `oldur` cagirir (stderr'e HATA basar, cikis yolu acilir)", "P5-DAMGA", "DAMGA-OLDUR",
      "    d, yol, tam = cozum\n",
      '    d, yol, tam = cozum\n    oldur("MUTANT: damga blogundan oldur")      # MUTANT\n'),
+    ("M-H0 H20 `kapi`ya BAGLANMAZ (`_kapi_uyarilar` yalniz H18)", "P5-H20", "H20-AYNI",
+     "    _kapi_h20(N, kok, y)\n",
+     "    pass      # MUTANT\n"),
+    ("M-H1 karsilastirma SABIT (ad: govde degisse de `ayni`)", "P5-H20", "H20-DEGISTI",
+     "    if damga[1:] in bulunan:\n",
+     "    if True:      # MUTANT\n"),
+    ("M-H2 parmak izi DOSYA GENELI (satir kaymasi / komsu sembol govde degisti sayilir)", "P5-H20", "H20-KAYMA",
+     '    return [(r[2], r[3], r[4], r[5]) for r in satirlar if r[1] != "dosya"], None\n',
+     '    return [(r[2], r[3], r[4], _adres_sha(metin)[:8]) for r in satirlar if r[1] != "dosya"], None      # MUTANT\n'),
+    ("M-H3 H20 istisnasi `kapi`ya SIZAR (yakalama dar)", "P5-H20", "H20-ISTISNA",
+     "    except (Exception, SystemExit) as e:  # noqa: BLE001 - KISIT 6-3: H20",
+     "    except KeyError as e:  # noqa: BLE001 - KISIT 6-3: H20"),
+    ("M-H4 DAMGASIZ sayilmaz (gizlenir)", "P5-H20", "H20-DAMGASIZ",
+     '            z += no is not None and _damga_coz(kok, indeks, onbellek, m, t)[0] == "tek"\n',
+     "            z += 0      # MUTANT\n"),
+    ("M-H5 silinen sembol `ayni` sayilir (SEMBOL YOK ayrimi yok)", "P5-H20", "H20-YOK",
+     '    return ("olculemedi", hata) if hata else ("yok", None)\n',
+     '    return "ayni", None      # MUTANT\n'),
+    ("M-H6 defter yokken damgali atif SESSIZ (OLCULEMEDI gizlenir)", "P5-H20", "H20-DEFTER",
+     '        return _h20_satirlari(a, [], [], {"DEFTER_" + durum.upper(): a} if a else {}, 0)\n',
+     "        return []      # MUTANT\n"),
+    ("M-H7 bos H20 de basilir (atifsiz projede gurultu: kapi ciktisi DEGISIR)", "P5-H20", "H20-SESSIZ",
+     "    if not a and not z:\n        return []\n",
+     "    if False:      # MUTANT\n        return []\n"),
+    ("M-H8 yalniz MADDE icindeki damgali atif okunur (numarasiz satirdaki damga GIZLENIR)", "P5-H20", "H20-SATIR",
+     "    return [(madde.get(i), i + 1, m, t, d) for i, s in enumerate(L) if not ic[i] for (_son, m, t, d, _o) in _damga_jetonlar(s)]\n",
+     "    return [(madde.get(i), i + 1, m, t, d) for i, s in enumerate(L) if not ic[i] and i in madde for (_son, m, t, d, _o) in _damga_jetonlar(s)]      # MUTANT\n"),
+    ("M-H9 ekran tavani YOK (liste kirpilmaz: HEPSI basilir)", "P5-H20", "H20-TAVAN",
+     "    cikti += ayrinti[:_H20_LISTE_TAVAN]\n",
+     "    cikti += ayrinti      # MUTANT\n"),
+    ("M-H10 kod citi icindeki damgali belirtec de sayilir", "P5-H20", "H20-CIT",
+     "    return [(madde.get(i), i + 1, m, t, d) for i, s in enumerate(L) if not ic[i] for (_son, m, t, d, _o) in _damga_jetonlar(s)]\n",
+     "    return [(madde.get(i), i + 1, m, t, d) for i, s in enumerate(L) for (_son, m, t, d, _o) in _damga_jetonlar(s)]      # MUTANT\n"),
+    ("M-H11 SEMBOL YOK defter kapsami EKSIKKEN de hukum verilir (ATLANDI ayrimi yok)", "P5-H20", "H20-ATLANDI",
+     '        if h == "yok" and not indeks[2]:\n',
+     '        if False:      # MUTANT\n'),
+    ("M-H12 EKSIK defter H20'de kullanilir (cikarici kusuru gizlenir)", "P5-H20", "H20-EKSIK",
+     '    if _adres_eksik_mi(veri[0]):\n        return "eksik", "adres defteri EKSIK (cikarici kusuru) - hafiza.py adres --kur"\n',
+     '    if False:      # MUTANT\n        return "eksik", "adres defteri EKSIK (cikarici kusuru) - hafiza.py adres --kur"\n'),
+    ("M-H13 `yol:N` damga dosyada ARANMAZ (satir kaymasi govde degisti sayilir)", "P5-H20", "H20-YOL",
+     '    if any(iz == damga[1:] for _t, _b, _e, iz in satirlar):\n        return "ayni", None\n',
+     "    if False:      # MUTANT\n        return \"ayni\", None\n"),
     ("M-K1 dosya listesi TEK git cagrisina dizilir", "A-KOMUT-SATIRI", "KOMUT-SATIRI",
      '    r = _adres_git(kok, "ls-files", "-z")\n',
      '    r = _adres_git(kok, "ls-files", "-z")\n'
