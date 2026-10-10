@@ -79,8 +79,8 @@ _cikti_kodlamasini_guvenceye_al()
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
 KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-MASKE", "A-ATLA", "A-ETKI", "A-EZME", "A-EKSIK",
-             "P5-DAMGA", "P5-H20", "A-KOMUT-SATIRI")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-EZME": "EZME", "A-EKSIK": "EKSIK", "P5-DAMGA": "DAMGA", "P5-H20": "H20", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
+             "P5-DAMGA", "P5-H20", "P5-DOGUS", "A-KOMUT-SATIRI")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-EZME": "EZME", "A-EKSIK": "EKSIK", "P5-DAMGA": "DAMGA", "P5-H20": "H20", "P5-DOGUS": "DOGUS", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -1459,6 +1459,192 @@ def kos_h20(motor, taban, ad, kaynak):
     return kol_h20(motor, taban, bozuk, istisnali)
 
 
+# ------------------------------------------------------------------ P5-DOGUS (P5 KALEM 3): `not` aninda DOGUSTA BAYAT uyarisi
+# Fikstur: a.py V0 (c1) -> V1 (c2: `hedef_islev` govdesi DEGISIR) -> `sonra` ilgisiz commit (yalniz notlar.txt). Degisikligi
+# getiren commit HEAD'den `sonra` commit once. Beklentiler ELLE: k = `sonra`; sha `git rev-parse`tan (motordan DEGIL).
+# N=5: son 5 commit (HEAD..HEAD~4) icinde GETIRILEN degisiklik uyarilir -> sonra 0..4 uyari VAR, 5 ve 6 YOK.
+DOGUS_V0 = "def hedef_islev(x):\n    return x + 1\n\n\ndef diger(y):\n    return y\n"
+DOGUS_V1 = DOGUS_V0.replace("return x + 1", "return x + 2")
+DOGUS_V2 = DOGUS_V0.replace("return x + 1", "return x + 3")
+DOGUS_METIN = "1. `hedef_islev` dogru calisir."
+DOGUS_ISTISNA_ANKOR = "def _dogus_hepsi(kok, semboller, onbellek):\n"
+
+
+def _git_t(kok, tarih, *args):
+    """`_git` + KONTROLLU yazar/islemci tarihi (commit sirasi tarihe bagli sinamalar icin)."""
+    ortam = _cikti_kodlamasi_ortami()
+    ortam.update(GIT_AUTHOR_DATE=tarih, GIT_COMMITTER_DATE=tarih)
+    return subprocess.run(["git", "-C", kok, "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false"] + list(args), capture_output=True, env=ortam)
+
+
+def _dogus_commit(kok, yol, metin, mesaj):
+    _yaz(os.path.join(kok, *yol.split("/")), metin)
+    _git(kok, "add", "-A")
+    _git(kok, "commit", "-q", "-m", mesaj)
+    return _git(kok, "rev-parse", "HEAD").stdout.decode("ascii").strip()
+
+
+def _dogus_ilgisiz(kok, n, yol="notlar.txt", baslangic=0):
+    """`n` ilgisiz commit (yalniz `yol`: icerik HER commit'te FARKLI olmali yoksa commit olusmaz)."""
+    for i in range(n):
+        _dogus_commit(kok, yol, "%d\n" % (baslangic + i + 1), "ilgisiz %d" % (baslangic + i + 1))
+
+
+def _dogus_proje(motor, taban, ad, sonra, on="", dizin=None):
+    """-> (kok, degisikligi getiren commit'in sha'si). `kur` + `adres --kur` yapilmis; calisma agaci TEMIZ. `dizin`: proje git
+    deposunun ALT dizini ise (`app`)."""
+    on_ek = (dizin + "/") if dizin else ""
+    dosyalar = {on_ek + "src/a.py": DOGUS_V0, on_ek + "notlar.txt": "0\n"}
+    repo = proje(taban, ad, dosyalar)
+    kok = os.path.join(repo, dizin) if dizin else repo
+    kod, o, e = kos(motor, kok, "kur", "--ad", "ADR")
+    if kod != 0:
+        raise Kurulamadi("kur basarisiz (exit=%s): %s" % (kod, (o + e).strip()[-160:]))
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "hafiza")
+    degisen = _dogus_commit(repo, on_ek + "src/a.py", DOGUS_V1, "govde degisti")
+    _dogus_ilgisiz(repo, sonra, on_ek + "notlar.txt")
+    kur(motor, kok)                      # ADRES.tsv izlenmeyen dosya olarak kalir (commit YOK: degisiklik `sonra` commit once kalsin)
+    return kok, degisen
+
+
+def _dogus_not(motor, kok, metin=DOGUS_METIN):
+    kod, o, e, govde, _ad = _not_kos(motor, kok, metin)
+    return kod, o, e, [l for l in o.split("\n") if l.startswith(("DIKKAT:", "DOGUSTA BAYAT:"))], govde
+
+
+def _dogus_beklenen(k, sha):
+    ne = "son commit'te degisti" if k == 0 else "%d commit once degisti" % k
+    return "DIKKAT: hedef_islev govdesi %s (%s) - iddiayi kodla teyit et" % (ne, sha[:7])
+
+
+def kol_dogus(motor, taban, istisnali):
+    """P5-DOGUS: degisiklik k commit once (k=0..4) -> `k commit once degisti (<sha>)` (DOGUS-VAR) · N sinirinin DISINDA (5, 6) ->
+    uyari YOK (DOGUS-SINIR) · en yakin degisim (DOGUS-YAKIN) · first-parent (DOGUS-MERGE) · alt dizin projesi (DOGUS-ALTDIZIN) ·
+    calisma agaci HEAD'den farkli -> `commit'lenmemis degisiklik` (DOGUS-COMMITSIZ) · calisma agaci cikarilamazsa hukum VERILMEZ
+    (DOGUS-CALISMA) · git yok / depo degil -> OLCULEMEDI (DOGUS-GITSIZ) · sig gecmis -> OLCULEMEDI (DOGUS-SIG) · 20 dosya tavani
+    BEYAN edilir (DOGUS-TAVAN) · bu adimin istisnasi `not`u ve damgayi DUSURMEZ (DOGUS-ISTISNA) · `not` exit'i hep 0 (DOGUS-EXIT)."""
+    b = []
+    kok6 = None
+    for sonra in (0, 2, 4, 5, 6):
+        kok, degisen = _dogus_proje(motor, taban, "dogus%d" % sonra, sonra)
+        kod, o, e, satirlar, govde = _dogus_not(motor, kok)
+        if kod != 0:
+            b.append(("DOGUS-EXIT", "sonra=%d: `not` exit=%s (0 beklenir)" % (sonra, kod)))
+        if sonra <= 4:
+            if satirlar != [_dogus_beklenen(sonra, degisen)]:
+                b.append(("DOGUS-VAR", "degisiklik %d commit once: satirlar %r != [%r]" % (sonra, satirlar, _dogus_beklenen(sonra, degisen))))
+        elif satirlar:
+            b.append(("DOGUS-SINIR", "degisiklik %d commit once (N=5 DISI): uyari BASILDI: %r" % (sonra, satirlar)))
+        if sonra == 6:
+            kok6 = kok
+    # en yakin degisim: V0 -> c2 (V1) -> 1 ilgisiz -> c4 (V2) -> 1 ilgisiz: degisim k=1 (c4) ve k=3 (c2): YALNIZ en yakini
+    yk = proje(taban, "dogus_yakin", {"src/a.py": DOGUS_V0, "notlar.txt": "0\n"})
+    kos(motor, yk, "kur", "--ad", "ADR")
+    _git(yk, "add", "-A")
+    _git(yk, "commit", "-q", "-m", "hafiza")
+    _dogus_commit(yk, "src/a.py", DOGUS_V1, "c2")
+    _dogus_ilgisiz(yk, 1)
+    c4 = _dogus_commit(yk, "src/a.py", DOGUS_V2, "c4")
+    _dogus_ilgisiz(yk, 1, baslangic=10)
+    kur(motor, yk)
+    kod, o, e, satirlar, govde = _dogus_not(motor, yk)
+    if satirlar != [_dogus_beklenen(1, c4)]:
+        b.append(("DOGUS-YAKIN", "iki degisim (k=1, k=3): yalniz EN YAKIN (k=1, %s) beklenir: %r" % (c4[:7], satirlar)))
+    # first-parent: degisiklik bir birlestirme (merge) commit'iyle gelir; `k` ana hattin (first-parent) mesafesidir. Tarihler KONTROLLU:
+    # ana hattaki ilgisiz commit ozellik commit'inden ESKI -> tarih sirasi first-parent'tan FARKLI cikar (first-parent kapaliysa k/sha kayar)
+    mg = proje(taban, "dogus_merge", {"src/a.py": DOGUS_V0, "notlar.txt": "0\n"})
+    kos(motor, mg, "kur", "--ad", "ADR")
+    _git(mg, "add", "-A")
+    _git_t(mg, "2026-01-01T10:00:00+0000", "commit", "-q", "-m", "hafiza")
+    ana = _git(mg, "rev-parse", "--abbrev-ref", "HEAD").stdout.decode("ascii").strip()
+    _git(mg, "checkout", "-q", "-b", "ozellik")
+    _git(mg, "checkout", "-q", ana)
+    _yaz(os.path.join(mg, "notlar.txt"), "ana\n")
+    _git(mg, "add", "-A")
+    _git_t(mg, "2026-01-01T10:01:00+0000", "commit", "-q", "-m", "ana hatta ilgisiz")
+    _git(mg, "checkout", "-q", "ozellik")
+    _yaz(os.path.join(mg, "src", "a.py"), DOGUS_V1)
+    _git(mg, "add", "-A")
+    _git_t(mg, "2026-01-01T10:02:00+0000", "commit", "-q", "-m", "ozellik: govde")
+    _git(mg, "checkout", "-q", ana)
+    _git_t(mg, "2026-01-01T10:03:00+0000", "merge", "-q", "--no-ff", "-m", "birlestir", "ozellik")
+    m_sha = _git(mg, "rev-parse", "HEAD").stdout.decode("ascii").strip()
+    for i in range(2):
+        _yaz(os.path.join(mg, "notlar.txt"), "son %d\n" % i)
+        _git(mg, "add", "-A")
+        _git_t(mg, "2026-01-01T10:0%d:00+0000" % (4 + i), "commit", "-q", "-m", "ilgisiz %d" % i)
+    kur(motor, mg)
+    kod, o, e, satirlar, govde = _dogus_not(motor, mg)
+    if satirlar != [_dogus_beklenen(2, m_sha)]:
+        b.append(("DOGUS-MERGE", "birlestirme commit'iyle gelen degisim (first-parent k=2, %s) beklenir: %r" % (m_sha[:7], satirlar)))
+    # alt dizin projesi: kok git deposunun `app/` dizini
+    alt, alt_sha = _dogus_proje(motor, taban, "dogus_alt", 2, dizin="app")
+    kod, o, e, satirlar, govde = _dogus_not(motor, alt)
+    if satirlar != [_dogus_beklenen(2, alt_sha)]:
+        b.append(("DOGUS-ALTDIZIN", "git deposunun ALT dizini projesi: satirlar %r != [%r]" % (satirlar, _dogus_beklenen(2, alt_sha))))
+    # calisma agaci HEAD'den farkli
+    _yaz(os.path.join(kok6, "src", "a.py"), DOGUS_V1.replace("return x + 2", "return x + 3"))
+    kod, o, e, satirlar, govde = _dogus_not(motor, kok6)
+    if satirlar != ["DIKKAT: hedef_islev commit'lenmemis degisiklik tasiyor"]:
+        b.append(("DOGUS-COMMITSIZ", "calisma agacinda commit'siz govde degisikligi: satirlar %r" % satirlar))
+    # calisma agaci cikarilamiyor (sozdizimi hatasi): `commit'lenmemis` hukmu VERILMEZ, OLCULEMEDI
+    _yaz(os.path.join(kok6, "src", "a.py"), "def (:\n")
+    kod, o, e, satirlar, govde = _dogus_not(motor, kok6)
+    if satirlar != ["DOGUSTA BAYAT: OLCULEMEDI (hedef_islev: calisma agaci cikarilamadi)"] or kod != 0:
+        b.append(("DOGUS-CALISMA", "calisma agaci cikarilamiyorken: exit=%s satirlar %r" % (kod, satirlar)))
+    _yaz(os.path.join(kok6, "src", "a.py"), DOGUS_V1)
+    # 20 dosya tavani: 21 dosya, hepsi sorulamaz -> beyan
+    tv = proje(taban, "dogus_tavan", dict(("src/f%02d.py" % i, "def tavan_islev_%02d(x):\n    return x\n" % i) for i in range(21)))
+    kos(motor, tv, "kur", "--ad", "ADR")
+    _git(tv, "add", "-A")
+    _git(tv, "commit", "-q", "-m", "hafiza")
+    kur(motor, tv)
+    metin = "\n".join("%d. `tavan_islev_%02d` iddia." % (i + 1, i) for i in range(21))
+    kod, o, e, satirlar, govde = _dogus_not(motor, tv, metin)
+    if satirlar != ["DOGUSTA BAYAT: OLCULEMEDI (21 dosya: git gecmisi yalniz ilk 20 dosya icin soruldu)"]:
+        b.append(("DOGUS-TAVAN", "21 dosyalik not: tavan BEYAN edilmeli: satirlar %r" % satirlar))
+    # git'siz proje (dosya sistemi kipi): OLCULEMEDI
+    gitsiz = os.path.join(taban, "dogus_gitsiz")
+    _yaz(os.path.join(gitsiz, "src", "a.py"), DOGUS_V1)
+    kod, o, e = kos(motor, gitsiz, "kur", "--ad", "ADR")
+    if kod != 0:
+        raise Kurulamadi("git'siz kur basarisiz: exit=%s %r" % (kod, (o + e)[-160:]))
+    kur(motor, gitsiz)
+    kod, o, e, satirlar, govde = _dogus_not(motor, gitsiz)
+    if kod != 0 or satirlar != ["DOGUSTA BAYAT: OLCULEMEDI (git deposu degil)"]:
+        b.append(("DOGUS-GITSIZ", "git'siz proje: exit=%s satirlar %r" % (kod, satirlar)))
+    # sig gecmis: 7 commit'lik depodan --depth 2 klon
+    sig = os.path.join(taban, "dogus_sig")
+    url = "file://" + ("" if kok6.startswith("/") else "/") + kok6.replace("\\", "/")
+    r = subprocess.run(["git", "clone", "-q", "--depth", "2", url, sig], capture_output=True, env=_cikti_kodlamasi_ortami())
+    if r.returncode != 0:
+        raise Kurulamadi("sig klon basarisiz: %r" % r.stderr[-160:])
+    kur(motor, sig)
+    kod, o, e, satirlar, govde = _dogus_not(motor, sig)
+    if kod != 0 or satirlar != ["DOGUSTA BAYAT: OLCULEMEDI (sig gecmis: 2 commit)"]:
+        b.append(("DOGUS-SIG", "sig klon: exit=%s satirlar %r" % (kod, satirlar)))
+    # bu adimin istisnasi: not exit 0 + damga YERINDE + OLCULEMEDI
+    kok, degisen = _dogus_proje(motor, taban, "dogus_istisna", 1)
+    kod, o, e, satirlar, govde = _dogus_not(istisnali, kok)
+    iz = hashlib.sha256("def hedef_islev(x):\n    return x + 2".encode("utf-8")).hexdigest()[:8]
+    if (kod != 0 or satirlar != ["DOGUSTA BAYAT: OLCULEMEDI (RuntimeError)"] or govde != "1. `hedef_islev`#%s dogru calisir." % iz
+            or "Traceback" in (o + e)):
+        b.append(("DOGUS-ISTISNA", "dogusta bayat istisnasi: exit=%s satirlar=%r govde=%r (exit 0 + damga yerinde + OLCULEMEDI beklenir)" % (
+            kod, satirlar, govde)))
+    return b
+
+
+def kos_dogus(motor, taban, ad, kaynak):
+    if kaynak.count(DOGUS_ISTISNA_ANKOR) != 1:
+        raise Kurulamadi("dogus istisna capasi %d yerde gecti (1 olmali)" % kaynak.count(DOGUS_ISTISNA_ANKOR))
+    istisnali, hata = _motor_yaz(kaynak.replace(DOGUS_ISTISNA_ANKOR, DOGUS_ISTISNA_ANKOR + '    raise RuntimeError("bilerek bozuk dogusta bayat")      # MUTANT\n', 1),
+                                 os.path.join(os.path.dirname(taban), "dogus_istisna_" + ad), "dogus_istisna_" + ad)
+    if istisnali is None:
+        raise Kurulamadi(hata)
+    return kol_dogus(motor, taban, istisnali)
+
+
 def _kapi_kosusu(motor, kok):
     cikti = []
     for args in (("kapi",), ("kapi", "--siki"), ("devral", "--kesif")):
@@ -1596,6 +1782,7 @@ KOLLAR = {
     "A-EKSIK": kos_eksik,
     "P5-DAMGA": kos_damga,
     "P5-H20": kos_h20,
+    "P5-DOGUS": kos_dogus,
     "A-KOMUT-SATIRI": kos_komut_satiri,
 }
 
@@ -1917,6 +2104,45 @@ SABOTAJLAR = (
     ("M-H13 `yol:N` damga dosyada ARANMAZ (satir kaymasi govde degisti sayilir)", "P5-H20", "H20-YOL",
      '    if any(iz == damga[1:] for _t, _b, _e, iz in satirlar):\n        return "ayni", None\n',
      "    if False:      # MUTANT\n        return \"ayni\", None\n"),
+    ("M-G1 N=0 (pencere YOK: uyari hic cikmaz)", "P5-DOGUS", "DOGUS-VAR",
+     "_DOGUS_N = 5 ",
+     "_DOGUS_N = 0 "),
+    ("M-G2 N=100 (pencere SINIRSIZ: 5-6 commit once de uyarir)", "P5-DOGUS", "DOGUS-SINIR",
+     "_DOGUS_N = 5 ",
+     "_DOGUS_N = 100 "),
+    ("M-G3 k YANLIS (+1 commit once)", "P5-DOGUS", "DOGUS-VAR",
+     '"%d commit once degisti" % k, shalar[k][:7]))',
+     '"%d commit once degisti" % (k + 1), shalar[k][:7]))'),
+    ("M-G4 yanlis commit'in sha'si (degisikligi getireninkine DEGIL, bir oncekinin)", "P5-DOGUS", "DOGUS-VAR",
+     '"%d commit once degisti" % k, shalar[k][:7]))',
+     '"%d commit once degisti" % k, shalar[k + 1][:7]))'),
+    ("M-G5 commit'lenmemis degisiklik uyarisi YOK", "P5-DOGUS", "DOGUS-COMMITSIZ",
+     "    elif tuple(sorted(calisma.get(tam, ()))) != iz[0]:\n",
+     "    elif False:      # MUTANT\n"),
+    ("M-G6 git'siz proje SESSIZ (depo degil: OLCULEMEDI gizlenir)", "P5-DOGUS", "DOGUS-GITSIZ",
+     '    if r.returncode != 0 or r.stdout.strip() != b"true":\n',
+     "    if False:      # MUTANT\n"),
+    ("M-G7 sig gecmis SESSIZ (kisa gecmis 'degismedi' sanilir)", "P5-DOGUS", "DOGUS-SIG",
+     '        if s.returncode == 0 and s.stdout.strip() == b"true":\n',
+     "        if False:      # MUTANT\n"),
+    ("M-G8 dogusta bayat istisnasi `not`a SIZAR (yakalama dar)", "P5-DOGUS", "DOGUS-ISTISNA",
+     "    except (Exception, SystemExit) as e:  # noqa: BLE001 - KISIT 6-3: dogusta bayat",
+     "    except KeyError as e:  # noqa: BLE001 - KISIT 6-3: dogusta bayat"),
+    ("M-G9 first-parent YOK (birlestirme gecmisi tarih sirasiyla gezilir: k/sha kayar)", "P5-DOGUS", "DOGUS-MERGE",
+     '    r = _dogus_git(kok, "rev-list", "--first-parent", "-n", str(_DOGUS_N + 1), "HEAD", "--")\n',
+     '    r = _dogus_git(kok, "rev-list", "-n", str(_DOGUS_N + 1), "HEAD", "--")      # MUTANT\n'),
+    ("M-G10 git show yolu depo KOKUNE gore (alt dizin projesinde dosya `yok` sanilir)", "P5-DOGUS", "DOGUS-ALTDIZIN",
+     '    r = _dogus_git(kok, "show", "%s:./%s" % (sha, yol))\n',
+     '    r = _dogus_git(kok, "show", "%s:%s" % (sha, yol))      # MUTANT\n'),
+    ("M-G11 20 dosya tavani SESSIZ kirpar (OLCULEMEDI beyani yok)", "P5-DOGUS", "DOGUS-TAVAN",
+     "    if len(dosyalar) > _DOGUS_DOSYA_TAVAN:\n",
+     "    if False:      # MUTANT\n"),
+    ("M-G12 calisma agaci cikarilamayinca da hukum verilir (`{}` sanilir: sahte commit'lenmemis)", "P5-DOGUS", "DOGUS-CALISMA",
+     "    if calisma is None:\n",
+     "    if False:      # MUTANT\n"),
+    ("M-G13 EN YAKIN degisimde durulmaz (ilk bulgudan sonra da taranir)", "P5-DOGUS", "DOGUS-YAKIN",
+     "shalar[k][:7]))\n            break\n",
+     "shalar[k][:7]))\n            pass      # MUTANT\n"),
     ("M-K1 dosya listesi TEK git cagrisina dizilir", "A-KOMUT-SATIRI", "KOMUT-SATIRI",
      '    r = _adres_git(kok, "ls-files", "-z")\n',
      '    r = _adres_git(kok, "ls-files", "-z")\n'

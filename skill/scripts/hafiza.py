@@ -9886,10 +9886,12 @@ def _adres_cikar(dil, metin):
 _ADRES_GIT_ORTAM_HARIC = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")
 
 
-def _adres_git(kok, *args):
-    """`git -C kok ...` (yollar komut satirina DIZILMEZ — H14 dersi); baska deponun ortam degiskenleri susturulur."""
+def _adres_git(kok, *args, **kw):
+    """`git -C kok ...` (yollar komut satirina DIZILMEZ — H14 dersi); baska deponun ortam degiskenleri susturulur; terminal istemi
+    KAPALI (kismi klonda lazy-fetch bir kimlik istemine takilip asilmasin). `kw` subprocess.run'a gecer (P5: timeout, stdin)."""
     ortam = dict((k, v) for k, v in os.environ.items() if k not in _ADRES_GIT_ORTAM_HARIC)
-    return subprocess.run(["git", "-C", kok] + list(args), capture_output=True, env=ortam)  # noqa: S603  # nosec B603
+    ortam["GIT_TERMINAL_PROMPT"] = "0"
+    return subprocess.run(["git", "-C", kok] + list(args), capture_output=True, env=ortam, **kw)  # noqa: S603  # nosec B603
 
 
 def _adres_git_dosyalari(kok):
@@ -10953,7 +10955,8 @@ def _damga_uygula_ic(kok, y, govde):
     cozum = dict(((m, t), _damga_coz(kok, indeks, onbellek, m, t)) for m, t in tum)
     karar = dict(((m, t), _damga_karar(kok, cozum[(m, t)], onbellek)) for m, t in aday)
     _damga_ekle(L, jetonlar, karar)
-    return "\n".join(L), _damga_notlari(aday, sonekli, karar)
+    sembol = [(m, c[1], c[2]) for (m, _t), c in sorted(cozum.items()) if c[0] == "tek"]
+    return "\n".join(L), _damga_notlari(aday, sonekli, karar) + _dogus_guvenli(kok, sembol, onbellek)
 
 
 def _damga_uygula(kok, y, govde):
@@ -11086,6 +11089,124 @@ def _kapi_uyarilar(N, kok, y):
     _kapi_h20(N, kok, y)
 
 
+# ---------------------------------------------------------------- DOGUSTA BAYAT (P5 KALEM 3)
+# `not` aninda, K1'de TEK tanima COZULEN her sembol icin: sembolun dosyasinin son N commit'teki surumleri (`git show <c>:./<yol>`;
+# yol KOMUT SATIRINA dizilmez: tek yol/cagri — H14 dersi) AYNI cikaricidan gecirilir. En yakin degisim: HEAD'den geriye ilk k icin
+# (0 <= k < N) sembolun govdesi `c_k` ile `c_(k+1)` surumlerinde FARKLIYSA "k commit once degisti" (o degisikligi GETIREN commit
+# `c_k`). Calisma agaci HEAD'den farkliysa `commit'lenmemis degisiklik`. git yok / depo degil / sig gecmis -> OLCULEMEDI.
+# ENGELLEMEZ: yalniz konsol satiri; `not` exit'i DEGISMEZ. N motorda SABIT (README'de beyanli). Tarih first-parent'tir. Git cagrilari
+# terminal istemsiz + zaman asimli; toplam sure butcesi asilirsa kalan dosyalar OLCULEMEDI diye beyan edilir (`not` kilidi TUTARKEN calisir).
+_DOGUS_N = 5                  # son N commit: HEAD + onceki N-1 (o pencerede govdesi degisen sembol uyarilir)
+_DOGUS_DOSYA_TAVAN = 20       # bir `not`ta git gecmisi en cok bu kadar DOSYA icin sorulur (ustu OLCULEMEDI diye beyan edilir)
+_DOGUS_ZAMAN_ASIMI = 20       # sn: tek git cagrisi
+_DOGUS_BUTCE = 15             # sn: bir `not`ta dogusta bayat taramasinin toplam suresi
+
+
+def _dogus_git(kok, *args):
+    """`_adres_git` + stdin KAPALI + zaman asimi (zaman asimi `OLCULEMEDI`ye `_dogus_guvenli`de cevrilir)."""
+    return _adres_git(kok, *args, timeout=_DOGUS_ZAMAN_ASIMI, stdin=subprocess.DEVNULL)
+
+
+def _dogus_gecmis(kok):
+    """-> (HEAD'den geriye [sha] (first-parent, en cok N+1), None) ya da (None, sebep): git yok / depo degil / sig gecmis."""
+    if not shutil.which("git"):
+        return None, "git yok"
+    r = _dogus_git(kok, "rev-parse", "--is-inside-work-tree")
+    if r.returncode != 0 or r.stdout.strip() != b"true":
+        hata = (r.stderr or b"").decode("utf-8", "replace")
+        return None, "git deposu OKUNAMADI (dubious ownership)" if ("dubious ownership" in hata or "safe.directory" in hata) \
+            else "git deposu degil"
+    r = _dogus_git(kok, "rev-list", "--first-parent", "-n", str(_DOGUS_N + 1), "HEAD", "--")
+    shalar = r.stdout.decode("ascii", "replace").split() if r.returncode == 0 else []
+    if not shalar:
+        return None, "commit yok"
+    if len(shalar) <= _DOGUS_N:
+        s = _dogus_git(kok, "rev-parse", "--is-shallow-repository")
+        if s.returncode == 0 and s.stdout.strip() == b"true":
+            return None, "sig gecmis: %d commit" % len(shalar)
+    return shalar, None
+
+
+def _dogus_surum(kok, sha, yol, dil):
+    """`sha` commit'indeki dosya -> ([(tam ad, bas, bit, iz)], None) · (None, None) dosya o commit'te YOK · (None, sebep) okunamadi/
+    cikarilamadi. `git show` hatasi 'dosya yok' SAYILMAZ: `ls-tree` ile dosyanin o commit'te varligi ayrica sorulur (dilden bagimsiz)."""
+    r = _dogus_git(kok, "show", "%s:./%s" % (sha, yol))
+    if r.returncode != 0:
+        t = _dogus_git(kok, "ls-tree", "-z", sha, "--", yol)
+        return (None, None) if t.returncode == 0 and not t.stdout.strip(b"\0") else (None, "GIT_OKUNAMADI")
+    if len(r.stdout) > _ADRES_DOSYA_TAVAN:
+        return None, "BUYUK"
+    return _damga_ham_satirlar(yol, r.stdout, dil)
+
+
+def _dogus_surumler(kok, yol, shalar):
+    """Dosyanin `shalar` commit'lerindeki surumleri [(satirlar | None, sebep)] (HEAD once). Dosya pencerede (HEAD..HEAD~N-1)
+    HIC commit'e girmediyse yalniz HEAD surumu sorulur (degisim yok: tek git cagrisi)."""
+    dil = _ADRES_UZANTI.get(os.path.splitext(yol)[1].lower())
+    r = _dogus_git(kok, "rev-list", "--first-parent", "-n", "1", "HEAD", "--", yol)
+    if r.returncode != 0:
+        return [(None, "GIT_OKUNAMADI")]
+    son = r.stdout.decode("ascii", "replace").strip()
+    if not son or son not in shalar[:_DOGUS_N]:
+        return [_dogus_surum(kok, shalar[0], yol, dil)]
+    return [_dogus_surum(kok, s, yol, dil) for s in shalar]
+
+
+def _dogus_sembol(m, tam, surumler, shalar, calisma):
+    """Bir sembolun satirlari. `surumler[j]` = (satirlar | None, sebep) j=0 HEAD; `calisma` = calisma agacindaki izler (dict) ya da
+    None (calisma agaci cikarilamadi: `commit'lenmemis` hukmu VERILMEZ)."""
+    iz = []
+    for satirlar_, sebep in surumler:
+        if satirlar_ is None and sebep:
+            return ["DOGUSTA BAYAT: OLCULEMEDI (%s: %s)" % (m, sebep)]
+        iz.append(tuple(sorted(r[3] for r in satirlar_ if r[0] == tam)) if satirlar_ is not None else ())
+    cikti = []
+    for k in range(min(_DOGUS_N, len(iz) - 1)):
+        if iz[k] != iz[k + 1]:
+            cikti.append("DIKKAT: %s govdesi %s (%s) - iddiayi kodla teyit et" % (
+                m, "son commit'te degisti" if k == 0 else "%d commit once degisti" % k, shalar[k][:7]))
+            break
+    if calisma is None:
+        cikti.append("DOGUSTA BAYAT: OLCULEMEDI (%s: calisma agaci cikarilamadi)" % m)
+    elif tuple(sorted(calisma.get(tam, ()))) != iz[0]:
+        cikti.append("DIKKAT: %s commit'lenmemis degisiklik tasiyor" % m)
+    return cikti
+
+
+def _dogus_hepsi(kok, semboller, onbellek):
+    """`semboller` = [(metin, yol, tam)] (sirali; K1'de TEK tanima cozulenler) -> konsol satirlari."""
+    import time
+    if not semboller:
+        return []
+    shalar, sebep = _dogus_gecmis(kok)
+    if shalar is None:
+        return ["DOGUSTA BAYAT: OLCULEMEDI (%s)" % sebep]
+    dosyalar = sorted({s[1] for s in semboller})
+    izinli, surum_onb, cikti, t0, atlanan = set(dosyalar[:_DOGUS_DOSYA_TAVAN]), {}, [], time.monotonic(), set()
+    for m, yol, tam in semboller:
+        if yol not in izinli:
+            continue
+        if yol not in surum_onb and time.monotonic() - t0 > _DOGUS_BUTCE:
+            atlanan.add(yol)
+            continue
+        if yol not in surum_onb:
+            surum_onb[yol] = _dogus_surumler(kok, yol, shalar)
+        izler = _damga_izler(kok, yol, onbellek)[0]
+        cikti += _dogus_sembol(m, tam, surum_onb[yol], shalar, izler)
+    if len(dosyalar) > _DOGUS_DOSYA_TAVAN:
+        cikti.append("DOGUSTA BAYAT: OLCULEMEDI (%d dosya: git gecmisi yalniz ilk %d dosya icin soruldu)"
+                     % (len(dosyalar), _DOGUS_DOSYA_TAVAN))
+    if atlanan:
+        cikti.append("DOGUSTA BAYAT: OLCULEMEDI (%d dosya: %d sn sure butcesi asildi)" % (len(atlanan), _DOGUS_BUTCE))
+    return cikti
+
+
+def _dogus_guvenli(kok, semboller, onbellek):
+    """`_dogus_hepsi` + KISIT 6-3: istisna (SystemExit, git zaman asimi dahil) `OLCULEMEDI`dir ve damga/`not` hukumlerini ETKILEMEZ."""
+    try:
+        return _dogus_hepsi(kok, semboller, onbellek)
+    except (Exception, SystemExit) as e:  # noqa: BLE001 - KISIT 6-3: dogusta bayat istisnasi OLCULEMEDI'dir
+        return ["DOGUSTA BAYAT: OLCULEMEDI (%s)" % type(e).__name__]
 # ==== PARMAK IZLI ATIF (P5) SON ====
 
 
