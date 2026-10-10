@@ -385,9 +385,10 @@ işaretçisi dahil). En önemlileri:
   yazılmaz (bir kez yazıldı, iki gün içinde bayatladı). Tek belgelenmiş istisna
   `h9_kesme_mutanti`dir: `chown` POSIX'e özgü olduğu için ubuntu kolu KAPI,
   macOS/Windows kolları platform sınırı nedeniyle ÖLÇÜM (`capraz.yml`de
-  gerekçesiyle yazılı). Motorda platforma özgü tek
-  dal `sys.platform == "win32"` altındadır ve `faz0/win_dal_mutanti.py` onu ölçer:
-  envanter ve davranış kapıları temiz, **4/4 mutant ayrı eksende ısırıyor**. Ama o
+  gerekçesiyle yazılı). Motorda platforma özgü dallar üç
+  yüzeydedir (`_surec_yasiyor`, `_boru_koptu_mu`, `adres` önbellek anahtarı `_adres_onb_anahtar`) ve
+  `faz0/win_dal_mutanti.py` onları ölçer: envanter ve davranış kapıları temiz,
+  **5/5 mutant ayrı eksende ısırıyor**. Ama o
   aracın kendi hükmü **"YEŞİL SINIRLI"**: üçüncü kapısı (gerçek `win32` üzerinde
   canlı koşum) yalnız Windows kolunda çalışır, diğer iki platformda `ÖLÇÜLEMEDİ`
   basar. Yani hüküm vardır ama her platformda aynı ağırlıkta değildir.
