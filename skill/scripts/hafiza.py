@@ -10112,6 +10112,8 @@ def _adres_defter_metni(sat, kaynak, dosya, tanim, disi, atla, atlanan):
     baslik = ("# adres-defteri bicim=%s surum=%s kaynak=%s ozet=%s dosya=%d tanim=%d %s disi=%s atlandi=%d atlanan=%s"
               % (_ADRES_BICIM, SURUM, kaynak, _adres_ozet(dosya_sat), len(dosya_sat), len(sat) - len(dosya_sat), dil,
                  _adres_disi_metni(disi), sum(len(v) for v in atla.values()), _adres_disi_metni(atlanan)))
+    if atla.get("cikarici"):
+        baslik += " cikarici=%d" % len(atla["cikarici"])        # EKSIK defter damgasi (P5 K0): cikarici kusuru yoksa bicim BAYT-BAYT eski
     return "\n".join([baslik] + ["\t".join((r[0], r[1], r[2], str(r[3]), str(r[4]), r[5])) for r in sat]) + "\n"
 
 
@@ -10150,8 +10152,27 @@ def _adres_kur(kok, y, p):
         os.makedirs(os.path.dirname(p), exist_ok=True)
     except OSError as e:
         oldur("PROJE YAPISI bozuk: %s dizin olmali (%s)" % (_rel(os.path.dirname(p), kok), e), 2)
-    yaz(p, metin)
-    print("ADRES DEFTERI KURULDU: %s (%d bayt)" % (_rel(p, kok), len(metin.encode("utf-8"))))
+    korunan = _adres_eski_saglam(p) if atla.get("cikarici") else None     # K0a: cikarici kusuru SAGLAM defteri EZMEZ
+    if korunan is None:
+        yaz(p, metin)
+        _adres_kur_ciktisi(kok, p, metin, (kaynak, notlar, dosya, tanim), (disi, atlanan, atla, uyari))
+    else:
+        print("ADRES DEFTERI KURULAMADI: %d dosyada cikarici istisnasi" % len(atla["cikarici"]))
+        print("ESKI DEFTER KORUNDU: %s (%d bayt, tanim %s)" % (_rel(p, kok), korunan[0], korunan[1]))
+        print("  " + _adres_sebep_satiri("ATLANDI", atla))
+    if atla.get("cikarici"):
+        print("  ARAC KUSURU: %d dosyada cikarici BEKLENMEDIK istisna firlatti (o dosyalarin tanimi YOK) - exit 3"
+              % len(atla["cikarici"]))
+        return 3
+    return 0
+
+
+def _adres_kur_ciktisi(kok, p, metin, kaynak_bilgisi, disi_bilgisi):
+    """`--kur` konsolu (defter YAZILDI). Cikarici kusurlu EKSIK defterde ilk satir `EKSIK KURULDU` der (basari DEMEZ)."""
+    kaynak, notlar, dosya, tanim = kaynak_bilgisi
+    disi, atlanan, atla, uyari = disi_bilgisi
+    print("ADRES DEFTERI %sKURULDU: %s (%d bayt)" % ("EKSIK " if atla.get("cikarici") else "", _rel(p, kok),
+                                                      len(metin.encode("utf-8"))))
     print("  kaynak : %s" % _ADRES_KAYNAK_METNI[kaynak])
     for n in notlar:
         print("  not    : " + n)
@@ -10166,11 +10187,26 @@ def _adres_kur(kok, y, p):
     if uyari:
         print("  " + _adres_sebep_satiri("UYARI (UTF-8 degil, latin-1 varsayildi)", uyari))
     print("  NOT: cagiranlar sozcuk eslesmesidir; C#/Dart/TS/JS cikarimi desen tabanlidir (AST kadar kesin DEGIL)")
-    if atla.get("cikarici"):
-        print("  ARAC KUSURU: %d dosyada cikarici BEKLENMEDIK istisna firlatti (o dosyalarin tanimi YOK) - exit 3"
-              % len(atla["cikarici"]))
-        return 3
-    return 0
+
+
+def _adres_eksik_mi(baslik):
+    """Defter basligi CIKARICI kaynakli atlama tasiyor mu (EKSIK defter; `sozdizimi`/`ikili` atlamasi eksik DEGILDIR)?"""
+    return baslik.get("cikarici", "0") not in ("", "0")
+
+
+def _adres_eski_saglam(p):
+    """Mevcut defter OKUNABILIR, bicimi taninir ve cikarici kaynakli EKSIK degilse (bayt, tanim sayisi metni); aksi None
+    (yok / okunamaz / bozuk / eksik: SAGLAM degil). Hicbir istisna ya da `oldur` yok."""
+    try:
+        with open(p, encoding="utf-8", errors="replace", newline="") as f:
+            satirlar = f.read().split("\n")
+        boyut = os.path.getsize(p)
+    except OSError:
+        return None
+    durum, veri = _adres_defter_coz(satirlar)
+    if durum != "tamam" or _adres_eksik_mi(veri[0]):
+        return None
+    return boyut, veri[0].get("tanim", "?")
 
 
 # ---------------------------------------------------------------- defteri okuma + sorgu
@@ -10195,6 +10231,11 @@ def _adres_defter_oku(p):
             satirlar = f.read().split("\n")
     except OSError as e:
         oldur("ADRES.tsv OKUNAMADI: %s" % e, 3)
+    return _adres_defter_coz(satirlar)
+
+
+def _adres_defter_coz(satirlar):
+    """Defter satirlari -> ('bozuk', sebep) · ('tamam', (baslik, tanimlar, {yol: (sha, satir)})). Saf: disk/`oldur` YOK."""
     baslik = _adres_baslik_coz(satirlar[0].rstrip("\r"))
     if baslik is None or baslik.get("bicim") != _ADRES_BICIM:
         return "bozuk", "baslik taninmiyor (bicim=%s bekleniyor)" % _ADRES_BICIM
@@ -10614,8 +10655,41 @@ def _adres_mahalle_cevabi(tanimlar, onek):
     return 0
 
 
+def _adres_yaz_dene(p, metin):
+    """Sorgu icindeki yeniden kurulusun yazimi: yazilamazsa (izin / salt-okunur / disk) komutu DUSURMEZ (`oldur` YOK) -> bool."""
+    d = os.path.dirname(p) or "."
+    if (os.path.lexists(p) and not os.access(p, os.W_OK)) or not os.access(d, os.W_OK | os.X_OK):
+        return False
+    try:
+        _atomik_yaz(p, metin)
+    except OSError:
+        return False
+    return True
+
+
+def _adres_eksik_yeniden(kok, p, veri):
+    """K0b: cikarici kusurlu EKSIK defter sorguda 'guncel' SAYILMAZ (`ozet` kaynak agacini yansittigi icin bayatlik yolu onu
+    yakalamaz): once defter yeniden kurulmayi denenir. Yeni kurulus EKSIK degilse yazilir (yazilamazsa bellekte kullanilir) ve
+    sorgu onunla cevaplanir; hala eksikse ESKI defter korunur ve durum BEYAN edilir. -> (durum, veri); sorgu exit'i degismez."""
+    kaynak, yollar, _notlar = _adres_dosyalar(kok)
+    kod, disi, atlanan = _adres_yol_ayir(yollar)
+    sat, dosya, tanim, atla, _uyari = _adres_dizinle(kok, kod)
+    if atla.get("cikarici"):
+        print("ADRES DEFTERI EKSIK: %d dosyada cikarici istisnasi (yeniden kurma denendi: hala eksik) - hafiza.py adres --kur"
+              % len(atla["cikarici"]))
+        return "tamam", veri
+    metin = _adres_defter_metni(sat, kaynak, dosya, tanim, disi, atla, atlanan)
+    if _adres_yaz_dene(p, metin):
+        print("ADRES DEFTERI YENIDEN KURULDU: eksik defter onarildi (%s)" % _rel(p, kok))
+    else:
+        print("ADRES DEFTERI YENIDEN KURULDU (BELLEKTE): defter yazilamadi, sorgu bellekteki defterle cevaplandi")
+    return _adres_defter_coz(metin.split("\n"))
+
+
 def _adres_sorgu(kok, p, a):
     durum, veri = _adres_defter_oku(p)
+    if durum == "tamam" and _adres_eksik_mi(veri[0]):                  # K0b: EKSIK defter "guncel" SAYILMAZ
+        durum, veri = _adres_eksik_yeniden(kok, p, veri)
     if durum != "tamam":
         print("ADRES DEFTERI %s - hafiza.py adres --kur" % ("YOK" if durum == "yok" else "BOZUK (%s)" % veri))
         return 1

@@ -77,8 +77,9 @@ _cikti_kodlamasini_guvenceye_al()
 
 VARSAYILAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
-KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-MASKE", "A-ATLA", "A-ETKI", "A-KOMUT-SATIRI")
-KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
+KOL_SIRASI = ("A-TANIM", "A-CAGIRAN", "A-PARMAK", "A-BAYAT", "A-DETERMINIZM", "A-MASKE", "A-ATLA", "A-ETKI", "A-EZME", "A-EKSIK",
+             "A-KOMUT-SATIRI")
+KOL_ETIKET = {"A-TANIM": "TANIM", "A-CAGIRAN": "CAGIRAN", "A-PARMAK": "PARMAK", "A-BAYAT": "BAYAT", "A-DETERMINIZM": "DETERMINIZM", "A-MASKE": "MASKE", "A-ATLA": "ATLA", "A-ETKI": "ETKI", "A-EZME": "EZME", "A-EKSIK": "EKSIK", "A-KOMUT-SATIRI": "KOMUT-SATIRI"}
 UZUN_YOL_ADET = 600                     # 600 x 72 kr = 43.200 kr > 32.767 (Windows komut satiri siniri); kisa izole TEMP'te tek yol < 260
 
 
@@ -327,6 +328,8 @@ def _platform_sinir(etiket):
         return "bu platformda sinir yok (yalniz Windows'ta isirir)"
     if etiket == "BAYAT-OKUNMAZ" and (os.name == "nt" or os.geteuid() == 0):
         return "okuma izni yalniz POSIX'te ve root olmayan kullanicida sinanir"
+    if etiket == "EKSIK-BELLEKTE" and os.name != "nt" and os.geteuid() == 0:
+        return "yazma izni kontrolu root icin anlamsiz (root her dosyaya yazar)"
     return None
 
 
@@ -862,6 +865,136 @@ def kol_atla_fs(motor, taban):
     return b + _atla_sorgu(motor, kok, "fs", ["src/ok.ts"], ["src/ok.ts"])
 
 
+# ------------------------------------------------------------------ A-EZME / A-EKSIK (P5 KALEM 0): cikarici kusuru SAGLAM defteri ezmez; EKSIK defter
+# sorguda "guncel" sayilmaz. ARIZALI motor = ayni motorun C#/Dart/TS desen tablosu ILK KULLANIMDA patlayan kopyasi (Python `ast` yolu tabloya
+# dokunmaz): py dosyalari tanimlanir, C# dosyasi `cikarici` istisnasi verir -> `--kur` exit 3 (Cowork O14 `inj_tablo` enjeksiyonuyla ayni sinif).
+EZME_DOSYALAR = {"src/fx.py": PY_FX, "src/Fx.cs": CS_FX}       # 4 py + 4 cs = 8 tanim (BEKLENEN)
+EZME_BASLIK = "ADRES DEFTERI KURULAMADI: 1 dosyada cikarici istisnasi"
+TABLO_ANKOR = (r'    delegate = (re.compile(r"%sdelegate\s+%s\s+(?P<ad>%s)\s*(?:%s)?\(" % (mod, tip, _N, _G2)), "tip", "")' + "\n")   # C# `delegate` kurali
+
+
+def _tablo_bozuk_yaz(kaynak, hedef_dizin, ad):
+    """Cikarici BEKLENMEDIK istisna firlatan motor kopyasi: C# kural tablosu ilk kullanimda patlar (modul yuklemede DEGIL)."""
+    if kaynak.count(TABLO_ANKOR) != 1:
+        return None, "tablo bozucu capasi %d yerde gecti (1 olmali)" % kaynak.count(TABLO_ANKOR)
+    metin = kaynak.replace(TABLO_ANKOR, '    delegate = (re.compile("(("), "tip", "")      # MUTANT: tablo ogesi ilk kullanimda patlar\n', 1)
+    return _motor_yaz(metin, hedef_dizin, ad)
+
+
+def _defter_yolu(kok):
+    return os.path.join(kok, "arsiv", "hafiza", "ADRES.tsv")
+
+
+def _bozuk_motor(taban, ad, kaynak):
+    bozuk, hata = _tablo_bozuk_yaz(kaynak, os.path.join(os.path.dirname(taban), "tablo_" + ad), "tablo_" + ad)
+    if bozuk is None:
+        raise Kurulamadi(hata)
+    return bozuk
+
+
+def kol_ezme(motor, taban, bozuk):
+    """A-EZME: arac kusurunda (exit 3) mevcut SAGLAM defter EZILMEZ (EZME: bayt-bayt ayni · EZME-BASLIK `KURULAMADI` · EZME-KORUNDU
+    `ESKI DEFTER KORUNDU` satiri) · saglam defter YOKSA eksik defter `EKSIK KURULDU` der ve `cikarici=` damgasi tasir (EZME-EKSIK) ·
+    BOZUK defter korunmaz (EZME-BOZUK) · EKSIK defter SAGLAM sayilmaz, yeni eksik defter onun USTUNE yazilir (EZME-USTUNE) ·
+    exit 0 yolu `KURULDU` der ve `cikarici=` alani YOK (EZME-SAGLAM)."""
+    b = []
+    kok = proje(taban, "ezme", EZME_DOSYALAR)
+    kod, o, e = kos(motor, kok, "adres", "--kur")
+    if kod != 0 or not o.startswith("ADRES DEFTERI KURULDU: arsiv/hafiza/ADRES.tsv ("):
+        b.append(("EZME-SAGLAM", "saglam motor exit=%s ilk satir=%r (exit 0 + `ADRES DEFTERI KURULDU:` beklenir)" % (kod, o.split("\n")[0])))
+    once = io.open(_defter_yolu(kok), "rb").read()
+    if b"cikarici=" in once.split(b"\n")[0]:
+        b.append(("EZME-SAGLAM", "cikarici kusuru YOKKEN baslikta `cikarici=` alani var: %r" % once.split(b"\n")[0][-60:]))
+    kod, o, e = kos(bozuk, kok, "adres", "--kur")
+    if kod != 3:
+        raise Kurulamadi("arizali motor `--kur` exit=%s (3 beklenir): %r" % (kod, (o + e).strip()[-160:]))
+    sonra = io.open(_defter_yolu(kok), "rb").read()
+    if sonra != once:
+        b.append(("EZME", "arac kusurunda SAGLAM defter DEGISTI (%d -> %d bayt)" % (len(once), len(sonra))))
+    sat = o.split("\n")
+    if sat[0] != EZME_BASLIK:
+        b.append(("EZME-BASLIK", "ilk satir %r != %r" % (sat[0], EZME_BASLIK)))
+    korundu = "ESKI DEFTER KORUNDU: arsiv/hafiza/ADRES.tsv (%d bayt, tanim 8)" % len(once)
+    if korundu not in sat:
+        b.append(("EZME-KORUNDU", "%r satiri yok: %r" % (korundu, sat[:4])))
+    if not any(l.startswith("  ATLANDI: 1 dosya (cikarici 1); ilk: src/Fx.cs") for l in sat) or \
+            not any(l.startswith("  ARAC KUSURU: 1 dosyada cikarici BEKLENMEDIK istisna firlatti") for l in sat):
+        b.append(("EZME-KORUNDU", "KORUNDU yolunda ATLANDI / ARAC KUSURU satirlari yok: %r" % sat))
+    # saglam defter YOK: eksik defter yazilir, ilk satir basari DEMEZ
+    kok2 = proje(taban, "ezme_yok", EZME_DOSYALAR)
+    kod, o, e = kos(bozuk, kok2, "adres", "--kur")
+    baslik = io.open(_defter_yolu(kok2), encoding="utf-8").read().split("\n")[0] if os.path.isfile(_defter_yolu(kok2)) else ""
+    if kod != 3 or not o.startswith("ADRES DEFTERI EKSIK KURULDU: arsiv/hafiza/ADRES.tsv (") or " cikarici=1" not in baslik:
+        b.append(("EZME-EKSIK", "defter YOKKEN: exit=%s ilk satir=%r baslik sonu=%r" % (kod, o.split("\n")[0], baslik[-40:])))
+    # EKSIK defter SAGLAM DEGIL: ikinci arizali `--kur` onu KORUMAZ, yenisini (yine eksik) yazar
+    _yaz(os.path.join(kok2, "src", "yeni.py"), "def yeni():\n    return 1\n")
+    _git(kok2, "add", "-A")
+    kod, o, e = kos(bozuk, kok2, "adres", "--kur")
+    if kod != 3 or not o.startswith("ADRES DEFTERI EKSIK KURULDU:") or "yeni" not in io.open(_defter_yolu(kok2), encoding="utf-8").read():
+        b.append(("EZME-USTUNE", "eksik defterin USTUNE: exit=%s ilk satir=%r" % (kod, o.split("\n")[0])))
+    # BOZUK defter saglam degil: ezilir
+    kok3 = proje(taban, "ezme_bozuk", EZME_DOSYALAR)
+    os.makedirs(os.path.dirname(_defter_yolu(kok3)))
+    _yaz(_defter_yolu(kok3), "bu bir defter degil\n")
+    kod, o, e = kos(bozuk, kok3, "adres", "--kur")
+    if kod != 3 or not o.startswith("ADRES DEFTERI EKSIK KURULDU:"):
+        b.append(("EZME-BOZUK", "bozuk defter: exit=%s ilk satir=%r" % (kod, o.split("\n")[0])))
+    return b
+
+
+def kol_eksik(motor, taban, bozuk):
+    """A-EKSIK: EKSIK defter (cikarici kusurlu) sorguda 'guncel' SAYILMAZ: SAGLAM motorla `adres <ad>` defteri yeniden kurar ve tanimi
+    BULUR (EKSIK-YENIDEN) · ikinci sorguda yeniden kurma YOK (EKSIK-TEKRAR) · `sozdizimi` atlamasi EKSIK degildir, yeniden kurmayi
+    tetiklemez (EKSIK-SOZDIZIMI) · arizali motorda hala eksik: ESKI defter korunur, durum `EKSIK` basilir, sorgu dusmez (EKSIK-HALA)."""
+    b = []
+    kok = proje(taban, "eksik", EZME_DOSYALAR)
+    kod, o, e = kos(bozuk, kok, "adres", "--kur")
+    if kod != 3 or " cikarici=1" not in io.open(_defter_yolu(kok), encoding="utf-8").read().split("\n")[0]:
+        raise Kurulamadi("eksik defter kurulamadi: exit=%s %r" % (kod, (o + e).strip()[-160:]))
+    kod, o, e = kos(bozuk, kok, "adres", "Kapat")
+    if "ADRES DEFTERI EKSIK: 1 dosyada cikarici istisnasi" not in o or kod != 1:
+        b.append(("EKSIK-HALA", "arizali motorla sorgu: exit=%s cikti=%r (EKSIK satiri + exit 1 beklenir)" % (kod, o[:160])))
+    kod, o, e = kos(motor, kok, "adres", "Kapat")
+    sat = o.split("\n")
+    baslik = io.open(_defter_yolu(kok), encoding="utf-8").read().split("\n")[0]
+    if kod != 0 or "TANIM (1):" not in sat or not any(l.strip().startswith("src/Fx.cs > Kasa > Kapat ") for l in sat):
+        b.append(("EKSIK-YENIDEN", "saglam motor: exit=%s; eksik defterde `Kapat` BULUNAMADI ya da exit != 0: %r" % (kod, o[:200])))
+    if " cikarici=" in baslik or " tanim=8 " not in baslik:
+        b.append(("EKSIK-YENIDEN", "saglam motordan sonra defter hala eksik: %r" % baslik[-90:]))
+    kod, o, e = kos(motor, kok, "adres", "Kapat")
+    if "YENIDEN KURULDU" in o or kod != 0:
+        b.append(("EKSIK-TEKRAR", "defter onarildiktan sonra sorgu yine yeniden kurdu / exit=%s: %r" % (kod, o[:120])))
+    kok2 = proje(taban, "eksik_sozdizimi", {"src/ok.py": PY_FX, "src/kotu.py": "def (:\n"})
+    kod, o, e = kos(motor, kok2, "adres", "--kur")
+    if kod != 0 or " atlandi=1 " not in io.open(_defter_yolu(kok2), encoding="utf-8").read().split("\n")[0]:
+        raise Kurulamadi("sozdizimi fiksturu kurulamadi: exit=%s %r" % (kod, (o + e).strip()[-160:]))
+    kod, o, e = kos(motor, kok2, "adres", "hesapla")
+    if "YENIDEN KURULDU" in o or "EKSIK" in o or kod != 0:
+        b.append(("EKSIK-SOZDIZIMI", "yalniz `sozdizimi` atlamali defter EKSIK sayildi: exit=%s %r" % (kod, o[:160])))
+    if not _platform_sinir("EKSIK-BELLEKTE"):          # yazilamayan defter: sorgu YINE cevaplanir (bellekteki yeni defterle), dosya DEGISMEZ
+        kok3 = proje(taban, "eksik_bellekte", EZME_DOSYALAR)
+        kos(bozuk, kok3, "adres", "--kur")
+        p3 = _defter_yolu(kok3)
+        once = io.open(p3, "rb").read()
+        os.chmod(p3, stat.S_IREAD)
+        try:
+            kod, o, e = kos(motor, kok3, "adres", "Kapat")
+        finally:
+            os.chmod(p3, stat.S_IREAD | stat.S_IWRITE)
+        if kod != 0 or "ADRES DEFTERI YENIDEN KURULDU (BELLEKTE)" not in o or "src/Fx.cs > Kasa > Kapat " not in o \
+                or io.open(p3, "rb").read() != once:
+            b.append(("EKSIK-BELLEKTE", "yazilamayan eksik defter: exit=%s cikti=%r (BELLEKTE satiri + tanim BULUNMALI, defter DEGISMEMELI)" % (kod, o[:200])))
+    return b
+
+
+def kos_ezme(motor, taban, ad, kaynak):
+    return kol_ezme(motor, taban, _bozuk_motor(taban, "ezme_" + ad, kaynak))
+
+
+def kos_eksik(motor, taban, ad, kaynak):
+    return kol_eksik(motor, taban, _bozuk_motor(taban, "eksik_" + ad, kaynak))
+
+
 def _kapi_kosusu(motor, kok):
     cikti = []
     for args in (("kapi",), ("kapi", "--siki"), ("devral", "--kesif")):
@@ -995,6 +1128,8 @@ KOLLAR = {
     "A-MASKE": lambda m, t, _a, _k: kol_maske(m, t),
     "A-ATLA": lambda m, t, _a, _k: kol_atla(m, t),
     "A-ETKI": kos_etki,
+    "A-EZME": kos_ezme,
+    "A-EKSIK": kos_eksik,
     "A-KOMUT-SATIRI": kos_komut_satiri,
 }
 
@@ -1195,6 +1330,36 @@ SABOTAJLAR = (
     ("M-E4 cikarici istisnasi `sozdizimi` sayilir (adres --kur exit 3 yerine 0)", "A-ETKI", "ETKI-YUKLEME",
      '                atla.setdefault("cikarici", []).append(yol)\n',
      '                atla.setdefault("sozdizimi", []).append(yol)      # MUTANT\n'),
+    ("M-Z1 koruma KAPALI (arac kusurunda saglam defter ezilir)", "A-EZME", "EZME",
+     '    korunan = _adres_eski_saglam(p) if atla.get("cikarici") else None',
+     "    korunan = None      # MUTANT"),
+    ("M-Z2 eksik kurulus basari der (`KURULDU`; `EKSIK` yok)", "A-EZME", "EZME-EKSIK",
+     '"EKSIK " if atla.get("cikarici") else ""',
+     '""'),
+    ("M-Z3 EKSIK defter de SAGLAM sayilir (ustune yazilmaz, korunur)", "A-EZME", "EZME-USTUNE",
+     '    if durum != "tamam" or _adres_eksik_mi(veri[0]):\n        return None\n',
+     '    if durum != "tamam":      # MUTANT\n        return None\n'),
+    ("M-Z4 basliga `cikarici=` damgasi YAZILMAZ (eksik defter taninmaz)", "A-EZME", "EZME-EKSIK",
+     '        baslik += " cikarici=%d" % len(atla["cikarici"])',
+     "        pass      # MUTANT"),
+    ("M-Z5 KORUNDU yolunda ATLANDI satiri basilmaz (korunan defterin sebebi gizlenir)", "A-EZME", "EZME-KORUNDU",
+     '        print("ESKI DEFTER KORUNDU: %s (%d bayt, tanim %s)" % (_rel(p, kok), korunan[0], korunan[1]))\n'
+     '        print("  " + _adres_sebep_satiri("ATLANDI", atla))\n',
+     '        print("ESKI DEFTER KORUNDU: %s (%d bayt, tanim %s)" % (_rel(p, kok), korunan[0], korunan[1]))\n'
+     "        pass      # MUTANT\n"),
+    ("M-X1 sorguda yeniden deneme KAPALI (eksik defter 'guncel' kalir)", "A-EKSIK", "EKSIK-YENIDEN",
+     '    if durum == "tamam" and _adres_eksik_mi(veri[0]):',
+     "    if False:      # MUTANT"),
+    ("M-X2 EKSIK olcutu `atlandi>0` (sozdizimi atlamasi da yeniden kurdurur)", "A-EKSIK", "EKSIK-SOZDIZIMI",
+     '    return baslik.get("cikarici", "0") not in ("", "0")\n',
+     '    return baslik.get("atlandi", "0") not in ("", "0")      # MUTANT\n'),
+    ("M-X3 yeniden kurulus her seferinde (onarilan defter de EKSIK sanilir)", "A-EKSIK", "EKSIK-TEKRAR",
+     '    return baslik.get("cikarici", "0") not in ("", "0")\n',
+     "    return True      # MUTANT\n"),
+    ("M-X4 yeniden kurma hala eksikse sessiz (EKSIK satiri basilmaz)", "A-EKSIK", "EKSIK-HALA",
+     '        print("ADRES DEFTERI EKSIK: %d dosyada cikarici istisnasi (yeniden kurma denendi: hala eksik) - hafiza.py adres --kur"\n'
+     '              % len(atla["cikarici"]))\n',
+     "        pass      # MUTANT\n"),
     ("M-K1 dosya listesi TEK git cagrisina dizilir", "A-KOMUT-SATIRI", "KOMUT-SATIRI",
      '    r = _adres_git(kok, "ls-files", "-z")\n',
      '    r = _adres_git(kok, "ls-files", "-z")\n'
@@ -1213,6 +1378,9 @@ def main():
         print("SONUC: OLCULEMEDI — git yok.")
         return 2
     kollar = list(KOL_SIRASI)
+    for arg in sys.argv[1:]:            # gelistirme kolayligi: `--kol=A-EZME,A-EKSIK` yalniz o kollari kosar (CI bayraksiz kosar)
+        if arg.startswith("--kol="):
+            kollar = [k for k in kollar if k in arg[len("--kol="):].split(",")]
     print(CIZGI)
     print("ADRES MUTANTI — motor: %s · platform: %s" % (os.path.basename(yol), sys.platform))
     print(CIZGI)
@@ -1277,7 +1445,7 @@ def main():
         if olculemeyen:
             print("SONUC: YESIL (SINIRLI) — olculebilen her sabotaj ISIRDI; %d OLCULEMEDI (platforma/kullaniciya ozgu)." % len(olculemeyen))
         else:
-            print("SONUC: YESIL — tum kollar temiz, %d sabotaj AYRI eksende ISIRDI." % len(SABOTAJLAR))
+            print("SONUC: YESIL — tum kollar temiz, %d sabotaj AYRI eksende ISIRDI." % sum(1 for x in SABOTAJLAR if x[1] in kollar))
         return 0
     finally:
         _sil(taban)

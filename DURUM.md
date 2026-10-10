@@ -1,12 +1,12 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `5888404` = main = origin; P2.1 PUSH'SUZ)
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `ceb0454` = main = origin; CI #127 198/198)
 Son güncelleme: 10 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## SON İŞ — P2.1 `adres` sağlamlaştırma (Code O16, 10 Eki 2026) · PUSH YOK
+## SON İŞ — P2.1 `adres` sağlamlaştırma (Code O16, 10 Eki 2026) · PUSH EDİLDİ
 **Taban** `5888404`. K1 `0d7ce4a` tembel kurulum (A-ETKI) · K2 `d13e504` çağıran maskesi (A-MASKE) · K3 `0683377` üretilmiş dosya atlama (A-ATLA) · K4 `5d38686` sorgu hızı (A-BAYAT) · `226841a` win_dal. Mutant 9 kol / 57 sabotaj ISIRDI.
 **Momentum:** gövde P2 ile AYNI · `kanonikDize` 4 gerçek çağrı (+7 maskelendi). **fxa:** `--kur` 14,3 s · ATLANAN 5 · `track` 1,50 s, `.yarn` yok.
 Çapa AYNEN (`cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79) · `altin_cikti` FARK YOK · `sabotaj` **67/67** · **Tam tur (Win):** 72 OK · 10 KIRMIZI = 9 bilinen + `win_dal_mutanti` (K4 platform dalı; gerçek regresyon → `226841a`, driver OK).
-**Sıradaki:** push Onur'da → Cowork: `kanonikDize` kaynağa karşı · fxa `ATLANAN` · taze klon kabul.
+**Sıradaki:** P5 (Cowork P2.1 kabulü TUTTU: `OLCUM_RAPORU_10EKIM_P2_1_BAGIMSIZ.md`).
 **AÇIK:** macOS · py3.11/3.13 · Python adları NFKC · `--kok X <komut>` sırası adres DIŞI komutlarda yok sayılır · M-H10c KACTI (ÖNCEDEN VAR)
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
