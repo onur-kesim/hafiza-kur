@@ -10750,14 +10750,18 @@ def cmd_adres(a):
 # (`os.name`/`sys.platform`) BILEREK YOK: bu blok yalniz uyari uretir. Yukleme aninda etkisiz: modul duzeyinde yalniz def + literal.
 # Govde parmak izi `ADRES.tsv`yi ureten AYNI fonksiyondan gelir (`_adres_dosya_satirlari` -> `_adres_iz`): ikinci hash kodu YOK.
 # Belirtec tanimi H18'in `_atif_cikar` kurallariyla AYNI (`_ATIF_BT`/`_ATIF_TANIM`/`_ATIF_YOL`): ikinci kopya yazilmaz.
+# P5.2 BIRLESIK DAMGA: bir AD 2.._BIRLESIK_TAVAN tanima cozulurse iz = sha256("\n".join(sorted(tek tek govde izleri)))[:8] (yol GIRMEZ);
+# TEK tanimda iz o tanimin kendi izidir (K1 ile geri uyumlu); tavan asilirsa damga YOK (COKLU). H20 ve K3 ayni tanim kumesini kullanir.
 # Bilinen sinirlar: ANLAM olculmez (yalniz "dayandigi kod degisti" soylenir) · ad -> dosya eslemesi ADRES.tsv'den gelir (defter
-# bayatsa tasinmis sembol bulunamaz; satir -> sembol eslemesi (`yol:N`) dosyanin CANLI cikarimindan yapilir) · yol:N damgasi N.
-# satiri kapsayan EN DAR tanimindir · birden cok tanima cozulen ad (COKLU) damgalanmaz.
+# bayatsa tasinmis sembol bulunamaz: DEFTER_BAYAT; satir -> sembol eslemesi (`yol:N`) dosyanin CANLI cikarimindan yapilir) · yol:N
+# damgasi N. satiri kapsayan EN DAR tanimindir · birlesik izde HANGI tanimin degistigi soylenmez · sinif + kurucu ayni kumeye girer.
 
 _DAMGA_HEX = _ad_re(r"#[0-9a-f]{8}(?![0-9A-Za-z_])")
 _DAMGA_KELIME = _ad_re(r"[0-9A-Za-z_]")
 _DAMGA_YUZDE = _ad_re(r"%(09|0A|0D|25)")
 _DAMGA_ADET_TAVAN = 10                    # `ATIF DAMGALANDI` satirinda en cok bu kadar belirtec + `+N daha`
+_BIRLESIK_TAVAN = 5                       # bir ad en cok bu kadar tanima cozulurse BIRLESIK iz uretilir (6+: COKLU, damga YOK)
+_BIRLESIK_EK = {1: "i", 2: "si", 3: "u", 4: "u", 5: "i"}      # `3 tanimdan 3'u`: ASCII Turkce sayi eki
 
 
 def _damga_jetonlar(satir):
@@ -10870,16 +10874,46 @@ def _damga_izler(kok, yol, onbellek):
     return izler, None
 
 
+def _birlesik_iz(izler):
+    """Tanimlarin govde izleri -> damga izi (BIRLESIK DAMGA, P5.2): TEK tanimda o tanimin KENDI izi (K1 damgalariyla geri uyumlu);
+    2.._BIRLESIK_TAVAN tanimda SIRALI izlerin SHA-256'sinin ilk 8 hex'i. Yol GIRMEZ: dosya adi/yeri degisince iz DEGISMEZ."""
+    return izler[0] if len(izler) == 1 else _adres_sha("\n".join(sorted(izler)))[:8]
+
+
+def _ad_cozum(kok, adaylar, onbellek):
+    """ADAY cift kumesi [(yol, tam)] (tekil, sirali) -> ('tamam', CANLI govde izleri [yol, sonra tam sirasiyla; asiri yuk = ayni tam
+    icin birden cok iz]) · ('olculemedi', sebep) · ('yok', dosya yok muydu). `olculemedi`: bir aday dosyanin cikarimi arizali (arac
+    kusuru) YA DA adaylardan BIR KISMI canli cikarimda yok (`DEFTER_BAYAT`: tasinmis/silinmis tanim — defter eskimis; eksik
+    kumeden dogru bir birlesik iz ya da `GOVDE DEGISTI` cikmaz, `adres --kur` sonrasi cikar). `yok`: HIC aday kalmadi."""
+    izler, hata, kayip, dosya_yok = [], None, 0, False
+    for yol in sorted({y for y, _t in adaylar}):
+        d, sebep = _damga_izler(kok, yol, onbellek)
+        hata = hata or (sebep if d is None and sebep != "DOSYA_YOK" else None)
+        dosya_yok = dosya_yok or (d is None and sebep == "DOSYA_YOK")
+        for tam in sorted({t for y, t in adaylar if y == yol}):
+            a = d.get(tam, []) if d is not None else []
+            izler += a
+            kayip += not a
+    if hata:
+        return "olculemedi", hata
+    if kayip >= len(adaylar):
+        return "yok", dosya_yok
+    return ("olculemedi", "DEFTER_BAYAT") if kayip else ("tamam", izler)
+
+
 def _damga_coz(kok, indeks, onbellek, metin, tur):
-    """Belirtec -> ('tek', yol, tam ad) · ('coklu', n, None) · ('yok', None, None) · ('olculemedi', sebep, None).
-    Ad: defterde `tam ad` ya da `Tur.uye` SON EKI (ad -> dosya eslemesi defterden). `yol:N`: dosya sonek eslesmesiyle (`_atif_coz`)
-    TEK dosyaya cozulur; satir -> tanim eslemesi dosyanin CANLI cikarimindan yapilir (bayat defterin eski satir araliklari yanlis
-    sembole damga basmasin); N..M araligini KAPSAYAN EN DAR tanim secilir (ic ice tanimlarda sinif degil uye); esit en dar birden
-    cok tanim COKLU; ters aralik (M<N) COZULEMEZ."""
+    """Belirtec -> ('tek', yol, tam ad) [`yol:N`] · ('birlesik', ((yol, tam ad), ...), None) [ad: 1.._BIRLESIK_TAVAN defter satiri] ·
+    ('coklu', n, None) · ('yok', None, None) · ('olculemedi', sebep, None).
+    Ad: defterde `tam ad` ya da `Tur.uye` SON EKI (ad -> dosya eslemesi defterden); defter satiri sayisi tavani asarsa COKLU. `yol:N`:
+    dosya sonek eslesmesiyle (`_atif_coz`) TEK dosyaya cozulur; satir -> tanim eslemesi dosyanin CANLI cikarimindan yapilir (bayat
+    defterin eski satir araliklari yanlis sembole damga basmasin); N..M araligini KAPSAYAN EN DAR tanim secilir (ic ice tanimlarda
+    sinif degil uye); esit en dar birden cok tanim COKLU; ters aralik (M<N) COZULEMEZ."""
     taban, ad, _tam = indeks
     if tur == "ad":
         a = ad.get(metin, [])
-        return ("tek", a[0][0], a[0][1]) if len(a) == 1 else (("coklu", len(a), None) if a else ("yok", None, None))
+        if not a:
+            return "yok", None, None
+        return ("birlesik", tuple(sorted(set(a))), None) if len(a) <= _BIRLESIK_TAVAN else ("coklu", len(a), None)
     m = _ATIF_YOL.fullmatch(metin)
     bas = int(m.group(2))
     son = int(m.group(3) or bas)
@@ -10898,23 +10932,31 @@ def _damga_coz(kok, indeks, onbellek, metin, tur):
 
 
 def _damga_karar(kok, cozum, onbellek):
-    """Bir belirtecin COZUMU (`_damga_coz`) icin tek karar -> ('damga', iz) · ('coklu', n) · ('yok', None) · ('olculemedi', sebep)."""
+    """Bir belirtecin COZUMU (`_damga_coz`) icin tek karar -> ('damga', iz, k) [k = tanim sayisi; k>=2: BIRLESIK iz] · ('coklu', n, 0) ·
+    ('yok', None, 0) · ('olculemedi', sebep, 0). `yol:N`: TEK tanimin kendi izi (ayni tam icin asiri yuk COKLU). Ad: defter
+    satirlarinin CANLI tum tanimlari (1.._BIRLESIK_TAVAN) tek birlesik iz olur; hicbir aday kusurlu olamaz."""
     d, yol, tam = cozum
-    if d != "tek":
-        return d, yol
-    izler, sebep = _damga_izler(kok, yol, onbellek)
-    if izler is None:
-        return "olculemedi", sebep
-    a = izler.get(tam, [])
-    if len(a) == 1:
-        return "damga", a[0]
-    return ("coklu", len(a)) if a else ("yok", None)
+    if d == "tek":
+        izler, sebep = _damga_izler(kok, yol, onbellek)
+        if izler is None:
+            return "olculemedi", sebep, 0
+        a = izler.get(tam, [])
+        return ("damga", a[0], 1) if len(a) == 1 else (("coklu", len(a), 0) if a else ("yok", None, 0))
+    if d != "birlesik":
+        return d, yol, 0
+    sonuc, v = _ad_cozum(kok, list(yol), onbellek)
+    if sonuc == "olculemedi":
+        return "olculemedi", v, 0
+    if sonuc == "yok":
+        return ("olculemedi", "DOSYA_YOK", 0) if v else ("yok", None, 0)
+    return ("damga", _birlesik_iz(v), len(v)) if len(v) <= _BIRLESIK_TAVAN else ("coklu", len(v), 0)
 
 
-def _damga_notu(metin, karar):
-    d, v = karar
+def _damga_notu(metin, tur, karar):
+    d, v, _k = karar
     if d == "coklu":
-        return "ATIF COKLU: %s (%d tanim) - damgalanmadi" % (metin, v)
+        return ("ATIF COKLU: %s (%d tanim, tavan %d) - damgalanmadi" % (metin, v, _BIRLESIK_TAVAN) if tur == "ad"
+                else "ATIF COKLU: %s (%d tanim) - damgalanmadi" % (metin, v))
     if d == "yok":
         return "ATIF COZULEMEDI: %s" % metin
     return "ATIF OLCULEMEDI: %s (%s)" % (metin, v)
@@ -10928,10 +10970,12 @@ def _damga_ekle(L, jetonlar, karar):
 
 
 def _damga_notlari(aday, sonekli, karar):
-    """K1 konsol satirlari: `ATIF DAMGALANDI` (en basta) + her damgalanamayan icin COKLU/COZULEMEDI/OLCULEMEDI."""
-    notlar = [_damga_notu(m, karar[(m, t)]) for m, t in aday if karar[(m, t)][0] != "damga"]
+    """K1 konsol satirlari: `ATIF DAMGALANDI` (en basta; birlesik iz ` [k tanim]` tasir) + her damgalanamayan icin
+    COKLU/COZULEMEDI/OLCULEMEDI."""
+    notlar = [_damga_notu(m, t, karar[(m, t)]) for m, t in aday if karar[(m, t)][0] != "damga"]
     notlar += ["ATIF OLCULEMEDI: %s (bitisik sonek - damgalanmadi)" % m for m in sonekli]
-    damgali = ["%s#%s" % (m, karar[(m, t)][1]) for m, t in aday if karar[(m, t)][0] == "damga"]
+    damgali = ["%s#%s%s" % (m, karar[(m, t)][1], " [%d tanim]" % karar[(m, t)][2] if karar[(m, t)][2] > 1 else "")
+               for m, t in aday if karar[(m, t)][0] == "damga"]
     if damgali:
         fazla = len(damgali) - _DAMGA_ADET_TAVAN
         notlar.insert(0, "ATIF DAMGALANDI: %d (%s%s)" % (len(damgali), ", ".join(damgali[:_DAMGA_ADET_TAVAN]),
@@ -10955,8 +10999,8 @@ def _damga_uygula_ic(kok, y, govde):
     cozum = dict(((m, t), _damga_coz(kok, indeks, onbellek, m, t)) for m, t in tum)
     karar = dict(((m, t), _damga_karar(kok, cozum[(m, t)], onbellek)) for m, t in aday)
     _damga_ekle(L, jetonlar, karar)
-    sembol = [(m, c[1], c[2]) for (m, _t), c in sorted(cozum.items()) if c[0] == "tek"]
-    return "\n".join(L), _damga_notlari(aday, sonekli, karar) + _dogus_guvenli(kok, sembol, onbellek)
+    sembol, coklu = _dogus_girdi(cozum)
+    return "\n".join(L), _damga_notlari(aday, sonekli, karar) + _dogus_guvenli(kok, sembol, onbellek, coklu)
 
 
 def _damga_uygula(kok, y, govde):
@@ -10995,43 +11039,49 @@ def _h20_yol(kok, indeks, onbellek, metin, damga):
     son = int(m.group(3) or bas)
     dosya = _atif_coz(indeks[0], m.group(1))
     if len(dosya) != 1:
-        return ("olculemedi", "COKLU") if dosya else ("yok", None)
+        return ("olculemedi", "DOSYA_COK") if dosya else ("yok", None)
     satirlar, sebep = _damga_satirlar(kok, dosya[0], onbellek)
     if satirlar is None:
         return ("yok", None) if sebep == "DOSYA_YOK" else ("olculemedi", sebep)
     if any(iz == damga[1:] for _t, _b, _e, iz in satirlar):
         return "ayni", None
     kap = sorted((e - b, iz) for _t, b, e, iz in satirlar if b <= bas and son <= e)
-    return ("degisti", kap[0][1]) if kap and son >= bas else ("yok", None)
+    return ("degisti", (kap[0][1], 1, False)) if kap and son >= bas else ("yok", None)
 
 
 def _h20_hukum(kok, indeks, onbellek, metin, tur, damga):
-    """Damgali belirtec -> ('ayni', None) · ('degisti', yeni iz) · ('yok', None) · ('olculemedi', sebep). Ad: defterdeki TUM adaylar;
-    damga adaylardan BIRININ canli izine esitse govde AYNI (satir kaymasi/tasinma degistirmez)."""
+    """Damgali belirtec -> ('ayni', None) · ('degisti', (yeni iz, tanim sayisi)) · ('yok', None) · ('olculemedi', sebep). Ad: kapi
+    aninda defter satirlarinin BUGUNKU (canli) tum tanimlarinin birlesik izi damgaya esit mi (tanim eklenmesi/silinmesi de izi
+    degistirir); bugun 6+ tanim OLCULEMEDI [COKLU_TAVAN]."""
     if tur == "yol":
         return _h20_yol(kok, indeks, onbellek, metin, damga)
-    bulunan, hata = [], None
-    for yol, tam in indeks[1].get(metin, []):
-        izler, sebep = _damga_izler(kok, yol, onbellek)
-        if izler is None:
-            hata = hata or (None if sebep == "DOSYA_YOK" else sebep)
-            continue
-        bulunan += izler.get(tam, [])
-    if damga[1:] in bulunan:
+    satirlar_ = indeks[1].get(metin, [])
+    if len(satirlar_) > _BIRLESIK_TAVAN:
+        return "olculemedi", "COKLU_TAVAN"
+    sonuc, v = _ad_cozum(kok, sorted(set(satirlar_)), onbellek)
+    if sonuc != "tamam":
+        return ("olculemedi", v) if sonuc == "olculemedi" else ("yok", None)
+    if len(v) > _BIRLESIK_TAVAN:
+        return "olculemedi", "COKLU_TAVAN"
+    iz = _birlesik_iz(v)
+    if iz == damga[1:]:
         return "ayni", None
-    if bulunan:
-        return ("degisti", bulunan[0]) if len(bulunan) == 1 else ("olculemedi", "COKLU")
-    return ("olculemedi", hata) if hata else ("yok", None)
+    return "degisti", (iz, len(v), len(v) > 1 and damga[1:] in v)
 
 
 def _h20_say(kok, indeks, jetonlar):
-    """-> (degisen [(yer, metin, eski damga, yeni iz)], yok [(yer, metin, damga)], olc {sebep: n}, damgasiz sayisi). `yer` = `md.N`
-    (madde icinde) ya da `satir N`. DAMGASIZ yalniz MADDE icindeki (H18'in atif maddesi) TEK tanima cozulebilir belirteclerdir.
-    SEMBOL YOK yalniz defter TAM kapsamliyken (ATLANDI dosya yok) hukumdur; aksi halde OLCULEMEDI (eksik kapsam sembolu gizlemis olabilir)."""
-    onbellek, degisen, yok, olc, z = {}, [], [], {}, 0
+    """-> (degisen [(yer, metin, eski damga, (yeni iz, k))], yok [(yer, metin, damga)], olc {sebep: n}, damgasiz sayisi, coklu sayisi).
+    `yer` = `md.N` (madde icinde) ya da `satir N`. DAMGASIZ/COKLU yalniz MADDE icindeki (H18'in atif maddesi) belirteclerdir:
+    DAMGASIZ = TEK/BIRLESIK tanima cozulebilen, COKLU = tavan asilan / birden cok dosya / esit en dar tanim (bugun HICBIR sayiya
+    girmiyordu). SEMBOL YOK yalniz defter TAM kapsamliyken (ATLANDI dosya yok) hukumdur; aksi halde OLCULEMEDI (eksik kapsam
+    sembolu gizlemis olabilir)."""
+    onbellek, degisen, yok, olc, z, c = {}, [], [], {}, 0, 0
     for no, satir, m, t, d in jetonlar:
         if d is None:
-            z += no is not None and _damga_coz(kok, indeks, onbellek, m, t)[0] == "tek"
+            if no is not None:
+                s = _damga_coz(kok, indeks, onbellek, m, t)[0]
+                z += s in ("tek", "birlesik")
+                c += s == "coklu"
             continue
         yer = "md.%d" % no if no is not None else "satir %d" % satir
         h, v = _h20_hukum(kok, indeks, onbellek, m, t, d)
@@ -11043,17 +11093,19 @@ def _h20_say(kok, indeks, jetonlar):
             yok.append((yer, m, d))
         elif h == "olculemedi":
             olc[v] = olc.get(v, 0) + 1
-    return degisen, yok, olc, z
+    return degisen, yok, olc, z, c
 
 
-def _h20_satirlari(a, degisen, yok, olc, z):
-    """H20 ozeti + ayrinti satirlari (en cok `_H20_LISTE_TAVAN`; HEPSI sayilir). Bos H20 (atif yok, damgasiz yok) -> []."""
-    if not a and not z:
+def _h20_satirlari(a, degisen, yok, olc, z, c):
+    """H20 ozeti + ayrinti satirlari (en cok `_H20_LISTE_TAVAN`; HEPSI sayilir). Bos H20 (atif yok, damgasiz/coklu yok) -> []."""
+    if not a and not z and not c:
         return []
     sebep = " [%s]" % ", ".join("%s:%d" % (k, v) for k, v in sorted(olc.items())) if olc else ""
-    cikti = ["H20: %d atif | %d GOVDE DEGISTI | %d SEMBOL YOK | %d OLCULEMEDI%s | %d DAMGASIZ"
-             % (a, len(degisen), len(yok), sum(olc.values()), sebep, z)]
-    ayrinti = ["H20: %s `%s` %s -> #%s IDDIA KODDAN ESKI OLABILIR" % (yer, m, d, yeni) for yer, m, d, yeni in degisen]
+    cikti = ["H20: %d atif | %d GOVDE DEGISTI | %d SEMBOL YOK | %d OLCULEMEDI%s | %d COKLU | %d DAMGASIZ"
+             % (a, len(degisen), len(yok), sum(olc.values()), sebep, c, z)]
+    ayrinti = ["H20: %s `%s`%s %s -> #%s%s IDDIA KODDAN ESKI OLABILIR" % (
+        yer, m, " [%d tanim]" % yeni[1] if yeni[1] > 1 else "", d, yeni[0],
+        " TANIM SAYISI DEGISTI (damgali govde duruyor) -" if yeni[2] else "") for yer, m, d, yeni in degisen]
     ayrinti += ["H20: %s `%s` %s SEMBOL YOK - IDDIA KODDAN ESKI OLABILIR" % (yer, m, d) for yer, m, d in yok]
     cikti += ayrinti[:_H20_LISTE_TAVAN]
     if len(ayrinti) > _H20_LISTE_TAVAN:
@@ -11070,7 +11122,7 @@ def _h20_hesapla(kok, y):
     a = sum(1 for j in jetonlar if j[4] is not None)
     durum, indeks = _damga_defter(y)
     if durum != "tamam":
-        return _h20_satirlari(a, [], [], {"DEFTER_" + durum.upper(): a} if a else {}, 0)
+        return _h20_satirlari(a, [], [], {"DEFTER_" + durum.upper(): a} if a else {}, 0, 0)
     return _h20_satirlari(a, *_h20_say(kok, indeks, jetonlar))
 
 
@@ -11102,9 +11154,13 @@ _DOGUS_ZAMAN_ASIMI = 20       # sn: tek git cagrisi
 _DOGUS_BUTCE = 15             # sn: bir `not`ta dogusta bayat taramasinin toplam suresi
 
 
-def _dogus_git(kok, *args):
-    """`_adres_git` + stdin KAPALI + zaman asimi (zaman asimi `OLCULEMEDI`ye `_dogus_guvenli`de cevrilir)."""
-    return _adres_git(kok, *args, timeout=_DOGUS_ZAMAN_ASIMI, stdin=subprocess.DEVNULL)
+def _dogus_git(kok, *args, **kw):
+    """`_adres_git` + zaman asimi (`OLCULEMEDI`ye `_dogus_guvenli`de cevrilir) + stdin KAPALI; `girdi=` verilirse stdin o baytlar
+    (`cat-file --batch`: yollar komut satirina DIZILMEZ, H14 dersi)."""
+    girdi = kw.get("girdi")
+    if girdi is None:
+        return _adres_git(kok, *args, timeout=_DOGUS_ZAMAN_ASIMI, stdin=subprocess.DEVNULL)
+    return _adres_git(kok, *args, timeout=_DOGUS_ZAMAN_ASIMI, input=girdi)
 
 
 def _dogus_gecmis(kok):
@@ -11127,84 +11183,191 @@ def _dogus_gecmis(kok):
     return shalar, None
 
 
-def _dogus_surum(kok, sha, yol, dil):
-    """`sha` commit'indeki dosya -> ([(tam ad, bas, bit, iz)], None) · (None, None) dosya o commit'te YOK · (None, sebep) okunamadi/
-    cikarilamadi. `git show` hatasi 'dosya yok' SAYILMAZ: `ls-tree` ile dosyanin o commit'te varligi ayrica sorulur (dilden bagimsiz)."""
-    r = _dogus_git(kok, "show", "%s:./%s" % (sha, yol))
-    if r.returncode != 0:
-        t = _dogus_git(kok, "ls-tree", "-z", sha, "--", yol)
-        return (None, None) if t.returncode == 0 and not t.stdout.strip(b"\0") else (None, "GIT_OKUNAMADI")
-    if len(r.stdout) > _ADRES_DOSYA_TAVAN:
-        return None, "BUYUK"
-    return _damga_ham_satirlar(yol, r.stdout, dil)
-
-
-def _dogus_surumler(kok, yol, shalar):
-    """Dosyanin `shalar` commit'lerindeki surumleri [(satirlar | None, sebep)] (HEAD once). Dosya pencerede (HEAD..HEAD~N-1)
-    HIC commit'e girmediyse yalniz HEAD surumu sorulur (degisim yok: tek git cagrisi)."""
-    dil = _ADRES_UZANTI.get(os.path.splitext(yol)[1].lower())
-    r = _dogus_git(kok, "rev-list", "--first-parent", "-n", "1", "HEAD", "--", yol)
-    if r.returncode != 0:
-        return [(None, "GIT_OKUNAMADI")]
-    son = r.stdout.decode("ascii", "replace").strip()
-    if not son or son not in shalar[:_DOGUS_N]:
-        return [_dogus_surum(kok, shalar[0], yol, dil)]
-    return [_dogus_surum(kok, s, yol, dil) for s in shalar]
-
-
-def _dogus_sembol(m, tam, surumler, shalar, calisma):
-    """Bir sembolun satirlari. `surumler[j]` = (satirlar | None, sebep) j=0 HEAD; `calisma` = calisma agacindaki izler (dict) ya da
-    None (calisma agaci cikarilamadi: `commit'lenmemis` hukmu VERILMEZ)."""
-    iz = []
-    for satirlar_, sebep in surumler:
-        if satirlar_ is None and sebep:
-            return ["DOGUSTA BAYAT: OLCULEMEDI (%s: %s)" % (m, sebep)]
-        iz.append(tuple(sorted(r[3] for r in satirlar_ if r[0] == tam)) if satirlar_ is not None else ())
-    cikti = []
-    for k in range(min(_DOGUS_N, len(iz) - 1)):
-        if iz[k] != iz[k + 1]:
-            cikti.append("DIKKAT: %s govdesi %s (%s) - iddiayi kodla teyit et" % (
-                m, "son commit'te degisti" if k == 0 else "%d commit once degisti" % k, shalar[k][:7]))
+def _dogus_cat_ayikla(ham, n):
+    """`git cat-file --batch` ciktisi -> n kayit: (oid, icerik bayt) · 'YOK' (`<ad> missing`) · None (hizalanamayan/bozuk: kalanlar da
+    None). Bicim: `<oid> blob <boyut>\\n<icerik>\\n` | `<ad> missing\\n`."""
+    kayit, pos = [], 0
+    for _ in range(n):
+        j = ham.find(b"\n", pos)
+        parca = ham[pos:j].split(b" ") if j >= 0 else []
+        pos = j + 1
+        if parca and parca[-1] == b"missing":
+            kayit.append("YOK")
+        elif len(parca) == 3 and parca[1] == b"blob" and parca[2].isdigit() and pos + int(parca[2]) <= len(ham):
+            kayit.append((parca[0].decode("ascii", "replace"), ham[pos:pos + int(parca[2])]))
+            pos += int(parca[2]) + 1
+        else:
             break
-    if calisma is None:
-        cikti.append("DOGUSTA BAYAT: OLCULEMEDI (%s: calisma agaci cikarilamadi)" % m)
-    elif tuple(sorted(calisma.get(tam, ()))) != iz[0]:
-        cikti.append("DIKKAT: %s commit'lenmemis degisiklik tasiyor" % m)
+    return kayit + [None] * (n - len(kayit))
+
+
+def _dogus_cikar(yol, kayitlar, temiz, onb):
+    """Bir dosyanin commit kayitlari (`_dogus_cat_ayikla`) -> [(satirlar | None, sebep)]: (None, None) dosya o commit'te YOK (yalniz git
+    HATASIZKEN: hata varsa `missing` 'yok' SAYILMAZ) · (None, sebep) okunamadi/cikarilamadi. Ayni blob (oid) bir kez cikarilir."""
+    dil = _ADRES_UZANTI.get(os.path.splitext(yol)[1].lower())
+    cikti = []
+    for k in kayitlar:
+        if k is None or (k == "YOK" and not temiz):
+            cikti.append((None, "GIT_OKUNAMADI"))
+        elif k == "YOK":
+            cikti.append((None, None))
+        else:
+            if (k[0], dil) not in onb:
+                onb[(k[0], dil)] = (None, "BUYUK") if len(k[1]) > _ADRES_DOSYA_TAVAN else _damga_ham_satirlar(yol, k[1], dil)
+            cikti.append(onb[(k[0], dil)])
     return cikti
 
 
+def _dogus_toplu(kok, yollar, shalar, bas, atlanan):
+    """`yollar` x `shalar` surumlerini TEK `git cat-file --batch` cagrisiyla okur -> {yol: [(satirlar | None, sebep)]} (HEAD once).
+    Sure butcesi (`bas`tan) asilirsa kalan dosyalar `atlanan`a yazilir (sonuctan DUSER; `OLCULEMEDI` diye BEYAN edilir). Kok git
+    deposunun ALT dizini ise `rev-parse --show-prefix` onegi yola eklenir; yolda satir sonu varsa o dosya OKUNAMADI sayilir."""
+    import time
+    cikti = dict((y, [(None, "GIT_OKUNAMADI")] * len(shalar)) for y in yollar)
+    yollar = [y for y in yollar if "\n" not in y]
+    p = _dogus_git(kok, "rev-parse", "--show-prefix")
+    if p.returncode != 0 or not yollar:
+        return cikti
+    onek = p.stdout.decode("utf-8", "replace").strip()
+    r = _dogus_git(kok, "cat-file", "--batch",
+                   girdi="".join("%s:%s%s\n" % (s, onek, y) for y in yollar for s in shalar).encode("utf-8"))
+    n = len(yollar) * len(shalar)
+    kayit = _dogus_cat_ayikla(r.stdout, n) if r.returncode == 0 else [None] * n
+    temiz, onb = r.returncode == 0 and not (r.stderr or b"").strip(), {}
+    for i, y in enumerate(yollar):
+        if time.monotonic() - bas > _DOGUS_BUTCE:
+            atlanan.add(y)
+            continue
+        cikti[y] = _dogus_cikar(y, kayit[i * len(shalar):(i + 1) * len(shalar)], temiz, onb)
+    return cikti
+
+
+def _dogus_girdi(cozum):
+    """K1 cozumleri -> ([(metin, tur, [(yol, tam)])], [COKLU ad metinleri]): K3'te TEK (`yol:N`) ve BIRLESIK (ad) cozulen her belirtec
+    taranir; defterde tavandan cok tanimli adlar taranmaz, `OLCULEMEDI (<ad> COKLU)` diye BEYAN edilir."""
+    sembol, coklu = [], []
+    for (m, t), c in sorted(cozum.items()):
+        if c[0] == "tek":
+            sembol.append((m, t, [(c[1], c[2])]))
+        elif c[0] == "birlesik":
+            sembol.append((m, t, list(c[1])))
+        elif c[0] == "coklu" and t == "ad":
+            coklu.append(m)
+    return sembol, coklu
+
+
+def _dogus_degisim(kume):
+    """`kume[g][j]` = g. tanim grubunun (yol, tam) j. surumdeki govde izleri COKLU KUMESI (j=0 HEAD) -> (esit, degisim, x, s, dagilim,
+    toplam): `esit` = ARDISIK iki surum arasinda kume FARKLI olan en kucuk k (eski `iz[k] != iz[k+1]` kurali: ekleme/silme/degisim) ·
+    `degisim` = HEAD'deki tanimlardan birinin govdesinin c_(k+1)'de olup c_k'de OLMADIGI (kumulatif kesisimin kuculdugu) en kucuk k ·
+    `x` = HEAD'deki tanimlardan pencere surumlerinin HEPSINDE ayni govdeyle bulunmayanlar (kesisim) · `s` = pencerede SILINEN tanim
+    sayisi (bir surumdeki tanim sayisinin HEAD'inkini asan kismi) · `dagilim` {k: o k'de degisen tanim sayisi} · `toplam` = HEAD'deki
+    tanim sayisi."""
+    from collections import Counter
+    esit, x, s, toplam, dagilim = None, 0, 0, 0, {}
+    for g in kume:
+        p, bas = Counter(g[0]), sum(g[0].values())
+        toplam += bas
+        n = min(_DOGUS_N, len(g) - 1)
+        s += max([0] + [sum(v.values()) - bas for v in g[:n + 1]])
+        for k in range(n):
+            q = p & g[k + 1]
+            if g[k] != g[k + 1] and (esit is None or k < esit):
+                esit = k
+            if sum(q.values()) < sum(p.values()):
+                dagilim[k] = dagilim.get(k, 0) + sum(p.values()) - sum(q.values())
+            p = q
+        x += bas - sum(p.values())
+    return esit, (min(dagilim) if dagilim else None), x, s, dagilim, toplam
+
+
+def _dogus_calisma(m, gruplar, kume, calisma):
+    """Calisma agaci hukmu -> satirlar. `calisma[yol]` = (izler dict | None, sebep): cikarilamadiysa `commit'lenmemis` hukmu VERILMEZ
+    (OLCULEMEDI); dosya YOK ise sebep DEFTER_BAYAT (defter eskimis / dosya tasinmis)."""
+    for y, _t in gruplar:
+        if calisma[y][0] is None:
+            return ["DOGUSTA BAYAT: OLCULEMEDI (%s: %s)" % (m, "DEFTER_BAYAT" if calisma[y][1] == "DOSYA_YOK"
+                                                              else "calisma agaci cikarilamadi")]
+    if any(sorted(calisma[y][0].get(tam, ())) != sorted(kume[i][0].elements()) for i, (y, tam) in enumerate(gruplar)):
+        return ["DIKKAT: %s commit'lenmemis degisiklik tasiyor" % m]
+    return []
+
+
+def _dogus_ne(k):
+    return "son commit'te degisti" if k == 0 else "%d commit once degisti" % k
+
+
+def _dogus_satir(m, t, sayim, shalar):
+    """`_dogus_degisim` sonucu -> degisim satirlari. TEK tanim / `yol:N`: eski metin BAYT-BAYT (ardisik surumlerde ilk farklilik:
+    degisim/ekleme/SILME). BIRLESIK (ad, 2+ tanim): TEK satir `<k> tanimdan <x>'u <ne> (<sha>)` (HER tanim taranir; commit = EN YAKIN
+    degisim; pencerede silinen `(+s silinen)`, hepsi ayni yasta degilse `(en yakin; n tanim daha eski)`); yalniz silinen varsa
+    `pencerede s tanim silindi`."""
+    esit, degisim, x, s, dagilim, toplam = sayim
+    if t != "ad" or toplam <= 1:
+        return ["DIKKAT: %s govdesi %s (%s) - iddiayi kodla teyit et" % (m, _dogus_ne(esit), shalar[esit][:7])] if esit is not None else []
+    if x:
+        ek = (" (+%d silinen)" % s if s else "") + (" (en yakin; %d tanim daha eski)" % (x - dagilim[degisim]) if dagilim[degisim] < x else "")
+        return ["DIKKAT: %s %d tanimdan %d'%s %s (%s)%s - iddiayi kodla teyit et" % (
+            m, toplam, x, _BIRLESIK_EK.get(x, "i"), _dogus_ne(degisim), shalar[degisim][:7], ek)]
+    if s:
+        return ["DIKKAT: %s pencerede %d tanim silindi (%s, %s) - iddiayi kodla teyit et" % (
+            m, s, "son commit'te" if esit == 0 else "%d commit once" % esit, shalar[esit][:7])]
+    return []
+
+
+def _dogus_sembol(m, t, gruplar, surum_onb, shalar, calisma):
+    """Bir belirtecin satirlari. `gruplar` = [(yol, tam)]; `surum_onb[yol][j]` = (satirlar | None, sebep) j=0 HEAD."""
+    from collections import Counter
+    for y in sorted({y for y, _t in gruplar}):
+        for satirlar_, sebep in surum_onb[y]:
+            if satirlar_ is None and sebep:
+                return ["DOGUSTA BAYAT: OLCULEMEDI (%s: %s)" % (m, sebep)]
+    kume = [[Counter(r[3] for r in (s or ()) if r[0] == tam) for s, _se in surum_onb[y]] for y, tam in gruplar]
+    sayim = _dogus_degisim(kume)
+    if t == "ad" and sayim[5] > _BIRLESIK_TAVAN:
+        return ["DOGUSTA BAYAT: OLCULEMEDI (%s COKLU)" % m]
+    return _dogus_satir(m, t, sayim, shalar) + _dogus_calisma(m, gruplar, kume, calisma)
+
+
 def _dogus_hepsi(kok, semboller, onbellek):
-    """`semboller` = [(metin, yol, tam)] (sirali; K1'de TEK tanima cozulenler) -> konsol satirlari."""
+    """`semboller` = [(metin, tur, [(yol, tam)])] (sirali; K1'de TEK/BIRLESIK cozulenler) -> konsol satirlari."""
     import time
     if not semboller:
         return []
     shalar, sebep = _dogus_gecmis(kok)
     if shalar is None:
         return ["DOGUSTA BAYAT: OLCULEMEDI (%s)" % sebep]
-    dosyalar = sorted({s[1] for s in semboller})
-    izinli, surum_onb, cikti, t0, atlanan = set(dosyalar[:_DOGUS_DOSYA_TAVAN]), {}, [], time.monotonic(), set()
-    for m, yol, tam in semboller:
-        if yol not in izinli:
-            continue
-        if yol not in surum_onb and time.monotonic() - t0 > _DOGUS_BUTCE:
-            atlanan.add(yol)
-            continue
-        if yol not in surum_onb:
-            surum_onb[yol] = _dogus_surumler(kok, yol, shalar)
-        izler = _damga_izler(kok, yol, onbellek)[0]
-        cikti += _dogus_sembol(m, tam, surum_onb[yol], shalar, izler)
+    dosyalar = sorted({y for _m, _t, g in semboller for y, _tam in g})
+    atlanan, cikti, tavan_adlar, sure_adlar = set(), [], [], []
+    surum_onb = _dogus_toplu(kok, dosyalar[:_DOGUS_DOSYA_TAVAN], shalar, time.monotonic(), atlanan)
+    for m, t, gruplar in semboller:
+        yollar = sorted({y for y, _tam in gruplar})
+        if any(y not in surum_onb for y in yollar):
+            tavan_adlar.append(m)
+        elif any(y in atlanan for y in yollar):
+            sure_adlar.append(m)
+        else:
+            izler = dict((y, _damga_izler(kok, y, onbellek)) for y in yollar)
+            cikti += _dogus_sembol(m, t, gruplar, surum_onb, shalar, izler)
     if len(dosyalar) > _DOGUS_DOSYA_TAVAN:
-        cikti.append("DOGUSTA BAYAT: OLCULEMEDI (%d dosya: git gecmisi yalniz ilk %d dosya icin soruldu)"
-                     % (len(dosyalar), _DOGUS_DOSYA_TAVAN))
+        cikti.append("DOGUSTA BAYAT: OLCULEMEDI (%d dosya: git gecmisi yalniz ilk %d dosya icin soruldu; hukumsuz: %s)"
+                     % (len(dosyalar), _DOGUS_DOSYA_TAVAN, _dogus_adlar(tavan_adlar)))
     if atlanan:
-        cikti.append("DOGUSTA BAYAT: OLCULEMEDI (%d dosya: %d sn sure butcesi asildi)" % (len(atlanan), _DOGUS_BUTCE))
+        cikti.append("DOGUSTA BAYAT: OLCULEMEDI (%d dosya: %d sn sure butcesi asildi; hukumsuz: %s)"
+                     % (len(atlanan), _DOGUS_BUTCE, _dogus_adlar(sure_adlar)))
     return cikti
 
 
-def _dogus_guvenli(kok, semboller, onbellek):
-    """`_dogus_hepsi` + KISIT 6-3: istisna (SystemExit, git zaman asimi dahil) `OLCULEMEDI`dir ve damga/`not` hukumlerini ETKILEMEZ."""
+def _dogus_adlar(adlar):
+    """Hukumsuz kalan belirtecler: en cok 5 ad + `+N daha` (bos: `-`)."""
+    return (", ".join(adlar[:5]) + (" +%d daha" % (len(adlar) - 5) if len(adlar) > 5 else "")) if adlar else "-"
+
+
+def _dogus_guvenli(kok, semboller, onbellek, coklu=()):
+    """`_dogus_hepsi` + KISIT 6-3: istisna (SystemExit, git zaman asimi dahil) `OLCULEMEDI`dir ve damga/`not` hukumlerini ETKILEMEZ.
+    `coklu`: tavandan cok tanimli adlar (git'e SORULMAZ; `OLCULEMEDI (<ad> COKLU)` beyani)."""
     try:
-        return _dogus_hepsi(kok, semboller, onbellek)
+        return ["DOGUSTA BAYAT: OLCULEMEDI (%s COKLU)" % m for m in coklu] + _dogus_hepsi(kok, semboller, onbellek)
     except (Exception, SystemExit) as e:  # noqa: BLE001 - KISIT 6-3: dogusta bayat istisnasi OLCULEMEDI'dir
         return ["DOGUSTA BAYAT: OLCULEMEDI (%s)" % type(e).__name__]
 # ==== PARMAK IZLI ATIF (P5) SON ====
