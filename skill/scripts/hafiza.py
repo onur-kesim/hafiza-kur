@@ -11247,7 +11247,7 @@ def _dogus_cikar(kok, shalar, yol, kayitlar, icerik, temiz, onb, bas, atlanan):
     dil = _ADRES_UZANTI.get(os.path.splitext(yol)[1].lower())
     cikarici = _adres_cikarici_dili(yol, dil)
     cikti = []
-    for sha, k in zip(shalar, kayitlar):
+    for sha, k in [(shalar[i], k_) for i, k_ in enumerate(kayitlar)]:
         if k is None or k[0] == "diger" or (k[0] == "YOK" and not temiz):
             cikti.append((None, "GIT_OKUNAMADI"))
         elif k[0] == "YOK":
@@ -11302,7 +11302,8 @@ def _dogus_okuma(kok, gecerli, ac, shalar):
         r = _dogus_git(kok, "cat-file", "--batch",
                        girdi="".join(_dogus_spec(liste[i][1], onek, ac[liste[i][0]]) for _o, i in secilen).encode("utf-8"))
         govde = _dogus_cat_ayikla(r.stdout, len(secilen), True) if r.returncode == 0 else [None] * len(secilen)
-        icerik = dict((oid, g[3]) for (oid, _i), g in zip(secilen, govde) if g is not None and g[0] == "blob" and g[1] == oid)
+        icerik = dict((oid, govde[j][3]) for j, (oid, _i) in enumerate(secilen)
+                      if govde[j] is not None and govde[j][0] == "blob" and govde[j][1] == oid)
         temiz = temiz and _dogus_temiz(r)
     return ust, icerik, temiz
 
