@@ -3140,7 +3140,7 @@ def main():
             print("\nSONUC: KIRMIZI — temiz motorun kollari BEKLENMEDIK.")
             return 1
         print("\n--- SABOTAJLAR (her biri KENDI ekseninde ISIRMALI; ortusme raporlanir) ---")
-        kacan, olculemeyen = [], []
+        kacan, olculemeyen, kosulan = [], [], 0
         for sira, (ad, kol, etiket, ankor, yeni) in enumerate(SABOTAJLAR, 1):
             if kol not in kollar or (sabotaj_sec is not None and not ad.startswith(sabotaj_sec)):
                 continue
@@ -3170,6 +3170,7 @@ def main():
             finally:
                 _SADECE[0] = None
             atesler -= {"OLCULEMEDI-WIN"}
+            kosulan += 1
             if etiket in atesler:
                 ort = sorted(atesler - {etiket})
                 print("  %-60s -> ISIRDI ✓  (%s%s)" % (ad, etiket, ("; ortusme: " + ", ".join(ort)) if ort else ""))
@@ -3183,7 +3184,7 @@ def main():
         if olculemeyen:
             print("SONUC: YESIL (SINIRLI) — olculebilen her sabotaj ISIRDI; %d OLCULEMEDI (platforma/kullaniciya ozgu)." % len(olculemeyen))
         else:
-            print("SONUC: YESIL — tum kollar temiz, %d sabotaj AYRI eksende ISIRDI." % sum(1 for x in SABOTAJLAR if x[1] in kollar))
+            print("SONUC: YESIL — tum kollar temiz, %d sabotaj AYRI eksende ISIRDI." % kosulan)
         return 0
     finally:
         _sil(taban)
