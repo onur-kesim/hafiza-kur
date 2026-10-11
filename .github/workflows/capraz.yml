@@ -2377,9 +2377,10 @@ jobs:
   #     H14 dersi: yollar komut satirina DIZILMEZ). `A-KOMUT-SATIRI` kolu yalniz
   #     Windows'ta isirir; Linux/macOS'ta `OLCULEMEDI: bu platformda sinir yok`
   #     BEYAN eder (sessiz YESIL degil). 🔴 UC PLATFORM, `continue-on-error` YOK.
-  #     SURE (P5.2): 17 kol / 171 sabotaj; yerelde (Windows, yuk altinda) kol basina
-  #     P5-BIRLESIK ~50 sabotaj. Eski tavan 90 dk P5'te 45'ten cikarildi; P5.2'de
-  #     150 dk (sabotaj kosusunda P5-BIRLESIK yalniz kendi ekseninin vektorlerini koser).
+  #     SURE (P5.3): 17 kol / 198 sabotaj; yerelde (Windows, yuk altinda) kol basina
+  #     P5-BIRLESIK ~70 sabotaj. Eski tavan 90 dk P5'te 45'ten cikarildi; P5.2'de
+  #     150 dk (sabotaj kosusunda P5-BIRLESIK yalniz kendi ekseninin vektorlerini koser);
+  #     P5.3 (+27 sabotaj: bayat defterde H20 taze aday kumesi) tavani DEGISTIRMEZ.
   # ---------------------------------------------------------------------------
   adres_mutanti:
     name: Adres mutanti (${{ matrix.os }})

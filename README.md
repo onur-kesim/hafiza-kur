@@ -272,7 +272,7 @@ eşleşmesidir, tip çözümlemesi DEĞİLDİR** (farklı tiplerin aynı adlı �
 P2.1'den beri sayılmaz, ama sayılmadıkları `NOT:` ile söylenir); bu sınır çıktıda da basılır:
 `NOT: cagiranlar sozcuk eslesmesidir`. Cevabın boyutu sorunun boyutuyla büyür; SÜRE projeyle büyür (sorgu hızı:
 yukarıda). Ölçüm: `faz0/adres_mutanti.py` (on yedi kol — A-TANIM, A-CAGIRAN, A-PARMAK, A-BAYAT, A-DETERMINIZM, A-MASKE,
-A-ATLA, A-ETKI, A-EZME, A-EKSIK, P5-DAMGA, P5-H20, P5-DOGUS, P5-BIRLESIK, P5-SABIT, P5-SAYIM, A-KOMUT-SATIRI; 171 sabotaj, her
+A-ATLA, A-ETKI, A-EZME, A-EKSIK, P5-DAMGA, P5-H20, P5-DOGUS, P5-BIRLESIK, P5-SABIT, P5-SAYIM, A-KOMUT-SATIRI; 198 sabotaj, her
 biri ayrı eksende sınanır; P5-BIRLESIK sabotaj koşusunda yalnız sabotajın KENDİ ekseninin vektörlerini koşar).
 
 **P2.1 ile eklenen sınırlar (ölçüldü, gizlenmez):** ağır patolojik girdi yine yavaştır — iç içe f-dize/`$"…"` derinlik ×
@@ -335,15 +335,35 @@ python3 skill/scripts/hafiza.py kapi  --kok=<proje>                             
   diske yazmaz — bayat ya da ezilmiş defter hükmü bozmaz). **Ad** için kapı anında defter satırlarının BUGÜNKÜ tüm tanımlarının
   birleşik izi damgayla karşılaştırılır (satır kayması/dosya taşıma değiştirmez; tanım EKLENMESİ ya da SİLİNMESİ izi değiştirir →
   `GOVDE DEGISTI`; bugün 6+ tanım `OLCULEMEDI [COKLU_TAVAN]`); `yol:N` için damga dosyadaki HERHANGİ bir tanımın izine eşitse aynı.
+  **Bayat defter (P5.3).** Damgalı atıf VARKEN `kapi`, `adres <ad>` sorgusunun AYNI ucuz bayatlık yoluyla (`_adres_bugun`: izlenen
+  kod dosyalarının içerik özeti; sorgu önbelleği yalnız OKUNUR, `kapi` hiçbir şey YAZMAZ) defterin güncel olup olmadığını ölçer.
+  Bayatsa YALNIZ değişen/yeni dosyalar bellekte yeniden çıkarılır (izlenmeyen silinenlerin ve çıkarılamayan dosyaların satırları
+  `--kur` gibi düşer; değişmeyen dosyaların defter satırları aynen kalır) → aday kümesi `adres --kur` sonrası kümeyle AYNIDIR ve
+  hüküm aşağıdaki iki ayrışma (sınır 20-21) dışında `--kur` sonrası çıktıyla BAYT BAYT aynıdır (harness yeni dosya / tekil→çoklu / yeni tam ad /
+  silinen / taşınan / izlenmez / `yol:N` / bozulan dosya vektörlerinde bayat çıktıyı `--kur` sonrasıyla karşılaştırır): yeni dosyada eklenen 4. tanım `GOVDE DEGISTI 1 [4 tanim]`, tekil adın yeni dosyadaki ikinci tanımı
+  `[2 tanim] TANIM SAYISI DEGISTI`, aynı dosyada başka sınıfa eklenen aynı adlı üye, silinen/izlenmez olan dosya de görünür; taşınan
+  dosya `ayni`dir; `yol:N` soneki yeni bir aynı adlı dosyayla iki dosyaya çözülürse `OLCULEMEDI [DOSYA_COK]`. Bayat defterde
+  `0 degisti, 0 olculemedi` yalnız hüküm GERÇEKTEN `ayni` ise çıkar (aşağıdaki `izlenmeyen dosya` ve sınır 20 dışında: onlar
+  `adres` evreninin / defterin kendi sınırlarıdır). **Taze küme çıkarılamazsa** — bayat dosya sayısı 100'ü ya da toplam boyutu
+  8 MiB'ı aşarsa (`OLCULEMEDI [DEFTER_BAYAT]`), bayatlık ÖLÇÜLEMEZSE (`git ls-files` arızası, `SystemExit` dahil: `[DEFTER_BAYATLIK]`),
+  defter `kaynak=git` iken `kapi` `.git`siz bir kopyada koşuyorsa (evren farklı: `[DEFTER_BAYATLIK]`) ya da yeni/değişen dosyanın
+  çıkarıcısı KUSURLUYSA (araç arızası; `--kur` EKSİK defter yazardı: `[DEFTER_EKSIK]`) — kesin pozitifler (`GOVDE DEGISTI`) ve
+  DAMGASIZ/COKLU sayımı KORUNUR, yalnız `ayni`/`SEMBOL YOK` o etikete düşer. **Çıkarılamayan yeni/değişen dosya** (sözdizimi hatası,
+  ikili, 8 MB'tan büyük, link) o dosyanın tanımlarını BİLİNMEZ yapar: satırları düşer, `SEMBOL YOK` yerine `OLCULEMEDI
+  [DEFTER_ATLANDI]` verilir ve adı sözcük olarak içeren çıkarılamayan dosya varken `ayni` de `OLCULEMEDI [DEFTER_ATLANDI]` olur
+  (adı içermeyen dosya hükmü DEĞİŞTİRMEZ: gürültü yok; SÜREKLİ okunamayan dosya — defter zaten ATLANDI taşıyorsa — bayat koşuyu
+  gürültülemez). Önbellek ve defter kapıdan yazılmaz; `git add` edilmemiş (izlenmeyen) yeni dosya `adres` evreninde yoktur.
   Çıktı tek özet + liste (ekran tavanı 20, HEPSİ sayılır; `--siki`de de UYARI):
   `H20: <a> atif | <d> GOVDE DEGISTI | <s> SEMBOL YOK | <o> OLCULEMEDI | <c> COKLU | <z> DAMGASIZ` ve her değişen için
   `H20: md.40 `ShouldResyncAsync` [3 tanim] #a3f9c1d2 -> #7be04c11 IDDIA KODDAN ESKI OLABILIR` (`[k tanim]` k = BUGÜNKÜ tanım
   sayısı, yalnız k ≥ 2'de; eski TEKİL damga + sonradan aynı adlı kardeş tanım gelirse satır `TANIM SAYISI DEGISTI (damgali govde
   duruyor)` der — hüküm yine `GOVDE DEGISTI`). (Maliyet: damgasız her AD belirteci için aday dosyalar canlı çıkarılır — farklı dosya sayısıyla doğrusal, dosya başına tek çıkarım;
-  yüzlerce damgasız notu olan projede `kapi` saniyeler uzar.) **DAMGASIZ** = madde içinde damga taşımayan ama damga ÜRETİLEBİLEN (1–5 tanım)
+  yüzlerce damgasız notu olan projede `kapi` saniyeler uzar; damgalı atıf varsa ayrıca tüm kod dosyalarının bayatlık geçişi koşar:
+  sınır (18).) **DAMGASIZ** = madde içinde damga taşımayan ama damga ÜRETİLEBİLEN (1–5 tanım)
   tanımlayıcı/`yol:N` sayısıdır (gizlenemez; geriye dönük damgalama bu dilimde yoktur); **COKLU** = madde içinde damgasız ve
   damgalanamayan (6+ tanımlı ad, iki dosyaya çözülen `yol:N`, aşırı yüklü gövde) belirteç sayısıdır — eskiden hiçbir sayıya
-  girmiyordu. **Sınıf = `not`ta basılan K1 hükmü** (tek karar): damga üretilebilir → DAMGASIZ · COKLU · çözülürken araç
+  girmiyordu. **Sınıf = `not`ta basılan K1 hükmü** (tek karar; DEFTER indeksinden — bayatlık geçişi yalnız damgalı atıfların
+  hükmünü etkiler, damgalı atıf varlığı bu sayımı DEĞİŞTİRMEZ): damga üretilebilir → DAMGASIZ · COKLU · çözülürken araç
   kusuru / kısmi kayıp (`DEFTER_BAYAT`) → damgasız-OLCULEMEDI · çözülemedi (kod adresi değil) → SAYILMAZ. `<o> OLCULEMEDI`
   damgalı + damgasız ölçülemeyenlerin toplamıdır; damgasız ölçülemeyen VARSA ayrım görünür: `3 OLCULEMEDI (damgali 1, damgasiz 2)
   [CIKARICI:3]` (yoksa hepsi damgalıdır, çıktı eskisiyle aynı). **Değişmez (defter TAMAMKEN, madde içi çözülebilir belirteçler):**
@@ -386,12 +406,16 @@ eşitliğidir: H20 `GOVDE DEGISTI 0` der (yol ize girmediği için taşıma ile 
 tanım) damgalanmaz. Aday kümesi tek kural: defter satırı sayısı > 5 ise (`k tanim` defter SATIR sayısıdır; defter bayatsa canlı
 sayıdan farklı olabilir) ya da canlı tanım sayısı > 5 ise COKLU. **Sınıf + kurucu** (iç içe, aynı ad) birleşik kümeye girer: damga
 sınıfın TÜM gövdesidir ve K3 kurucu değişiminde `2 tanimdan 2'si` der (ayrı dilim önerisi: başka bir ADAY tanımın içinde kalan
-tanımı kümeden düşürmek). (4) Ad → dosya eşlemesi `ADRES.tsv`'den gelir: defteri kurduktan sonra başka DOSYAYA EKLENEN yeni bir
-tanım görülmez; aynı dosyada yalnız AYNI tam adın (aynı sınıfta aşırı yük) yeni tanımı görülür — başka sınıfa eklenen aynı adlı üye
-(`B.calis`) ya da başka dosya, defter yenilenene kadar görünmez — ve taşınmış/silinmiş aday dosya varken defter bayatsa kısmi
-kümeden hüküm verilmez: `OLCULEMEDI [DEFTER_BAYAT]` (H20 defteri YENİLEMEZ, diske yazmaz): önce `adres --kur`; defter
-yenilendikten sonra eklenen/silinen tanım izi değiştirir → `GOVDE DEGISTI` ("silinme → GOVDE DEGISTI" hükmü TAZE defter
-içindir). (5) `yol:N` damgası "o satırın o günkü sahibi"dir; kod kayıp N. satır başka bir tanıma düşerse
+tanımı kümeden düşürmek). (4) Ad → dosya eşlemesi `ADRES.tsv`'den gelir (K1 `not` damgası ve K3 doğuşta-bayat için): defteri kurduktan sonra başka
+DOSYAYA EKLENEN yeni bir tanım görülmez; aynı dosyada yalnız AYNI tam adın (aynı sınıfta aşırı yük) yeni tanımı görülür — başka
+sınıfa eklenen aynı adlı üye (`B.calis`) ya da başka dosya, defter yenilenene kadar görünmez — ve taşınmış/silinmiş aday dosya
+varken defter bayatsa kısmi kümeden hüküm verilmez: `OLCULEMEDI [DEFTER_BAYAT]`. **H20 bu sınırdan ÇIKARILDI (P5.3):** bayat defteri
+bellekte tazeler (yukarıdaki "Bayat defter" paragrafı; diske yazmaz), eklenen/silinen/taşınan tanım `adres --kur` sonrasıyla AYNI
+hükmü verir ("silinme → GOVDE DEGISTI" artık bayat defterde de). K1/K3'te sınır SÜRER ve H20 ile ayrışır: `not` bayat defterle
+EKSİK kümeden damga basar (`[3 tanim]`), H20 taze kümeyle okur → `not`'tan hemen sonra `GOVDE DEGISTI [4 tanim]` görünür (gövde
+değişmedi, damga eksik kümedendi; çözüm `adres --kur` + yeniden `not`) — alarm sessiz DEĞİLDİR ama yanlış-doğumludur; K1/K3'ün
+aynı bayatlık geçişini kullanması ayrı dilimdir (maliyet: aşağıda (18)). `git add` edilmemiş (izlenmeyen) yeni dosya `adres`
+evreninde (`git ls-files`) yoktur: H20 de görmez, `adres` de. (5) `yol:N` damgası "o satırın o günkü sahibi"dir; kod kayıp N. satır başka bir tanıma düşerse
 `GOVDE DEGISTI` ya da `SEMBOL YOK` görünebilir (H18 `KAYMA`yı ayrıca söyler). (6) **N=5** sabittir; pencerenin dışındaki değişiklik
 uyarılmaz (6. commit ve öncesi sessiz). Gövdesi aynı kalan dosya taşıma/yeniden adlandırma "yeni dosya" gibi `degisti` görünür
 (birleşik damgada da: `3 tanimdan 1'i`; `git diff -M` eşlemesi ayrı dilim). Pencerede BAŞKA dosyadan silinen tanım K3'te
@@ -412,6 +436,25 @@ OLCULEMEDI `[DOSYA_YOK]` sayılır; damgalı karşılığı `SEMBOL YOK`tur. (15
 edebilir (ÖNCEDEN VAR: `adres`/`not` aynı yardımcıyı kullanır); `not` kilidi o sürece tutulur. (16) Çalışma ağacı ile blob arasında
 `smudge`/`clean` süzgeci (LFS, `eol`) varsa `commit'lenmemis degisiklik` yanlış alarm verebilir; K3 git blob'unu süzgeçsiz okur.
 (17) K1/H20 canlı çıkarımı (aday dosyalar) K3'ün 15 sn bütçesine bağlı değildir: ad başına ≤5 dosya çıkarılır.
+(18) **Bayatlık geçişinin maliyeti (P5.3):** damgalı atıf varsa `kapi` her koşuda TÜM izlenen kod dosyalarını bir kez gezer (içerik
+özeti; sorgu önbelleği yalnız OKUNUR, `kapi` onu ISITMAZ). Soğukta dosya başına okuma + özet, sıcakta (aynı defter için bir
+`adres <ad>` sorgusu önbelleği yazmışsa) dosya başına yalnız stat anahtarı (Windows/NTFS'te ChangeTime için dosya başına ek bir
+dosya tanıtıcısı) — ölçüm (P5.3, Windows, 3-5 koşu ortancası, OS dosya önbelleği SICAK, 1 bayat dosya dahil): `kapi` Momentum'da
+(457 kod dosyası, 2 damgalı atıf) 1,68 s → 2,06 s soğuk / 1,89 s sıcak; mozilla/fxa kopyasında (4937 kod dosyası, 12 damgalı atıf)
+9,77 s → 12,01 s soğuk / 10,62 s sıcak. İşletim sistemi dosya önbelleği de soğuksa (ilk geçiş) yalnız `_adres_tara` geçişi fxa'da
+13,6 s ölçüldü. Damgalı atıf yoksa geçiş KOŞMAZ (çıktı ve maliyet
+P5.2 ile aynı). Bayat dosyaların bellekte yeniden çıkarımı 100 dosya / 8 MiB ile sınırlıdır (üstü `OLCULEMEDI [DEFTER_BAYAT]`);
+SÜRE bütçesi YOKTUR (çıktı yük altında değişmesin). K1 (`not`) bu geçişi KULLANMAZ: `not` her çağrıda ağacı özetlemesin.
+(19) Geçiş `adres`le AYNI dosya evrenini kullanır (`git ls-files`; git yoksa dosya sistemi). Defter `git` kaynaklıyken `kapi` `.git`siz
+bir kopyada koşarsa evren farklıdır: taze küme çıkarılmaz, `OLCULEMEDI [DEFTER_BAYATLIK]` verilir (kesin pozitifler korunur;
+`adres` aynı kopyada `BAYAT` der). (20) **Bayat durum `--kur`dan daha TUTUCUDUR (çıkarılamayan dosya):** başlığında `atlandi>0`
+olan bir defterde (zaten ATLANDI dosya var: K1 `ATIF NOT` beyanı) `--kur` sonrası `ayni` hükmü kalıcı ATLANDI dosyadan
+etkilenmez; bayat defterde ise ADI SÖZCÜK olarak içeren, bu koşuda çıkarılamayan YENİ/DEĞİŞEN dosya varken `ayni`
+`OLCULEMEDI [DEFTER_ATLANDI]` olur. Defter ATLANDI taşırken YENİ okunamayan dosya ayırt EDİLEMEZ (başlık yalnız sayı taşır): o
+koşuda hüküm değişmez. (21) **Bayat durum `--kur`dan daha CESURDUR (diskten silinen izlenen dosya):** `git rm` edilmemiş ama diskten
+silinen izlenen dosyanın tanımları yoktur → bayat defterde damgalı atıf `SEMBOL YOK` (P5.2 `BIRLESIK-DOSYAYOK` ile pinli); `--kur` o
+dosyayı ATLANDI (okunamadı) sayar ve aynı atıf `OLCULEMEDI [DEFTER_ATLANDI]` olur. Dosya yöneticisiyle git'e bildirmeden taşınan
+dosya aynı sınıftır (yeni yolu izlenmez, `adres` evreninde yok).
 
 `kur`, ağaçta başka bir aracın defterini tanırsa (`CLAUDE.md`, `AGENTS.md`,
 `DURUM.md`, `memory-bank/` …) **durur** ve `devral` önerir — belge bunu zaten

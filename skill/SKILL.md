@@ -505,7 +505,7 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   önbellek yalnız bir nottur, bayatlığı gizleyemez, ilk (soğuk) sorgu eskisinden yavaştır. `kapi/derle/devral/not/isir`
   yükleme anında adres koduna HİÇ dokunmaz (A-ETKI kolu ölçer); P5'ten beri yalnız `not` (damga, doğuşta bayat) ve `kapi` (H20)
   UYARI üretmek için dokunur ve oradaki her istisna OLCULEMEDI'dir; `adres` bir ÖLÇÜM kapısı değil, bir SORGU aracıdır. Kapı:
-  `faz0/adres_mutanti.py` (on yedi kol, 171 sabotaj; A-KOMUT-SATIRI kolu yalnız Windows'ta ısırır; Linux/macOS'ta
+  `faz0/adres_mutanti.py` (on yedi kol, 198 sabotaj; A-KOMUT-SATIRI kolu yalnız Windows'ta ısırır; Linux/macOS'ta
   `OLCULEMEDI: bu platformda sinir yok` der).
 - **Parmak izli atıf (P5, 10 Eki 2026; P5.2 birleşik damga) — UYARIDIR, exit DEĞİŞMEZ.** `adres` defterine dayanır. `not`
   metnindeki backtick'li kod adreslerini (tanımlayıcı `[A-Za-z_][A-Za-z0-9_]{3,}` ya da `yol:N`/`yol:N-M`; H18'in tanımıyla aynı;
@@ -519,11 +519,15 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   `H20: a atif | d GOVDE DEGISTI | s SEMBOL YOK | o OLCULEMEDI | c COKLU | z DAMGASIZ` (+ `IDDIA KODDAN ESKI OLABILIR`
   satırları, `[k tanim]` k≥2'de; ekran tavanı 20, hepsi sayılır; damgalı atıf/damgasız/coklu yoksa SESSİZ; damgasız belirteç
   çözülürken araç kusuru/kısmi kayıp (`DEFTER_BAYAT`) yüzünden ölçülemezse düşmez, OLCULEMEDI'ye sayılır ve alanda
-  `(damgali X, damgasiz Y)` ayrımı görünür). `not` ayrıca sembolün son **N=5** commit içinde değişip değişmediğini (`DIKKAT:
+  `(damgali X, damgasiz Y)` ayrımı görünür). **Bayat defterde (P5.3)** H20 aday kümesini BELLEKTE tazeler (değişen/yeni dosyalar
+  yeniden çıkarılır, `kapi` diske YAZMAZ, bayatlık `adres` sorgusunun AYNI yoluyla ölçülür): `adres --kur` yapılmadan yeni dosyada
+  eklenen 4. tanım `GOVDE DEGISTI [4 tanim]` verir ve bayat defterde `0 degisti, 0 olculemedi` ÇIKAMAZ; 100 dosya / 8 MiB aşılırsa ya
+  da bayatlık ölçülemezse (ya da çıkarıcı kusuru / `.git`siz kopya) `ayni`/`SEMBOL YOK` `OLCULEMEDI [DEFTER_BAYAT|BAYATLIK|EKSIK]`
+  olur (kesin pozitifler korunur); çıkarılamayan yeni dosya `[DEFTER_ATLANDI]`. `not` ayrıca sembolün son **N=5** commit içinde değişip değişmediğini (`DIKKAT:
   <ad> govdesi k commit once degisti (<sha>)`; birleşikte `<ad> 3 tanimdan 3'u 2 commit once degisti (<sha>)`) ve
   commit'lenmemiş değişikliği söyler (sürümler tek `git cat-file --batch`). **Sınırlar: iddianın ANLAMI ölçülmez** (yalnız
   "dayandığı kod değişti"; birleşik izde HANGİ tanımın değiştiği söylenmez); damgasız eski notlar geriye dönük damgalanmaz (H20
-  yalnız SAYAR); ad → dosya eşlemesi defterdendir (önce `adres --kur`); N=5 sabit; kanca yok. İçlerindeki her istisna
+  yalnız SAYAR); ad → dosya eşlemesi `not`/K3 için defterdendir (önce `adres --kur`; H20 bayat defteri tazeler); N=5 sabit; kanca yok. İçlerindeki her istisna
   `OLCULEMEDI`dir ve `not`/`kapi`nın başka hükmünü etkilemez. Ayrıca `adres --kur` araç kusurunda (exit 3) mevcut SAĞLAM defteri
   EZMEZ (`ESKI DEFTER KORUNDU`); eksik defter başlığa `cikarici=<n>` yazar ve bir sorguda `güncel` sayılmaz (sorgu yeniden
   kurmayı dener). Kapı: `faz0/adres_mutanti.py` A-EZME / A-EKSIK / P5-DAMGA / P5-H20 / P5-DOGUS / P5-BIRLESIK / P5-SABIT /
