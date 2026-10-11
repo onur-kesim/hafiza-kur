@@ -2377,11 +2377,14 @@ jobs:
   #     H14 dersi: yollar komut satirina DIZILMEZ). `A-KOMUT-SATIRI` kolu yalniz
   #     Windows'ta isirir; Linux/macOS'ta `OLCULEMEDI: bu platformda sinir yok`
   #     BEYAN eder (sessiz YESIL degil). 🔴 UC PLATFORM, `continue-on-error` YOK.
+  #     SURE (P5.2): 17 kol / 171 sabotaj; yerelde (Windows, yuk altinda) kol basina
+  #     P5-BIRLESIK ~50 sabotaj. Eski tavan 90 dk P5'te 45'ten cikarildi; P5.2'de
+  #     150 dk (sabotaj kosusunda P5-BIRLESIK yalniz kendi ekseninin vektorlerini koser).
   # ---------------------------------------------------------------------------
   adres_mutanti:
     name: Adres mutanti (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 90
+    timeout-minutes: 150
     strategy:
       fail-fast: false
       matrix:
@@ -2391,7 +2394,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: adres defteri kollari (tanim, cagiran, parmak izi, bayatlik, determinizm, etki, komut satiri) + sabotajlar
+      - name: adres defteri kollari (tanim, cagiran, parmak izi, bayatlik, determinizm, etki, ezme, eksik, P5 damga/H20/dogusta bayat, P5.2 birlesik/sabit/sayim, komut satiri) + sabotajlar
         shell: bash
         run: python faz0/adres_mutanti.py 2>&1 | tee adres-mutanti-cikti.txt
       - name: adres mutanti ciktisi (artefakt)

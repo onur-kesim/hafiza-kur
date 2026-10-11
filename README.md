@@ -271,8 +271,9 @@ zinciri, üretilmiş kod) ikinci dereceden yavaşlar. **"Çağıran" listesi sö
 eşleşmesidir, tip çözümlemesi DEĞİLDİR** (farklı tiplerin aynı adlı üyeleri ayrılmaz; yorum ve string içindeki geçişler
 P2.1'den beri sayılmaz, ama sayılmadıkları `NOT:` ile söylenir); bu sınır çıktıda da basılır:
 `NOT: cagiranlar sozcuk eslesmesidir`. Cevabın boyutu sorunun boyutuyla büyür; SÜRE projeyle büyür (sorgu hızı:
-yukarıda). Ölçüm: `faz0/adres_mutanti.py` (on dört kol — A-TANIM, A-CAGIRAN, A-PARMAK, A-BAYAT, A-DETERMINIZM, A-MASKE,
-A-ATLA, A-ETKI, A-EZME, A-EKSIK, P5-DAMGA, P5-H20, P5-DOGUS, A-KOMUT-SATIRI; 108 sabotaj, her biri ayrı eksende sınanır).
+yukarıda). Ölçüm: `faz0/adres_mutanti.py` (on yedi kol — A-TANIM, A-CAGIRAN, A-PARMAK, A-BAYAT, A-DETERMINIZM, A-MASKE,
+A-ATLA, A-ETKI, A-EZME, A-EKSIK, P5-DAMGA, P5-H20, P5-DOGUS, P5-BIRLESIK, P5-SABIT, P5-SAYIM, A-KOMUT-SATIRI; 171 sabotaj, her
+biri ayrı eksende sınanır; P5-BIRLESIK sabotaj koşusunda yalnız sabotajın KENDİ ekseninin vektörlerini koşar).
 
 **P2.1 ile eklenen sınırlar (ölçüldü, gizlenmez):** ağır patolojik girdi yine yavaştır — iç içe f-dize/`$"…"` derinlik ×
 boyut ile ikinci dereceden büyür (100 iç içe dize × 20 KB = 39,9 s), Dart/C# desenlerinde çok uzun boşluk dizisi de ikinci
@@ -297,14 +298,32 @@ python3 skill/scripts/hafiza.py not   --kok=<proje> --konu=genel-durum --metin='
 python3 skill/scripts/hafiza.py kapi  --kok=<proje>                                         # H20: damgalı atıflar gövdesi değişti mi
 ```
 
-- **Damga (`not`).** Fragman metnindeki backtick'li belirteçler — H18'in tanımıyla AYNI (`_atif_cikar` kuralları): tanımlayıcı
-  `[A-Za-z_][A-Za-z0-9_]{3,}` ya da `yol:N` / `yol:N-M` — `ADRES.tsv`'de **TEK** tanıma çözülürse (ad ya da `Tür.üye` son eki)
-  kapanış backtick'inin hemen arkasına o tanımın gövde parmak izi eklenir: `` `HesaplaToplam`#a3f9c1d2 ``. İz, defteri üreten
-  AYNI fonksiyondan gelir ve dosyanın **canlı** çıkarımından hesaplanır (defterdeki satırdan değil; diske yazılmaz). Ad → dosya
-  eşlemesi defterden, `yol:N` için satır → tanım eşlemesi dosyanın **canlı** çıkarımından yapılır (defter bayatsa yanlış sembole
-  damga basılmasın); `yol:N` damgası N..M aralığını kapsayan **en dar** tanımındır (iç içe tanımda sınıf değil üye), ters aralık
-  (`a.py:9-3`) çözülemez. Birden çok tanım (iki dosyada aynı ad, C# aşırı yükleme, arayüz + uygulama, iki dosyada aynı sonekli yol)
-  → damga YOK: `ATIF COKLU: <ad> (k tanim) - damgalanmadi`; bulunamadı → `ATIF COZULEMEDI: <ad>`; defter yok/bozuk/eksik, çıkarıcı
+- **Damga (`not`).** Fragman metnindeki backtick'li belirteçler — H18'in tanımıyla AYNI (`_atif_cikar` kuralları; dil sabitleri
+  hariç, aşağıda): tanımlayıcı
+  `[A-Za-z_][A-Za-z0-9_]{3,}` ya da `yol:N` / `yol:N-M` — `ADRES.tsv`'de çözülürse (ad ya da `Tür.üye` son eki) kapanış
+  backtick'inin hemen arkasına gövde parmak izi eklenir: `` `HesaplaToplam`#a3f9c1d2 ``. İz, defteri üreten AYNI fonksiyondan
+  gelir ve dosyanın **canlı** çıkarımından hesaplanır (defterdeki satırdan değil; diske yazılmaz). Ad → dosya eşlemesi
+  defterden, `yol:N` için satır → tanım eşlemesi dosyanın **canlı** çıkarımından yapılır (defter bayatsa yanlış sembole damga
+  basılmasın); `yol:N` damgası N..M aralığını kapsayan **en dar** tanımındır (iç içe tanımda sınıf değil üye), ters aralık
+  (`a.py:9-3`) çözülemez.
+  **Birleşik damga (P5.2).** Bir AD 2–5 tanıma çözülürse (arayüz bildirimi + uygulama + test çifti, iki dosyada aynı ad, C#
+  aşırı yükleme, Python `@x.setter` çifti) iz, tanımların tek tek gövde izlerinin SIRALANIP `\n` ile birleştirilmesinin SHA-256'sının
+  ilk 8 hex'idir — dosya YOLU ize girmez (dosya adı/yeri değişince iz değişmez). TEK tanımda iz o tanımın kendi izidir (P5
+  damgalarıyla bayt bayt aynı; mevcut TEKİL damga, adın tek tanımı kaldığı sürece geçersizleşmez — aynı adlı yeni bir kardeş
+  tanım gelirse H20 `GOVDE DEGISTI` + `TANIM SAYISI DEGISTI` der). Damganın satır içi biçimi AYNI kalır (`` `Ad`#hex8 ``);
+  kaç tanımdan geldiği yalnız konsolda görünür (örnek biçim): `ATIF DAMGALANDI: 1 (ShouldResyncAsync#9e41b07c [3 tanim])`. **Tavan 5:** 6+
+  tanım → damga YOK, `ATIF COKLU: <ad> (k tanim, tavan 5) - damgalanmadi` + `DOGUSTA BAYAT: OLCULEMEDI (<ad> COKLU)`. Aday
+  tanımlardan HERHANGİ birinin çıkarımı arızalıysa kısmi (eksik tanım kümesinden) iz YAZILMAZ: `ATIF OLCULEMEDI: <ad> (<sebep>)` (sebep: `CIKARICI` · `SOZDIZIMI` · `IKILI` · ...);
+  adaylardan BİR KISMI canlı çıkarımda yoksa (dosya taşınmış/yeniden adlandırılmış, defter bayat) yine kısmi iz yazılmaz:
+  `ATIF OLCULEMEDI: <ad> (DEFTER_BAYAT)` — `adres --kur` sonrası iz ölçülür. HEPSİ yoksa eski davranış (`DOSYA_YOK` /
+  `COZULEMEDI`).
+  `yol:N` belirteci iki dosyaya çözülür ya da bakılan satırın tam adı aşırı yüklüyse (aynı tam adlı birden çok gövde) yine damga
+  YOK: `ATIF COKLU: <belirtec> (k tanim) - damgalanmadi` (k = dosya sayısı ya da aynı tam adlı gövde sayısı; satır tek tanıma aittir
+  ama izi o ada bağlı kümeden ayrılamaz). Defter ATLANDI dosya taşıyorsa (sözdizimi hatası vb.) bir ADIN tanım kümesi EKSİK olabilir:
+  damga yine basılır ama `ATIF NOT: defter ATLANDI dosya iceriyor - ad icin tanim kumesi EKSIK olabilir ...` satırı eklenir. Dil sabitleri (**`true false null None True False nil this self void undefined`**)
+  backtick'li olsa da tanımlayıcı adayı SAYILMAZ (K5): satır YOK, damga YOK, H20 sayımı YOK — kodda o adda bir tanım olsa
+  bile; tam eşleşme, büyük/küçük harf AYNEN (`trueValue`, `TRUE` listede değildir ve bugünkü gibi `COZULEMEDI` der).
+  Bulunamadı → `ATIF COZULEMEDI: <ad>`; defter yok/bozuk/eksik, çıkarıcı
   kusuru ya da kök dışına kaçan defter yolu → `ATIF OLCULEMEDI: <sebep>`. Zaten `#hex8` taşıyan belirteç yeniden damgalanmaz
   (idempotent); kapanış backtick'ine bitişik ek (`` `ad`un ``, apostrofsuz) damgalanmaz (`... (bitisik sonek - damgalanmadi)`:
   damga ekle birleşip bir sonraki `not`ta tanınmazdı); çift/üçlü backtick aralıkları ve kod çitleri içindeki satırlar damgalanmaz;
@@ -313,43 +332,86 @@ python3 skill/scripts/hafiza.py kapi  --kok=<proje>                             
 - **H20 (`kapi`).** Canlı defterdeki (H18 gibi yalnız `canli`; madde sınırları da H18'inkiyle AYNI, kod çiti içi satırlar hariç)
   **damgalı** atıfları okur — madde numarası taşımayan satırdaki damga da okunur (`satir N`): damga açık bir işarettir, gizlenemez.
   Her biri için ad → dosya eşlemesini `ADRES.tsv`'den, **bugünkü** gövde parmak izini o dosyanın canlı çıkarımından alır (bellekte;
-  diske yazmaz — bayat ya da ezilmiş defter hükmü bozmaz). Damga, adaylardan birinin canlı izine eşitse gövde AYNIDIR (satır
-  kayması/taşınma değiştirmez; `yol:N` için damga dosyadaki HERHANGİ bir tanımın izine eşitse aynı). Çıktı tek özet + liste (ekran
-  tavanı 20, HEPSİ sayılır; `--siki`de de UYARI):
-  `H20: <a> atif | <d> GOVDE DEGISTI | <s> SEMBOL YOK | <o> OLCULEMEDI | <z> DAMGASIZ` ve her değişen için
-  `H20: md.40 `ShouldResyncAsync` #a3f9c1d2 -> #7be04c11 IDDIA KODDAN ESKI OLABILIR`. **DAMGASIZ** = madde içinde damga
-  taşımayan ama TEK tanıma çözülebilen tanımlayıcı/`yol:N` sayısıdır (gizlenemez; geriye dönük damgalama bu dilimde yoktur).
+  diske yazmaz — bayat ya da ezilmiş defter hükmü bozmaz). **Ad** için kapı anında defter satırlarının BUGÜNKÜ tüm tanımlarının
+  birleşik izi damgayla karşılaştırılır (satır kayması/dosya taşıma değiştirmez; tanım EKLENMESİ ya da SİLİNMESİ izi değiştirir →
+  `GOVDE DEGISTI`; bugün 6+ tanım `OLCULEMEDI [COKLU_TAVAN]`); `yol:N` için damga dosyadaki HERHANGİ bir tanımın izine eşitse aynı.
+  Çıktı tek özet + liste (ekran tavanı 20, HEPSİ sayılır; `--siki`de de UYARI):
+  `H20: <a> atif | <d> GOVDE DEGISTI | <s> SEMBOL YOK | <o> OLCULEMEDI | <c> COKLU | <z> DAMGASIZ` ve her değişen için
+  `H20: md.40 `ShouldResyncAsync` [3 tanim] #a3f9c1d2 -> #7be04c11 IDDIA KODDAN ESKI OLABILIR` (`[k tanim]` k = BUGÜNKÜ tanım
+  sayısı, yalnız k ≥ 2'de; eski TEKİL damga + sonradan aynı adlı kardeş tanım gelirse satır `TANIM SAYISI DEGISTI (damgali govde
+  duruyor)` der — hüküm yine `GOVDE DEGISTI`). (Maliyet: damgasız her AD belirteci için aday dosyalar canlı çıkarılır — farklı dosya sayısıyla doğrusal, dosya başına tek çıkarım;
+  yüzlerce damgasız notu olan projede `kapi` saniyeler uzar.) **DAMGASIZ** = madde içinde damga taşımayan ama damga ÜRETİLEBİLEN (1–5 tanım)
+  tanımlayıcı/`yol:N` sayısıdır (gizlenemez; geriye dönük damgalama bu dilimde yoktur); **COKLU** = madde içinde damgasız ve
+  damgalanamayan (6+ tanımlı ad, iki dosyaya çözülen `yol:N`, aşırı yüklü gövde) belirteç sayısıdır — eskiden hiçbir sayıya
+  girmiyordu. **Sınıf = `not`ta basılan K1 hükmü** (tek karar): damga üretilebilir → DAMGASIZ · COKLU · çözülürken araç
+  kusuru / kısmi kayıp (`DEFTER_BAYAT`) → damgasız-OLCULEMEDI · çözülemedi (kod adresi değil) → SAYILMAZ. `<o> OLCULEMEDI`
+  damgalı + damgasız ölçülemeyenlerin toplamıdır; damgasız ölçülemeyen VARSA ayrım görünür: `3 OLCULEMEDI (damgali 1, damgasiz 2)
+  [CIKARICI:3]` (yoksa hepsi damgalıdır, çıktı eskisiyle aynı). **Değişmez (defter TAMAMKEN, madde içi çözülebilir belirteçler):**
+  damgalı + COKLU + DAMGASIZ + damgasız-OLCULEMEDI toplamı çıkarıcı arızası enjeksiyonuyla AZALMAZ (damgasız belirteç artık
+  sessizce düşmez); yalnız sağlamken `yok` olanlar (tanım dışı satıra bakan `yol:N`) kadar ARTABİLİR — arıza `yok` hükmünü
+  veremez (`P5-SAYIM` kolu iki durumu ayrı pinler).
   `SEMBOL YOK` yalnız defter TAM kapsamlıyken (başlıkta `atlandi=0`) hükümdür; atlanan dosya varken kayıp sembol `OLCULEMEDI
-  [DEFTER_ATLANDI]` sayılır. Canlıda belirteç yoksa ya da defter yokken damgalı atıf yoksa H20 **sessizdir** (çıktı bayt bayt
-  eski). Defter yok/bozuk/eksikken damgalı atıflar `OLCULEMEDI [DEFTER_YOK|BOZUK|EKSIK:n]` diye SAYILIR (gizlenmez).
-- **Doğuşta bayat (`not`).** Çözülen (TEK tanım) her sembol için sembolün dosyasının **son N=5 commit**'indeki sürümleri
-  (`git show <commit>:./<yol>`; geçmiş first-parent, tek yol/çağrı) AYNI çıkarıcıdan geçirilir; HEAD'den geriye ilk k (0 ≤ k < 5)
+  [DEFTER_ATLANDI]` sayılır. Canlıda hiç aday belirteç yoksa ya da defter yokken damgalı atıf yoksa H20 **sessizdir** (çıktı bayt bayt
+  eski); madde içinde damgasız ama çözülebilen / COKLU / ölçülemeyen belirteç VARSA özet basılır (P5.2: 2–5 tanımlı adlar artık DAMGASIZ,
+  6+ tanımlılar COKLU sayılır — eskiden sessizdiler). Defter yok/bozuk/eksikken damgalı atıflar `OLCULEMEDI [DEFTER_YOK|BOZUK|EKSIK:n]` diye SAYILIR (gizlenmez).
+- **Doğuşta bayat (`not`).** Çözülen (1–5 tanım) her sembol için sembolün dosyasının **son N=5 commit**'indeki sürümleri
+  (TEK `git cat-file --batch` çağrısı — dosya listesi komut satırına dizilmez, kök alt dizinse `rev-parse --show-prefix` önekiyle;
+  geçmiş first-parent; aynı blob bir kez çıkarılır) AYNI çıkarıcıdan geçirilir; HEAD'den geriye ilk k (0 ≤ k < 5)
   için gövde komşu sürümden farklıysa `DIKKAT: <ad> govdesi k commit once degisti (<kisa-sha>) - iddiayi kodla teyit et`
-  (k = değişikliği GETİREN commit'in HEAD'e uzaklığı; k=0 → `son commit'te degisti`; yalnız EN YAKIN değişim bildirilir). Çalışma
+  (k = değişikliği GETİREN commit'in HEAD'e uzaklığı; k=0 → `son commit'te degisti`; yalnız EN YAKIN değişim bildirilir).
+  **Birleşik damgada (ad 2–5 tanım) HER tanım taranır ve TEK satır basılır:** `DIKKAT: <ad> 3 tanimdan 3'u 2 commit once degisti
+  (4005380) - iddiayi kodla teyit et` (sayı = bugünkü tanımlardan pencerenin HERHANGİ bir sürümünde farklı gövdeyle bulunanlar;
+  commit = EN YAKIN değişim; değişenler aynı yaşta değilse `... (<sha>) (en yakin; n tanim daha eski)`; pencerede aynı aday
+  dosyada SİLİNEN tanım varsa `(+s silinen)`, yalnız silinen varsa `DIKKAT: <ad> pencerede s tanim silindi (k commit once,
+  <sha>)`; TEK tanim / `yol:N`'de eski metin bayt bayt — ardışık sürümlerde ilk farklılık, silme/ekleme dahil). Çalışma
   ağacı HEAD'den farklıysa `DIKKAT: <ad> commit'lenmemis degisiklik tasiyor`; çalışma ağacı çıkarılamıyorsa bu hüküm
   VERİLMEZ (`OLCULEMEDI`). git yok / depo değil / sığ klonda geçmiş yetmiyorsa `DOGUSTA BAYAT: OLCULEMEDI (<sebep>)`.
-  Dosya pencerede hiç commit'e girmediyse tek git çağrısı yapılır; git çağrıları terminal istemsiz ve zaman aşımlıdır (20 sn),
-  bir `not`ta toplam bütçe 15 sn'dir (aşılırsa kalan dosyalar `OLCULEMEDI` diye BEYAN edilir; `not` kilidi TUTARKEN çalışır) ve
-  en çok 20 dosya için sorulur. N motorda SABİTTİR (`_DOGUS_N = 5`). Gerekçe vaka: Momentum md.40 — iddia `4359fa8`'de yazıldı,
+  Git çağrıları terminal istemsiz ve zaman aşımlıdır (20 sn); bir `not`ta TÜM dosyaların sürümleri tek `cat-file --batch`
+  çağrısındandır (dosya/sürüm sayısıyla çağrı sayısı büyümez; P5.2'den önce dosya başına 7+ `git show` vardı); toplam çıkarım
+  bütçesi 15 sn'dir (aşılırsa kalan dosyalar `OLCULEMEDI` diye BEYAN edilir; `not` kilidi TUTARKEN çalışır) ve en çok 20 dosya
+  için sorulur; tavan/bütçe yüzünden hükümsüz kalan belirteçlerin ADLARI satırda sayılır (`...; hukumsuz: ad1, ad2 +N daha`).
+  N motorda SABİTTİR (`_DOGUS_N = 5`). Gerekçe vaka: Momentum md.40 — iddia `4359fa8`'de yazıldı,
   kodu değiştiren `4005380` iki commit önceydi (zaman/sıra kuralları bu vakaya YAPISAL olarak kördü; sembol parmak izi görür).
 
 **P5 bilinen sınırlar (gizlenmez):** (1) **İddianın ANLAMI ölçülmez** — yalnız "dayandığı kod değişti" söylenir; gövde
 değişmeden iddia bayat olabilir ya da gövde değişse iddia hâlâ doğru olabilir (yanlış alarm mümkündür). Sınıf/ad alanı adına
 damga sınıfın TÜM gövdesinin izidir: ilgisiz bir üye değişince de `GOVDE DEGISTI` der. (2) **DAMGASIZ geriye dönük damgalanmaz**:
-bu dilimden önce yazılmış notlar damgasızdır; H20 onları yalnız SAYAR. (3) **Birden çok tanıma çözülen ad (COKLU) damgalanmaz ve
-doğuşta-bayat taramasına GİRMEZ** — gerçek vaka: Momentum `ShouldResyncAsync` = arayüz bildirimi + gerçek metot + test çifti
-(3 tanım); sınıf adı + kurucusu da COKLU olur. Aynı metindeki `yol:N` ya da tekil adlar yine damgalanır/taranır (md.40'ta uyarı
-`SyncCommandHandler.cs:85` için çıkar, `ShouldResyncAsync` için ÇIKMAZ). (4) Ad → dosya eşlemesi `ADRES.tsv`'den gelir: defteri
-kurduktan sonra EKLENEN ikinci bir tanım görülmez (ad hâlâ "tek" sayılır) ve taşınmış sembol bulunamaz (H20 defteri YENİLEMEZ,
-diske yazmaz): önce `adres --kur`. (5) `yol:N` damgası "o satırın o günkü sahibi"dir; kod kayıp N. satır başka bir tanıma düşerse
+bu dilimden önce yazılmış notlar damgasızdır; H20 onları yalnız SAYAR. (3) **Birleşik damga tüm tanımları tek ize bağlar**
+(P5.2): 2–5 tanımlı adın BİR tanımındaki değişiklik `GOVDE DEGISTI`dir ama HANGİ tanım olduğunu söylemez (H20 satırı yalnız
+`[k tanim]` der; K3 yalnız kaç tanımın değiştiğini söyler) — gerçek vaka: Momentum `ShouldResyncAsync` = arayüz bildirimi +
+gerçek metot + test çifti. **6+ tanımlı ad** (`Execute`, `Handle`…) damgalanmaz, doğuşta-bayat taramasına GİRMEZ (beyan edilir) ve
+H20'de `COKLU` sayılır. Birleşik iz ilgisiz tanımları da kapsar: sınıf adı + kurucusu (aynı ad) ya da yalnız adı paylaşan ilgisiz
+sınıfların üyeleri tek ize girer, birinin değişmesi hepsini uyarır. İki tanımın gövdelerinin YER DEĞİŞTİRMESİ (A↔B takası) küme
+eşitliğidir: H20 `GOVDE DEGISTI 0` der (yol ize girmediği için taşıma ile aynı sonuç), K3 `2 tanimdan 2'si` der. `yol:N` belirteci aşırı yüklü bir gövdeye düşerse (eşit en dar
+tanım) damgalanmaz. Aday kümesi tek kural: defter satırı sayısı > 5 ise (`k tanim` defter SATIR sayısıdır; defter bayatsa canlı
+sayıdan farklı olabilir) ya da canlı tanım sayısı > 5 ise COKLU. **Sınıf + kurucu** (iç içe, aynı ad) birleşik kümeye girer: damga
+sınıfın TÜM gövdesidir ve K3 kurucu değişiminde `2 tanimdan 2'si` der (ayrı dilim önerisi: başka bir ADAY tanımın içinde kalan
+tanımı kümeden düşürmek). (4) Ad → dosya eşlemesi `ADRES.tsv`'den gelir: defteri kurduktan sonra başka DOSYAYA EKLENEN yeni bir
+tanım görülmez; aynı dosyada yalnız AYNI tam adın (aynı sınıfta aşırı yük) yeni tanımı görülür — başka sınıfa eklenen aynı adlı üye
+(`B.calis`) ya da başka dosya, defter yenilenene kadar görünmez — ve taşınmış/silinmiş aday dosya varken defter bayatsa kısmi
+kümeden hüküm verilmez: `OLCULEMEDI [DEFTER_BAYAT]` (H20 defteri YENİLEMEZ, diske yazmaz): önce `adres --kur`; defter
+yenilendikten sonra eklenen/silinen tanım izi değiştirir → `GOVDE DEGISTI` ("silinme → GOVDE DEGISTI" hükmü TAZE defter
+içindir). (5) `yol:N` damgası "o satırın o günkü sahibi"dir; kod kayıp N. satır başka bir tanıma düşerse
 `GOVDE DEGISTI` ya da `SEMBOL YOK` görünebilir (H18 `KAYMA`yı ayrıca söyler). (6) **N=5** sabittir; pencerenin dışındaki değişiklik
-uyarılmaz (6. commit ve öncesi sessiz). Gövdesi aynı kalan dosya taşıma/yeniden adlandırma "yeni dosya" gibi `degisti` görünür.
+uyarılmaz (6. commit ve öncesi sessiz). Gövdesi aynı kalan dosya taşıma/yeniden adlandırma "yeni dosya" gibi `degisti` görünür
+(birleşik damgada da: `3 tanimdan 1'i`; `git diff -M` eşlemesi ayrı dilim). Pencerede BAŞKA dosyadan silinen tanım K3'te
+görünmez (aday kümesi defterden gelir); aynı aday dosyadaki silme görünür.
 (7) Pencerede tek bir çıkarılamayan sürüm (WIP sözdizimi hatası, büyük/ikili dosya) o dosyanın doğuşta-bayat hükmünü `OLCULEMEDI`
 yapar. (8) **post-commit kancası YOK** (kapsam dışı): commit'in dokunduğu sembollere atıf yapan satırları listelemek ayrı bir iştir.
 (9) Eski motorun yazdığı EKSİK defterin başlığında `cikarici=` yoktur; onu `--kur` yeniler. (10) Not metni düz metindir: yorum/dize
 maskesi yoktur, yalnız ``` / ~~~ çit satırları (liste işaretinden hemen sonra açılan çit ve girintili kod bloğu tanınmaz) ve çift
 backtick aralıkları atlanır. (11) Tanınmayan belirteç biçimleri (Unicode tanımlayıcı, `Tür.üye`, `ad()`) sessizce atlanır —
-H18'in dilbilgisidir.
+H18'in dilbilgisidir. (12) **Dil sabitleri listesi** (`true false null None True False nil this self void undefined`; `nil` 3 harf:
+zaten aday olamaz) yalnız `not`/H20'nin DAMGASIZ belirteçlerine uygulanır; H18 (`_atif_cikar`) bu listeden ETKİLENMEZ ve tanımlı
+bir `None` (C# enum üyesi) artık YENİ damga almaz — eski damgası okunmaya devam eder. (13) H20'nin DAMGASIZ/COKLU/damgasız-
+OLCULEMEDI sayımı yalnız numaralı madde içindekilerdir (damgalı atıf her satırda okunur); defter yok/bozuk/eksikken damgasız
+belirteç SINIFLANAMAZ ve sayılmaz (damgalı atıf `[DEFTER_*]` sayılır). Çözülürken araç kusuru olan `yol:N` sağlamken `yok`
+olacaksa `OLCULEMEDI` toplamı +1 artar (değişmez metnine bakın). (14) Damgasız `yol:N` silinmiş dosyaya bakıyorsa damgasız-
+OLCULEMEDI `[DOSYA_YOK]` sayılır; damgalı karşılığı `SEMBOL YOK`tur. (15) **Git zaman aşımı** (tek çağrı 20 sn): Windows'ta
+çağrının torunları (lazy-fetch, kimlik yardımcısı) boruları tutuyorsa `subprocess.run` zaman aşımından sonra da beklemeye devam
+edebilir (ÖNCEDEN VAR: `adres`/`not` aynı yardımcıyı kullanır); `not` kilidi o sürece tutulur. (16) Çalışma ağacı ile blob arasında
+`smudge`/`clean` süzgeci (LFS, `eol`) varsa `commit'lenmemis degisiklik` yanlış alarm verebilir; K3 git blob'unu süzgeçsiz okur.
+(17) K1/H20 canlı çıkarımı (aday dosyalar) K3'ün 15 sn bütçesine bağlı değildir: ad başına ≤5 dosya çıkarılır.
 
 `kur`, ağaçta başka bir aracın defterini tanırsa (`CLAUDE.md`, `AGENTS.md`,
 `DURUM.md`, `memory-bank/` …) **durur** ve `devral` önerir — belge bunu zaten

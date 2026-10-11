@@ -505,20 +505,26 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   önbellek yalnız bir nottur, bayatlığı gizleyemez, ilk (soğuk) sorgu eskisinden yavaştır. `kapi/derle/devral/not/isir`
   yükleme anında adres koduna HİÇ dokunmaz (A-ETKI kolu ölçer); P5'ten beri yalnız `not` (damga, doğuşta bayat) ve `kapi` (H20)
   UYARI üretmek için dokunur ve oradaki her istisna OLCULEMEDI'dir; `adres` bir ÖLÇÜM kapısı değil, bir SORGU aracıdır. Kapı:
-  `faz0/adres_mutanti.py` (on dört kol, 108 sabotaj; A-KOMUT-SATIRI kolu yalnız Windows'ta ısırır; Linux/macOS'ta
+  `faz0/adres_mutanti.py` (on yedi kol, 171 sabotaj; A-KOMUT-SATIRI kolu yalnız Windows'ta ısırır; Linux/macOS'ta
   `OLCULEMEDI: bu platformda sinir yok` der).
-- **Parmak izli atıf (P5, 10 Eki 2026) — UYARIDIR, exit DEĞİŞMEZ.** `adres` defterine dayanır. `not` metnindeki backtick'li kod
-  adreslerini (tanımlayıcı `[A-Za-z_][A-Za-z0-9_]{3,}` ya da `yol:N`/`yol:N-M`; H18'in tanımıyla aynı) `ADRES.tsv`'de TEK tanıma
-  çözerse satır içi gövde parmak izi damgası ekler: `` `ShouldResyncAsync`#a3f9c1d2 `` (iz, dosyanın CANLI çıkarımından; `yol:N`
-  N. satırı kapsayan en dar tanımın izi; birden çok tanım → damga YOK + `ATIF COKLU`; bulunamadı → `ATIF COZULEMEDI`;
-  defter yok/bozuk/eksik → `ATIF OLCULEMEDI`; çift backtick, kod çiti ve bitişik ekli belirteç damgalanmaz). `kapi` **H20**
-  damgalı atıfların sembolünün BUGÜNKÜ gövde izini canlı çıkarımdan (diske yazmadan) karşılaştırır:
-  `H20: a atif | d GOVDE DEGISTI | s SEMBOL YOK | o OLCULEMEDI | z DAMGASIZ` (+ `IDDIA KODDAN ESKI OLABILIR` satırları; ekran
-  tavanı 20, hepsi sayılır; damgalı atıf/damgasız yoksa SESSİZ). `not` ayrıca sembolün son **N=5** commit içinde değişip
-  değişmediğini (`DIKKAT: <ad> govdesi k commit once degisti (<sha>)`) ve commit'lenmemiş değişikliği söyler. **Sınırlar:
-  iddianın ANLAMI ölçülmez** (yalnız "dayandığı kod değişti"); damgasız eski notlar geriye dönük damgalanmaz (H20 yalnız SAYAR);
-  COKLU adlar (arayüz+uygulama+test çifti, sınıf+kurucu) damgalanmaz ve doğuşta-bayat taramasına girmez (Momentum
-  `ShouldResyncAsync`); ad → dosya eşlemesi defterdendir (önce `adres --kur`); N=5 sabit; kanca yok. İçlerindeki her istisna
+- **Parmak izli atıf (P5, 10 Eki 2026; P5.2 birleşik damga) — UYARIDIR, exit DEĞİŞMEZ.** `adres` defterine dayanır. `not`
+  metnindeki backtick'li kod adreslerini (tanımlayıcı `[A-Za-z_][A-Za-z0-9_]{3,}` ya da `yol:N`/`yol:N-M`; H18'in tanımıyla aynı;
+  dil sabitleri `true false null None True False nil this self void undefined` aday DEĞİL) `ADRES.tsv`'de çözerse satır içi gövde
+  parmak izi damgası ekler: `` `ShouldResyncAsync`#a3f9c1d2 `` (iz, dosyanın CANLI çıkarımından; `yol:N` N. satırı kapsayan en dar
+  tanımın izi; **ad 2–5 tanıma çözülürse BİRLEŞİK iz** = sıralı tek tek gövde izlerinin SHA-256'sının ilk 8 hex'i, yol girmez,
+  `ATIF DAMGALANDI: 1 (Ad#iz [3 tanim])`; tek tanımda iz o tanımın izidir; **6+ tanım (tavan 5) → damga YOK** + `ATIF COKLU` +
+  `DOGUSTA BAYAT: OLCULEMEDI (<ad> COKLU)`; bulunamadı → `ATIF COZULEMEDI`; defter yok/bozuk/eksik ya da aday dosyalardan biri
+  arızalı → `ATIF OLCULEMEDI`; çift backtick, kod çiti ve bitişik ekli belirteç damgalanmaz). `kapi` **H20** damgalı atıfların
+  sembolünün BUGÜNKÜ (tüm tanımlarının birleşik) gövde izini canlı çıkarımdan (diske yazmadan) karşılaştırır:
+  `H20: a atif | d GOVDE DEGISTI | s SEMBOL YOK | o OLCULEMEDI | c COKLU | z DAMGASIZ` (+ `IDDIA KODDAN ESKI OLABILIR`
+  satırları, `[k tanim]` k≥2'de; ekran tavanı 20, hepsi sayılır; damgalı atıf/damgasız/coklu yoksa SESSİZ; damgasız belirteç
+  çözülürken araç kusuru/kısmi kayıp (`DEFTER_BAYAT`) yüzünden ölçülemezse düşmez, OLCULEMEDI'ye sayılır ve alanda
+  `(damgali X, damgasiz Y)` ayrımı görünür). `not` ayrıca sembolün son **N=5** commit içinde değişip değişmediğini (`DIKKAT:
+  <ad> govdesi k commit once degisti (<sha>)`; birleşikte `<ad> 3 tanimdan 3'u 2 commit once degisti (<sha>)`) ve
+  commit'lenmemiş değişikliği söyler (sürümler tek `git cat-file --batch`). **Sınırlar: iddianın ANLAMI ölçülmez** (yalnız
+  "dayandığı kod değişti"; birleşik izde HANGİ tanımın değiştiği söylenmez); damgasız eski notlar geriye dönük damgalanmaz (H20
+  yalnız SAYAR); ad → dosya eşlemesi defterdendir (önce `adres --kur`); N=5 sabit; kanca yok. İçlerindeki her istisna
   `OLCULEMEDI`dir ve `not`/`kapi`nın başka hükmünü etkilemez. Ayrıca `adres --kur` araç kusurunda (exit 3) mevcut SAĞLAM defteri
   EZMEZ (`ESKI DEFTER KORUNDU`); eksik defter başlığa `cikarici=<n>` yazar ve bir sorguda `güncel` sayılmaz (sorgu yeniden
-  kurmayı dener). Kapı: `faz0/adres_mutanti.py` A-EZME / A-EKSIK / P5-DAMGA / P5-H20 / P5-DOGUS kolları.
+  kurmayı dener). Kapı: `faz0/adres_mutanti.py` A-EZME / A-EKSIK / P5-DAMGA / P5-H20 / P5-DOGUS / P5-BIRLESIK / P5-SABIT /
+  P5-SAYIM kolları.
