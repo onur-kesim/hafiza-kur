@@ -1,22 +1,22 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `ceb0454` = main = origin; CI #127 198/198; P5 yerelde)
-Son güncelleme: 10 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `ceb0454` = main = origin; CI #127 198/198; P5+P5.2 yerelde)
+Son güncelleme: 11 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## SON İŞ — P5 parmak izli atıf (Code O17, 10 Eki 2026) · PUSH YOK
-Taban `ceb0454`. K0 `7f9407d` `--kur` araç kusurunda sağlam defteri EZMEZ + EKSİK defter sorguda güncel değil (A-EZME/A-EKSIK 9) · K1 `4e0789c` `not` satır içi damga (P5-DAMGA 15) · K2 `8da2867` `kapi` H20 (P5-H20 14) · K3 `d7fbfba` doğuşta bayat N=5 (P5-DOGUS 13) · belge `343427b`. 14 kol / 108 sabotaj ISIRDI. Bağımsız inceleme: 34 bulgu kapandı.
-**🔴 K3 KABUL SAPMASI (iş emri: DUR+bildir):** Momentum `4359fa8` md.40 — `ShouldResyncAsync` 3 tanım (arayüz+metot+test) → COKLU → K3'e girmez; `2 commit once degisti (4005380)` yalnız `SyncCommandHandler.cs:85` için çıktı. Öneri (COKLU adayların HEPSİNİ tara; üçü de 4005380'de değişmiş) ölçüldü, COMMIT'LENMEDİ: `_olcum\p5_tur\k3_oneri\` → Onur kararı.
-**Momentum canlı:** `H20: 0 atif | … | 4 DAMGASIZ`. **fxa `kapi`:** 6,53 → 6,96 s (5 koşu ort., H20 12 atıf işlerken); Momentum 1,22 → 1,29 s.
-Çapa AYNEN (`cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79) · motor 11108 → 11663 satır (+555) · `altin_cikti` FARK YOK · `sabotaj` **67/67** · **Tam tur (Win):** 73 OK · 9 KIRMIZI = bilinen küme; exit FARKI 0/84 · `adres_mutanti` 1617 s → CI timeout 45→90 (`3119f9d`).
-**Sıradaki:** Onur: K3 COKLU kararı → push → Cowork kabul + 1 beyan → CI say.
-**AÇIK:** P5 kolları macOS/py3.11/3.13'te KOŞULMADI · Python adları NFKC · `--kok X` sırası adres DIŞI komutlarda yok sayılır · M-H10c KACTI (ÖNCEDEN VAR)
+## SON İŞ — P5 + P5.2 birleşik damga (Code O17, 10-11 Eki) · PUSH YOK
+Taban `ceb0454`. **P5** `7f9407d`..`343427b` (K0-K3). **P5.2** (Onur kilidi: BİRLEŞİK DAMGA): K4 `ee179fa` ad 2-5 tanım → TEK iz `sha256(sıralı izler)[:8]` (yol girmez, tavan 5, tekil iz geri uyumlu; not+H20+K3) · K5 `698be93` dil sabitleri aday değil · K6 `933a094` DAMGASIZ araç kusurunda OLCULEMEDI · düzeltme `20b647e` `ef36cbe` `369973a` · belge `534230d`. **17 kol / 171 sabotaj** ISIRDI; inceleme 82 bulgu işlendi.
+**✅ K3 KABUL SAPMASI KAPANDI** — Momentum `4359fa8` md.40 (taze klon): `ATIF DAMGALANDI: 2 (ShouldResyncAsync#f6f96469 [3 tanim], SyncCommandHandler.cs:85#45c11a6a)` · `DIKKAT: ShouldResyncAsync 3 tanimdan 3'u 2 commit once degisti (4005380)` · `ResyncRequired` COZULEMEDI. H20 adım 2 (`4359fa8..HEAD` 4 dosyada commit yok) ÖLÇÜLEMEDİ; sentetik düzenleme `GOVDE DEGISTI 1`. Momentum canlı: `7 COKLU | 6 DAMGASIZ`.
+**Sapmalar (Onur teyidi):** K6 değişmezi "toplam AYNI" → "azalmaz, yalnız `yok` kadar artar" · silinme → GOVDE DEGISTI yalnız TAZE defterle (bayat → OLCULEMEDI) · DAMGASIZ/COKLU yalnız numaralı madde.
+Çapa AYNEN (`cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79) · motor 11108 → 11928 satır (+820) · `altin_cikti` FARK YOK · `sabotaj` **67/67** · fxa `kapi` 10,74 → 10,57 s · ruff/mypy/bandit = taban · **Tam tur 534230d:** 73 OK · 9 KIRMIZI = bilinen küme · exit FARKI 0/84 · `adres_mutanti` 3289 s → CI timeout 150.
+**Sıradaki:** Onur: Cowork kabul + 1 beyan → push → CI say.
+**AÇIK:** P5/P5.2 kolları macOS/py3.11/3.13'te KOŞULMADI · K1/H20 aday çıkarımı bütçesiz · Windows `subprocess` zaman aşımı torunlu git'te · M-H10c KACTI (ikisi ÖNCEDEN VAR) · Python adları NFKC
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
-K4 TAMAM (67/67), kör nokta **0**; **25 Ağu yazısı** KAPSAM DIŞI; **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
+**25 Ağu yazısı** KAPSAM DIŞI · **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**P2.1** (O16): `adres` tembel kurulum · maske · atlama · sorgu hızı · **P2** (O15): `adres` 4 dil · **H14** (O14): git yolları parçalı (fxa exit 3 → H14 satırı) · **P1** (O13): `karar-kaynagi` ADR'leri 4 sınıfta.
-**K-DURUM·K-GECIS·K-ISARET** (O12): `karar-kaynagi` ADR durumu · `derle` karar dizinini bulur · `kapi` H19 (kural evi → canlı işaretçi). **K-SATIR·K-YOL·K-BAYAT** (O11): H18 + `derle` `atif-kaymasi` · `devral` karar dizini. **B1+B2** (O10): `isir` sahte KAPI KÖR · H16 `_gitkeep_yaz` (Cowork TUTTU).
+**P2.1** (O16): `adres` tembel kurulum · maske · atlama · sorgu hızı · **P2** (O15): 4 dil · **H14** (O14): git yolları parçalı · **P1** (O13): ADR 4 sınıf.
+**O10-O12:** K-DURUM·K-GECIS·K-ISARET (ADR durumu · karar dizini · H19) · K-SATIR·K-YOL·K-BAYAT (H18 · `atif-kaymasi`) · B1+B2 (`isir` sahte KAPI KÖR · H16).
 **ÜRÜN HAZIRLIĞI** (30 Eyl, CI #117; K7 yok). **AÇIK:** büyük/küçük harf çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
 
 ## Bilinen sınırlar (ölçülmüş)
@@ -38,9 +38,9 @@ K4 TAMAM (67/67), kör nokta **0**; **25 Ağu yazısı** KAPSAM DIŞI; **Deneme*
 - 🔴 BAĞLI KLASÖRDE KOŞMAYANLAR: `hafiza.py` (H9 → kalıcı `.git/index.lock`) · `t_y42.py` (150 sn'de bitmiyor) ⇒ WSL `olcum`da koşulur.
 - 🟡 Beyan/mtime çelişkisini ölçen kapı YOK · `ruff/mypy/bandit` YALNIZ `hafiza.py`'yi tarar · `readme_mutanti`/`paketten_kos` ANLAMI değil GEÇTİĞİNİ ölçer · kilit inode yarışı daraltıldı, kapatılmadı · zincir anahtarsız (bilinçli).
 - 🔴 `rmtree(ignore_errors=True)`: motorda 5 yer `_gecici_sil`e döndü (4 Eki); faz0'daki ~90 çağrı KAPSAM DIŞI — Win'de salt-okunur `.git` artığı bırakır.
-- 🟡 H18 (5 Eki): yalnız `canli` · madde + `yol:N` · UYARI (exit değişmez) · içerik bayatlığını ÖLÇMEZ (`:85` TUTUYOR der) · kod çiti içi madde ayırt edilmez · `isir` kataloğunda DEĞİL. Zaman/sıra adayları kesildi (Momentum A 0/3, B 1/6; md.40 DOĞUŞTA bayattı).
-- 🟡 P5 (10 Eki): iddianın ANLAMI ölçülmez (yalnız "dayandığı kod değişti") · DAMGASIZ geriye dönük damgalanmaz · COKLU ad damgalanmaz + doğuşta-bayat dışı · ad→dosya defterden (kurulduktan sonra eklenen 2. tanım görünmez) · N=5 sabit · kanca YOK · H20/K3 `isir` kataloğunda DEĞİL.
+- 🟡 H18 (5 Eki): yalnız `canli` · madde + `yol:N` · UYARI (exit değişmez) · içerik bayatlığını ÖLÇMEZ (`:85` TUTUYOR der) · kod çiti içi madde ayırt edilmez · `isir` kataloğunda DEĞİL. Zaman/sıra adayları kesildi (Momentum A 0/3, B 1/6).
+- 🟡 P5/P5.2 (10-11 Eki): iddianın ANLAMI ölçülmez (yalnız "dayandığı kod değişti") · DAMGASIZ geriye dönük damgalanmaz · ad 6+ tanımda damgalanmaz · iz YOL taşımaz (taşınma görünmez) · ad→dosya defterden (sonradan eklenen tanım görünmez) · K3 ≤20 dosya/15 sn · N=5 sabit · kanca YOK · H20/K3 `isir` kataloğunda DEĞİL.
 - 🔴 KESME (6 Eki, Onur kilidi): `karar-kaynagi` karar DİZİNİNE yol verir + her ADR'nin durumunu taşır; dizin DIŞI gerekçe dosyaları ve taslak/kilitli yorumu okuyucuya kalır · H19 yalnız ADI ölçer: "X'i ASLA okuma" kapıyı susturur.
 - 🟡 P1 (6 Eki): sözlük dışı beyan SINIFLANAMADI'ya düşer; motor beyanın ANLAMINI ölçmez — `kabul` yazan taslak GECERLI görünür (`kabul edilmedi`/`not approved` dahil) · sınıf 60 kr GÖRÜNEN metinden.
-- 🟡 K-YOL/K-GECIS (5-6 Eki): karar dizini `devral`da VEYA kurulu projede ilk fragman işleyen `derle`de (anahtar yoksa; `""` bilinçli boş) · çok adayda İLK · `NNNN-*.md`/`ADR-*.md` · ≤40 ad · DIŞA bağlı dizin OKUNMAZ.
+- 🟡 K-YOL/K-GECIS (5-6 Eki): karar dizini `devral`da VEYA ilk fragman işleyen `derle`de (`""` bilinçli boş) · çok adayda İLK · `NNNN-*.md`/`ADR-*.md` · ≤40 ad · DIŞA bağlı dizin OKUNMAZ.
 - 🟡 Y2 sınırı: başka başlığın ALTINA düşen yetim detay ayırt EDİLEMEZ. Y3: hook'lu `isir` iskeleti COMMIT'Lİ proje ister. Win'de yükte `sabotaj.py`nin `isir`i 300 sn aşar ⇒ solo koş; izole TEMP kısa yolda olmalı (260).
