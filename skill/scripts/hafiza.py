@@ -10504,15 +10504,20 @@ def _adres_satir_isabetleri(metin, desen, maske=None):
     return sat
 
 
-def _adres_tara_onbellekli(kok, kod, arama, ozet):
-    """`_adres_tara` + sorgu onbellegi: defterin `ozet`ine bagli onbellegi okur, taramadan sonra DEGISTIYSE yeniden yazar
-    (yazilamazsa sessiz: komut ve exit degismez) -> (bugun, isabet, notlar)."""
+def _adres_bugun(kok, ozet, arama, yaz):
+    """Izlenen kod agacinin BUGUNKU durumu — UCUZ bayatlik yolu: `adres` sorgusu (`yaz=True`) VE `kapi` H20 (`yaz=False`: kapi diske
+    YAZMAZ, onbellek yalniz OKUNUR) AYNI fonksiyonu kullanir (ikinci bayatlik kodu yok). Defterin `ozet`ine bagli sorgu onbellegi okunur;
+    `yaz` ise tarama sonrasi DEGISTIYSE yeniden yazilir (yazilamazsa sessiz: komut ve exit degismez)
+    -> (bugun {yol: tam SHA-256}, isabet, notlar, defter BAYAT mi, kod {dil: [yol]}, kaynak `git`|`git-alt`|`dosya`)."""
+    kaynak, yollar, _notlar = _adres_dosyalar(kok)
+    kod = _adres_yol_ayir(yollar)[0]
     yol = _adres_onb_yolu(kok)
     onb = _adres_onb_oku(yol, ozet) if yol else {}
     bugun, isabet, notlar, yeni = _adres_tara(kok, kod, arama, onb)
-    if yol and yeni != onb:
+    if yaz and yol and yeni != onb:
         _adres_onb_yaz(yol, ozet, yeni)
-    return bugun, isabet, notlar
+    bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != ozet
+    return bugun, isabet, notlar, bayat, kod, kaynak
 
 
 def _adres_arama(ad):
@@ -10706,14 +10711,12 @@ def _adres_sorgu(kok, p, a):
         print("ADRES DEFTERI %s - hafiza.py adres --kur" % ("YOK" if durum == "yok" else "BOZUK (%s)" % veri))
         return 1
     baslik, tanimlar, dosyalar = veri
-    kod = _adres_yol_ayir(_adres_dosyalar(kok)[1])[0]
     arama = None
     if a.ad is not None:
         bul = _adres_eslestir(tanimlar, a.ad)[1]
         adlar = sorted(set(r[2].split(".")[-1] for r in bul))
         arama = _adres_arama(adlar[0]) if len(adlar) == 1 else None
-    bugun, isabet, notlar = _adres_tara_onbellekli(kok, kod, arama, baslik.get("ozet"))
-    bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != baslik.get("ozet")
+    bugun, isabet, notlar, bayat, _kod, _kaynak = _adres_bugun(kok, baslik.get("ozet"), arama, True)
     if bayat:
         print("ADRES DEFTERI BAYAT: %d dosya degisti - hafiza.py adres --kur" % _adres_bayat_sayisi(dosyalar, bugun))
     if a.ad is not None:
@@ -10753,9 +10756,11 @@ def cmd_adres(a):
 # Belirtec tanimi H18'in `_atif_cikar` kurallariyla AYNI (`_ATIF_BT`/`_ATIF_TANIM`/`_ATIF_YOL`): ikinci kopya yazilmaz. TEK fark (K5):
 # dil sabitleri listesi (`_DAMGA_SABIT`) yalniz bu blokta uygulanir, H18'i ETKILEMEZ.
 # P5.2 BIRLESIK DAMGA: bir AD 2.._BIRLESIK_TAVAN tanima cozulurse iz = sha256("\n".join(sorted(tek tek govde izleri)))[:8] (yol GIRMEZ);
-# TEK tanimda iz o tanimin kendi izidir (K1 ile geri uyumlu); tavan asilirsa damga YOK (COKLU). H20 ve K3 ayni tanim kumesini kullanir.
+# TEK tanimda iz o tanimin kendi izidir (K1 ile geri uyumlu); tavan asilirsa damga YOK (COKLU). K1/K3 defter kumesini, H20 (P5.3) bayat
+# defterde BELLEKTE tazelenmis kumeyi kullanir (`_h20_taze`).
 # Bilinen sinirlar: ANLAM olculmez (yalniz "dayandigi kod degisti" soylenir) · ad -> dosya eslemesi ADRES.tsv'den gelir (defter
-# bayatsa tasinmis sembol bulunamaz: DEFTER_BAYAT; satir -> sembol eslemesi (`yol:N`) dosyanin CANLI cikarimindan yapilir) · yol:N
+# bayatsa K1/K3'te tasinmis sembol bulunamaz: DEFTER_BAYAT, yeni dosyada eklenen tanim gorunmez; H20 bayat defteri BELLEKTE tazeler, P5.3;
+# satir -> sembol eslemesi (`yol:N`) dosyanin CANLI cikarimindan yapilir) · yol:N
 # damgasi N. satiri kapsayan EN DAR tanimindir · birlesik izde HANGI tanimin degistigi soylenmez · sinif + kurucu ayni kumeye girer.
 
 _DAMGA_HEX = _ad_re(r"#[0-9a-f]{8}(?![0-9A-Za-z_])")
@@ -10808,9 +10813,10 @@ def _damga_cit_ici(L):
 
 
 def _damga_defter(y):
-    """-> ('tamam', (taban {taban ad: [yol]}, ad {kisa ad: [(yol, tam ad)]}, tam kapsam mi)) ya da
-    ('yok'|'bozuk'|'eksik'|'okunamadi', sebep). `tam kapsam`: defterde ATLANDI dosya yok (yoksa bir sembolun YOKLUGU kanitlanamaz).
-    `oldur` YOK (sessiz): arac kusuru da OLCULEMEDI sebebidir."""
+    """-> ('tamam', (taban {taban ad: [yol]}, ad {kisa ad: [(yol, tam ad)]}, tam kapsam mi, defter `ozet`i, {yol: (sha, bit)},
+    bilinmez dosyalar (), defter `kaynak`i)) ya da ('yok'|'bozuk'|'eksik'|'okunamadi', sebep). `tam kapsam`: defterde ATLANDI dosya yok
+    (yoksa bir sembolun YOKLUGU kanitlanamaz). `ozet` + dosya shalari + kaynak H20'nin bayatlik olcumu icindir (`_h20_taze`; bilinmez =
+    o olcumun cikarilamayan dosyalari). `oldur` YOK (sessiz): arac kusuru da OLCULEMEDI sebebidir."""
     p = os.path.join(y.h, _ADRES_DEFTER)
     if os.path.islink(p) or not duzenli_dosya(p):
         return "yok", "adres defteri YOK - hafiza.py adres --kur"
@@ -10829,7 +10835,7 @@ def _damga_defter(y):
         taban.setdefault(yol.rsplit("/", 1)[-1], []).append(yol)
     for yol, _tur, tam, _bas, _bit, _iz in veri[1]:
         ad.setdefault(tam.rsplit(".", 1)[-1], []).append((yol, tam))
-    return "tamam", (taban, ad, veri[0].get("atlandi", "0") in ("", "0"))
+    return "tamam", (taban, ad, veri[0].get("atlandi", "0") in ("", "0"), veri[0].get("ozet"), veri[2], (), veri[0].get("kaynak"))
 
 
 def _damga_ham_satirlar(yol, ham, dil):
@@ -10921,7 +10927,7 @@ def _damga_coz(kok, indeks, onbellek, metin, tur):
     dosya sonek eslesmesiyle (`_atif_coz`) TEK dosyaya cozulur; satir -> tanim eslemesi dosyanin CANLI cikarimindan yapilir (bayat
     defterin eski satir araliklari yanlis sembole damga basmasin); N..M araligini KAPSAYAN EN DAR tanim secilir (ic ice tanimlarda
     sinif degil uye); esit en dar birden cok tanim COKLU; ters aralik (M<N) COZULEMEZ."""
-    taban, ad, _tam = indeks
+    taban, ad = indeks[0], indeks[1]
     if tur == "ad":
         a = ad.get(metin, [])
         if not a:
@@ -11030,7 +11036,8 @@ def _damga_uygula(kok, y, govde):
 
 # ---------------------------------------------------------------- H20 GOVDE DEGISTI (P5 KALEM 2)
 # `kapi`: canli defterdeki DAMGALI atiflari (`ad`#a3f9c1d2 · `yol:N`#a3f9c1d2) okur (H18 gibi yalniz `canli`). Ad -> dosya `ADRES.tsv`den;
-# GUNCEL govde parmak izi o dosyanin CANLI cikarimindan (bellekte, diske YAZMADAN): bayat/ezilmis defter hukmu BOZMAZ. UYARIDIR: yalniz
+# GUNCEL govde parmak izi o dosyanin CANLI cikarimindan (bellekte, diske YAZMADAN): bayat/ezilmis defter hukmu BOZMAZ; defter BAYATSA
+# aday kumesi de bellekte tazelenir (P5.3, asagida). UYARIDIR: yalniz
 # N kanalina yazar — `fail`/`O` YOK, cikis kodu DEGISMEZ (`--siki` dahil). Blogun her istisnasi `OLCULEMEDI`dir. Damgasiz ama cozulebilir
 # belirtecler (damga uretilebilen: 1.._BIRLESIK_TAVAN tanim) DAMGASIZ, damgalanamayanlar (6+ tanim, iki dosya, asiri yuk) COKLU, cozulurken
 # arac kusuru olanlar damgasiz-OLCULEMEDI olarak SAYILIR (gizlenemez; geriye donuk damgalama KAPSAM DISI).
@@ -11095,14 +11102,121 @@ def _h20_sinif(kok, indeks, onbellek, m, t):
     return {"damga": "damgasiz", "coklu": "coklu", "olculemedi": "olculemedi"}.get(d), v if d == "olculemedi" else None
 
 
-def _h20_say(kok, indeks, jetonlar):
+# P5.3 (KALEM 7): BAYAT defterde YENI tanim H20'den KACMASIN. Damgali adin aday kumesi defterden gelir; defterde OLMAYAN (yeni dosyada eklenen
+# ya da ayni dosyada belirmis YENI tam adli) ayni adli tanim kumeye girmez, birlesik iz AYNI kalir ve hukum "0 degisti, 0 olculemedi" (SESSIZ
+# TEMIZ) olurdu. H20 (damgali atif VARKEN) once `adres` sorgusunun AYNI ucuz bayatlik yoluyla (`_adres_bugun`; stat onbellegi yalniz OKUNUR,
+# kapi hicbir sey YAZMAZ) defterin guncel olup olmadigini olcer. SECIM (a): defter bayatsa YALNIZ degisen/yeni dosyalar bellekte yeniden
+# cikarilir (izlenen ama okunamayan / izlenmeyen silinenler ayrica ele alinir) -> TAZE aday kumesi, hukum defter tazeligine BAGLI DEGIL
+# ((b) tek basina olmaz: ozet agactaki HER kod degisikligiyle bayatlar, P5'in cekirdek vakasi tam da bayat defterle kosar). Maliyet
+# tavani (dosya sayisi + toplam bayt), olcum arizasi ya da cikarici KUSURU olursa SECIM (b): kesin POZITIFLER (`GOVDE DEGISTI`) korunur,
+# `ayni`/`SEMBOL YOK` `OLCULEMEDI [DEFTER_BAYAT|DEFTER_BAYATLIK|DEFTER_EKSIK]` olur. Cikarilamayan YENI/degisen dosya (sozdizimi, ikili,
+# buyuk, link) `tam kapsam`i bozar, satirlari `--kur` gibi DUSER ve adi sozcuk olarak ICEREN dosyada `ayni` `OLCULEMEDI [DEFTER_ATLANDI]`
+# olur. Defter ATLANDI dosya tasirken yeni okunamayan dosya AYIRT EDILEMEZ (sayi tutmaz): hukum DEGISMEZ (P5.2 sinirinin aynisi).
+# K1 (`not`) ve K3 DEGISMEZ (`not` her cagrida agaci karmalamaz: maliyet); DAMGASIZ/COKLU sayimlari her zaman defter indeksindendir.
+_H20_TAZE_TAVAN = 100                     # bayat defterde bellekte yeniden cikarilacak EN COK dosya
+_H20_TAZE_BAYT = 8 * 1024 * 1024          # ... ve bu dosyalarin toplam boyutu (deterministik maliyet siniri)
+
+
+def _h20_boyut(kok, yol):
+    try:
+        return os.lstat(os.path.join(kok, *_damga_yol_ac(yol).split("/"))).st_size
+    except OSError:
+        return 0
+
+
+def _h20_cikar(kok, indeks, degisen, izlenen, bugun, onbellek):
+    """Degisen/yeni dosyalar + izlenen ama bugun OKUNAMAYANLAR canli cikarilir -> (taze {yol: satirlar}, bilinmez [yol]) ya da (None,
+    sebep) [cikarici KUSURU]. `DOSYA_YOK` = tanimsiz dosya (satirlar bos); baska ariza (sozdizimi, ikili, buyuk, link) = tanimlari BILINMEZ.
+    Defterde OLMAYAN izlenen-okunamayan dosya YALNIZ defter TAM kapsamliyken (atlandi=0) YENI sayilir: aksi halde `--kur`da da atlanmisti
+    (surekli okunamayan dosya her bayat kosuyu gurultulemez)."""
+    taze, bilinmez = {}, []
+    for y in degisen + sorted(y for y in izlenen if y not in bugun):
+        satirlar, sebep = _damga_satirlar(kok, y, onbellek)
+        if satirlar is not None:
+            taze[y] = satirlar
+        elif sebep == "CIKARICI":
+            return None, sebep
+        elif sebep == "DOSYA_YOK":
+            taze[y] = []
+        elif y in indeks[4] or y in degisen or indeks[2]:
+            bilinmez.append(y)
+    return taze, bilinmez
+
+
+def _h20_yeni_indeks(kok, indeks, bugun, kod, onbellek):
+    """Bayat defter -> ('tamam', BELLEKTE taze indeks) · ('kusur', sebep) [cikarici kusuru] · ('bayat', sebep) [tavan]. Defterde sha'si
+    FARKLI/OLMAYAN dosyalar canli cikarilir; izlenmeyen silinenler (git rm --cached, atlanan dizin, buyuk/kucuk harf adi) ve cikarilamayan
+    dosyalar `--kur`un da gormeyecegi dosyalardir: satirlari dusulur. Degismeyen dosyalarin defter satirlari AYNEN kalir (icerik ozeti ayni
+    => cikarim ayni). Satir basina BIR giris (asiri yuk ayri sayilir). Izlenen ama DISKTEN silinen dosya `--kur`da ATLANDI sayilir; burada
+    tanimsiz dosyadir (`SEMBOL YOK` verilir: P5.2 `_v_dosyayok` ile pinli, bayat durum bu sinifta `--kur`dan daha cesurdur)."""
+    eski = indeks[4]
+    degisen = sorted(y for y, s in bugun.items() if (eski.get(y) or (None,))[0] != s)
+    if len(degisen) > _H20_TAZE_TAVAN or sum(_h20_boyut(kok, y) for y in degisen) > _H20_TAZE_BAYT:
+        return "bayat", "%d dosya degisti" % len(degisen)
+    izlenen = set(_adres_alan(y) for ys in kod.values() for y in ys)
+    taze, bilinmez = _h20_cikar(kok, indeks, degisen, izlenen, bugun, onbellek)
+    if taze is None:
+        return "kusur", bilinmez
+    birak = set(taze) | set(bilinmez) | (set(eski) - set(bugun) - izlenen)
+    ad = dict((k, [(y, t) for y, t in v if y not in birak]) for k, v in indeks[1].items())
+    for y, satirlar in taze.items():
+        for t, _b, _e, _iz in satirlar:
+            ad.setdefault(t.rsplit(".", 1)[-1], []).append((y, t))
+    taban = {}
+    for y in sorted(bugun):
+        taban.setdefault(y.rsplit("/", 1)[-1], []).append(y)
+    return "tamam", (taban, ad, indeks[2] and not bilinmez, indeks[3], indeks[4], tuple(bilinmez), indeks[6])
+
+
+def _h20_bugun(kok, ozet):
+    """`_adres_bugun(yaz=False)`; `oldur`un stderr satiri ve `SON_HATA`si disari SIZMAZ (P5 blogunun `oldur` yan etkisi yok: hata istisna
+    olarak doner, H20 onu OLCULEMEDI yapar)."""
+    import contextlib
+    import io
+    son = SON_HATA[0]
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            return _adres_bugun(kok, ozet, None, False)
+    finally:
+        SON_HATA[0] = son
+
+
+def _h20_taze(kok, indeks, onbellek):
+    """H20 icin TAZE indeks -> ('tamam', indeks) [defter guncel: AYNEN; bayat: bellekte yenilenmis] · ('kusur', sebep) [cikarici kusuru] ·
+    ('bayat', sebep) [tavan asildi] · ('bayatlik', sebep) [olcum arizasi, defter kaynagi uyusmuyor: SystemExit dahil HER istisna]."""
+    try:
+        bugun, _i, _n, bayat, kod, kaynak = _h20_bugun(kok, indeks[3])
+        if not bayat:
+            return "tamam", indeks
+        if kaynak.startswith("git") != str(indeks[6]).startswith("git"):     # evren (git ls-files / dosya sistemi) defterinkinden farkli
+            return "bayatlik", "KAYNAK"
+        return _h20_yeni_indeks(kok, indeks, bugun, kod, onbellek)
+    except (Exception, SystemExit) as e:  # noqa: BLE001 - KISIT 6-3: bayatlik olcumu istisnasi OLCULEMEDI'dir
+        return "bayatlik", type(e).__name__
+
+
+def _h20_gizli(kok, indeks, ad, onbellek):
+    """Cikarilamayan (BILINMEZ) dosyalardan biri `ad`i SOZCUK olarak iceriyor mu? Okunamayan/ikili/buyuk dosya iceriyor SAYILIR (kapali
+    hata). Dosya metni cagri basina BIR kez okunur (`onbellek`, ("metin", yol) anahtari)."""
+    desen = _adres_arama(ad)[1]
+    for y in indeks[5]:
+        if ("metin", y) not in onbellek:
+            ham = _adres_ham_oku(kok, _damga_yol_ac(y))[0]
+            onbellek[("metin", y)] = _adres_metne(ham)[0] if ham is not None else None
+        metin = onbellek[("metin", y)]
+        if metin is None or desen.search(metin):
+            return True
+    return False
+
+
+def _h20_say(kok, indeks, hukum, jetonlar, onbellek):
     """-> (degisen [(yer, metin, eski damga, (yeni iz, k, kume notu))], yok [(yer, metin, damga)], olc {sebep: n} [DAMGALI atif], olu
     {sebep: n} [damgasiz belirtec: arac kusuru], damgasiz sayisi, coklu sayisi). `yer` = `md.N` (madde icinde) ya da `satir N`.
     DAMGASIZ/COKLU/damgasiz-OLCULEMEDI yalniz MADDE icindeki (H18'in atif maddesi) belirteclerdir: defter tamamken her COZULEBILIR aday
     belirtec TAM BIR sinifa duser (damgali · COKLU · DAMGASIZ · damgasiz-OLCULEMEDI); arac kusuru sinif toplamini AZALTMAZ, yalniz
     saglamken `yok` olanlar kadar ARTIRABILIR (kusur `yok` hukmunu veremez). SEMBOL YOK yalniz defter TAM kapsamliyken (ATLANDI dosya
     yok) hukumdur; aksi halde OLCULEMEDI (eksik kapsam sembolu gizlemis olabilir)."""
-    onbellek, degisen, yok, olc, olu, z, c = {}, [], [], {}, {}, 0, 0
+    degisen, yok, olc, olu, z, c = [], [], {}, {}, 0, 0
     for no, satir, m, t, d in jetonlar:
         if d is None:
             sinif, v = _h20_sinif(kok, indeks, onbellek, m, t) if no is not None else (None, None)
@@ -11112,8 +11226,10 @@ def _h20_say(kok, indeks, jetonlar):
                 olu[v] = olu.get(v, 0) + 1
             continue
         yer = "md.%d" % no if no is not None else "satir %d" % satir
-        h, v = _h20_hukum(kok, indeks, onbellek, m, t, d)
-        if h == "yok" and not indeks[2]:
+        h, v = _h20_hukum(kok, hukum, onbellek, m, t, d)
+        if h == "yok" and not hukum[2]:
+            h, v = "olculemedi", "DEFTER_ATLANDI"
+        if h == "ayni" and t == "ad" and hukum[5] and _h20_gizli(kok, hukum, m, onbellek):
             h, v = "olculemedi", "DEFTER_ATLANDI"
         if h == "degisti":
             degisen.append((yer, m, d, v))
@@ -11155,9 +11271,19 @@ def _h20_hesapla(kok, y):
         return []
     a = sum(1 for j in jetonlar if j[4] is not None)
     durum, indeks = _damga_defter(y)
+    onbellek, hukum = {}, indeks
+    if durum == "tamam" and a:                      # damgali atif VARKEN defter bayatligi olculur (DAMGASIZ/COKLU sayimi defterden)
+        durum, hukum = _h20_taze(kok, indeks, onbellek)
+    if durum in ("bayat", "bayatlik", "kusur"):     # taze kume cikarilamadi: kesin pozitifler KORUNUR, `ayni`/`yok` OLCULEMEDI olur
+        etiket = "DEFTER_EKSIK" if durum == "kusur" else "DEFTER_" + durum.upper()
+        degisen, yok, olc, olu, z, c = _h20_say(kok, indeks, indeks, jetonlar, onbellek)
+        kalan = a - len(degisen) - sum(olc.values())
+        if kalan:
+            olc[etiket] = olc.get(etiket, 0) + kalan
+        return _h20_satirlari(a, degisen, [], olc, olu, z, c)
     if durum != "tamam":
         return _h20_satirlari(a, [], [], {"DEFTER_" + durum.upper(): a} if a else {}, {}, 0, 0)
-    return _h20_satirlari(a, *_h20_say(kok, indeks, jetonlar))
+    return _h20_satirlari(a, *_h20_say(kok, indeks, hukum, jetonlar, onbellek))
 
 
 def _kapi_h20(N, kok, y):

@@ -61,6 +61,15 @@ KOLLAR (her biri ayri etiketli eksenler; beklentiler FIKSTURDEN ELLE yazilidir �
                  git nesne kenar durumlari (kayip nesne, dizin yol, .ts/.tsx, `%` yol, >8 MB gecmis); defter ATLANDI notu
                  [BIRLESIK-VAR|-TEKIL|-DEGISTI|-EKLENDI|-YOL|-BAYAT|-TAVAN|-COKLU|-ARIZA|-KARDES|-OZDES|-DOSYACOK|-DOGUS|-SILINEN|
                   -DOSYAYOK|-CALISMA|-BUTCE|-KAP|-ATLANDI|-NESNE|-CIKARICI|-YOLKACIS|-YOLCOKLU|-SAYISIZ]
+                 + (P5.3 KALEM 7) BAYAT defterde (`adres --kur` YOK) H20 YENI tanimi da gorur: yeni dosyada 4. tanim · tekil -> coklu ·
+                 ayni dosyada yeni tam ad · silinen/tasinan/izlenmeyen dosya · 100/101 bayat dosya ve 8 MiB bayt tavani (OLCULEMEDI
+                 [DEFTER_BAYAT], kesin pozitif KORUNUR) · `yol:N` + yeni ayni adli dosya · kapi DISKE YAZMAZ (sicak onbellek dahil) ·
+                 bayatlik olcumu arizasi [DEFTER_BAYATLIK] · cikarilamayan yeni dosya kapsami bozar / adi icermiyorsa gurultu yok ·
+                 cikarici kusuru [DEFTER_EKSIK] · sayim defterden; hukum `--kur` sonrasiyla BAYT-AYNI
+                 + defter `kaynak=git` iken `.git`siz kopya: evren uyusmazligi OLCULEMEDI [DEFTER_BAYATLIK] · degisen dosya cikarilamaz
+                 hale gelirse satirlari `--kur` gibi duser · surekli okunamayan dosya gurultu yapmaz · izlenen dosya diskten silinirse bayat
+                 `SEMBOL YOK`, `--kur` sonrasi ATLANDI (beyanli ayrisma)
+                 [BIRLESIK-TAZE|-TEKIL|-AD|-SILINEN|-TAVAN|-BAYT|-YOL|-YAZMA|-ARIZA|-KAPSAM|-GURULTU|-OKUNMAZ|-EKSIK|-KAYNAK|-SAYIM|-NOT]
 
 CIKIS KODU  0 tum kollar temiz + olculebilen her sabotaj ISIRDI · 1 kol BEKLENMEDIK / sabotaj KACTI ·
             2 OLCULEMEDI (git yok, capa uymadi, duzenek kurulamadi)
@@ -244,9 +253,9 @@ def onb_dosyasi(kok):
 
 def kos(motor, kok, *args, zaman_asimi=None, tmp=None):
     """Motoru ALT SUREC olarak kosar -> (exit, stdout, stderr). `zaman_asimi` asilirsa subprocess.TimeoutExpired.
-    `tmp`: `adres` icin gecici dizin (varsayilan: projeye ozel `onb_dizini`)."""
+    `tmp`: `adres` ve `kapi` icin gecici dizin (varsayilan: projeye ozel `onb_dizini`; `kapi` P5.3'ten beri stat onbellegini OKUR)."""
     ortam = _cikti_kodlamasi_ortami()
-    if args[:1] == ("adres",):
+    if args[:1] in (("adres",), ("kapi",)) or tmp is not None:
         d = tmp or onb_dizini(kok)
         ortam.update(TMPDIR=d, TEMP=d, TMP=d)
     r = subprocess.run([sys.executable, "-X", "utf8", motor] + list(args) + ["--kok", kok], capture_output=True, text=True,
@@ -1771,8 +1780,8 @@ def _v_degisti(motor, taban, b):
 
 
 def _v_eklendi(motor, taban, b):
-    """BIRLESIK-EKLENDI: ayni dosyada ek tanim (asiri yuk) BAYAT defterle de yakalanir; YENI dosyada eklenen tanim yalniz `adres --kur`
-    sonrasi gorunur (bayat defterle `0`: beyanli sinir); iki tanim silinince `[2 tanim]`."""
+    """BIRLESIK-EKLENDI: ayni dosyada ek tanim (asiri yuk) BAYAT defterle de yakalanir; YENI dosyada eklenen tanim da (P5.3: H20 bayat defterde
+    degisen/yeni dosyalari bellekte yeniden cikarir; ayrintisi BIRLESIK-TAZE vektorlerinde); iki tanim silinince `[2 tanim]`."""
     b3 = _bir_iz(_b_iz(1), _b_iz(2), _b_iz(3))
     ek = _b_damgali(motor, taban, "bir_ekle", 3)
     kod1, _o = _h20_hukum_say(b, "BIRLESIK-EKLENDI", "taban", motor, ek, BIRLESIK_TABAN1, None)
@@ -1781,9 +1790,11 @@ def _v_eklendi(motor, taban, b):
     _h20_hukum_say(b, "BIRLESIK-EKLENDI", "ayni dosyada ek tanim (bayat defter)", motor, ek, BIRLESIK_DEGISTI1, kod1,
                    "H20: md.1 `ortak_ad` [4 tanim] #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (b3, _bir_iz(_b_iz(1), _b_iz(2), _b_iz(40), _b_iz(3))))
     _yaz(p2, _b_py(2))
-    _yaz(os.path.join(ek, "src", "p4.py"), _b_py(4))          # YENI dosya, defter bayat -> gorunmez
-    _h20_hukum_say(b, "BIRLESIK-EKLENDI", "yeni dosyada tanim, defter bayat (beyanli sinir: gorunmez)", motor, ek, BIRLESIK_TABAN1, kod1)
-    _git(ek, "add", "-A")
+    _yaz(os.path.join(ek, "src", "p4.py"), _b_py(4))          # IZLENMEYEN yeni dosya: `adres` evreninde (git ls-files) YOK, H20 de gormez
+    _h20_hukum_say(b, "BIRLESIK-EKLENDI", "izlenmeyen yeni dosyada tanim (git add YOK): `adres` evrenine girmez", motor, ek, BIRLESIK_TABAN1, kod1)
+    _git(ek, "add", "-A")                                     # izleniyor, defter bayat (P5.3: H20 bellekte taze aday kumesi cikarir)
+    _h20_hukum_say(b, "BIRLESIK-EKLENDI", "yeni dosyada tanim izleniyor, defter bayat (P5.3: gorunur)", motor, ek, BIRLESIK_DEGISTI1, kod1,
+                   "H20: md.1 `ortak_ad` [4 tanim] #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (b3, _bir_iz(*[_b_iz(i) for i in (1, 2, 3, 4)])))
     kur(motor, ek)
     _h20_hukum_say(b, "BIRLESIK-EKLENDI", "yeni dosyada tanim, defter yenilendi", motor, ek, BIRLESIK_DEGISTI1, kod1,
                    "H20: md.1 `ortak_ad` [4 tanim] #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (b3, _bir_iz(*[_b_iz(i) for i in (1, 2, 3, 4)])))
@@ -1802,12 +1813,13 @@ def _v_yol(motor, taban, b):
 
 
 def _v_bayat(motor, taban, b):
-    """BIRLESIK-BAYAT: adaylardan BIR KISMI canli cikarimda yoksa (tasinmis dosya, defter BAYAT) kismi kumeden iz/`GOVDE DEGISTI` cikmaz:
-    `OLCULEMEDI [DEFTER_BAYAT]`; K1 damga YOK; K3 `OLCULEMEDI (<ad>: DEFTER_BAYAT)`."""
+    """BIRLESIK-BAYAT: adaylardan BIR KISMI canli cikarimda yoksa (tasinmis dosya, defter BAYAT) K1/K3 kismi kumeden iz/hukum vermez:
+    K1 damga YOK (`OLCULEMEDI (DEFTER_BAYAT)`), K3 `OLCULEMEDI (<ad>: DEFTER_BAYAT)`. H20 (P5.3) taze aday kumesini bellekte cikarir:
+    govde ayni -> `ayni` (BIRLESIK-TAZE ailesi)."""
     ba = _b_damgali(motor, taban, "bir_bayat", 3)
     _git(ba, "mv", "src/p1.py", "src/z1.py")                  # defter YENILENMEDI
-    _h20_hukum_say(b, "BIRLESIK-BAYAT", "aday dosya tasindi, defter bayat", motor, ba,
-                   "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [DEFTER_BAYAT:1] | 0 COKLU | 0 DAMGASIZ", None)
+    _h20_hukum_say(b, "BIRLESIK-BAYAT", "aday dosya tasindi, defter bayat (P5.3: H20 govde AYNI: `ayni`, OLCULEMEDI DEGIL)", motor, ba,
+                   BIRLESIK_TABAN1, None)
     kod, o, e, govde, _ad = _not_kos(motor, ba, "1. `ortak_ad` yine.")
     sat = o.split("\n")
     if kod != 0 or govde != "1. `ortak_ad` yine." or "ATIF OLCULEMEDI: ortak_ad (DEFTER_BAYAT)" not in sat \
@@ -1836,13 +1848,12 @@ def _v_tavan(motor, taban, b):
                    "H20: md.1 `ortak_ad` [5 tanim] #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (
                        b5, _bir_iz(*([_b_iz(i) for i in (1, 2, 3, 4)] + [_b_iz(50)]))))
     _yaz(os.path.join(t, "src", "p5.py"), _b_py(5))
-    # (a) defter 6 satir, canli 5: H20 defter satiri tavani
+    # (a) defter 6 satir, canli 5, defter BAYAT: P5.3 H20 taze kumeyi (5) cikarir -> tavan DEGIL, `ayni`; K1 hala defter satirini sayar (d)
     _yaz(os.path.join(t, "src", "p6.py"), _b_py(6))
     _git(t, "add", "-A")
     kur(motor, t)
     os.remove(os.path.join(t, "src", "p6.py"))
-    _h20_hukum_say(b, "BIRLESIK-TAVAN", "defter 6 satir / canli 5 tanim", motor, t,
-                   "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [COKLU_TAVAN:1] | 0 COKLU | 0 DAMGASIZ", None)
+    _h20_hukum_say(b, "BIRLESIK-TAVAN", "defter 6 satir / canli 5 tanim, defter bayat: taze kume 5", motor, t, BIRLESIK_TABAN1, None)
     # (d) K1 ayni durum: defter 6 satir, canli 5 -> `ATIF COKLU (6 tanim)` (defter satiri tavani)
     kod, o, e, govde, _ad = _not_kos(motor, t, "2. `ortak_ad` yine.")
     if "ATIF COKLU: ortak_ad (6 tanim, tavan 5) - damgalanmadi" not in o.split("\n") or govde != "2. `ortak_ad` yine.":
@@ -1859,6 +1870,20 @@ def _v_tavan(motor, taban, b):
         b.append(("BIRLESIK-TAVAN", "K1: canli 6 tanim: damga YOK + `ATIF COKLU (6 tanim, tavan 5)`: govde=%r cikti=%r" % (govde, o[-220:])))
     if "DOGUSTA BAYAT: OLCULEMEDI (ortak_ad COKLU)" not in sat:
         b.append(("BIRLESIK-COKLU", "K3: HEAD'de 6 tanim: `OLCULEMEDI (ortak_ad COKLU)` beklenir (6 tanim icin `6 tanimdan x'u` YAZILMAZ): %r" % o[-220:]))
+    # (a2) defter GUNCEL (ozet esit; yalniz tanim satirlari elle degisti: eski motor cikarimi / elle duzenleme) ve 6 SATIR, canli 5: H20 defter
+    # satiri tavani (bayat defter yolu bunu gormez: tazelenmez)
+    g = _b_damgali(motor, taban, "bir_tavan_g6", 5, "1. `ortak_ad` bes yerde.")
+    _defter_satiri(g, "src/p1.py", "ortak_ad", +1)
+    _h20_hukum_say(b, "BIRLESIK-TAVAN", "defter 6 satir (GUNCEL) / canli 5 tanim", motor, g,
+                   "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [COKLU_TAVAN:1] | 0 COKLU | 0 DAMGASIZ", None)
+    # (f) defter GUNCEL 5 satir (bir satir elle silindi), canli 6: H20 canli tanim tavani
+    h = _b_damgali(motor, taban, "bir_tavan_g5", 5, "1. `ortak_ad` bes yerde.")
+    _yaz(os.path.join(h, "src", "p2.py"), _b_py(2) + "\n\n" + _b_py(60))
+    _git(h, "add", "-A")
+    kur(motor, h)
+    _defter_satiri(h, "src/p2.py", "ortak_ad", -1)
+    _h20_hukum_say(b, "BIRLESIK-TAVAN", "defter 5 satir (GUNCEL) / canli 6 tanim", motor, h,
+                   "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [COKLU_TAVAN:1] | 0 COKLU | 0 DAMGASIZ", None)
     # 6 tanimla baslarsa: damga YOK + COKLU sayimi + K3 beyani
     t6 = _b_proje(motor, taban, "bir_tavan6", 6)
     kod, o, e, govde, _ad = _not_kos(motor, t6, "1. `ortak_ad` alti yerde.")
@@ -2186,7 +2211,287 @@ def _v_kucukler(motor, taban, b):
                    "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 0 OLCULEMEDI | 0 COKLU | 0 DAMGASIZ", None)
 
 
-def kol_birlesik(motor, taban, bozuk, butcesiz):
+# ------------------------------------------------------------------ P5.3 (KALEM 7): BAYAT defterde H20 YENI tanimi gorur
+def _defter_satiri(kok, yol, ad, fark):
+    """ADRES.tsv'de `yol`daki ilk `ad` tanim satirini cogaltir (+1) ya da siler (-1): `dosya` satirlari ve baslik `ozet`i DOKUNULMAZ (defter
+    bayat OLMAZ; eski motor cikarimi / elle duzenleme benzetimi)."""
+    p = _defter_yolu(kok)
+    sat = io.open(p, encoding="utf-8", newline="").read().split("\n")
+    i = next(k for k, l in enumerate(sat) if k and l.split("\t")[:1] == [yol] and l.split("\t")[2:3] == [ad])
+    sat[i:i + 1] = [sat[i], sat[i]] if fark > 0 else []
+    _yaz(p, "\n".join(sat))
+
+
+def _taze_not(b, etiket, ne, motor, kok, beklenen_satir, ayrinti, exit0):
+    """Bayat defterde (`adres --kur` YOK) H20 hukmu `beklenen_satir`/`ayrinti`; ardindan `--kur` ve hukmun BAYT-AYNI kaldigi (hukum defter
+    tazeligine BAGLI degil: bayat defter SESSIZ TEMIZ uretemez)."""
+    _kod, o = _h20_hukum_say(b, etiket, ne + " (defter BAYAT)", motor, kok, beklenen_satir, exit0, ayrinti)
+    bayat = _h20_satirlari_al(o)
+    kur(motor, kok)
+    taze = _h20_satirlari_al(_h20_kapi(motor, kok)[1])
+    if bayat != taze:
+        b.append((etiket, "%s: bayat defterle H20 hukmu TAZE defterle AYNI olmali: %r != %r" % (ne, bayat, taze)))
+
+
+def _v_taze(motor, taban, b):
+    """BIRLESIK-TAZE (is emri KALEM 7): 4. tanim YENI dosyada eklenir + commit + `adres --kur` YOK -> `GOVDE DEGISTI 1 [4 tanim]`, `0/0`
+    (SESSIZ TEMIZ) DEGIL; hukum `--kur` sonrasiyla bayt-ayni."""
+    b3 = _bir_iz(_b_iz(1), _b_iz(2), _b_iz(3))
+    kok = _b_damgali(motor, taban, "bir_taze", 3)
+    kod0 = _h20_hukum_say(b, "BIRLESIK-TAZE", "taban", motor, kok, BIRLESIK_TABAN1, None)[0]
+    _b_commit(kok, {"src/p4.py": _b_py(4)}, "4. tanim yeni dosyada")
+    _taze_not(b, "BIRLESIK-TAZE", "4. tanim YENI dosyada", motor, kok, BIRLESIK_DEGISTI1,
+              "H20: md.1 `ortak_ad` [4 tanim] #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (b3, _bir_iz(*[_b_iz(i) for i in (1, 2, 3, 4)])), kod0)
+
+
+def _v_taze_tekil(motor, taban, b):
+    """BIRLESIK-TAZE-TEKIL: TEKIL damgali ad + yeni dosyada AYNI adli ikinci tanim (tekil -> coklu gecisi), defter bayat -> `[2 tanim]` +
+    `TANIM SAYISI DEGISTI (damgali govde duruyor)`."""
+    t_iz = _sha8("def tekil_ad(x):\n    return x")
+    kok = _b_damgali(motor, taban, "bir_taze_tek", 1, "1. `tekil_ad` tek.", {"src/a.py": "def tekil_ad(x):\n    return x\n"})
+    kod0 = _h20_hukum_say(b, "BIRLESIK-TAZE-TEKIL", "taban", motor, kok, BIRLESIK_TABAN1, None)[0]
+    _b_commit(kok, {"src/b.py": "def tekil_ad(y):\n    return y * 3\n"}, "ikinci tanim yeni dosyada")
+    yeni = _bir_iz(t_iz, _sha8("def tekil_ad(y):\n    return y * 3"))
+    _taze_not(b, "BIRLESIK-TAZE-TEKIL", "tekil -> coklu (yeni dosya)", motor, kok, BIRLESIK_DEGISTI1,
+              "H20: md.1 `tekil_ad` [2 tanim] #%s -> #%s TANIM SAYISI DEGISTI (damgali govde duruyor) - IDDIA KODDAN ESKI OLABILIR" % (t_iz, yeni), kod0)
+
+
+def _v_taze_ad(motor, taban, b):
+    """BIRLESIK-TAZE-AD: AYNI dosyada baska sinifta ayni uye adi (YENI tam ad `B.hesapla`; aday cift kumesinde yoktu), defter bayat."""
+    m_iz = _sha8("    def hesapla(self):\n        return 1")
+    kok = _b_damgali(motor, taban, "bir_taze_ad", 1, "1. `hesapla` tek.", {"src/m.py": "class A:\n    def hesapla(self):\n        return 1\n"})
+    kod0 = _h20_hukum_say(b, "BIRLESIK-TAZE-AD", "taban", motor, kok, BIRLESIK_TABAN1, None)[0]
+    _b_commit(kok, {"src/m.py": "class A:\n    def hesapla(self):\n        return 1\n\n\nclass B:\n    def hesapla(self):\n        return 2\n"},
+              "baska sinifta ayni uye adi")
+    yeni = _bir_iz(m_iz, _sha8("    def hesapla(self):\n        return 2"))
+    _taze_not(b, "BIRLESIK-TAZE-AD", "ayni dosyada yeni tam ad", motor, kok, BIRLESIK_DEGISTI1,
+              "H20: md.1 `hesapla` [2 tanim] #%s -> #%s TANIM SAYISI DEGISTI (damgali govde duruyor) - IDDIA KODDAN ESKI OLABILIR" % (m_iz, yeni), kod0)
+    # degisen dosyalarin ESKI satirlari ciftlenmez: 3 tanimli ad, uc dosya da degisti (govde AYNI, yalniz yorum eklendi) -> satir sayisi 3 kalir
+    # (6 olsaydi `OLCULEMEDI [COKLU_TAVAN]`)
+    cf = _b_damgali(motor, taban, "bir_taze_cift", 3)
+    _b_commit(cf, dict(("src/p%d.py" % i, _b_py(i) + "# yorum\n") for i in (1, 2, 3)), "yalniz yorum eklendi")
+    _taze_not(b, "BIRLESIK-TAZE-AD", "degisen dosyalarda satirlar ciftlenmez", motor, cf, BIRLESIK_TABAN1, None, kod0)
+
+
+def _v_taze_silinen(motor, taban, b):
+    """BIRLESIK-TAZE-SILINEN: bir tanimin dosyasi SILINIR (commit, defter bayat) -> `[2 tanim]` (kismi kume `OLCULEMEDI` DEGIL) · dosya TASINIR
+    (govde ayni) -> `ayni` · dosya IZLENMEZ olur ama diskte durur (`git rm --cached`: `--kur` onu hic gormez) -> `[2 tanim]`."""
+    b3, b2 = _bir_iz(_b_iz(1), _b_iz(2), _b_iz(3)), _bir_iz(_b_iz(1), _b_iz(2))
+    ayr = "H20: md.1 `ortak_ad` [2 tanim] #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (b3, b2)
+    kok = _b_damgali(motor, taban, "bir_taze_sil", 3)
+    kod0 = _h20_hukum_say(b, "BIRLESIK-TAZE-SILINEN", "taban", motor, kok, BIRLESIK_TABAN1, None)[0]
+    _git(kok, "rm", "-q", "-f", "src/p3.py")
+    _b_commit(kok, {}, "p3 silindi")
+    _taze_not(b, "BIRLESIK-TAZE-SILINEN", "tanimin dosyasi silindi", motor, kok, BIRLESIK_DEGISTI1, ayr, kod0)
+    ty = _b_damgali(motor, taban, "bir_taze_tasi", 3)
+    _git(ty, "mv", "src/p1.py", "src/z1.py")
+    _b_commit(ty, {}, "p1 tasindi")
+    _taze_not(b, "BIRLESIK-TAZE-SILINEN", "dosya tasindi (govde ayni)", motor, ty, BIRLESIK_TABAN1, None, kod0)
+    iz = _b_damgali(motor, taban, "bir_taze_izsiz", 3)
+    _git(iz, "rm", "--cached", "-q", "src/p3.py")
+    if _git(iz, "commit", "-q", "-m", "p3 izlenmiyor").returncode != 0:
+        raise Kurulamadi("izlenmeyen duruma gecis commit'i basarisiz")
+    _taze_not(b, "BIRLESIK-TAZE-SILINEN", "dosya izlenmez oldu (diskte duruyor)", motor, iz, BIRLESIK_DEGISTI1, ayr, kod0)
+    # izlenen dosya DISKTEN silindi (git rm YOK): P5.2 `_v_dosyayok` ile pinli `SEMBOL YOK`; `--kur` ayni dosyayi ATLANDI (okunamadi) sayar:
+    # bayat durum bu sinifta `--kur`dan CESURDUR (beyanli ayrisma, README sinir 21)
+    dy = _b_damgali(motor, taban, "bir_taze_diskte", 1, "1. `tekil_ad` tek.", {"src/t.py": "def tekil_ad(x):\n    return x\n"})
+    os.remove(os.path.join(dy, "src", "t.py"))
+    _h20_hukum_say(b, "BIRLESIK-TAZE-SILINEN", "izlenen dosya diskten silindi, defter bayat: SEMBOL YOK", motor, dy,
+                   "H20: 1 atif | 0 GOVDE DEGISTI | 1 SEMBOL YOK | 0 OLCULEMEDI | 0 COKLU | 0 DAMGASIZ", None)
+    kur(motor, dy)
+    _h20_hukum_say(b, "BIRLESIK-TAZE-SILINEN", "ayni durum `--kur` sonrasi: dosya ATLANDI sayilir (beyanli ayrisma)", motor, dy,
+                   "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [DEFTER_ATLANDI:1] | 0 COKLU | 0 DAMGASIZ", None)
+
+
+def _v_taze_tavan(motor, taban, b):
+    """BIRLESIK-TAZE-TAVAN: bayat dosya sayisi `_H20_TAZE_TAVAN` (100) DAHIL tazelenir (hukum verilir); 101'de bellekte cikarim yapilmaz:
+    `OLCULEMEDI [DEFTER_BAYAT]` (sessiz temiz DEGIL; maliyet siniri) ve KESIN POZITIF (govdesi degisen atif) KORUNUR."""
+    e = dict(("src/e%03d.py" % i, "def e%03d_islev():\n    return 0\n" % i) for i in range(101))
+    kok = _b_damgali(motor, taban, "bir_taze_tavan", 3, ek=e)
+    kod0 = _h20_hukum_say(b, "BIRLESIK-TAZE-TAVAN", "taban", motor, kok, BIRLESIK_TABAN1, None)[0]
+    _b_commit(kok, dict(("src/e%03d.py" % i, "def e%03d_islev():\n    return 1\n" % i) for i in range(100)), "100 dosya degisti")
+    _h20_hukum_say(b, "BIRLESIK-TAZE-TAVAN", "100 bayat dosya (tavan DAHIL): tazelenir", motor, kok, BIRLESIK_TABAN1, kod0)
+    _b_commit(kok, {"src/e100.py": "def e100_islev():\n    return 1\n"}, "101. dosya degisti")
+    _h20_hukum_say(b, "BIRLESIK-TAZE-TAVAN", "101 bayat dosya (tavan ASILDI): OLCULEMEDI", motor, kok,
+                   "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [DEFTER_BAYAT:1] | 0 COKLU | 0 DAMGASIZ", kod0)
+    _b_commit(kok, {"src/p3.py": _b_py(30)}, "p3 govdesi degisti")
+    _h20_hukum_say(b, "BIRLESIK-TAZE-TAVAN", "101 bayat dosya + govde degisti: kesin pozitif KORUNUR", motor, kok, BIRLESIK_DEGISTI1, kod0,
+                   "H20: md.1 `ortak_ad` [3 tanim] #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (
+                       _bir_iz(_b_iz(1), _b_iz(2), _b_iz(3)), _bir_iz(_b_iz(1), _b_iz(2), _b_iz(30))))
+
+
+def _v_taze_bayt(motor, taban, b):
+    """BIRLESIK-TAZE-BAYT: bayat dosyalarin TOPLAM boyutu `_H20_TAZE_BAYT` (8 MiB) asarsa (sayi tavani altinda bile) bellekte cikarim
+    yapilmaz: `OLCULEMEDI [DEFTER_BAYAT]`; tek 5 MB'lik bayat dosya tazelenir."""
+    dolgu = "# " + "x" * 78 + "\n"
+    buyuk = lambda i: dolgu * 65000 + "def g%d_islev():\n    return 1\n" % i      # ~5,1 MB
+    kok = _b_damgali(motor, taban, "bir_taze_bayt", 3, ek={"src/g1.py": "def g1_islev():\n    return 0\n", "src/g2.py": "def g2_islev():\n    return 0\n"})
+    kod0 = _h20_hukum_say(b, "BIRLESIK-TAZE-BAYT", "taban", motor, kok, BIRLESIK_TABAN1, None)[0]
+    _b_commit(kok, {"src/g1.py": buyuk(1)}, "tek buyuk dosya")
+    _h20_hukum_say(b, "BIRLESIK-TAZE-BAYT", "tek 5 MB bayat dosya: tazelenir", motor, kok, BIRLESIK_TABAN1, kod0)
+    _b_commit(kok, {"src/g2.py": buyuk(2)}, "ikinci buyuk dosya")
+    _h20_hukum_say(b, "BIRLESIK-TAZE-BAYT", "10 MB bayat dosya (bayt tavani ASILDI): OLCULEMEDI", motor, kok,
+                   "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [DEFTER_BAYAT:1] | 0 COKLU | 0 DAMGASIZ", kod0)
+    # YENI (defterde olmayan) dosyalar da bayt toplamina girer: iki yeni 5 MB dosya
+    yn = _b_damgali(motor, taban, "bir_taze_bayt2", 3)
+    _b_commit(yn, {"src/h1.py": buyuk(1), "src/h2.py": buyuk(2)}, "iki yeni buyuk dosya")
+    _h20_hukum_say(b, "BIRLESIK-TAZE-BAYT", "iki YENI 5 MB dosya (bayt tavani ASILDI): OLCULEMEDI", motor, yn,
+                   "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [DEFTER_BAYAT:1] | 0 COKLU | 0 DAMGASIZ", kod0)
+
+
+def _v_taze_yol(motor, taban, b):
+    """BIRLESIK-TAZE-YOL: damgali `yol:N`'in soneki sonradan (commit, defter bayat) iki dosyaya cozulur -> `OLCULEMEDI [DOSYA_COK]` (taban
+    dosya listesi de tazelenir)."""
+    kok = _b_damgali(motor, taban, "bir_taze_yol", 1, "1. `p1.py:2` birinci.")
+    kod0 = _h20_hukum_say(b, "BIRLESIK-TAZE-YOL", "taban", motor, kok, BIRLESIK_TABAN1, None)[0]
+    _b_commit(kok, {"lib/p1.py": "def baska(x):\n    return x\n"}, "ayni adli ikinci dosya")
+    _taze_not(b, "BIRLESIK-TAZE-YOL", "sonek iki dosyaya cozuluyor", motor, kok,
+              "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [DOSYA_COK:1] | 0 COKLU | 0 DAMGASIZ", None, kod0)
+
+
+def _agac_izi(kok, *dizinler):
+    """Proje agacinin (`.git` HARIC) ve verilen dizinlerin dosya listesi + icerik ozeti: `kapi`nin DISKE yazip yazmadigini olcer."""
+    izler = []
+    for d in (kok,) + dizinler:
+        for r, alt, dosyalar in os.walk(d):
+            alt[:] = [x for x in alt if x != ".git"]
+            for f in dosyalar:
+                p = os.path.join(r, f)
+                with open(p, "rb") as g:
+                    izler.append((os.path.relpath(p, os.path.dirname(kok)), hashlib.sha256(g.read()).hexdigest()))
+    return sorted(izler)
+
+
+def _v_taze_yazma(motor, taban, b):
+    """BIRLESIK-TAZE-YAZMA: bayat defterde `kapi` DISKE YAZMAZ: proje agaci (ADRES.tsv dahil) ve gecici dizin (SICAK stat onbellegi) kapi
+    oncesi/sonrasi bayt-ayni; sicak onbellekle hukum soguktakiyle AYNI (yazma sabotaji onbellegi degistirir: yeni dosya onbellekte YOK)."""
+    kok = _b_damgali(motor, taban, "bir_taze_yaz", 3)
+    kos(motor, kok, "adres", "ortak_ad")                       # onbellegi ISIT (defter guncel; yazan `adres` yolu)
+    _b_commit(kok, {"src/p4.py": _b_py(4)}, "yeni dosya")
+    time.sleep(3.3)                                            # yeni dosya RACY paydan (3 sn) yasli: onbellege GIRER
+    tmp = onb_dizini(kok)
+    once = _agac_izi(kok, tmp)
+    kod, o, _e = _h20_kapi(motor, kok)
+    sonra = _agac_izi(kok, tmp)
+    if once != sonra:
+        b.append(("BIRLESIK-TAZE-YAZMA", "bayat defterde `kapi` DISKE yazdi (ekle/degis): %r" % (sorted(set(sonra) ^ set(once))[:4],)))
+    b3 = _bir_iz(_b_iz(1), _b_iz(2), _b_iz(3))
+    if "H20: md.1 `ortak_ad` [4 tanim] #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (
+            b3, _bir_iz(*[_b_iz(i) for i in (1, 2, 3, 4)])) not in _h20_satirlari_al(o):
+        b.append(("BIRLESIK-TAZE-YAZMA", "SICAK onbellekle hukum soguktakiyle ayni olmali: %r" % _h20_satirlari_al(o)))
+
+
+def _v_taze_ariza(motor, taban, b, tarama_bozuk):
+    """BIRLESIK-TAZE-ARIZA: bayatlik OLCUMU patlarsa (`SystemExit` dahil) defter `guncel` SAYILMAZ: `ayni` atif `OLCULEMEDI [DEFTER_BAYATLIK]`
+    olur, KESIN POZITIF (govdesi degisen atif) KORUNUR; diger TUM `kapi` satirlari + exit bozuk-olmayan motorla bayt-bayt AYNI."""
+    kok = _b_damgali(motor, taban, "bir_taze_ariza", 3, "1. `ortak_ad` uc yerde.\n2. `tekil_ad` tek yerde.",
+                     {"src/t.py": "def tekil_ad(x):\n    return x\n"})
+    _b_commit(kok, {"src/p3.py": _b_py(30)}, "p3 govdesi degisti")
+    kod_t, o_t, _e = _h20_kapi(motor, kok)
+    kod, o, e = _h20_kapi(tarama_bozuk, kok)
+    if "HATA:" in e:
+        b.append(("BIRLESIK-TAZE-ARIZA", "bayatlik olcumu arizasinda `oldur`un stderr satiri SIZMAMALI (P5 blogu `oldur` yan etkisi yok): %r" % e[-160:]))
+    h20 = _h20_satirlari_al(o)
+    bekle = ["H20: 2 atif | 1 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [DEFTER_BAYATLIK:1] | 0 COKLU | 0 DAMGASIZ",
+             "H20: md.1 `ortak_ad` [3 tanim] #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (
+                 _bir_iz(_b_iz(1), _b_iz(2), _b_iz(3)), _bir_iz(_b_iz(1), _b_iz(2), _b_iz(30)))]
+    if h20 != bekle:
+        b.append(("BIRLESIK-TAZE-ARIZA", "bayatlik olcumu arizali: pozitif KORUNUR + `ayni` -> `OLCULEMEDI [DEFTER_BAYATLIK:1]`: %r != %r" % (h20, bekle)))
+    if kod != kod_t or _kapi_diger(o) != _kapi_diger(o_t):
+        b.append(("BIRLESIK-TAZE-ARIZA", "bayatlik olcumu arizasi `kapi`nin DIGER hukumlerini/exit'ini degistirdi: exit %s != %s" % (kod, kod_t)))
+
+
+def _v_taze_kapsam(motor, taban, b):
+    """BIRLESIK-TAZE-KAPSAM/-GURULTU/-OKUNMAZ: bayat defterde YENI dosya cikarilamazsa tanimlari BILINMEZ: adi sozcuk olarak iceren dosyada
+    `ayni` -> `OLCULEMEDI [DEFTER_ATLANDI]` (KAPSAM) · adi ICERMEYEN dosyada hukum DEGISMEZ, gurultu yok (GURULTU) · kaybolan sembol
+    `SEMBOL YOK` DEGIL `OLCULEMEDI [DEFTER_ATLANDI]` (cikarilamayan yeni dosya ya da 9 MB'lik OKUNMAZ yeni dosya; OKUNMAZ)."""
+    atl = "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [DEFTER_ATLANDI:1] | 0 COKLU | 0 DAMGASIZ"
+    k1 = _b_damgali(motor, taban, "bir_taze_kotu", 3)
+    _b_commit(k1, {"src/kotu.py": "def ortak_ad(x:\n"}, "yeni dosya bozuk ve ad geciyor")
+    _h20_hukum_say(b, "BIRLESIK-TAZE-KAPSAM", "yeni bozuk dosya adi iceriyor: `ayni` OLCULEMEDI", motor, k1, atl, None)
+    k2 = _b_damgali(motor, taban, "bir_taze_kotu2", 3)
+    _b_commit(k2, {"src/kotu.py": "def baska_ad(x:\n"}, "yeni dosya bozuk, ad YOK")
+    _h20_hukum_say(b, "BIRLESIK-TAZE-GURULTU", "yeni bozuk dosya adi ICERMIYOR: hukum degismez", motor, k2, BIRLESIK_TABAN1, None)
+    k3 = _b_damgali(motor, taban, "bir_taze_kotu3", 2)
+    _b_commit(k3, {"src/p1.py": "x = 1\n", "src/p2.py": "y = 2\n", "src/kotu.py": "def (:\n"}, "tanimlar kalkti + yeni dosya bozuk")
+    _h20_hukum_say(b, "BIRLESIK-TAZE-KAPSAM", "sembol kayboldu + yeni dosya cikarilamadi: SEMBOL YOK DEGIL", motor, k3, atl, None)
+    k4 = _b_damgali(motor, taban, "bir_taze_buyuk", 2)
+    _b_commit(k4, {"src/p1.py": "x = 1\n", "src/p2.py": "y = 2\n", "src/gen.py": "#" * 9000000 + "\ndef gen_islev(x):\n    return x\n"},
+              "tanimlar kalkti + yeni 9 MB dosya")
+    _h20_hukum_say(b, "BIRLESIK-TAZE-OKUNMAZ", "sembol kayboldu + yeni dosya OKUNAMIYOR (9 MB): SEMBOL YOK DEGIL", motor, k4, atl, None)
+    # degisen dosya cikarilamaz hale gelir: eski satirlari `--kur` gibi DUSER (adi iceren bozuk dosya `ayni` DEGIL, kalan tanimlar `[2 tanim]`)
+    k5 = _b_damgali(motor, taban, "bir_taze_kotu5", 3)
+    kod5 = _h20_hukum_say(b, "BIRLESIK-TAZE-KAPSAM", "taban", motor, k5, BIRLESIK_TABAN1, None)[0]
+    _b_commit(k5, {"src/p3.py": "def ortak_ad(x:\n"}, "p3 bozuldu (degisen dosya cikarilamaz)")
+    _taze_not(b, "BIRLESIK-TAZE-KAPSAM", "degisen dosya cikarilamaz hale geldi", motor, k5, BIRLESIK_DEGISTI1,
+              "H20: md.1 `ortak_ad` [2 tanim] #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (
+                  _bir_iz(_b_iz(1), _b_iz(2), _b_iz(3)), _bir_iz(_b_iz(1), _b_iz(2))), kod5)
+    # SUREKLI okunamayan izlenen dosya (defter ATLANDI tasir): ilgisiz kod degisikligi `ayni`yi gurultuye CEVIRMEZ
+    k6 = _b_damgali(motor, taban, "bir_taze_kalici", 3, ek={"src/gen.py": "#" * 9000000 + "\n"})
+    _b_commit(k6, {"src/x.py": "def baska_islev():\n    return 1\n"}, "ilgisiz yeni dosya")
+    _h20_hukum_say(b, "BIRLESIK-TAZE-GURULTU", "surekli okunamayan dosya + ilgisiz degisiklik: hukum degismez", motor, k6, BIRLESIK_TABAN1, None)
+
+
+def _v_taze_eksik(motor, taban, b, bozuk):
+    """BIRLESIK-TAZE-EKSIK: bayat defterde YENI dosyanin cikaricisi KUSURLU (arac kusuru; `--kur` EKSIK defter yazardi) -> `ayni` atif
+    `OLCULEMEDI [DEFTER_EKSIK]`, KESIN POZITIF (govdesi degisen atif) KORUNUR (ilgisiz dosyadaki arac kusuru alarmi silmez; sozdizimi
+    hatasi DEGIL: o ATLANDI)."""
+    kok = _b_damgali(motor, taban, "bir_taze_eksik", 3, "1. `ortak_ad` uc yerde.\n2. `tekil_ad` tek yerde.",
+                     {"src/t.py": "def tekil_ad(x):\n    return x\n"})
+    _b_commit(kok, {"src/p3.py": _b_py(30), "src/Q.cs": "public class Q\n{\n    public int Baska(int x) => x;\n}\n"},
+              "p3 govdesi degisti + yeni C# dosya")
+    kod, o, _e = _h20_kapi(bozuk, kok)
+    h20 = _h20_satirlari_al(o)
+    bekle = ["H20: 2 atif | 1 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [DEFTER_EKSIK:1] | 0 COKLU | 0 DAMGASIZ",
+             "H20: md.1 `ortak_ad` [3 tanim] #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (
+                 _bir_iz(_b_iz(1), _b_iz(2), _b_iz(3)), _bir_iz(_b_iz(1), _b_iz(2), _b_iz(30)))]
+    if h20 != bekle:
+        b.append(("BIRLESIK-TAZE-EKSIK", "yeni dosyanin cikaricisi arizali: pozitif KORUNUR + `ayni` -> `OLCULEMEDI [DEFTER_EKSIK:1]`: %r != %r" % (h20, bekle)))
+
+
+def _v_taze_kaynak(motor, taban, b):
+    """BIRLESIK-TAZE-KAYNAK: defter `git` kaynaklidir ama `kapi` `.git`siz bir KOPYADA kosar (evren `git ls-files` degil dosya sistemi):
+    karsilastirma anlamsizdir -> `OLCULEMEDI [DEFTER_BAYATLIK]` (yeni dosya bu evrende gorunse de sahte `GOVDE DEGISTI` basilmaz)."""
+    kok = _b_damgali(motor, taban, "bir_taze_kaynak", 3)
+    _b_commit(kok, {"src/p4.py": _b_py(4)}, "yeni dosya")
+    kopya = kok + "_gitsiz"
+    shutil.copytree(kok, kopya, ignore=shutil.ignore_patterns(".git"))
+    _h20_hukum_say(b, "BIRLESIK-TAZE-KAYNAK", ".git'siz kopya: evren defterinkinden farkli", motor, kopya,
+                   "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 1 OLCULEMEDI [DEFTER_BAYATLIK:1] | 0 COKLU | 0 DAMGASIZ", None)
+
+
+def _v_taze_sayim(motor, taban, b):
+    """BIRLESIK-TAZE-SAYIM: DAMGASIZ/COKLU sayimi her zaman DEFTER indeksindendir (K1 hukmu; damgali atif VARLIGI sayimi degistirmez):
+    damgasiz `ortak_ad` defterde 3 tanim (DAMGASIZ); yeni dosyada 3 tanim daha (taze kume 6 = COKLU olurdu) -> `1 DAMGASIZ`, `0 COKLU`."""
+    kok = _hafiza_proje(motor, taban, "bir_taze_sayim", {"src/t.py": "def tekil_ad(x):\n    return x\n", "src/p1.py": _b_py(1),
+                                                         "src/p2.py": _b_py(2), "src/p3.py": _b_py(3), "notlar.txt": "0\n"})
+    kod, o, e = kos(motor, kok, "not", "--konu", "damgasiz-not", "--yeni-konu", "damgasiz", "--tur", "durum", "--metin", "1. `ortak_ad` damgasiz.")
+    if kod != 0:
+        raise Kurulamadi("damgasiz not basarisiz: %r" % (o + e)[-160:])
+    kur(motor, kok)
+    kos(motor, kok, *(DAMGA_NOT_ARGS + ("2. `tekil_ad` damgali.",)))
+    _b_derle(motor, kok)
+    _b_commit(kok, {"src/q1.py": _b_py(11), "src/q2.py": _b_py(12), "src/q3.py": _b_py(13)}, "3 tanim daha yeni dosyalarda")
+    _h20_hukum_say(b, "BIRLESIK-TAZE-SAYIM", "sayim defterden: damgali atif VARKEN de 1 DAMGASIZ (COKLU DEGIL)", motor, kok,
+                   "H20: 1 atif | 0 GOVDE DEGISTI | 0 SEMBOL YOK | 0 OLCULEMEDI | 0 COKLU | 1 DAMGASIZ", None)
+
+
+def _v_taze_not(motor, taban, b):
+    """BIRLESIK-TAZE-NOT (BEYANLI SINIR, sabotaji yok): K1 (`not`) bayat defterle EKSIK kumeden damga basar (`[3 tanim]`); H20 taze kumeyle
+    okur -> not'tan hemen sonra `[4 tanim]` `GOVDE DEGISTI`. Cozum: `adres --kur` + yeniden `not`. Sinir kalkarsa bu vektor bilerek guncellenir."""
+    b3, b4 = _bir_iz(_b_iz(1), _b_iz(2), _b_iz(3)), _bir_iz(*[_b_iz(i) for i in (1, 2, 3, 4)])
+    kok = _b_damgali(motor, taban, "bir_taze_not", 3)
+    _b_commit(kok, {"src/p4.py": _b_py(4)}, "4. tanim yeni dosyada")
+    kod, o, e, govde, _ad = _not_kos(motor, kok, "2. `ortak_ad` yine.")
+    if "ATIF DAMGALANDI: 1 (ortak_ad#%s [3 tanim])" % b3 not in o.split("\n"):
+        b.append(("BIRLESIK-TAZE-NOT", "K1 bayat defterle EKSIK kumeden damga basar (beyanli sinir: `[3 tanim]`): %r" % o[-200:]))
+    _b_derle(motor, kok)
+    h20 = _h20_satirlari_al(_h20_kapi(motor, kok)[1])
+    if "H20: md.2 `ortak_ad` [4 tanim] #%s -> #%s IDDIA KODDAN ESKI OLABILIR" % (b3, b4) not in h20:
+        b.append(("BIRLESIK-TAZE-NOT", "H20 taze kumeyle okur: `not`'un `[3 tanim]` damgasi `[4 tanim]` GOVDE DEGISTI olur: %r" % h20))
+
+
+def kol_birlesik(motor, taban, bozuk, butcesiz, tarama_bozuk):
     """P5-BIRLESIK: `ortak_ad` 3 dosyada -> TEK birlesik damga `[3 tanim]` (BIRLESIK-VAR) · tekil ad izi defterdeki izle bayt-ayni
     (BIRLESIK-TEKIL) · SONUNCU tanim degisince H20 `GOVDE DEGISTI 1` + `[3 tanim] #eski -> #yeni` (BIRLESIK-DEGISTI) · ek / silinen
     tanim (BIRLESIK-EKLENDI) · dosya yeniden adlandirilinca iz DEGISMEZ (BIRLESIK-YOL) · aday dosya tasinmis + defter bayat: KISMI
@@ -2215,6 +2520,20 @@ def kol_birlesik(motor, taban, bozuk, butcesiz):
         (("BIRLESIK-ATLANDI",), lambda: _v_atlandi(motor, taban, b)),
         (("BIRLESIK-NESNE", "BIRLESIK-CIKARICI", "BIRLESIK-YOLKACIS"), lambda: _v_nesne(motor, taban, b)),
         (("BIRLESIK-YOLCOKLU", "BIRLESIK-SAYISIZ"), lambda: _v_kucukler(motor, taban, b)),
+        (("BIRLESIK-TAZE",), lambda: _v_taze(motor, taban, b)),
+        (("BIRLESIK-TAZE-TEKIL",), lambda: _v_taze_tekil(motor, taban, b)),
+        (("BIRLESIK-TAZE-AD",), lambda: _v_taze_ad(motor, taban, b)),
+        (("BIRLESIK-TAZE-SILINEN",), lambda: _v_taze_silinen(motor, taban, b)),
+        (("BIRLESIK-TAZE-TAVAN",), lambda: _v_taze_tavan(motor, taban, b)),
+        (("BIRLESIK-TAZE-BAYT",), lambda: _v_taze_bayt(motor, taban, b)),
+        (("BIRLESIK-TAZE-YOL",), lambda: _v_taze_yol(motor, taban, b)),
+        (("BIRLESIK-TAZE-YAZMA",), lambda: _v_taze_yazma(motor, taban, b)),
+        (("BIRLESIK-TAZE-ARIZA",), lambda: _v_taze_ariza(motor, taban, b, tarama_bozuk)),
+        (("BIRLESIK-TAZE-KAPSAM", "BIRLESIK-TAZE-GURULTU", "BIRLESIK-TAZE-OKUNMAZ"), lambda: _v_taze_kapsam(motor, taban, b)),
+        (("BIRLESIK-TAZE-EKSIK",), lambda: _v_taze_eksik(motor, taban, b, bozuk)),
+        (("BIRLESIK-TAZE-KAYNAK",), lambda: _v_taze_kaynak(motor, taban, b)),
+        (("BIRLESIK-TAZE-SAYIM",), lambda: _v_taze_sayim(motor, taban, b)),
+        (("BIRLESIK-TAZE-NOT",), lambda: _v_taze_not(motor, taban, b)),
     )
     for etiketler, calistir in vektorler:
         if _calissin(*etiketler):
@@ -2229,7 +2548,14 @@ def kos_birlesik(motor, taban, ad, kaynak):
     butcesiz, hata = _motor_yaz(kaynak.replace(anc, "_DOGUS_BUTCE = 0 ", 1), os.path.join(os.path.dirname(taban), "butcesiz_" + ad), "butcesiz_" + ad)
     if butcesiz is None:
         raise Kurulamadi(hata)
-    return kol_birlesik(motor, taban, _bozuk_motor(taban, "bir_" + ad, kaynak), butcesiz)
+    anc2 = '            return _adres_bugun(kok, ozet, None, '      # ONEK capa: M-U64 son argumani degistirir
+    if kaynak.count(anc2) != 1:
+        raise Kurulamadi("bayatlik olcumu capasi %d yerde gecti (1 olmali)" % kaynak.count(anc2))
+    tarama, hata = _motor_yaz(kaynak.replace(anc2, '            oldur("ENJEKSIYON: git ls-files BASARISIZ (bayatlik olcumu arizasi)", 3)\n' + anc2, 1),
+                              os.path.join(os.path.dirname(taban), "tarama_" + ad), "tarama_" + ad)
+    if tarama is None:
+        raise Kurulamadi(hata)
+    return kol_birlesik(motor, taban, _bozuk_motor(taban, "bir_" + ad, kaynak), butcesiz, tarama)
 
 
 # ------------------------------------------------------------------ P5-SABIT (P5.2 KALEM 5): dil sabitleri aday DEGIL
@@ -2663,9 +2989,9 @@ SABOTAJLAR = (
      "        et = _adres_atla_etiketi(y)\n",
      "        et = _adres_atla_etiketi(y) if uz in _ADRES_UZANTI else None      # MUTANT\n"),
     ("M-A7 sorgu suzgeci YOK (bayatlik atlanan dosyalari sayar)", "A-ATLA", "ATLA-BAYAT",
-     "    kod = _adres_yol_ayir(_adres_dosyalar(kok)[1])[0]\n",
+     "    kod = _adres_yol_ayir(yollar)[0]\n",
      "    kod = dict((d, []) for d in _ADRES_DIL_SIRA)      # MUTANT: sorgu suzgeci yok\n"
-     "    for y in _adres_dosyalar(kok)[1]:\n"
+     "    for y in yollar:\n"
      "        if os.path.splitext(y)[1].lower() in _ADRES_UZANTI:\n"
      "            kod[_ADRES_UZANTI[os.path.splitext(y)[1].lower()]].append(y)\n"),
     ("M-P1 satir sonu normallestirmesi KAPALI (CRLF + bosluk)", "A-PARMAK", "PARMAK-CRLF",
@@ -2678,10 +3004,10 @@ SABOTAJLAR = (
      '    return _adres_sha("\\n".join(satirlar[bas - 1:bit]))[:8]\n',
      '    return "00000000"      # MUTANT\n'),
     ("M-B1 agac ozeti karsilastirmasi KAPALI (bayat hic bildirilmez)", "A-BAYAT", "BAYAT-VAR",
-     '    bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != baslik.get("ozet")\n',
+     '    bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != ozet\n',
      "    bayat = False      # MUTANT\n"),
     ("M-B2 agac ozeti HER ZAMAN farkli (degismeyen agac bayat sanilir)", "A-BAYAT", "BAYAT-YOK",
-     '    bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != baslik.get("ozet")\n',
+     '    bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != ozet\n',
      "    bayat = True      # MUTANT\n"),
     ("M-B3 RACY korumasi KAPALI (taze dosya da onbellege girer; ctime de kor: racy tek koruma kalsin)", "A-BAYAT", "BAYAT-ZAMAN",
      ("    return max(anahtar[0], anahtar[2]) < t0 - _ADRES_ONB_PAY\n", CTIME_ANKOR),
@@ -2853,7 +3179,7 @@ SABOTAJLAR = (
      "    return [(madde.get(i), i + 1, m, t, d) for i, s in enumerate(L) if not ic[i] for (_son, m, t, d, _o) in _damga_jetonlar(s)]\n",
      "    return [(madde.get(i), i + 1, m, t, d) for i, s in enumerate(L) for (_son, m, t, d, _o) in _damga_jetonlar(s)]      # MUTANT\n"),
     ("M-H11 SEMBOL YOK defter kapsami EKSIKKEN de hukum verilir (ATLANDI ayrimi yok)", "P5-H20", "H20-ATLANDI",
-     '        if h == "yok" and not indeks[2]:\n',
+     '        if h == "yok" and not hukum[2]:\n',
      '        if False:      # MUTANT\n'),
     ("M-H12 EKSIK defter H20'de kullanilir (cikarici kusuru gizlenir)", "P5-H20", "H20-EKSIK",
      '    if _adres_eksik_mi(veri[0]):\n        return "eksik", "adres defteri EKSIK (cikarici kusuru) - hafiza.py adres --kur"\n',
@@ -3089,6 +3415,89 @@ SABOTAJLAR = (
     ("M-U52 commit'li tasima + bayat defter: K3 eksik kumeden degisim/silinme hukmu verir (DEFTER_BAYAT atlanmaz)", "P5-BIRLESIK", "BIRLESIK-BAYAT",
      '        if c[0] in ("tek", "birlesik") and k[0] == "olculemedi" and k[1] == "DEFTER_BAYAT":\n',
      "        if False:      # MUTANT\n"),
+    ("M-U53 bayatlik denetimi KAPALI (defter hep guncel sayilir: yeni dosyadaki tanim gorunmez, 0/0 SESSIZ TEMIZ)", "P5-BIRLESIK", "BIRLESIK-TAZE",
+     '    bayat = _adres_ozet([(y, "dosya", s) for y, s in sorted(bugun.items())]) != ozet\n',
+     "    bayat = False      # MUTANT\n"),
+    ("M-U54 YENI dosyalar tazelenmez (yalniz defterde OLAN degisen dosyalar yeniden cikarilir)", "P5-BIRLESIK", "BIRLESIK-TAZE",
+     "    degisen = sorted(y for y, s in bugun.items() if (eski.get(y) or (None,))[0] != s)\n",
+     "    degisen = sorted(y for y, s in bugun.items() if y in eski and eski[y][0] != s)      # MUTANT\n"),
+    ("M-U55 izlenmeyen silinen dosyalarin defter satirlari DUSULMEZ (`--kur`un hic gormeyecegi dosya aday kalir)", "P5-BIRLESIK", "BIRLESIK-TAZE-SILINEN",
+     "    birak = set(taze) | set(bilinmez) | (set(eski) - set(bugun) - izlenen)\n",
+     "    birak = set(taze) | set(bilinmez)      # MUTANT\n"),
+    ("M-U56 `yol:N` dosya listesi (taban) defterden: yeni ayni adli dosya gorunmez", "P5-BIRLESIK", "BIRLESIK-TAZE-YOL",
+     '    taban = {}\n    for y in sorted(bugun):\n        taban.setdefault(y.rsplit("/", 1)[-1], []).append(y)\n'
+     '    return "tamam", (taban, ad, indeks[2] and not bilinmez, indeks[3], indeks[4], tuple(bilinmez), indeks[6])\n',
+     '    return "tamam", (indeks[0], ad, indeks[2] and not bilinmez, indeks[3], indeks[4], tuple(bilinmez), indeks[6])      # MUTANT\n'),
+    ("M-U57 bellekte cikarim DOSYA SAYISI tavani YOK (yuzlerce bayat dosya yeniden cikarilir, DEFTER_BAYAT hic cikmaz)", "P5-BIRLESIK", "BIRLESIK-TAZE-TAVAN",
+     "    if len(degisen) > _H20_TAZE_TAVAN or sum(_h20_boyut(kok, y) for y in degisen) > _H20_TAZE_BAYT:\n",
+     "    if sum(_h20_boyut(kok, y) for y in degisen) > _H20_TAZE_BAYT:      # MUTANT\n"),
+    ("M-U58 tavan siniri `>=` (tam 100 bayat dosya OLCULEMEDI sayilir)", "P5-BIRLESIK", "BIRLESIK-TAZE-TAVAN",
+     "    if len(degisen) > _H20_TAZE_TAVAN or sum(_h20_boyut(kok, y) for y in degisen) > _H20_TAZE_BAYT:\n",
+     "    if len(degisen) >= _H20_TAZE_TAVAN or sum(_h20_boyut(kok, y) for y in degisen) > _H20_TAZE_BAYT:      # MUTANT\n"),
+    ("M-U59 tavan siniri +1 (101 bayat dosya da yeniden cikarilir)", "P5-BIRLESIK", "BIRLESIK-TAZE-TAVAN",
+     "    if len(degisen) > _H20_TAZE_TAVAN or sum(_h20_boyut(kok, y) for y in degisen) > _H20_TAZE_BAYT:\n",
+     "    if len(degisen) > _H20_TAZE_TAVAN + 1 or sum(_h20_boyut(kok, y) for y in degisen) > _H20_TAZE_BAYT:      # MUTANT\n"),
+    ("M-U60 bellekte cikarim BAYT tavani YOK (toplam boyut sinirsiz)", "P5-BIRLESIK", "BIRLESIK-TAZE-BAYT",
+     "    if len(degisen) > _H20_TAZE_TAVAN or sum(_h20_boyut(kok, y) for y in degisen) > _H20_TAZE_BAYT:\n",
+     "    if len(degisen) > _H20_TAZE_TAVAN:      # MUTANT\n"),
+    ("M-U61 bayatlik OLCUM hatasi sessizce `guncel` sayilir (defter eski, hukum eski defterden)", "P5-BIRLESIK", "BIRLESIK-TAZE-ARIZA",
+     '        return "bayatlik", type(e).__name__\n',
+     '        return "tamam", indeks      # MUTANT\n'),
+    ("M-U62 yedek yolda (tavan/olcum hatasi) KESIN POZITIFLER atilir (govdesi degisen atif de OLCULEMEDI sayilir)", "P5-BIRLESIK", "BIRLESIK-TAZE-ARIZA",
+     "        return _h20_satirlari(a, degisen, [], olc, olu, z, c)\n",
+     "        return _h20_satirlari(a, [], [], olc, olu, z, c)      # MUTANT\n"),
+    ("M-U63 yedek yolda `ayni`/`yok` OLCULEMEDI'ye cevrilmez (tavan asilinca 0/0 SESSIZ TEMIZ)", "P5-BIRLESIK", "BIRLESIK-TAZE-TAVAN",
+     "        if kalan:\n",
+     "        if False:      # MUTANT\n"),
+    ("M-U64 `kapi` bayatlik gecisinde stat onbellegini YAZAR (`adres` sorgusunun yazan yolu: kapi diske yazar)", "P5-BIRLESIK", "BIRLESIK-TAZE-YAZMA",
+     "            return _adres_bugun(kok, ozet, None, False)\n",
+     "            return _adres_bugun(kok, ozet, None, True)      # MUTANT\n"),
+    ("M-U65 cikarilamayan YENI dosya `tam kapsam`i bozmaz (SEMBOL YOK hukmu verilir)", "P5-BIRLESIK", "BIRLESIK-TAZE-KAPSAM",
+     '    return "tamam", (taban, ad, indeks[2] and not bilinmez, indeks[3], indeks[4], tuple(bilinmez), indeks[6])\n',
+     '    return "tamam", (taban, ad, indeks[2], indeks[3], indeks[4], tuple(bilinmez), indeks[6])      # MUTANT\n'),
+    ("M-U66 cikarilamayan dosyada ad ARANMAZ (`ayni` korunur: adi iceren bozuk yeni dosya 0/0 SESSIZ TEMIZ)", "P5-BIRLESIK", "BIRLESIK-TAZE-KAPSAM",
+     '        if h == "ayni" and t == "ad" and hukum[5] and _h20_gizli(kok, hukum, m, onbellek):\n',
+     "        if False:      # MUTANT\n"),
+    ("M-U67 cikarilamayan HER dosya adi iceriyor sayilir (suzgec YOK: ilgisiz bozuk dosya `ayni`yi OLCULEMEDI yapar)", "P5-BIRLESIK", "BIRLESIK-TAZE-GURULTU",
+     "        if metin is None or desen.search(metin):\n",
+     "        if True:      # MUTANT\n"),
+    ("M-U68 cikarici KUSURU `EKSIK` degil bilinmez sayilir (`--kur`un EKSIK defteri gizlenir)", "P5-BIRLESIK", "BIRLESIK-TAZE-EKSIK",
+     '        elif sebep == "CIKARICI":\n            return None, sebep\n',
+     '        elif False:      # MUTANT\n            return None, sebep\n'),
+    ("M-U69 izlenen ama bugun OKUNAMAYAN dosyalar gezilmez (yeni buyuk/ikili/link dosya tam kapsami bozmaz)", "P5-BIRLESIK", "BIRLESIK-TAZE-OKUNMAZ",
+     "    for y in degisen + sorted(y for y in izlenen if y not in bugun):\n",
+     "    for y in degisen:      # MUTANT\n"),
+    ("M-U70 DAMGASIZ/COKLU sinifi TAZE indeksle yapilir (damgali atif VARKEN sayim degisir)", "P5-BIRLESIK", "BIRLESIK-TAZE-SAYIM",
+     "            sinif, v = _h20_sinif(kok, indeks, onbellek, m, t) if no is not None else (None, None)\n",
+     "            sinif, v = _h20_sinif(kok, hukum, onbellek, m, t) if no is not None else (None, None)      # MUTANT\n"),
+    ("M-U71 degismeyen dosyalarin defter satirlari DUSER (aday kumesi yalniz yeniden cikarilan dosyalardan)", "P5-BIRLESIK", "BIRLESIK-TAZE",
+     "    ad = dict((k, [(y, t) for y, t in v if y not in birak]) for k, v in indeks[1].items())\n",
+     "    ad = {}      # MUTANT\n"),
+    ("M-U72 degisen dosyanin ESKI satirlari da KALIR (yeni satirlar eklenir: ayni tam ad iki kez sayilir)", "P5-BIRLESIK", "BIRLESIK-TAZE-AD",
+     "    birak = set(taze) | set(bilinmez) | (set(eski) - set(bugun) - izlenen)\n",
+     "    birak = set(bilinmez) | (set(eski) - set(bugun) - izlenen)      # MUTANT\n"),
+    ("M-U73 bayatlik olcumu `oldur`un stderr satirini SUSTURMAZ (P5 blogu `oldur` yan etkisi sizar)", "P5-BIRLESIK", "BIRLESIK-TAZE-ARIZA",
+     "        with contextlib.redirect_stderr(io.StringIO()):\n",
+     "        if True:      # MUTANT\n"),
+    ("M-U74 cikarilamayan DEGISEN dosyanin eski satirlari DUSMEZ (`--kur` ile ayni aday kumesi degil: SOZDIZIMI/OLCULEMEDI sizar)", "P5-BIRLESIK", "BIRLESIK-TAZE-KAPSAM",
+     "    birak = set(taze) | set(bilinmez) | (set(eski) - set(bugun) - izlenen)\n",
+     "    birak = set(taze) | (set(eski) - set(bugun) - izlenen)      # MUTANT\n"),
+    ("M-U75 SUREKLI okunamayan dosya her bayat kosuda YENI sayilir (defter ATLANDI tasirken de: ilgisiz degisiklikte gurultu)", "P5-BIRLESIK", "BIRLESIK-TAZE-GURULTU",
+     "        elif y in indeks[4] or y in degisen or indeks[2]:\n",
+     "        else:      # MUTANT\n"),
+    ("M-U76 defter kaynagi/evren denetimi YOK (`.git`siz kopyada dosya sistemi evrenine karsi sahte GOVDE DEGISTI)", "P5-BIRLESIK", "BIRLESIK-TAZE-KAYNAK",
+     '        if kaynak.startswith("git") != str(indeks[6]).startswith("git"):',
+     "        if False:"),
+    ("M-U77 yeni satirlar yalniz defterde OLMAYAN adlara eklenir (tekil -> coklu gecisi: ayni adli yeni tanim gorunmez)", "P5-BIRLESIK", "BIRLESIK-TAZE-TEKIL",
+     '            ad.setdefault(t.rsplit(".", 1)[-1], []).append((y, t))\n',
+     '            if t.rsplit(".", 1)[-1] not in ad:      # MUTANT\n'
+     '                ad[t.rsplit(".", 1)[-1]] = [(y, t)]\n'),
+    ("M-U78 cikarici KUSURU yedek yola girmez (kesin pozitifler ve sayimlar `DEFTER_KUSUR` ile silinir)", "P5-BIRLESIK", "BIRLESIK-TAZE-EKSIK",
+     '    if durum in ("bayat", "bayatlik", "kusur"):',
+     '    if durum in ("bayat", "bayatlik"):'),
+    ("M-U79 bayt toplami yalniz DEFTERDE OLAN dosyalari sayar (yeni buyuk dosyalar tavana girmez)", "P5-BIRLESIK", "BIRLESIK-TAZE-BAYT",
+     "sum(_h20_boyut(kok, y) for y in degisen)",
+     "sum(_h20_boyut(kok, y) for y in degisen if y in eski)"),
     ("M-Y8 H20 sessizlik kosulu `olu`yu yok sayar (damgali atif YOKKEN damgasiz-OLCULEMEDI sessizce duser)", "P5-SAYIM", "SAYIM-SAF",
      "    if not a and not z and not c and not olu:\n        return []\n",
      "    if not a and not z and not c:      # MUTANT\n        return []\n"),
