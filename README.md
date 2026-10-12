@@ -558,7 +558,11 @@ işaretçisi dahil). En önemlileri:
   H4/H11 yüzünden etkisizleştirilir; ardışık boşluk tek). **Tavanlar:** TÜM blok gövdesi ≤ 8192 bayt (P1 gövdesi AYNEN kalır, kalan
   bütçe kayıtlara); kayıt SIRASI deterministik: ALANLI kayıtlar (kaynak sırasıyla) önce, `GEREKCESIZ` olanlar sonra; sığmayan
   `… +n kayit (listelenmedi; hepsi sayildi)`; alan başına en çok 2 başlık adresi + 1 satır içi alıntı (fazlası `+ satir daha
-  (alintilanmadi; sayildi): ...`), aynı satır iki alanda tekrar alıntılanmaz; kod çitlerinin (```/`~~~`) içi taranmaz; dosyanın ilk 1 MiB'ı.
+  (alintilanmadi; sayildi): ...`), aynı satır iki alanda tekrar alıntılanmaz; kod çitlerinin içi (CommonMark: `kod_disi`) taranmaz; dosyanın ilk 1 MiB'ı; eşleşme satırın
+  40. karakterinden sonraysa alıntı eşleşen anahtardan başlar (`"…*Gerekçe: ...*"`); BOM atılır. **H7:** kalıcı-kural işareti (`ASLA`,
+  `PAZARLIKSIZ`, ...) taşıyan satırın METNİ yazılmaz (motor blok maskesi onu sessizce düşürür ve kaydı "boş" gösterirdi), ADRESİ
+  `(maskelendi: H7 isareti)` ile durur; okunamayan dosya `OLCULEMEDI <yol> (okunamadi)` (özette `· n OLCULEMEDI`). Karar dizini YOK ve
+  kök kaynakları da KALMADIYSA (silindi/arşivlendi) `derle` bloğu KALDIRIR (bayat adres kalmaz).
   **Sınırlar (gizlenmez):** anlam ÖLÇÜLMEZ — başlıkta `Neden` geçiyorsa `gerekce` der (gerçekten gerekçe olup olmadığı okuyucunun
   işidir; ölçülmüş gürültü: "Neden bugüne kadar görünmedi:" satırı da alıntılanır) · commit mesajları KAPSAM DIŞI (Momentum'da `karar:` /
   `decision:` satırı 0 ölçüldü) · `IS_EMRI_*` (alt çizgi), `.txt`, `notlar/IS-EMRI-y.md` (kök dışı) kaynak DEĞİLDİR · 8 KB'a sığmayan kayıt
