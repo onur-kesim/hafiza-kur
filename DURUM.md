@@ -1,12 +1,14 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `ceb0454` = main = origin; CI #127 198/198; P5-P5.3 yerelde; P5.4 yarım)
-Son güncelleme: 11 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin `a5e3dab`; CI #128 198/198; P5.4 `43a260d`+`aed4169` yerelde)
+Son güncelleme: 12 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## DEVİR O18 → O19 (12 Eki) — P5.4 YARIM: `not` bayat defterde H20'nin taze kümesi · PUSH YOK
-Taban `894693b` (P5.3; Cowork TUTTU, CI #128 198/198). İş emri `besli-paket\IS_EMRI_P5_4_NOT_TAZE_KUME.md` (Onur kilidi: H20 İLE AYNI YOL, ikinci kod yolu YOK). P5.3: SEÇİM (a) taze küme, `kapi` YAZMAZ; (b) yalnız yedek (100 dosya/8 MiB, ölçüm arızası, `.git`siz kopya, çıkarıcı kusuru).
-**YAPILDI — 5 dosya COMMIT'SİZ (`git status` M):** motor `_damga_uygula_ic` → `_h20_taze` (+`_damga_taze_yok`, `_damga_bilinmez`; CC 18; çapalar AYNEN) · harness P5-DAMGA `DAMGA-TAZE-*` (9 vektör) + M-N1..9; ölü dal sabotajları M-G12/M-U12/M-U33/M-U34 kaldırıldı, `_v_bayat` skew vektörü (203 sabotaj, çapa 0 bozuk) · README/SKILL/`capraz.yml` · **fxa `not`:** adaysız 0,34→0,33 s; adaylı 0,69→3,74 s (önbellek boş) / 0,76→1,64 s (dolu); çıktı 4 durumda AYNI.
-**YARIM:** (1) `_olcum\p54_tur\k8b_sab.log` (arka plan, ESKİ harness kopyası k8b) bitince KACTI = eşdeğer dal → kaldır/yeniden hedefle; M-U11/M-U52 skew vektörüyle ayakta mı TEKRAR koş · (2) bağımsız inceleme (diff `scratchpad\p54_diff.patch` yeniden üret) · (3) kod commit → belge commit → tam tur `ci_surucu.py` + `sabotaj.py` solo (motor DEĞİŞTİ) · (4) DURUM P5.4 bloğu · Cowork kabulü.
-**İlk iş:** `git --no-optional-locks status --porcelain` → scratchpad `anchor_say.py faz0/adres_mutanti.py skill/scripts/hafiza.py` (203 / 0 bozuk) → kopya motorla `--kol=P5-DAMGA,P5-DOGUS,P5-BIRLESIK` (~90 dk). **Uyarı:** uygulama COMMIT'SİZ, ezme · Bash heredoc'ta `\n` bozulur (Write/Edit) · `rm -rf` yasak · ölü dallar (K1 DOSYA_YOK, `_ad_cozum` kısmi kayıp, `_dogus_calisma`) yalnız yarış/skew savunması.
+## DEVİR O19 → O20 (12 Eki) — P5.4 BİTTİ (yerelde) · PUSH YOK · Cowork kabulü bekler
+Kod `43a260d` + belge `aed4169` (taban `a5e3dab` = origin, loose ref). `not` bayat defterde H20'nin taze kümesi (`_h20_taze`, tek yol; yalnız damgasız ADAY belirteç VARKEN); çıkarılamazsa `_damga_taze_yok`; `_damga_bilinmez` `damga`+`yok` kararını çevirir (K3 de beyan eder). Harness 207 sabotaj / 0 çapa bozuk (M-N1..11; M-G12/M-U12 ölü dal kaldırıldı; M-U33/U34 H20 yedek yolu vektörüyle geri; M-U9 → (f)'ye K3 COKLU).
+**Tam tur (`_olcum\p54_tur\ci_son.log`, aed4169):** 73 OK / 9 bilinen KIRMIZI / 2 SKIP (P5.3 turuyla aynı küme) · `adres_mutanti` 207 OK (2653 s) · `sabotaj.py` 67 kapsamlı / 0 kapsamsız · `karmasiklik` 7/9/99/30 DEĞİŞMEDİ.
+**Bağımsız inceleme 3 GERÇEK bulgu verdi, düzeltildi:** tek tanımlı ad + bozuk dosya `COZULEMEDI`'ye düşüyordu · M-U33 ölü dal DEĞİLDİ (H20 `.git`siz yedek yol) · "adaysız etkilenmez" kodla tutmuyordu (`not tum` yerine `aday`). Ders: ölü dal iddiası ÖLÇÜLMEDEN sabotaj silinmez.
+**Sınır (README 18b):** yedek yolda `not` kesin pozitifleri de düşürür (H20 korur) · H20 DAMGASIZ/COKLU sayımı defter indeksinden · yalnız damgalı belirteçli `not` bayat defterle eski hüküm verir · tüm aday dosyalar silinmişse `COZULEMEDI`.
+**ÖLÇÜLEMEDİ:** README fxa süreleri `aday` koşulu sonrası yeniden ölçülmedi · Linux/macOS (CI #129: Onur push edince `total_count` ile sayfala).
+**İlk iş:** Onur push → CI → Cowork kabulü; liste KAPALI, yeni madde Onur kilidi. **Uyarı:** `\n` ters bölü tuzağı bu oturumda da ısırdı (yama Write ile dosyaya).
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **25 Ağu yazısı** KAPSAM DIŞI · **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
