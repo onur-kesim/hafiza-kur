@@ -10756,10 +10756,10 @@ def cmd_adres(a):
 # Belirtec tanimi H18'in `_atif_cikar` kurallariyla AYNI (`_ATIF_BT`/`_ATIF_TANIM`/`_ATIF_YOL`): ikinci kopya yazilmaz. TEK fark (K5):
 # dil sabitleri listesi (`_DAMGA_SABIT`) yalniz bu blokta uygulanir, H18'i ETKILEMEZ.
 # P5.2 BIRLESIK DAMGA: bir AD 2.._BIRLESIK_TAVAN tanima cozulurse iz = sha256("\n".join(sorted(tek tek govde izleri)))[:8] (yol GIRMEZ);
-# TEK tanimda iz o tanimin kendi izidir (K1 ile geri uyumlu); tavan asilirsa damga YOK (COKLU). K1/K3 defter kumesini, H20 (P5.3) bayat
-# defterde BELLEKTE tazelenmis kumeyi kullanir (`_h20_taze`).
+# TEK tanimda iz o tanimin kendi izidir (K1 ile geri uyumlu); tavan asilirsa damga YOK (COKLU). H20 (P5.3) ve `not` K1/K3 (P5.4) bayat
+# defterde BELLEKTE tazelenmis AYNI kumeyi kullanir (`_h20_taze`; ikinci bayatlik/cikarim yolu YOK).
 # Bilinen sinirlar: ANLAM olculmez (yalniz "dayandigi kod degisti" soylenir) · ad -> dosya eslemesi ADRES.tsv'den gelir (defter
-# bayatsa K1/K3'te tasinmis sembol bulunamaz: DEFTER_BAYAT, yeni dosyada eklenen tanim gorunmez; H20 bayat defteri BELLEKTE tazeler, P5.3;
+# bayatsa taze kume BELLEKTE cikarilir (H20 P5.3, `not` K1/K3 P5.4; aday belirtec yoksa `not` defteri aynen kullanir);
 # satir -> sembol eslemesi (`yol:N`) dosyanin CANLI cikarimindan yapilir) · yol:N
 # damgasi N. satiri kapsayan EN DAR tanimindir · birlesik izde HANGI tanimin degistigi soylenmez · sinif + kurucu ayni kumeye girer.
 
@@ -11005,6 +11005,26 @@ def _damga_notlari(aday, sonekli, karar, tam=True):
     return notlar
 
 
+def _damga_taze_yok(aday, sonekli, durum, sebep):
+    """P5.4: H20'nin taze kumesi cikarilamadi (`_h20_taze`: tavan / olcum arizasi / evren farki / cikarici kusuru) -> EKSIK kumeden damga ve
+    dogusta-bayat hukmu ASLA verilmez: her aday `ATIF OLCULEMEDI: <ad> (DEFTER_BAYAT)`, K3 tek `OLCULEMEDI` satiri, sebep `ATIF NOT`ta."""
+    notlar = ["ATIF OLCULEMEDI: %s (DEFTER_BAYAT)" % m for m, _t in aday]
+    notlar += ["ATIF OLCULEMEDI: %s (bitisik sonek - damgalanmadi)" % m for m in sonekli]
+    notlar.append("ATIF NOT: taze aday kumesi cikarilamadi (%s: %s) - eksik kumeden damga/dogusta bayat VERILMEZ; hafiza.py adres --kur"
+                  % (durum, sebep))
+    notlar.append("DOGUSTA BAYAT: OLCULEMEDI (DEFTER_BAYAT: taze aday kumesi cikarilamadi)")
+    return notlar
+
+
+def _damga_bilinmez(kok, indeks, karar, onbellek):
+    """P5.4: taze kumede cikarilamayan (BILINMEZ) dosya adi SOZCUK olarak iceriyorsa o adin kumesi EKSIK olabilir: damga YOK (`OLCULEMEDI
+    (DEFTER_BAYAT)`; K3 de hukum vermez). Adi icermeyen dosya hukmu DEGISTIRMEZ (H20'nin `_h20_gizli`si: ikinci kod yolu yok)."""
+    if indeks[5]:
+        for (m, t), k in list(karar.items()):
+            if t == "ad" and k[0] in ("damga", "yok") and _h20_gizli(kok, indeks, m, onbellek):
+                karar[(m, t)] = ("olculemedi", "DEFTER_BAYAT", 0)
+
+
 def _damga_uygula_ic(kok, y, govde):
     L = govde.split("\n")
     ic = _damga_cit_ici(L)
@@ -11018,8 +11038,14 @@ def _damga_uygula_ic(kok, y, govde):
     if durum != "tamam":
         return govde, (["ATIF OLCULEMEDI: " + indeks] if aday or sonekli else [])
     onbellek = {}
+    if aday:        # P5.4: taze kume yalniz damgasiz ADAY belirtec VARKEN (aday yoksa `not` bayt-bayt ve sure olarak eski)
+        durum, indeks = _h20_taze(kok, indeks, onbellek)   # bayat defterde H20'nin BELLEKTEKI taze kumesi (ikinci yol YOK)
+        if durum != "tamam":
+            return govde, _damga_taze_yok(aday, sonekli, durum, indeks)
     cozum = dict(((m, t), _damga_coz(kok, indeks, onbellek, m, t)) for m, t in tum)
     karar = dict(((m, t), _damga_karar(kok, cozum[(m, t)], onbellek)) for m, t in tum)
+    if aday:
+        _damga_bilinmez(kok, indeks, karar, onbellek)
     _damga_ekle(L, jetonlar, karar)
     sembol, coklu, bayat = _dogus_girdi(cozum, karar)
     return "\n".join(L), _damga_notlari(aday, sonekli, karar, indeks[2]) + _dogus_guvenli(kok, sembol, onbellek, coklu, bayat)
@@ -11112,7 +11138,7 @@ def _h20_sinif(kok, indeks, onbellek, m, t):
 # `ayni`/`SEMBOL YOK` `OLCULEMEDI [DEFTER_BAYAT|DEFTER_BAYATLIK|DEFTER_EKSIK]` olur. Cikarilamayan YENI/degisen dosya (sozdizimi, ikili,
 # buyuk, link) `tam kapsam`i bozar, satirlari `--kur` gibi DUSER ve adi sozcuk olarak ICEREN dosyada `ayni` `OLCULEMEDI [DEFTER_ATLANDI]`
 # olur. Defter ATLANDI dosya tasirken yeni okunamayan dosya AYIRT EDILEMEZ (sayi tutmaz): hukum DEGISMEZ (P5.2 sinirinin aynisi).
-# K1 (`not`) ve K3 DEGISMEZ (`not` her cagrida agaci karmalamaz: maliyet); DAMGASIZ/COKLU sayimlari her zaman defter indeksindendir.
+# `not` K1/K3 (P5.4) AYNI taze kumeyi yalniz damgasiz ADAY belirtec VARKEN cikarir; DAMGASIZ/COKLU sayimlari her zaman defter indeksindendir.
 _H20_TAZE_TAVAN = 100                     # bayat defterde bellekte yeniden cikarilacak EN COK dosya
 _H20_TAZE_BAYT = 8 * 1024 * 1024          # ... ve bu dosyalarin toplam boyutu (deterministik maliyet siniri)
 
@@ -11182,8 +11208,9 @@ def _h20_bugun(kok, ozet):
 
 
 def _h20_taze(kok, indeks, onbellek):
-    """H20 icin TAZE indeks -> ('tamam', indeks) [defter guncel: AYNEN; bayat: bellekte yenilenmis] · ('kusur', sebep) [cikarici kusuru] ·
-    ('bayat', sebep) [tavan asildi] · ('bayatlik', sebep) [olcum arizasi, defter kaynagi uyusmuyor: SystemExit dahil HER istisna]."""
+    """H20 ve `not` (K1 damga + K3 dogusta bayat, P5.4: TEK yol) icin TAZE indeks -> ('tamam', indeks) [defter guncel: AYNEN; bayat:
+    bellekte yenilenmis] · ('kusur', sebep) [cikarici kusuru] · ('bayat', sebep) [tavan asildi] · ('bayatlik', sebep) [olcum arizasi,
+    defter kaynagi uyusmuyor: SystemExit dahil HER istisna]."""
     try:
         bugun, _i, _n, bayat, kod, kaynak = _h20_bugun(kok, indeks[3])
         if not bayat:
@@ -11461,7 +11488,7 @@ def _dogus_girdi(cozum, karar):
     sembol, coklu, bayat = [], [], []
     for (m, t), c in sorted(cozum.items()):
         k = karar.get((m, t), ("", None, 0))
-        if c[0] in ("tek", "birlesik") and k[0] == "olculemedi" and k[1] == "DEFTER_BAYAT":
+        if (c[0] in ("tek", "birlesik") or (c[0] == "yok" and t == "ad")) and k[0] == "olculemedi" and k[1] == "DEFTER_BAYAT":
             bayat.append(m)
         elif c[0] in ("tek", "birlesik") and k[0] == "coklu" and t == "ad":
             coklu.append(m)
