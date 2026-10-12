@@ -1022,6 +1022,8 @@ def _kp_gruplar(kok):
     blok = BLOK_KARAR.search(_canli_devral(kok))
     out, kur = {}, None
     for x in (blok.group(2) if blok else "").splitlines():
+        if x.startswith(("KARAR KAYNAKLARI (", "KARAR KAYNAGI:", "KARAR DEFTERI:")):
+            kur = None                              # P4: kaynak/defter bolumu P1 sinif grubuna AIT DEGIL
         for sinif, on in KP_BASLIK:
             if x.startswith(on):
                 out[sinif] = (x, [])
@@ -1115,6 +1117,87 @@ def kp_kirp(motor, taban):
     return b
 
 
+# ---- P4 KALEM 1: karar KAYNAK KESFI (kok desenleri + docs/decisions; tavan 200) -------------------------------------
+def _pk_govde(kok):
+    blok = BLOK_KARAR.search(_canli_devral(kok))
+    return blok.group(2) if blok else ""
+
+
+def _pk_dosyalar(ek=None):
+    d = {"IS-EMRI-x.md": "# Is emri x\n", "Is-Emri-Mixed.md": "# Karisik harf\n", "GOREV-b.MD": "# Buyuk uzanti\n",
+         "GOREV-a.md": "# Gorev a\n", "RFC-1.md": "# RFC bir\n", "DECISION.md": "# Karar\n", "ADR-9.md": "# ADR dokuz\n",
+         "notlar/IS-EMRI-y.md": "# kok disi\n", "IS-EMRI-z.txt": "metin\n", "IS_EMRI_alt.md": "# alt cizgi\n",
+         "README.md": "# Proje\n", "IS-EMRI-dizin.md/ic.txt": "dizin\n",
+         "docs/decisions/serbest-ad.md": "# Serbest ad\n", "docs/decisions/x.txt": "metin\n"}
+    d.update(ek or {})
+    return d
+
+
+def pk_kaynak(motor, taban):
+    """PKVAR (kokte desenli dosya kaynakta VAR) · PKCASE (harf duyarsiz: `Is-Emri-Mixed.md`, `GOREV-b.MD`) · PKYOK (kok disi `notlar/`,
+    `IS_EMRI_alt.md`, `README.md`) · PKUZANTI (`.txt` kaynak degil) · PKDIZIN (`IS-EMRI-dizin.md/` DIZINI kaynak degil) · PKDOCS
+    (`docs/decisions/*.md` kaynakta VAR) · devral SONRASI derle de ayni kaynaklari yazar + kapi/kapi --siki YESIL + dosyalara DOKUNULMAZ."""
+    b = []
+    kok = os.path.join(taban, "pk_k")
+    dosyalar = _pk_dosyalar()
+    rc, c = hal_yol(motor, kok, dosyalar, DURUM_BOLUMLU)
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    sha0 = {ad: hashlib.sha256(ic.encode("utf-8")).hexdigest() for ad, ic in dosyalar.items()}
+    govde = _pk_govde(kok)
+    for v, et in (("IS-EMRI-x.md [IS-EMRI]", "PKVAR"), ("GOREV-a.md [GOREV]", "PKVAR"), ("RFC-1.md [RFC]", "PKVAR"),
+                  ("DECISION.md [DECISION]", "PKVAR"), ("ADR-9.md [ADR]", "PKVAR"),
+                  ("Is-Emri-Mixed.md [IS-EMRI]", "PKCASE"), ("GOREV-b.MD [GOREV]", "PKCASE"),
+                  ("docs/decisions/serbest-ad.md [DECISION]", "PKDOCS")):
+        if "- kaynak: " + v not in govde:
+            b.append((et, "kaynak satiri YOK: %r (blok: %r)" % (v, govde[:240])))
+    for y, et in (("notlar/IS-EMRI-y.md", "PKYOK"), ("IS_EMRI_alt.md", "PKYOK"), ("README.md", "PKYOK"),
+                  ("IS-EMRI-z.txt", "PKUZANTI"), ("docs/decisions/x.txt", "PKUZANTI"), ("IS-EMRI-dizin.md", "PKDIZIN")):
+        if y in govde:
+            b.append((et, "kaynak OLMAYAN dosya blokta: %r" % y))
+    _commit(kok, "devral")
+    b += _kapilar_yesil(motor, kok)
+    rc, c = notdemle(motor, kok, "sonraki-adim")
+    govde2 = _pk_govde(kok)
+    if rc != 0 or "- kaynak: IS-EMRI-x.md [IS-EMRI]" not in govde2 or "- kaynak: docs/decisions/serbest-ad.md [DECISION]" not in govde2:
+        b.append(("PKVAR", "devral SONRASI derle kaynaklari yazmadi (exit=%s): %r" % (rc, govde2[:200])))
+    sha1 = {ad: hashlib.sha256(io.open(os.path.join(kok, *ad.split("/")), "rb").read()).hexdigest() for ad in dosyalar
+            if os.path.isfile(os.path.join(kok, *ad.split("/")))}
+    if sha1 != {a: h for a, h in sha0.items() if a in sha1}:
+        b.append(("PKDOKUNMA", "kaynak dosyalari DEGISTI (devral/derle projenin kendi dosyasina dokunmamali)"))
+    return b
+
+
+def _pk_tavan_dosyalar(n):
+    return {"GOREV-%03d.md" % i: "# Gorev %d\n" % i for i in range(n)}
+
+
+def pk_tavan(motor, taban):
+    """PKSINIR: TAM 200 kaynak -> tavan satiri YOK, 200 kaynak satiri · PKTAVAN: 201 -> `KARAR KAYNAGI: 201 dosya, 200 tarandi` ·
+    PKKIRP: 201 dosyada listelenen kaynak satiri TAM 200 (sirali ilk 200; sonuncusu listelenmez)."""
+    b = []
+    k200 = os.path.join(taban, "pk_t200")
+    rc, c = hal_yol(motor, k200, _pk_tavan_dosyalar(200), DURUM_BOLUMLU)
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    g = _pk_govde(k200)
+    if "KARAR KAYNAGI:" in g:
+        b.append(("PKSINIR", "TAM 200 kaynakta tavan satiri YAZILMIS (tavan ASILMADI)"))
+    if len([x for x in g.splitlines() if x.startswith("- kaynak: ")]) != 200:
+        b.append(("PKSINIR", "200 kaynak icin 200 kaynak satiri beklenir"))
+    k201 = os.path.join(taban, "pk_t201")
+    rc, c = hal_yol(motor, k201, _pk_tavan_dosyalar(201), DURUM_BOLUMLU)
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    g = _pk_govde(k201)
+    if "KARAR KAYNAGI: 201 dosya, 200 tarandi" not in g.splitlines():
+        b.append(("PKTAVAN", "201 kaynakta `KARAR KAYNAGI: 201 dosya, 200 tarandi` YOK: %r" % g[-160:]))
+    ks = [x for x in g.splitlines() if x.startswith("- kaynak: ")]
+    if len(ks) != 200 or "- kaynak: GOREV-200.md [GOREV]" in ks:
+        b.append(("PKKIRP", "201 kaynakta listelenen satir %d (beklenen 200, sonuncusu GOREV-200 listelenmez)" % len(ks)))
+    return b
+
+
 def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
     """K-SATIR + K-YOL + K-DURUM + K-GECIS + K-ISARET kollari (ya da `yalniz` verilen KOL adlari) -> [(etiket, mesaj)]."""
     kollar = (("K-SATIR", "dongu", lambda: ks_dongu(motor, taban, tag + "d")),
@@ -1139,7 +1222,9 @@ def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
               ("P1", "ptr", lambda: kp_tr(motor, os.path.join(taban, tag + "p3"))),
               ("P1", "psuphe", lambda: kp_suphe(motor, os.path.join(taban, tag + "p4"))),
               ("P1", "psifir", lambda: kp_sifir(motor, os.path.join(taban, tag + "p5"))),
-              ("P1", "pkirp", lambda: kp_kirp(motor, os.path.join(taban, tag + "p6"))))
+              ("P1", "pkirp", lambda: kp_kirp(motor, os.path.join(taban, tag + "p6"))),
+              ("P4", "pkaynak", lambda: pk_kaynak(motor, os.path.join(taban, tag + "k1"))),
+              ("P4", "ptavan", lambda: pk_tavan(motor, os.path.join(taban, tag + "k2"))))
     b = []
     for grup, ad, kol in kollar:
         if yalniz is None or ad in yalniz:
@@ -1207,7 +1292,8 @@ KS_SABOTAJLAR = (
      "    rc.update(_devral_karar_rc(karar_dizini))   # K-YOL: ADR'siz projede BOS -> .hafizarc bayt-bayt eskisi\n",
      '    pass      # MUTANT\n', ("yadr",)),
     ("M-Y4 silinen dizinde blok SESSIZCE kalir", 'YKAYIP',
-     '    govde = _karar_blok_govdesi(y, kd) if kd else None\n    if govde is not None:\n',
+     '    govde = _karar_blok_govdesi(y, _karar_dizini_rc(rc))\n    if govde is not None:\n',
+     '    kd = _karar_dizini_rc(rc)\n'
      '    govde = _karar_blok_govdesi(y, kd) if (kd and os.path.isdir(os.path.join(y.kok, *kd.split("/")))) '
      'else None      # MUTANT\n    if govde is not None:\n', ("yadr",)),
     ("M-Y5 devral ozet satiri basilmaz", 'YOZET',
@@ -1322,6 +1408,42 @@ KS_SABOTAJLAR = (
     ("M-P1g kirpma GECERLI'den baslar (butce sondan)", 'PKIRP',
      '    for sinif, baslik in _KARAR_GRUPLAR:\n        g = [s for s, c in girdiler if c == sinif]\n',
      '    for sinif, baslik in reversed(_KARAR_GRUPLAR):      # MUTANT\n        g = [s for s, c in girdiler if c == sinif]\n', ('pkirp',)),
+    ("M-K1 desen listesinden `IS-EMRI-*` duser (kokteki is emirleri kaynakta GORUNMEZ)", 'PKVAR',
+     '_KARAR_KOK_DESEN = re.compile(r"^(?:IS-EMRI-.+|GOREV-.+|RFC-.+|DECISION.*|ADR-.+)\\.md$", re.I)\n',
+     '_KARAR_KOK_DESEN = re.compile(r"^(?:GOREV-.+|RFC-.+|DECISION.*|ADR-.+)\\.md$", re.I)      # MUTANT\n', ('pkaynak',)),
+    ("M-K2 kok DISI dosyalar da taranir (`notlar/IS-EMRI-y.md` kaynaga girer)", 'PKYOK',
+     '    try:\n        adlar = os.listdir(kok)\n    except OSError:\n        adlar = []\n    for ad in adlar:\n'
+     '        if _KARAR_KOK_DESEN.match(ad) and duzenli_dosya(os.path.join(kok, ad)):\n'
+     '            out.append((ad, next(t for on, t in _KARAR_KOK_TUR if ad.upper().startswith(on))))\n',
+     '    adlar = [os.path.relpath(os.path.join(a, f), kok).replace(os.sep, "/") for a, _d, fs in os.walk(kok)\n'
+     '             if ".git" not in a.split(os.sep) for f in fs]      # MUTANT\n    for ad in adlar:\n'
+     '        if _KARAR_KOK_DESEN.match(os.path.basename(ad)) and duzenli_dosya(os.path.join(kok, ad)):\n'
+     '            out.append((ad, next((t for on, t in _KARAR_KOK_TUR if os.path.basename(ad).upper().startswith(on)), "")))\n',
+     ('pkaynak',)),
+    ("M-K3 `docs/decisions/` taranmaz", 'PKDOCS',
+     '    rel = _karar_dizin_coz(kok, _KARAR_EK_DIZIN)\n    if rel and not kok_disina_mi(',
+     '    rel = None      # MUTANT\n    if rel and not kok_disina_mi(', ('pkaynak',)),
+    ("M-K4 desen eslemesi harf DUYARLI (`Is-Emri-Mixed.md`, `GOREV-b.MD` kaybolur)", 'PKCASE',
+     '_KARAR_KOK_DESEN = re.compile(r"^(?:IS-EMRI-.+|GOREV-.+|RFC-.+|DECISION.*|ADR-.+)\\.md$", re.I)\n',
+     '_KARAR_KOK_DESEN = re.compile(r"^(?:IS-EMRI-.+|GOREV-.+|RFC-.+|DECISION.*|ADR-.+)\\.md$")      # MUTANT\n', ('pkaynak',)),
+    ("M-K5 kokte `.md` uzanti siniri YOK (`IS-EMRI-z.txt` kaynak olur)", 'PKUZANTI',
+     '_KARAR_KOK_DESEN = re.compile(r"^(?:IS-EMRI-.+|GOREV-.+|RFC-.+|DECISION.*|ADR-.+)\\.md$", re.I)\n',
+     '_KARAR_KOK_DESEN = re.compile(r"^(?:IS-EMRI-.+|GOREV-.+|RFC-.+|DECISION.*|ADR-.+)$", re.I)      # MUTANT\n', ('pkaynak',)),
+    ("M-K6 `docs/decisions/` icinde `.md` siniri YOK (`x.txt` kaynak olur)", 'PKUZANTI',
+     '                    if x.lower().endswith(".md") and duzenli_dosya(os.path.join(d, x))]\n',
+     '                    if duzenli_dosya(os.path.join(d, x))]      # MUTANT\n', ('pkaynak',)),
+    ("M-K7 `.md` adli DIZIN da kaynak (duzenli dosya siniri YOK)", 'PKDIZIN',
+     '        if _KARAR_KOK_DESEN.match(ad) and duzenli_dosya(os.path.join(kok, ad)):\n',
+     '        if _KARAR_KOK_DESEN.match(ad):      # MUTANT\n', ('pkaynak',)),
+    ("M-K8 tavan satiri YAZILMAZ (201 kaynak sessizce kirpilir)", 'PKTAVAN',
+     '    if toplam > _KARAR_KAYNAK_TAVAN:\n        out.append(',
+     '    if False:      # MUTANT\n        out.append(', ('ptavan',)),
+    ("M-K9 tavan kirpmasi YOK (201 kaynak satiri listelenir)", 'PKKIRP',
+     '    return tum[:_KARAR_KAYNAK_TAVAN], len(tum)\n',
+     '    return tum, len(tum)      # MUTANT\n', ('ptavan',)),
+    ("M-K10 tavan siniri `>=` (TAM 200 kaynakta tavan satiri YAZILIR)", 'PKSINIR',
+     '    if toplam > _KARAR_KAYNAK_TAVAN:\n        out.append(',
+     '    if toplam >= _KARAR_KAYNAK_TAVAN:      # MUTANT\n        out.append(', ('ptavan',)),
 )
 
 
@@ -1512,8 +1634,8 @@ def main():
         if kacan:
             print("SONUC: KAPI KOR — %s beklendigi gibi olculmedi." % ", ".join(kacan))
             return 1
-        print("SONUC: YESIL — uc kol + yedi K-SATIR + yedi K-YOL + bir K-DURUM + bir K-GECIS + bir K-ISARET kolu temiz, uc mutant + %d "
-              "K-SATIR/K-YOL/K-DURUM/K-GECIS/K-ISARET sabotaji AYRI eksende ISIRDI." % len(KS_SABOTAJLAR))
+        print("SONUC: YESIL — uc kol + yedi K-SATIR + yedi K-YOL + bir K-DURUM + bir K-GECIS + bir K-ISARET + P1 + P4 kollari temiz, uc mutant + %d "
+              "K-SATIR/K-YOL/K-DURUM/K-GECIS/K-ISARET/P1/P4 sabotaji AYRI eksende ISIRDI." % len(KS_SABOTAJLAR))
         return 0
     finally:
         _sil(taban)

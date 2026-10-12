@@ -5766,8 +5766,7 @@ def _derle_motor_bloklari(y, rc, L, ertele, eklenen):
     _n, kayma, _olc = _atif_tara(y.kok, L)
     L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _ATIF_KONU, _ATIF_KONU_ACIKLAMA,
                             _atif_blok_govdesi(kayma))
-    kd = _karar_dizini_rc(rc)
-    govde = _karar_blok_govdesi(y, kd) if kd else None
+    govde = _karar_blok_govdesi(y, _karar_dizini_rc(rc))
     if govde is not None:
         _karar_sinif_yaz()
         L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _KARAR_KONU, _KARAR_KONU_ACIKLAMA, govde)
@@ -6030,21 +6029,82 @@ def _karar_satirlari(kok, rel, adlar):
     return out
 
 
+# KALEM P4-1 (besli-paket/IS_EMRI_P4_KARAR_ADRES_DEFTERI.md, 12 Eki 2026, Onur kilidi "karar adres defteri"). OLCULDU
+# (Momentum d4b5417): kokte 24 `IS-EMRI-*` var, karar kaynagi gostermiyordu (kor okuma R1/R4'un kaynagi bunlar). Karar
+# kaynagi = karar dizini (bugunku kural) + kok dizinde SABIT desenli `.md` (README'de ACIK) + `docs/decisions/*.md`.
+# IKINCI blok YOK: ayni `karar-kaynagi` blogu genisler. Tavan 200 dosya (sirali ilk 200; kirpilan SAYILIR). Dosyalara DOKUNULMAZ.
+_KARAR_KOK_DESEN = re.compile(r"^(?:IS-EMRI-.+|GOREV-.+|RFC-.+|DECISION.*|ADR-.+)\.md$", re.I)
+_KARAR_KOK_TUR = (("IS-EMRI-", "IS-EMRI"), ("GOREV-", "GOREV"), ("RFC-", "RFC"), ("DECISION", "DECISION"), ("ADR-", "ADR"))
+_KARAR_KAYNAK_TAVAN = 200
+_KARAR_EK_DIZIN = "docs/decisions"
+
+
+def _karar_kok_ekleri(kok):
+    """[(rel, tur)] — kok dizindeki desenli `.md` duzenli dosyalar + `docs/decisions/` altindaki TUM `.md` (ust dizin duyarsiz
+    aranir, proje DISINA bagli dizin OKUNMAZ). Sirasiz; tekilleme/siralama `_karar_kaynaklari`nda."""
+    out = []
+    try:
+        adlar = os.listdir(kok)
+    except OSError:
+        adlar = []
+    for ad in adlar:
+        if _KARAR_KOK_DESEN.match(ad) and duzenli_dosya(os.path.join(kok, ad)):
+            out.append((ad, next(t for on, t in _KARAR_KOK_TUR if ad.upper().startswith(on))))
+    rel = _karar_dizin_coz(kok, _KARAR_EK_DIZIN)
+    if rel and not kok_disina_mi(kok, os.path.join(kok, *rel.split("/"))):
+        d = os.path.join(kok, *rel.split("/"))
+        try:
+            out += [(rel + "/" + x, "DECISION") for x in os.listdir(d)
+                    if x.lower().endswith(".md") and duzenli_dosya(os.path.join(d, x))]
+        except OSError:
+            pass
+    return out
+
+
+def _karar_kaynaklari(kok, kd_adlar, kd):
+    """-> ([(rel, tur)] SIRALI ilk TAVAN, toplam). Karar dizini dosyalari `ADR` (bugunku kural) + `_karar_kok_ekleri`;
+    ayni yol tek kez (karar dizini kazanir); sira `rel` kucuk harf, sonra rel."""
+    sozluk = {}
+    for rel, tur in _karar_kok_ekleri(kok):
+        sozluk.setdefault(rel, tur)
+    for ad in kd_adlar:
+        sozluk[kd + "/" + ad] = "ADR"
+    tum = sorted(sozluk.items(), key=lambda x: (x[0].lower(), x[0]))
+    return tum[:_KARAR_KAYNAK_TAVAN], len(tum)
+
+
+def _karar_ek_satirlari(kok, kd, kd_adlar):
+    """Blok govdesine eklenen KAYNAK satirlari: karar dizini DISINDAKI kaynaklar (karar dizini dosyalari P1 gruplarinda
+    zaten) + (tavan asildiysa) `KARAR KAYNAGI: n dosya, 200 tarandi`. Ek kaynak yoksa [] (blok bayt-bayt eskisi)."""
+    liste, toplam = _karar_kaynaklari(kok, kd_adlar, kd)
+    ek = [(r, t) for r, t in liste if not (kd and r.startswith(kd + "/") and t == "ADR")]
+    if not ek and toplam <= _KARAR_KAYNAK_TAVAN:
+        return []
+    out = ["KARAR KAYNAKLARI (%d) - kok desenleri + docs/decisions (dosyalara dokunulmaz):" % len(ek)] if ek else []
+    out += ["- kaynak: %s [%s]" % (r.replace("`", "'"), t) for r, t in ek]
+    if toplam > _KARAR_KAYNAK_TAVAN:
+        out.append("KARAR KAYNAGI: %d dosya, %d tarandi" % (toplam, _KARAR_KAYNAK_TAVAN))
+    return out
+
+
 def _karar_blok_govdesi(y, kd):
     """Blok govdesi (liste) ya da None (kayitli yol proje DISINA bagli: bloga DOKUNMA). Dizin YOKSA blok
     'YOK (kayitli: ...)' der — sessizce DUSMEZ. Motorun kendi karar dizini (ADR'li ise) AYNI gruplara girer
     (ayni sozluk). ADR satirlari dort SINIF grubunda (P1)."""
     _KARAR_SINIF_SON[0] = None
-    yol = os.path.join(y.kok, *kd.split("/"))
-    if kok_disina_mi(y.kok, yol):
+    yol = os.path.join(y.kok, *kd.split("/")) if kd else ""
+    if yol and kok_disina_mi(y.kok, yol):
         return None
+    adlar = _karar_adlari(y.kok, kd) if kd and os.path.isdir(yol) else []
+    ek = _karar_ek_satirlari(y.kok, kd, adlar)
+    if not kd and not ek:
+        return None                       # karar dizini YOK ve ek kaynak YOK: blok yok (bugunku davranis)
     g = ["> Motor (devral/derle) uretti: projenin KENDI karar kayitlari asagidaki dizindedir; dosyalara "
          "dokunulmaz, tasinmaz, kopyalanmaz. Hangisinin otorite oldugunu motor KARARLASTIRMAZ."]
     girdi = []
-    if not os.path.isdir(yol):
+    if kd and not os.path.isdir(yol):
         g.append("- karar dizini: YOK (kayitli: %s)" % kd)
-    else:
-        adlar = _karar_adlari(y.kok, kd)
+    elif kd:
         g.append("- karar dizini: %s (%d dosya%s)"
                  % (kd, len(adlar), "" if adlar else " — NNNN-*.md / ADR-*.md desenli dosya yok"))
         girdi = _karar_satirlari(y.kok, kd, adlar)
@@ -6058,14 +6118,13 @@ def _karar_blok_govdesi(y, kd):
     if girdi:
         satirlar_, _KARAR_SINIF_SON[0] = _karar_gruplari(girdi)
         g += satirlar_
-    return g
+    return g + ek
 
 
 def _devral_karar_blogu(y, rc, canli_p):
     """`cmd_devral`in TEK cagri noktasi (dal eklemez). Cipa'dan ONCE: blok devir tabanina girer (beyan
     gerekmez); sonraki degisimler `derle` log-compaction yoluyla muhasebelenir."""
-    kd = _karar_dizini_rc(rc)
-    govde = _karar_blok_govdesi(y, kd) if kd else None
+    govde = _karar_blok_govdesi(y, _karar_dizini_rc(rc))
     if govde is None:
         return
     _karar_sinif_yaz()
@@ -6078,7 +6137,7 @@ def _devral_karar_blogu(y, rc, canli_p):
 def _devral_karar_konusu(y, rc):
     """`karar-kaynagi` konusunu KONULAR.md'ye ekler (H10 sozluk kapisi motorun kendi blogunu reddetmesin).
     DEVIR halkasindan ONCE cagrilir: politika dosyasi o halkanin yukune girer (ayri halka gerekmez)."""
-    if (_karar_dizini_rc(rc) and os.path.isfile(y.konular)
+    if ((_karar_dizini_rc(rc) or _karar_kok_ekleri(y.kok)) and os.path.isfile(y.konular)
             and not re.search(r"^\|\s*%s\s*\|" % _KARAR_KONU, oku(y.konular), re.M)):
         yaz(y.konular, oku(y.konular).rstrip("\n") + "\n| %s | %s |\n" % (_KARAR_KONU, _KARAR_KONU_ACIKLAMA))
 
