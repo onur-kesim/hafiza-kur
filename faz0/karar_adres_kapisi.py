@@ -89,11 +89,17 @@ def fixture():
           4: "**Kilit K-o89/1 [Onur, 5 Eyl]:** A sikki — uyelik aninda resync borcu.",
           5: "**Kilit K-o89/2 [Cowork olcumu, ayni gun]:** borcun BICIMI tuketilen bayrak DEGIL,",
           7: "Gerekcesi §2.3'te; tuketilen bayrak coklu cihazda sessiz kaybediyordu.",
-          51: '### 2.3 Neden "tuketilen bayrak" DEGIL', 52: "Bayrak bir kez true donup temizlenseydi: ayni kullanicinin IKINCI cihazi"}
-    return {"IS-EMRI-o83-kimlik.md": _dosya(r1, 50), "docs/ADR/0002-senkron-mekanigi.md": _dosya(r2, 200),
-            "docs/ADR/0004-web-capraz-koken-izolasyonu.md": _dosya(r3, 140), "IS-EMRI-o86-D.md": _dosya(r4, 60),
-            "DURUM.md": "# DURUM\n\n## GUNCEL DURUM\n- durum\n\n## SABIT CERCEVE\n- ders 1\n\n## ARSIV DIZINI\n",
-            "CLAUDE.md": "# kural evi\n- kural\n"}
+          33: "### 1.2 NEDEN — onceki bayrak", 51: '### 2.3 Neden "tuketilen bayrak" DEGIL',
+          52: "Bayrak bir kez true donup temizlenseydi: ayni kullanicinin IKINCI cihazi"}
+    d = {"IS-EMRI-o83-kimlik.md": _dosya(r1, 50), "docs/ADR/0002-senkron-mekanigi.md": _dosya(r2, 200),
+         "docs/ADR/0004-web-capraz-koken-izolasyonu.md": _dosya(r3, 140), "IS-EMRI-o86-D.md": _dosya(r4, 60),
+         "DURUM.md": "# DURUM\n\n## GUNCEL DURUM\n- durum\n\n## SABIT CERCEVE\n- ders 1\n\n## ARSIV DIZINI\n",
+         "CLAUDE.md": "# kural evi\n- kural\n"}
+    # gercek Momentum'un gurultusu: alanli doldurma kayitlari (butce yolu kosar; altin kaynaklar siralamada ONLARIN ARASINDA)
+    for i in range(10):
+        d["IS-EMRI-o84-f%02d.md" % i] = _dosya({1: "# IS-EMRI-o84-f%02d — doldurma kaydi" % i, 3: "## Neden — doldurma %d" % i,
+                                                  5: "*Gerekçe: doldurma kaydi %d, ADRES defteri butce yolunu kosar.*" % i}, 8)
+    return d
 
 
 def _kos(motor, kok, *arglar):
@@ -124,7 +130,7 @@ def kur_ve_derle(motor, kok, dosyalar=None):
         raise Kurulamadi("devral exit=%s: %s" % (rc, c.strip().split("\n")[-1][:200]))
     _git(kok, "add", "-A")
     _git(kok, "commit", "-q", "--allow-empty", "-m", "devral")
-    _kos(motor, kok, "derle")        # `derle` yazar (fragman yoksa da blok diskten yeniden uretilir)
+    _kos(motor, kok, "derle")        # blogu `devral` yazar; `derle` fragmansizken blogu DEGISTIRMEZ (idempotans) — yine de kosulur
     with io.open(os.path.join(kok, "DURUM.md"), encoding="utf-8") as f:
         m = BLOK.search(f.read())
     return m.group(1) if m else ""
