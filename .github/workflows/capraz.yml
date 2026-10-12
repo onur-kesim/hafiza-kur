@@ -2499,7 +2499,7 @@ jobs:
       - name: bolum yoksa kapi her kosumda bulgu veriyor mu, derle exit 2 mi + H18 satir atfi kaymasi + K-YOL devral karar dizini (uc kol + yedi K-SATIR + yedi K-YOL kolu, 28 sabotaj, hukum gevsemez)
         shell: bash
         run: python faz0/guncel_durum_kapisi_mutanti.py 2>&1 | tee guncel-durum-kapisi-cikti.txt
-      - name: karar adres defteri kabul kapisi (P4 KALEM 3: 4 altin karardan >= 3'u adreslenmis mi; kapinin kendi isirigi)
+      - name: "karar adres defteri kabul kapisi (P4 KALEM 3 - 4 altin karardan >= 3 adreslenmis mi; kapinin kendi isirigi)"
         shell: bash
         run: python faz0/karar_adres_kapisi.py 2>&1 | tee karar-adres-kapisi-cikti.txt
       - name: guncel durum kapisi mutanti ciktisi (artefakt)
