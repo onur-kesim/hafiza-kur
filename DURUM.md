@@ -1,14 +1,12 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `ceb0454` = main = origin; CI #127 198/198; P5-P5.3 yerelde)
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (taban `ceb0454` = main = origin; CI #127 198/198; P5-P5.3 yerelde; P5.4 yarım)
 Son güncelleme: 11 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## SON İŞ — P5.3 bayat defterde H20 (Code O18, 11 Eki) · PUSH YOK
-Cowork P5.2 kabulü TUTTU, tek istisna: bayat defterde YENİ dosyadaki tanım H20'de `0/0` (sessiz temiz). **KALEM 7 `60c00c3`** (belge `5f5eda4`): **SEÇİM (a)** bellekte TAZE aday kümesi — `adres` ile TEK bayatlık yolu (`_adres_bugun`; `kapi` YAZMAZ), yalnız değişen/yeni dosya yeniden çıkarılır; hüküm `--kur` sonrasıyla BAYT-AYNI. **(b)** yalnız yedek (100 dosya/8 MiB, ölçüm arızası, `.git`siz kopya, çıkarıcı kusuru): pozitifler KORUNUR, `ayni`/`SEMBOL YOK` → `OLCULEMEDI [DEFTER_BAYAT|BAYATLIK|EKSIK]`. (b) tek başına OLMAZ: özet her kod değişikliğiyle bayatlar, P5-H20 çekirdek vakası bayat defterle koşar. **K1/K3 DEĞİŞMEDİ:** `not` bayat defterle eksik kümeden damgalar → H20 hemen `GOVDE DEGISTI [k+1]`.
-**17 kol / 198 sabotaj** ISIRDI (+27) · inceleme 23+28 bulgu işlendi · Momentum `4359fa8`, yeni dosyada 4. tanım: bayat = taze `[4 tanim]`.
-Çapa AYNEN (`cmd_isir` 30 · `cmd_devral` 99 · CC>20 7 · `ihlal` 9 · `cmd_kapi` 20 · `_kapi_govde` 79) · motor 11928 → 12054 satır · `altin_cikti` FARK YOK · `sabotaj` **67/67** · `kapi` fxa 9,77 → 12,01 s soğuk / 10,62 sıcak · ruff/mypy/bandit = taban · **Tam tur `5f5eda4`:** 73 OK · 9 KIRMIZI = bilinen küme · exit FARKI 0/84 · `adres_mutanti` 3300 s.
-**P5/P5.2:** `7f9407d`..`2304ea6`. **Sapmalar (Onur teyidi):** K6 değişmezi "azalmaz, yalnız `yok` kadar artar" · DAMGASIZ/COKLU yalnız numaralı madde · bayat durum `--kur`dan CESUR (diskten silinen izlenen dosya: SEMBOL YOK) ve TUTUCU (çıkarılamayan dosya): sınır 20-21.
-**Sıradaki:** Onur: Cowork kabul + 1 beyan → push → CI say. K1/K3'e aynı geçiş = KALEM 8 (maliyet kararı Onur).
-**AÇIK:** P5-P5.3 kolları macOS/py3.11/3.13'te KOŞULMADI · K1/H20 aday çıkarımı bütçesiz · Windows `subprocess` zaman aşımı torunlu git'te · M-H10c KACTI (ikisi ÖNCEDEN VAR) · Python adları NFKC
+## DEVİR O18 → O19 (12 Eki) — P5.4 YARIM: `not` bayat defterde H20'nin taze kümesi · PUSH YOK
+Taban `894693b` (P5.3; Cowork TUTTU, CI #128 198/198). İş emri `besli-paket\IS_EMRI_P5_4_NOT_TAZE_KUME.md` (Onur kilidi: H20 İLE AYNI YOL, ikinci kod yolu YOK). P5.3: SEÇİM (a) taze küme, `kapi` YAZMAZ; (b) yalnız yedek (100 dosya/8 MiB, ölçüm arızası, `.git`siz kopya, çıkarıcı kusuru).
+**YAPILDI — 5 dosya COMMIT'SİZ (`git status` M):** motor `_damga_uygula_ic` → `_h20_taze` (+`_damga_taze_yok`, `_damga_bilinmez`; CC 18; çapalar AYNEN) · harness P5-DAMGA `DAMGA-TAZE-*` (9 vektör) + M-N1..9; ölü dal sabotajları M-G12/M-U12/M-U33/M-U34 kaldırıldı, `_v_bayat` skew vektörü (203 sabotaj, çapa 0 bozuk) · README/SKILL/`capraz.yml` · **fxa `not`:** adaysız 0,34→0,33 s; adaylı 0,69→3,74 s (önbellek boş) / 0,76→1,64 s (dolu); çıktı 4 durumda AYNI.
+**YARIM:** (1) `_olcum\p54_tur\k8b_sab.log` (arka plan, ESKİ harness kopyası k8b) bitince KACTI = eşdeğer dal → kaldır/yeniden hedefle; M-U11/M-U52 skew vektörüyle ayakta mı TEKRAR koş · (2) bağımsız inceleme (diff `scratchpad\p54_diff.patch` yeniden üret) · (3) kod commit → belge commit → tam tur `ci_surucu.py` + `sabotaj.py` solo (motor DEĞİŞTİ) · (4) DURUM P5.4 bloğu · Cowork kabulü.
+**İlk iş:** `git --no-optional-locks status --porcelain` → scratchpad `anchor_say.py faz0/adres_mutanti.py skill/scripts/hafiza.py` (203 / 0 bozuk) → kopya motorla `--kol=P5-DAMGA,P5-DOGUS,P5-BIRLESIK` (~90 dk). **Uyarı:** uygulama COMMIT'SİZ, ezme · Bash heredoc'ta `\n` bozulur (Write/Edit) · `rm -rf` yasak · ölü dallar (K1 DOSYA_YOK, `_ad_cozum` kısmi kayıp, `_dogus_calisma`) yalnız yarış/skew savunması.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **25 Ağu yazısı** KAPSAM DIŞI · **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
