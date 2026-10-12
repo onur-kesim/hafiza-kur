@@ -2477,6 +2477,11 @@ jobs:
   #     K-YOL (ayni is emri): `devral` projenin karar dizinini (docs/ADR ...)
   #     bulur, canliya `karar-kaynagi` blogu + `.hafizarc`a yol yazar; YEDI kol
   #     + 16 sabotaj eklendi (toplam 28). Sure ~4 dk yerelde -> timeout 30.
+  #     P4 (besli-paket/IS_EMRI_P4_KARAR_ADRES_DEFTERI.md, 12 Eki 2026, Onur
+  #     kilidi): AYNI betige dort kol (pkaynak/ptavan/pdefter/ptavan8) + 20
+  #     sabotaj (M-K1..M-K10 kaynak kesfi, M-Z1..M-Z10 adres+alinti defteri) ve
+  #     `faz0/karar_adres_kapisi.py` (altin 4 kararin >= 3'u adreslenmis mi;
+  #     kapi kendi isirigini sinar) ayni isin icinde kosar (toplam 73 sabotaj).
   # ---------------------------------------------------------------------------
   guncel_durum_kapisi_mutanti:
     name: guncel durum kapisi mutanti (${{ matrix.os }})
@@ -2494,12 +2499,17 @@ jobs:
       - name: bolum yoksa kapi her kosumda bulgu veriyor mu, derle exit 2 mi + H18 satir atfi kaymasi + K-YOL devral karar dizini (uc kol + yedi K-SATIR + yedi K-YOL kolu, 28 sabotaj, hukum gevsemez)
         shell: bash
         run: python faz0/guncel_durum_kapisi_mutanti.py 2>&1 | tee guncel-durum-kapisi-cikti.txt
+      - name: karar adres defteri kabul kapisi (P4 KALEM 3: 4 altin karardan >= 3'u adreslenmis mi; kapinin kendi isirigi)
+        shell: bash
+        run: python faz0/karar_adres_kapisi.py 2>&1 | tee karar-adres-kapisi-cikti.txt
       - name: guncel durum kapisi mutanti ciktisi (artefakt)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: guncel-durum-kapisi-${{ matrix.os }}
-          path: guncel-durum-kapisi-cikti.txt
+          path: |
+            guncel-durum-kapisi-cikti.txt
+            karar-adres-kapisi-cikti.txt
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------

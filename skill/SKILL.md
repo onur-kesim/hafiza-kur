@@ -451,6 +451,12 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   <tam satır>` — eklemek insanındır. `kapi` aynısını **H19** olarak ölçer: kural evinde canlı defterin adı
   (dosya adı, harf duyarsız) geçmiyorsa UYARI (çıkış kodu DEĞİŞMEZ), geçiyorsa sessiz. Sınır: "ad geçiyor"
   yalnız ADI ölçer — satırın okuyucuya "önce oku" dediğini ölçmez. `AGENTS.md` YAZILMAZ.
+- **Karar adres defteri (P4, 12 Eki 2026): `karar-kaynagi` bloğu kaynak başına ADRES + BİREBİR ALINTI taşır.** Kaynak =
+  karar dizini + kökte `IS-EMRI-*`/`GOREV-*`/`RFC-*`/`DECISION*`/`ADR-*` (`.md`, harf duyarsız) + `docs/decisions/*.md` (tavan 200;
+  `KARAR KAYNAGI: n dosya, 200 tarandi`). Kayıt: `- K-<ad> · <başlık> · <tür> · durum <P1 sınıfı|BEYANSIZ>` + BULUNAN alanlar
+  (`gerekce|bedel|alternatif <yol>:<N> (<başlık>)` ya da satır içi `"<alıntı ≤160 kr>"`); alansız `GEREKCESIZ <yol>`; sonda
+  `KARAR DEFTERI: <a> ADR + <b> IS-EMRI/diger tarandi · <k> karar · <g> GEREKCESIZ`. Motor YORUM YAPMAZ, anlamı ÖLÇMEZ; blok ≤ 8 KB
+  (alanlı kayıtlar önce, sığmayan `… +n kayit`, hepsi sayılır). Commit mesajları KAPSAM DIŞI. Ayrıntı ve sınırlar: README.
 - **Taslak ≠ karar: `karar-kaynagi` bloğu ADR'leri dört sınıf grubunda verir (P1, 6 Eki 2026) —
   BİLİNÇLİ DÖNÜŞ.** K-DURUM "motor durumu YORUMLAMAZ" demişti; ölçüm (Momentum kör okuma, R1 yanlış ×2)
   etiketin okuyucuya ulaştığını ama okuyucunun taslağın içeriğini yine karar diye aktardığını gösterdi.

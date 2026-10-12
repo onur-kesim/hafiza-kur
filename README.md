@@ -544,6 +544,31 @@ işaretçisi dahil). En önemlileri:
   (Momentum, kör okuma): KARAR 2/4; okuyucu `TASLAK` etiketini görüp yine taslağı karar sandı
   (R1 yanlış ×2). Ayrıca H19 yalnız ADI ölçer: "X'i ASLA okuma" satırı kapıyı susturur.
 
+- **Karar adres defteri (P4, 12 Eki 2026, Onur kilidi: yaklaşım KARAR ADRES DEFTERİ).** Ölçüm (Momentum `d4b5417`,
+  kör okuma): karar sorularının cevabı projede YAZILIYDI, eksik olan ADRESTİ. `karar-kaynagi` bloğu (İKİNCİ blok YOK; P1 sınıf
+  hükmü ve `KARAR SINIFI` satırı AYNEN) genişler: **(1) Kaynak keşfi** = karar dizini + kökte `IS-EMRI-*` · `GOREV-*` · `RFC-*` ·
+  `DECISION*` · `ADR-*` (yalnız `.md`, harf duyarsız, alt dizin YOK; desen listesi SABİT) + `docs/decisions/*.md`; tavan 200 dosya
+  (sıralı ilk 200 + `KARAR KAYNAGI: n dosya, 200 tarandi`); `.hafizarc`ta karar dizini YOKKEN de kök desenleri taranır; dosyalara
+  DOKUNULMAZ. **(2) Kayıt:** kaynak başına `- K-<ad> · <ilk # başlık, 80 kr> · <ADR|IS-EMRI|GOREV|RFC|DECISION> · durum <P1 sınıfı |
+  BEYANSIZ>` ve yalnız BULUNAN alanlar: `gerekce|bedel|alternatif <yol>:<N> (<başlık>)` (başlıkta `Gerekçe|Neden|Rationale|Why` ·
+  `Bedel|Ödünleşim|Trade-off|Sonuçlar|Consequences|Kabul edilen` · `Alternatif|Reddedilen|Alternatives|Rejected`; Türkçe diyakritikten
+  BAĞIMSIZ) ve satır içi `<alan> <yol>:<N> "<birebir alıntı, ≤160 kr>"` (satır başında ya da vurgu içinde anahtar + `:`; kırpılırsa
+  `…` + `[kirpildi: n kr]`). Alansız kayıt `GEREKCESIZ <yol>` (SAYILIR). Blok sonu: `KARAR DEFTERI: <a> ADR + <b> IS-EMRI/diger
+  tarandi · <k> karar · <g> GEREKCESIZ`. Motor YORUM YAPMAZ: adres + diskteki metin (yalnız backtick, `](`, `kararlar/NNNN-` kalıpları
+  H4/H11 yüzünden etkisizleştirilir; ardışık boşluk tek). **Tavanlar:** TÜM blok gövdesi ≤ 8192 bayt (P1 gövdesi AYNEN kalır, kalan
+  bütçe kayıtlara); kayıt SIRASI deterministik: ALANLI kayıtlar (kaynak sırasıyla) önce, `GEREKCESIZ` olanlar sonra; sığmayan
+  `… +n kayit (listelenmedi; hepsi sayildi)`; alan başına en çok 2 başlık adresi + 1 satır içi alıntı (fazlası `+ satir daha
+  (alintilanmadi; sayildi): ...`), aynı satır iki alanda tekrar alıntılanmaz; kod çitlerinin (```/`~~~`) içi taranmaz; dosyanın ilk 1 MiB'ı.
+  **Sınırlar (gizlenmez):** anlam ÖLÇÜLMEZ — başlıkta `Neden` geçiyorsa `gerekce` der (gerçekten gerekçe olup olmadığı okuyucunun
+  işidir; ölçülmüş gürültü: "Neden bugüne kadar görünmedi:" satırı da alıntılanır) · commit mesajları KAPSAM DIŞI (Momentum'da `karar:` /
+  `decision:` satırı 0 ölçüldü) · `IS_EMRI_*` (alt çizgi), `.txt`, `notlar/IS-EMRI-y.md` (kök dışı) kaynak DEĞİLDİR · 8 KB'a sığmayan kayıt
+  listelenmez ama SAYILIR (Momentum `d4b5417`: 29 karar, 14'ü listelenir, 15'i `+15 kayit`; altın 4 karardan 3'ü adreslenir,
+  `IS-EMRI-o86-D` tavanın ötesindedir) · ham `[durum: …]` beyanı yalnız P1 gruplarındadır (kayıt satırı sınıfı taşır).
+  **Kapı:** `faz0/karar_adres_kapisi.py` (CI) — dört ALTIN karardan (kör okumanın sorduğu) en az ÜÇÜ blokta adreslenmiş olmalı
+  ("gösterir" = aynı dosyaya işaret eden adres altın aralıkta ya da aralığı içeren bölümün başlık satırı); Momentum CI'da olmadığından
+  ölçüt FIXTURE'a taşındı (dosya adı + satır konumu + biçim), `--momentum <dizin>` ham sonucu basar; kapı KENDİ ısırığını da sınar
+  (satır kayması ve `IS-EMRI-*` deseni düşmesi KIRMIZI yakmalı).
+
 - **Taslak ≠ karar: `karar-kaynagi` bloğu ADR'leri dört sınıf grubunda verir (P1, 6 Eki 2026) —
   BİLİNÇLİ DÖNÜŞ.** K-DURUM "motor durumu YORUMLAMAZ" demişti; ölçüm (Momentum kör okuma, R1 yanlış ×2)
   etiketin okuyucuya ulaştığını ama okuyucunun taslağın içeriğini yine karar diye aktardığını gösterdi.
