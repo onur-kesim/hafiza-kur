@@ -1237,7 +1237,7 @@ def _pd_dosyalar():
 def pd_defter(motor, taban):
     """PDSATIR (adres satiri DOGRU) · PDKATLA (`GEREKÇE`/`ödünleşim` diyakritikli eslesir, `Gerekce` diyakritiksiz) · PDALINTI (satir ici alinti
     DISKTEKI metin, baslik DEGIL) · PDKIRPMA (200 kr -> 160 + `…` + beyan) · PDGEREKCESIZ (alansiz kayit + sayim) · PDCIT (kod citi ICI taranmaz) ·
-    PDADET (5 satir ici -> 3 alinti + `+2 satir daha`) · PDDURUM (P1 sinifi + ham beyan; beyansiz BEYANSIZ) · PDBACKTICK (backtick/`](`/
+    PDADET (5 satir ici -> 1 alinti + `+ satir daha ...: gerekce 4`) · PDDURUM (P1 sinifi + ham beyan; beyansiz BEYANSIZ) · PDBACKTICK (backtick/`](`/
     `kararlar/dddd` etkisiz) · PDDETERMINIZM (iki derle ayni blok) · kapi/kapi --siki YESIL · dosyalara DOKUNULMAZ."""
     b = []
     kok = os.path.join(taban, "pd_d")
@@ -1248,7 +1248,7 @@ def pd_defter(motor, taban):
     sha0 = {ad: hashlib.sha256(ic.encode("utf-8")).hexdigest() for ad, ic in d.items()}
     g = _pk_govde(kok)
     adr = _pd_kayit(g, "0007-adres")
-    bek = ["- K-0007-adres · ADR 0007 — Adres karari · ADR · durum GECERLI [durum: Kabul edildi]",
+    bek = ["- K-0007-adres · ADR 0007 — Adres karari · ADR · durum GECERLI",
            "  gerekce docs/ADR/0007-adres.md:8 (4. Gerekçe)",
            '  bedel docs/ADR/0007-adres.md:10 "Kabul edilen ödünleşim: bakim yuku artar."',
            "  alternatif docs/ADR/0007-adres.md:12 (5. Alternatifler)"]
@@ -1278,8 +1278,8 @@ def pd_defter(motor, taban):
     if uzun != ['  gerekce IS-EMRI-l.md:3 "%s…" [kirpildi: 200 kr]' % _PD_UZUN[:160]]:
         b.append(("PDKIRPMA", "200 kr alinti 160 + `…` + `[kirpildi: 200 kr]` degil: %r" % uzun))
     cok = _pd_kayit(g, "IS-EMRI-m")[1:]
-    if len(cok) != 4 or cok[-1] != "  gerekce +2 satir daha (alintilanmadi; sayildi)":
-        b.append(("PDADET", "5 satir ici -> 3 alinti + `+2 satir daha` beklenir: %r" % cok))
+    if len(cok) != 2 or cok[-1] != "  + satir daha (alintilanmadi; sayildi): gerekce 4":
+        b.append(("PDADET", "5 satir ici -> 1 alinti + `+ satir daha (alintilanmadi; sayildi): gerekce 4` beklenir: %r" % cok))
     if _pd_kayit(g, "IS-EMRI-b") != ["- K-IS-EMRI-b · Backtick · IS-EMRI · durum BEYANSIZ",
                                      "  gerekce IS-EMRI-b.md:3 \"Gerekçe: bu 'kod' ve [a] (b) iceriyor, kararlar /0003-x.md atfi.\""]:
         b.append(("PDBACKTICK", "backtick/`](`/`kararlar/dddd` etkisizlestirilmedi: %r" % _pd_kayit(g, "IS-EMRI-b")))
@@ -1304,7 +1304,7 @@ def pd_defter(motor, taban):
 
 
 def pd_tavan8(motor, taban):
-    """PDTAVAN: 120 kaynak (kayit basina ~100 bayt > 8 KB) -> kayit bolumu <= 8192 bayt, `… +n kayit (listelenmedi; hepsi sayildi)`,
+    """PDTAVAN: 120 kaynak (kayit basina ~100 bayt > 8 KB) -> TUM `karar-kaynagi` govdesi <= 8192 bayt, `… +n kayit (listelenmedi; hepsi sayildi)`,
     ozet `120 karar · 120 GEREKCESIZ` (HEPSI sayilir)."""
     b = []
     kok = os.path.join(taban, "pd_t")
@@ -1313,9 +1313,9 @@ def pd_tavan8(motor, taban):
         raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
     g = _pk_govde(kok).splitlines()
     kay = [x for x in g if x.startswith(("- K-", "  "))]
-    boy = sum(len(x.encode("utf-8")) + 1 for x in kay)
+    boy = sum(len(x.encode("utf-8")) + 1 for x in g)
     if boy > 8192:
-        b.append(("PDTAVAN", "kayit bolumu %d bayt (> 8192)" % boy))
+        b.append(("PDTAVAN", "karar-kaynagi govdesi %d bayt (> 8192)" % boy))
     kirp = [x for x in g if x.startswith("… +") and x.endswith(" kayit (listelenmedi; hepsi sayildi)")]
     n = int(kirp[0].split()[1].lstrip("+")) if kirp else 0
     if not kirp or len([x for x in kay if x.startswith("- K-")]) + n != 120:
@@ -1594,9 +1594,9 @@ KS_SABOTAJLAR = (
     ("M-Z6 kod citi ICI taranir", 'PDCIT',
      '        elif cit:\n            continue\n',
      '        elif False:      # MUTANT\n            continue\n', ('pdefter',)),
-    ("M-Z7 satir ici alinti adedi sinirsiz (3 sinir YOK)", 'PDADET',
-     '        for n, t in ici.get(alan, [])[:_KD_ALAN_ADET]:\n',
-     '        for n, t in ici.get(alan, []):      # MUTANT\n', ('pdefter',)),
+    ("M-Z7 satir ici alinti adedi sinirsiz (alan basina sinir YOK)", 'PDADET',
+     '        for n, t in yeni[:adet]:\n',
+     '        for n, t in yeni:      # MUTANT\n', ('pdefter',)),
     ("M-Z8 durum HEP BEYANSIZ (P1 sinifi tasinmaz)", 'PDDURUM',
      '    ham = m.group(1) if m else "BEYANSIZ"\n    return "durum BEYANSIZ"',
      '    ham = "BEYANSIZ"      # MUTANT\n    return "durum BEYANSIZ"', ('pdefter',)),
@@ -1604,7 +1604,7 @@ KS_SABOTAJLAR = (
      '    t = unicodedata.normalize("NFC", t).replace("`", "\'").replace("](", "] (")\n',
      '    t = unicodedata.normalize("NFC", t)      # MUTANT\n', ('pdefter',)),
     ("M-Z10 blok tavani (8 KB) YOK", 'PDTAVAN',
-     '        doldu = doldu or bayt + boy > _KD_BLOK_TAVAN\n',
+     '        doldu = doldu or bayt + boy > butce - _KD_REZERV\n',
      '        doldu = False      # MUTANT\n', ('ptavan8',)),
 )
 

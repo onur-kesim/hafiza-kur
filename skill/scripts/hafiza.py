@@ -6093,8 +6093,10 @@ _KD_ICI_DESEN = tuple((a, re.compile(r"(?:^[\s>*+\-_0-9.)]*|[*_]{1,2}\s*)(?:%s)[
 _KD_OKU_TAVAN = 1 << 20           # dosya basina ilk 1 MiB taranir
 _KD_ALINTI = 160
 _KD_BASLIK_TAVAN = 80
-_KD_ALAN_ADET = 3                 # alan basina / satir ici alinti: dosya basina en cok 3 (fazlasi SAYILIR)
-_KD_BLOK_TAVAN = 8192             # kayit bolumu UTF-8 bayt tavani
+_KD_BASLIK_ADET = 2               # alan basina baslik adresi: en cok 2 (fazlasi `+n baslik daha` ile SAYILIR)
+_KD_ALINTI_ADET = {"gerekce": 1, "bedel": 1, "alternatif": 1}   # satir ici alinti: alan basina (spec: dosya basina <= 3)
+_KD_BLOK_TAVAN = 8192             # TUM `karar-kaynagi` govdesi icin UTF-8 bayt tavani (kayit bolumu kalan butceyle kirpilir)
+_KD_REZERV = 210                  # tavan satiri + bolum basligi + kirpma satiri + ozet icin ayrilan bayt
 
 
 def _kd_katla(t):
@@ -6142,11 +6144,11 @@ def _kd_tara(p):
 
 
 def _kd_durum(p):
-    """`durum <P1 sinifi> [durum: HAM]` ya da `durum BEYANSIZ` (P1 sinifi AYNI sozlukten; ham beyan AYNEN)."""
+    """`durum <P1 sinifi>` ya da `durum BEYANSIZ` (P1 sinifi AYNI sozlukten; ham beyan P1 gruplarinda/dosyada AYNEN durur)."""
     dur = _karar_durum(p)
     m = _SINIF_DEGER.search(dur)
     ham = m.group(1) if m else "BEYANSIZ"
-    return "durum BEYANSIZ" if ham == "BEYANSIZ" else "durum %s [durum: %s]" % (_karar_sinif(dur), ham)
+    return "durum BEYANSIZ" if ham == "BEYANSIZ" else "durum %s" % _karar_sinif(dur)
 
 
 def _kd_kayit(kok, rel, tur):
@@ -6155,23 +6157,29 @@ def _kd_kayit(kok, rel, tur):
     bas, ici = _kd_tara(p)
     b = _karar_baslik(p)[3:] or "-"
     g = ["- K-%s · %s · %s · %s" % (os.path.splitext(os.path.basename(rel))[0].replace("`", "'"), b, tur, _kd_durum(p))]
+    verilen, fazla = set(), []   # satir ici alintisi verilen satirlar: AYNI satir ikinci alanda TEKRAR alintilanmaz (adresi zaten verildi)
     for alan, _k in _KD_ALAN:
-        for n, t in bas.get(alan, [])[:_KD_ALAN_ADET]:
+        for n, t in bas.get(alan, [])[:_KD_BASLIK_ADET]:
             g.append("  %s %s:%d (%s)" % (alan, rel, n, _kd_temizle(t, _KD_BASLIK_TAVAN)[0]))
-        if len(bas.get(alan, [])) > _KD_ALAN_ADET:
-            g.append("  %s +%d baslik daha (listelenmedi; sayildi)" % (alan, len(bas[alan]) - _KD_ALAN_ADET))
-        for n, t in ici.get(alan, [])[:_KD_ALAN_ADET]:
+        if len(bas.get(alan, [])) > _KD_BASLIK_ADET:
+            g.append("  %s +%d baslik daha (listelenmedi; sayildi)" % (alan, len(bas[alan]) - _KD_BASLIK_ADET))
+        adet = _KD_ALINTI_ADET[alan]
+        yeni = [(n, t) for n, t in ici.get(alan, []) if n not in verilen]
+        for n, t in yeni[:adet]:
             q, kes = _kd_temizle(t, _KD_ALINTI)
             g.append('  %s %s:%d "%s"%s' % (alan, rel, n, q, (" [kirpildi: %d kr]" % kes) if kes else ""))
-        if len(ici.get(alan, [])) > _KD_ALAN_ADET:
-            g.append("  %s +%d satir daha (alintilanmadi; sayildi)" % (alan, len(ici[alan]) - _KD_ALAN_ADET))
+            verilen.add(n)
+        if len(yeni) > adet:
+            fazla.append("%s %d" % (alan, len(yeni) - adet))
+    if fazla:
+        g.append("  + satir daha (alintilanmadi; sayildi): %s" % " · ".join(fazla))
     if len(g) == 1:
         g.append("  GEREKCESIZ %s" % rel)
     return g, len(g) == 2 and g[1].startswith("  GEREKCESIZ ")
 
 
-def _karar_ek_satirlari(kok, kd, kd_adlar):
-    """Blok govdesine eklenen KAYIT bolumu: [tavan satiri] + baslik + kaynak basina kayit (8 KB'a kadar, SIRALI) + kirpma satiri +
+def _karar_ek_satirlari(kok, kd, kd_adlar, butce=_KD_BLOK_TAVAN):
+    """Blok govdesine eklenen KAYIT bolumu: [tavan satiri] + baslik + kaynak basina kayit (`butce` bayta kadar, SIRALI) + kirpma satiri +
     `KARAR DEFTERI: ...` ozeti (HEPSI sayilir). Kaynak yoksa [] (karar dizini de ek kaynak da yok: blok bugunku gibi)."""
     liste, toplam = _karar_kaynaklari(kok, kd_adlar, kd)
     if not liste:
@@ -6180,12 +6188,14 @@ def _karar_ek_satirlari(kok, kd, kd_adlar):
     out.append("KARAR DEFTERI (adres + birebir alinti; motor yorum yapmaz, dosyalara dokunulmaz):")
     adr = gerekcesiz = bayt = kirpilan = 0
     doldu = False
-    for rel, tur in liste:
-        satir, bos = _kd_kayit(kok, rel, tur)
+    kayitlar = [(_kd_kayit(kok, rel, tur), tur) for rel, tur in liste]
+    # SIRA (deterministik): ALANLI kayitlar once (kaynak sirasiyla), GEREKCESIZ olanlar sonra — butce dolunca bilgi tasiyan kayit
+    # GEREKCESIZ kaydin onune gecer; kirpilan SAYILIR.
+    for (satir, bos), tur in [x for x in kayitlar if not x[0][1]] + [x for x in kayitlar if x[0][1]]:
         adr += tur == "ADR"
         gerekcesiz += bos
         boy = sum(len(x.encode("utf-8")) + 1 for x in satir)
-        doldu = doldu or bayt + boy > _KD_BLOK_TAVAN
+        doldu = doldu or bayt + boy > butce - _KD_REZERV
         if doldu:
             kirpilan += 1
         else:
@@ -6207,8 +6217,7 @@ def _karar_blok_govdesi(y, kd):
     if yol and kok_disina_mi(y.kok, yol):
         return None
     adlar = _karar_adlari(y.kok, kd) if kd and os.path.isdir(yol) else []
-    ek = _karar_ek_satirlari(y.kok, kd, adlar)
-    if not kd and not ek:
+    if not kd and not _karar_kaynaklari(y.kok, adlar, kd)[0]:
         return None                       # karar dizini YOK ve ek kaynak YOK: blok yok (bugunku davranis)
     g = ["> Motor (devral/derle) uretti: projenin KENDI karar kayitlari asagidaki dizindedir; dosyalara "
          "dokunulmaz, tasinmaz, kopyalanmaz. Hangisinin otorite oldugunu motor KARARLASTIRMAZ."]
@@ -6229,7 +6238,8 @@ def _karar_blok_govdesi(y, kd):
     if girdi:
         satirlar_, _KARAR_SINIF_SON[0] = _karar_gruplari(girdi)
         g += satirlar_
-    return g + ek
+    kullanilan = sum(len(x.encode("utf-8")) + 1 for x in g)       # P1 govdesi AYNEN kalir; kayit bolumu KALAN butceyle
+    return g + _karar_ek_satirlari(y.kok, kd, adlar, _KD_BLOK_TAVAN - kullanilan)
 
 
 def _devral_karar_blogu(y, rc, canli_p):
