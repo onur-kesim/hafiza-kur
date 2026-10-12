@@ -1,21 +1,20 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin `a5e3dab`; CI #128 198/198; P5.4 `43a260d`+`aed4169` yerelde)
-Son güncelleme: 12 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin `e7b2ae2`; P4 `757b732`..`194d297` yerelde; tam tur 74 OK/9 bilinen KIRMIZI)
+Son güncelleme: 13 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## DEVİR O19 → O20 (12 Eki) — P5.4 BİTTİ (yerelde) · PUSH YOK · Cowork kabulü bekler
-Kod `43a260d` + belge `aed4169` (taban `a5e3dab` = origin, loose ref). `not` bayat defterde H20'nin taze kümesi (`_h20_taze`, tek yol; yalnız damgasız ADAY belirteç VARKEN); çıkarılamazsa `_damga_taze_yok`; `_damga_bilinmez` `damga`+`yok` kararını çevirir (K3 de beyan eder). Harness 207 sabotaj / 0 çapa bozuk (M-N1..11; M-G12/M-U12 ölü dal kaldırıldı; M-U33/U34 H20 yedek yolu vektörüyle geri; M-U9 → (f)'ye K3 COKLU).
-**Tam tur (`_olcum\p54_tur\ci_son.log`, aed4169):** 73 OK / 9 bilinen KIRMIZI / 2 SKIP (P5.3 turuyla aynı küme) · `adres_mutanti` 207 OK (2653 s) · `sabotaj.py` 67 kapsamlı / 0 kapsamsız · `karmasiklik` 7/9/99/30 DEĞİŞMEDİ.
-**Bağımsız inceleme 3 GERÇEK bulgu verdi, düzeltildi:** tek tanımlı ad + bozuk dosya `COZULEMEDI`'ye düşüyordu · M-U33 ölü dal DEĞİLDİ (H20 `.git`siz yedek yol) · "adaysız etkilenmez" kodla tutmuyordu (`not tum` yerine `aday`). Ders: ölü dal iddiası ÖLÇÜLMEDEN sabotaj silinmez.
-**Sınır (README 18b):** yedek yolda `not` kesin pozitifleri de düşürür (H20 korur) · H20 DAMGASIZ/COKLU sayımı defter indeksinden · yalnız damgalı belirteçli `not` bayat defterle eski hüküm verir · tüm aday dosyalar silinmişse `COZULEMEDI`.
-**ÖLÇÜLEMEDİ:** README fxa süreleri `aday` koşulu sonrası yeniden ölçülmedi · Linux/macOS (CI #129: Onur push edince `total_count` ile sayfala).
-**İlk iş:** Onur push → CI → Cowork kabulü; liste KAPALI, yeni madde Onur kilidi. **Uyarı:** `\n` ters bölü tuzağı bu oturumda da ısırdı (yama Write ile dosyaya).
+## DEVİR O20 → O21 (13 Eki) — P4 BİTTİ (yerelde) · PUSH YOK · Cowork kabulü + kör okuma bekler
+Taban `e7b2ae2` = origin. Zincir: K1 `757b732` · K2 `e7bfbb8` · K2b `2dea54a` · K3 `c0f6859` · inceleme düzeltmeleri `0cf334b` · README `45ff32d` · YAML `194d297`. `karar-kaynagi` bloğu genişledi (İKİNCİ blok YOK; P1 AYNEN): kaynak keşfi (kök `IS-EMRI-*`/`GOREV-*`/`RFC-*`/`DECISION*`/`ADR-*` + `docs/decisions`, tavan 200) · kayıt = adres + birebir alıntı, `GEREKCESIZ` sayımı, TÜM gövde ≤ 8192 B · kapı `faz0/karar_adres_kapisi.py` (CI, kendi ısırığını sınar).
+**Ölçüm:** harness 79 sabotaj/0 çapa bozuk (P4: M-K1..10, M-Z1..16, hepsi ISIRDI) · tam tur `_olcum\p4_tur\ci_son2.log`: 74 OK / 9 bilinen KIRMIZI / 2 SKIP · `sabotaj.py` 67/0 · `karmasiklik` 7/9/99/30 DEĞİŞMEDİ · `altin_cikti` 24/24 FARK YOK · motor +180 satır/+10.269 B (615.844→626.113) · fxa `derle` ortanca 11,00→11,79 s (gürültü 10,8–14,9), blok 5420→8014 B.
+**Momentum `d4b5417` (ham `_olcum\p4_momentum.txt`): altın 3/4** — R1 R2 R3 gösterir, R4 `IS-EMRI-o86-D` 8 KB'ın ötesinde (29 karar, 14 listelenir, `+15 kayit`); fixture 4/4. **Bağımsız inceleme 9 bulgu (1 çökme: `İS-EMRİ-*`→StopIteration), hepsi kapandı**; `ci_surucu` capraz.yml YAML hatasını yakaladı.
+**Sınırlar:** anlam ölçülmez (başlıkta `Neden` → gerekce) · commit mesajları yok · sığmayan kayıt listelenmez ama sayılır; sıra alanlı önce (TASLAK ADR bütçeyi yer) · sembolik bağlı kök dosyası okunur (PLAUSIBLE, ölçülemedi).
+**Sıradaki:** Cowork: mekanik kabul kendi kopyasında + rastgele 1 beyan + kör okuma tek koşu (O17 E2 H kolu, 12 soru; hedef KARAR ≥ 1,42) → Onur push → CI #129. **Uyarı:** `\n` ters bölü tuzağı (yama Write ile dosyaya) · `rm -rf` yasak.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **25 Ağu yazısı** KAPSAM DIŞI · **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**P2.1** (O16): `adres` tembel kurulum·maske·atlama · **P2** (O15): 4 dil · **H14** (O14) · **P1** (O13) · **O10-O12:** K-DURUM·K-GECIS·K-ISARET·K-SATIR·K-YOL·K-BAYAT (H18/H19) · B1+B2 (H16).
+**P5.4** (O19, push edildi): `not` bayat defterde H20 taze kümesi (`43a260d`/`aed4169`/`e7b2ae2`) · **P2.1** (O16): `adres` tembel kurulum·maske·atlama · **P2** (O15): 4 dil · **H14** (O14) · **P1** (O13) · **O10-O12:** K-DURUM·K-GECIS·K-ISARET·K-SATIR·K-YOL·K-BAYAT (H18/H19) · B1+B2 (H16).
 **ÜRÜN HAZIRLIĞI** (30 Eyl, CI #117; K7 yok). **AÇIK:** büyük/küçük harf çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
 
 ## Bilinen sınırlar (ölçülmüş)
