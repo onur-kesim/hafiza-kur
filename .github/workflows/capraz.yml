@@ -2480,11 +2480,12 @@ jobs:
   #     P4 (besli-paket/IS_EMRI_P4_KARAR_ADRES_DEFTERI.md, 12 Eki 2026, Onur
   #     kilidi): AYNI betige dort kol (pkaynak/ptavan/pdefter/ptavan8) + 20
   #     sabotaj (M-K1..M-K10 kaynak kesfi, M-Z1..M-Z10 adres+alinti defteri) ve
-  #     `faz0/karar_adres_kapisi.py` (altin 4 kararin >= 3'u adreslenmis mi;
+  #     `faz0/karar_adres_kapisi.py` (altin 4 kararin 4'u adreslenmis mi, P4.1;
   #     kapi kendi isirigini sinar) ayni isin icinde kosar (toplam 73 sabotaj).
-  #     P4.1 (13 Eki 2026): +17 sabotaj (M-Z17..M-Z27: sinif 2/3, tablo, beyan,
-  #     oncelik, sira, butce, dagilim, kayit tavani; toplam 90) ve kapi ESIGI 4
-  #     (R3 icin L66 alintisi + COEP; dort sabotajli motorda KIRMIZI).
+  #     P4.1 (13 Eki 2026): +16 sabotaj (M-Z17..M-Z32: sinif 2/3, tablo, beyan,
+  #     oncelik, sira, butce, dagilim, kayit tavani, zorunlu alinti, sayim,
+  #     etiket, P1 butce guard'i; toplam 95) ve kapi ESIGI 4 (R3 icin L66
+  #     alintisi + COEP; dort sabotajli motorda KIRMIZI).
   # ---------------------------------------------------------------------------
   guncel_durum_kapisi_mutanti:
     name: guncel durum kapisi mutanti (${{ matrix.os }})
@@ -2502,7 +2503,7 @@ jobs:
       - name: bolum yoksa kapi her kosumda bulgu veriyor mu, derle exit 2 mi + H18 satir atfi kaymasi + K-YOL devral karar dizini (uc kol + yedi K-SATIR + yedi K-YOL kolu, 28 sabotaj, hukum gevsemez)
         shell: bash
         run: python faz0/guncel_durum_kapisi_mutanti.py 2>&1 | tee guncel-durum-kapisi-cikti.txt
-      - name: "karar adres defteri kabul kapisi (P4 KALEM 3 - 4 altin karardan >= 3 adreslenmis mi; kapinin kendi isirigi)"
+      - name: "karar adres defteri kabul kapisi (P4.1 - 4 altin karardan 4'u adreslenmis mi, R3 icin L66 alintisi; kapinin kendi isirigi)"
         shell: bash
         run: python faz0/karar_adres_kapisi.py 2>&1 | tee karar-adres-kapisi-cikti.txt
       - name: guncel durum kapisi mutanti ciktisi (artefakt)

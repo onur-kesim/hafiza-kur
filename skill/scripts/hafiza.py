@@ -6099,8 +6099,8 @@ _KD_ICI_DESEN = tuple((a, re.compile(r"(?:^[\s>*+\-_0-9.)]*|[*_]{1,2}\s*)(?:%s)[
 # P4.1 KALEM 1 — satir ici `gerekce` alinti ONCELIGI (dosya basina <= _KD_ALINTI_ADET, sirayla doldurulur): (1) etiketli `Gerekce:`/`Neden:`/
 # `Rationale:` · (2) satir BASINDA `Gerekcesi`/`Gerekce`/`Neden` sozcugu · (3) `🔴`/`**` vurgusu + ayni sozcuklerden biri (sozcuk siniri).
 # Tablo (`|`) ve baslik satirlari bu siniflara GIRMEZ. Ayni satir en kucuk sinifta sayilir.
-_KD_SINIF2 = re.compile(r"^[\s>*+\-_0-9.)]*[*_]*\s*(?:gerekcesi|gerekce|neden)(?![a-z0-9])")
-_KD_SINIF3 = re.compile(r"(?<![a-z0-9])(?:gerekcesi|gerekce|neden)(?![a-z0-9])")
+_KD_SINIF2 = re.compile(r"^[\s>*+\-_0-9.)]*[*_]*\s*(?:gerekcesi|gerekce|neden)(?![a-z0-9_])")
+_KD_SINIF3 = re.compile(r"(?<![a-z0-9_])(?:gerekcesi|gerekce|neden)(?![a-z0-9_])")
 _KD_YALNIZ_BASLIK = "(yalniz baslik: icerik icin dosyayi ac)"
 _KD_OKU_TAVAN = 1 << 20           # dosya basina ilk 1 MiB taranir
 _KD_ALINTI = 160
@@ -6108,12 +6108,12 @@ _KD_BASLIK_TAVAN = 80
 _KD_BASLIK_ADET = 2               # alan basina baslik adresi: en cok 2 (fazlasi `+n baslik daha` ile SAYILIR)
 _KD_ALINTI_ADET = {"gerekce": 3, "bedel": 1, "alternatif": 1}   # satir ici alinti: alan basina (gerekce: dosya basina <= 3)
 _KD_BLOK_TAVAN = 8192             # TUM `karar-kaynagi` govdesi icin UTF-8 bayt tavani (kayit bolumu kalan butceyle kirpilir)
-_KD_KAYIT_TAVAN = 320             # TEK kaydin UTF-8 bayt tavani (baslik + en az bir alan satiri HER ZAMAN; fazlasi `+ n satir daha` ile SAYILIR)
-_KD_REZERV = 400                  # tavan satiri + bolum basligi + kirpma/durum dagilimi satiri + ozet (+ H7 maske satiri) icin ayrilan bayt
+_KD_KAYIT_TAVAN = 280             # TEK kaydin UTF-8 bayt tavani (baslik + en az bir alan satiri HER ZAMAN; fazlasi `+ n satir daha` ile SAYILIR)
+_KD_REZERV = 320                  # tavan satiri + bolum basligi + kirpma/durum dagilimi satiri + ozet (+ H7 maske satiri) icin ayrilan bayt
 # P4.1 KALEM 2 — SIRA (deterministik): grup (alintili -> yalniz baslik -> GEREKCESIZ -> OLCULEMEDI), her grupta durum (GECERLI -> BEYANSIZ ->
 # TASLAK -> GECERSIZ/SINIFLANAMADI), sonra dosya yolu. Butce dolunca cevap tasiyan GECERLI kayit TASLAK/bos kaydin onune gecer.
 _KD_DURUM_SIRA = {"GECERLI": 0, "BEYANSIZ": 1, "TASLAK": 2}
-_KD_DURUM_AD = ("GECERLI", "BEYANSIZ", "TASLAK", "GECERSIZ/SINIFLANAMADI")
+_KD_DURUM_AD = ("GECERLI", "BEYANSIZ", "TASLAK", "GECERSIZ/SINIFLANAMADI", "OLCULEMEDI")
 
 
 def _kd_katla(t):
@@ -6133,27 +6133,31 @@ def _kd_temizle(t, n):
 
 def _kd_ici(n, ham, ici):
     """Baslik OLMAYAN bir satiri siniflar (`ici`ye ekler): etiketli (sinif 1: her alan) · satir basi sozcuk (2) · vurgulu sozcuk (3; yalniz
-    `gerekce`). Tablo satiri hicbir sinifa girmez. Satir ici metin eslesme konumundan baslar (konum > 40 ise `…` onekiyle)."""
+    `gerekce`). Baska alanin etiketini tasiyan satir `gerekce` sinif 2/3'e GIRMEZ. Tablo satiri hicbir sinifa girmez. Kayit: (satir_no,
+    metin, sinif, `🔴`_yok): satir ici metin eslesme konumundan baslar (konum > 40 ise `…` onekiyle), `🔴` bayragi ORIJINAL satirdan."""
     t = ham.strip()
     if t.startswith("|"):
         return
     k = _kd_katla(t)
+    yok = "🔴" not in t
+    etiketli = False
     for alan, desen in _KD_ICI_DESEN:
         e = desen.search(k)
         if e:
             konum = e.start() if len(k) == len(t) else 0
-            ici[alan].append((n, ("…" + t[konum:]) if konum > 40 else t, 1))
-    if ici["gerekce"] and ici["gerekce"][-1][0] == n:
-        return                                # etiketli (sinif 1) satir zaten alindi
+            ici[alan].append((n, ("…" + t[konum:]) if konum > 40 else t, 1, yok))
+            etiketli = True
+    if etiketli:
+        return
     if _KD_SINIF2.match(k):
-        ici["gerekce"].append((n, t, 2))
+        ici["gerekce"].append((n, t, 2, yok))
     elif ("🔴" in t or "**" in t) and _KD_SINIF3.search(k):
-        ici["gerekce"].append((n, t, 3))
+        ici["gerekce"].append((n, t, 3, yok))
 
 
 def _kd_tara(p):
-    """Dosya -> ({alan: [(satir_no, baslik_metni)]}, {alan: [(satir_no, satir, sinif)]} satir ici) ya da (None, None) [OKUNAMADI]. Kod citleri
-    `kod_disi` ile (CommonMark; ikinci kopya YOK). `gerekce` satir ici alintilari ONCELIKLI siralanir (sinif, satir)."""
+    """Dosya -> ({alan: [(satir_no, baslik_metni)]}, {alan: [(satir_no, satir, sinif, `🔴`_yok)]} satir ici) ya da (None, None) [OKUNAMADI].
+    Kod citleri `kod_disi` ile (CommonMark; ikinci kopya YOK). `gerekce` satir ici alintilari ONCELIKLI siralanir (sinif, `🔴`, satir)."""
     try:
         with open(p, "rb") as f:
             satir = f.read(_KD_OKU_TAVAN).decode("utf-8", "replace").split("\n")
@@ -6174,7 +6178,7 @@ def _kd_tara(p):
         for alan, desen in _KD_ALAN_DESEN:
             if desen.search(k):
                 bas[alan].append((n, m.group(1)))
-    ici["gerekce"].sort(key=lambda x: (x[2], "🔴" not in x[1], x[0]))      # ONCELIK: sinif, `🔴` once, sonra satir sirasi
+    ici["gerekce"].sort(key=lambda x: (x[2], x[3], x[0]))      # ONCELIK: sinif, `🔴` once, sonra satir sirasi
     return bas, ici
 
 
@@ -6192,47 +6196,67 @@ def _kd_maske(t, isaret):
 
 
 def _kd_alan(rel, alan, bas, ici, isaret, verilen):
-    """Tek alanin satirlari: satir ici alintilar (<= _KD_ALINTI_ADET[alan]; cevabin KENDISI) + baslik adresleri (<= _KD_BASLIK_ADET) ->
-    (satirlar, fazla_sayi, alintili_mi). `verilen`: AYNI satir ikinci alanda TEKRAR alintilanmaz (adresi zaten verildi). H7 isaretli
-    satirin metni yazilmaz."""
-    g, alintili = [], False
+    """Tek alanin satirlari -> (alinti_satirlari, baslik_satirlari, fazla_sayi). Alintilar cevabin KENDISI (<= _KD_ALINTI_ADET[alan]);
+    baslik adresleri <= _KD_BASLIK_ADET. `verilen`: AYNI satir ikinci alanda TEKRAR alintilanmaz. H7 isaretli satirin metni yazilmaz."""
+    q, h = [], []
     adet = _KD_ALINTI_ADET[alan]
-    yeni = [(n, t) for n, t, _sn in ici.get(alan, []) if n not in verilen]
+    yeni = [(n, t) for n, t, _sn, _e in ici.get(alan, []) if n not in verilen]
     for n, t in yeni[:adet]:
         verilen.add(n)
         if _kd_maske(t, isaret):
-            g.append("  %s %s:%d (maskelendi: H7 isareti)" % (alan, rel, n))
+            q.append("  %s %s:%d (maskelendi: H7 isareti)" % (alan, rel, n))
             continue
-        q, kes = _kd_temizle(t, _KD_ALINTI)
-        g.append('  %s %s:%d "%s"%s' % (alan, rel, n, q, (" [kirpildi: %d kr]" % kes) if kes else ""))
-        alintili = True
+        x, kes = _kd_temizle(t, _KD_ALINTI)
+        q.append('  %s %s:%d "%s"%s' % (alan, rel, n, x, (" [kirpildi: %d kr]" % kes) if kes else ""))
     for n, t in bas.get(alan, [])[:_KD_BASLIK_ADET]:
         if _kd_maske(t, isaret):
-            g.append("  %s %s:%d (maskelendi: H7 isareti)" % (alan, rel, n))
+            h.append("  %s %s:%d (maskelendi: H7 isareti)" % (alan, rel, n))
             continue
         y, kes = _kd_temizle(t, _KD_BASLIK_TAVAN)
-        g.append("  %s %s:%d (%s)%s" % (alan, rel, n, y, (" [kirpildi: %d kr]" % kes) if kes else ""))
+        h.append("  %s %s:%d (%s)%s" % (alan, rel, n, y, (" [kirpildi: %d kr]" % kes) if kes else ""))
     if len(bas.get(alan, [])) > _KD_BASLIK_ADET:
-        g.append("  %s +%d baslik daha (listelenmedi; sayildi)" % (alan, len(bas[alan]) - _KD_BASLIK_ADET))
-    return g, max(0, len(yeni) - adet), alintili
+        h.append("  %s +%d baslik daha (listelenmedi; sayildi)" % (alan, len(bas[alan]) - _KD_BASLIK_ADET))
+    return q, h, max(0, len(yeni) - adet)
 
 
-def _kd_kes(g):
-    """Kayit tavani (`_KD_KAYIT_TAVAN`): baslik + ilk alan satiri HER ZAMAN kalir; sonraki satirlar tavana kadar; kesilen SAYILIR."""
-    boy, i = len(g[0].encode("utf-8")) + 1, 1
-    while i < len(g):
-        boy += len(g[i].encode("utf-8")) + 1
-        if i > 1 and boy > _KD_KAYIT_TAVAN:
-            break
-        i += 1
-    if i >= len(g):
+def _kd_say(x):
+    """Bir kayit satirinin gizledigi satir sayisi (ozet satirlari icindeki sayilar dahil)."""
+    m = re.match(r"  [a-z]+ \+(\d+) baslik daha", x)
+    if m:
+        return int(m.group(1))
+    if x.startswith("  + satir daha (alintilanmadi"):
+        return sum(int(v) for v in re.findall(r" (\d+)", x))
+    return 1
+
+
+def _kd_kes(g, zorunlu):
+    """Kayit tavani (`_KD_KAYIT_TAVAN`): baslik + `zorunlu` indeksli satirlar HER ZAMAN kalir; digerleri tavana kadar; kesilen SAYILIR
+    (ozet satirlarindaki sayilar dahil; H7 maskeli satir sayisi ayrica) ve BASLIK satirinin sonuna `(+n satir daha: kayit tavani; sayildi)`."""
+    boy, kal, kes = 0, [], []
+    for i, x in enumerate(g):
+        boy += len(x.encode("utf-8")) + 1
+        if i == 0 or i in zorunlu or boy <= _KD_KAYIT_TAVAN:
+            kal.append(x)
+        else:
+            boy -= len(x.encode("utf-8")) + 1
+            kes.append(x)
+    if not kes:
         return g
-    return g[:i] + ["  + %d satir daha (kayit tavani; sayildi)" % (len(g) - i)]
+    mk = sum(1 for x in kes if "(maskelendi: H7 isareti)" in x)
+    kal[0] += " (+%d satir daha: kayit tavani; sayildi%s)" % (sum(_kd_say(x) for x in kes), ("; H7 maskeli %d" % mk) if mk else "")
+    return kal
+
+
+def _kd_alintili(g):
+    """Kayit satirlari arasinda ALINTI METNI (`<alan> <yol>:<n> "..."`) var mi."""
+    return any(re.match(r'  (?:gerekce|bedel|alternatif) \S+:\d+ "', x) for x in g[1:])
 
 
 def _kd_kayit(kok, rel, tur, isaret=None):
-    """-> ([satirlar], 'bos' | 'olculemedi' | ''). Baslik satiri + (yalniz BULUNAN) alan satirlari; hic alan yoksa `GEREKCESIZ <yol>`;
-    okunamayan dosya `OLCULEMEDI <yol>`; yalniz baslik adresi varsa beyan (`_KD_YALNIZ_BASLIK`)."""
+    """-> ([satirlar], 'bos' | 'olculemedi' | '', alintili_mi, durum_adi). Baslik satiri + (yalniz BULUNAN) alan satirlari: once ALINTILAR
+    (alan sirasiyla), sonra baslik adresleri; hic alan yoksa `GEREKCESIZ <yol>`; okunamayan dosya `OLCULEMEDI <yol>`. Kayit tavani: baslik
+    + her alanin ILK alintisi (yalniz GECERLI kayitta; digerlerinde yalniz ilk satir) HER ZAMAN. Yalniz BASLIK adresi kalmissa beyan
+    (`_KD_YALNIZ_BASLIK`)."""
     p = os.path.join(kok, *rel.split("/"))
     bas, ici = _kd_tara(p)
     b = _karar_baslik(p)[3:] or "-"
@@ -6241,47 +6265,58 @@ def _kd_kayit(kok, rel, tur, isaret=None):
         b = "(baslik maskelendi: H7 isareti)"
     if _kd_maske(stem, isaret):
         stem = "(ad maskelendi)"
-    g = ["- K-%s · %s · %s · %s" % (stem, b, tur, _kd_durum(p))]
+    drm = _kd_durum(p)
+    ad = drm.split(" ")[1] if " " in drm else "BEYANSIZ"
+    g = ["- K-%s · %s · %s · %s" % (stem, b, tur, drm)]
     if bas is None:
-        return g + ["  OLCULEMEDI %s (okunamadi)" % rel], "olculemedi"
-    verilen, fazla, alintili = set(), [], False
+        return g + ["  OLCULEMEDI %s (okunamadi)" % rel], "olculemedi", False, ad
+    verilen, fazla, q, h, zor = set(), [], [], [], set()
     for alan, _k in _KD_ALAN:
-        satir, f, a = _kd_alan(rel, alan, bas, ici, isaret, verilen)
-        g += satir
-        alintili = alintili or a
+        qa, ha, f = _kd_alan(rel, alan, bas, ici, isaret, verilen)
+        if qa and ad == "GECERLI":
+            zor.add(len(q) + 1)                 # her alanin ILK alintisi (baslik satirindan sonraki indeks)
+        q += qa
+        h += ha
         if f:
             fazla.append("%s %d" % (alan, f))
+    g += q + h
     if fazla:
         g.append("  + satir daha (alintilanmadi; sayildi): %s" % " · ".join(fazla))
     if len(g) == 1:
-        g.append("  GEREKCESIZ %s" % rel)
-    elif not alintili and not any("(maskelendi: H7 isareti)" in x for x in g):
+        return g + ["  GEREKCESIZ %s" % rel], "bos", False, ad
+    g = _kd_kes(g, zor | {1})
+    alintili = _kd_alintili(g)
+    if not alintili and not any("(maskelendi: H7 isareti)" in x for x in g):
         g[0] += " " + _KD_YALNIZ_BASLIK         # yalniz BASLIK adresi: bos tahminle doldurulmaz, okuyucu dosyaya gonderilir
-    bos = len(g) == 2 and g[1].startswith("  GEREKCESIZ ")
-    return _kd_kes(g), "bos" if bos else ""
+    return g, "", alintili, ad
 
 
 def _karar_ek_satirlari(kok, kd, kd_adlar, butce=_KD_BLOK_TAVAN, isaret=None):
     """Blok govdesine eklenen KAYIT bolumu: [tavan satiri] + baslik + kaynak basina kayit (`butce` bayta kadar, SIRALI) + kirpma satiri +
-    `KARAR DEFTERI: ...` ozeti (HEPSI sayilir). Kaynak yoksa [] (karar dizini de ek kaynak da yok: blok bugunku gibi)."""
+    kesilenlerin durum dagilimi + `KARAR DEFTERI: ...` ozeti (HEPSI sayilir). Kaynak yoksa [] (karar dizini de ek kaynak da yok: blok
+    bugunku gibi). SIRA (deterministik): grup (alintili -> yalniz baslik -> GEREKCESIZ -> OLCULEMEDI), her grupta durum (GECERLI ->
+    BEYANSIZ -> TASLAK -> digerleri), sonra dosya yolu."""
     liste, toplam = _karar_kaynaklari(kok, kd_adlar, kd)
     if not liste:
         return []
     out = ["KARAR KAYNAGI: %d dosya, %d tarandi" % (toplam, _KARAR_KAYNAK_TAVAN)] if toplam > _KARAR_KAYNAK_TAVAN else []
-    out.append("KARAR DEFTERI (adres + birebir alinti; motor yorum yapmaz, dosyalara dokunulmaz):")
     adr = gerekcesiz = olculemedi = bayt = kirpilan = 0
-    doldu = False
-    kesilen = [0, 0, 0, 0]
+    kesilen = [0, 0, 0, 0, 0]
     kayitlar = []
     for rel, tur in liste:
-        satir, bos = _kd_kayit(kok, rel, tur, isaret)
-        grup = 3 if bos == "olculemedi" else 2 if bos else 1 if _KD_YALNIZ_BASLIK in satir[0] else 0
-        m = re.search(r"durum (\S+)", satir[0])
-        kayitlar.append((grup, _KD_DURUM_SIRA.get(m.group(1) if m else "", 3), rel.lower(), rel, satir, bos, tur))
-    for grup, drm, _rl, _r, satir, bos, tur in sorted(kayitlar, key=lambda x: x[:4]):
+        satir, bos, alintili, ad = _kd_kayit(kok, rel, tur, isaret)
+        grup = 3 if bos == "olculemedi" else 2 if bos else 0 if alintili else 1
+        kayitlar.append((grup, 4 if grup == 3 else _KD_DURUM_SIRA.get(ad, 3), rel.lower(), rel, satir, bos, tur))
         adr += tur == "ADR"
         gerekcesiz += bos == "bos"
         olculemedi += bos == "olculemedi"
+    ozet = ("KARAR DEFTERI: %d ADR + %d IS-EMRI/diger tarandi · %d karar · %d GEREKCESIZ%s"
+            % (adr, len(liste) - adr, len(liste), gerekcesiz, (" · %d OLCULEMEDI" % olculemedi) if olculemedi else ""))
+    if butce < _KD_REZERV:                  # P1 gövdesi butceyi doldurdu: kayit bolumu LISTELENMEZ, yalniz ozet (tavan asilmaz)
+        return out + [ozet + " · kayitlar listelenmedi (butce)"]
+    out.append("KARAR DEFTERI (adres + birebir alinti; motor yorum yapmaz, dosyalara dokunulmaz):")
+    doldu = False
+    for grup, drm, _rl, _r, satir, bos, tur in sorted(kayitlar, key=lambda x: x[:4]):
         boy = sum(len(x.encode("utf-8")) + 1 for x in satir)
         doldu = doldu or bayt + boy > butce - _KD_REZERV
         if doldu:
@@ -6293,8 +6328,7 @@ def _karar_ek_satirlari(kok, kd, kd_adlar, butce=_KD_BLOK_TAVAN, isaret=None):
     if kirpilan:
         out.append("… +%d kayit (listelenmedi; hepsi sayildi)" % kirpilan)
         out.append("listelenmedi: " + " · ".join("%s %d" % (a, n) for a, n in zip(_KD_DURUM_AD, kesilen) if n))
-    out.append("KARAR DEFTERI: %d ADR + %d IS-EMRI/diger tarandi · %d karar · %d GEREKCESIZ%s"
-               % (adr, len(liste) - adr, len(liste), gerekcesiz, (" · %d OLCULEMEDI" % olculemedi) if olculemedi else ""))
+    out.append(ozet)
     return out
 
 

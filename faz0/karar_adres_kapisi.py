@@ -83,7 +83,7 @@ def fixture():
           194: "Flutter istemcisi **kendi HLC/CRDT resolver'ini TASIMAZ.**",
           195: "*Gerekçe:* ikinci bir resolver, ikinci bir doğruluk kaynağı demektir ve bu projede o sınıf hatanın maliyeti ölçüldü.",
           196: "*Kabul edilen ödünleşim (adlandırıldı):* sunucu farklı karar verirse istemcide geri-alma/titreme görülebilir."}
-    r3 = {1: "# ADR 0004 — Web Çapraz-Köken İzolasyonu", 3: "Durum: Kabul edildi", 15: "## 1. BAĞLAM — iskeletin sorusu",
+    r3 = {1: "# ADR 0004 — Web Çapraz-Köken İzolasyonu", 3: "Durum: 📝 GÖVDE YAZILDI — KİLİT BEKLİYOR. 'K127' gereği bağımsız denetim", 15: "## 1. BAĞLAM — iskeletin sorusu",
           27: "## 2. KARAR (üç madde)", 54: "## 3. GEREKÇE — yalnız ölçülmüş olan",
           66: "🔴 **`--no-web-resources-cdn`'in gerekçesi COEP BLOKLAMASI DEĞİLDİR.** `gstatic` 8 Ağu 2026 09:50",
           67: "UTC'de de cross-origin-resource-policy: cross-origin gönderiyordu.", 71: "yüklenirdi. Bayrağın ölçülmüş değeri başkadır.",
@@ -98,8 +98,17 @@ def fixture():
          "docs/ADR/0004-web-capraz-koken-izolasyonu.md": _dosya(r3, 140), "IS-EMRI-o86-D.md": _dosya(r4, 60),
          "DURUM.md": "# DURUM\n\n## GUNCEL DURUM\n- durum\n\n## SABIT CERCEVE\n- ders 1\n\n## ARSIV DIZINI\n",
          "CLAUDE.md": "# kural evi\n- kural\n"}
+    # gercek Momentum'un P1 baskisi: uzun durum/baslik (P1 gövdesi ~1,4 KB) — kayit butcesini GERCEKTEKI kadar daraltir
+    d["docs/ADR/0001-genel-mimari.md"] = _dosya({1: "# ADR 0001 — Genel Mimari (Backend Omurga)",
+                                                 3: "Durum: ✅ KİLİTLİ (v3) — engineering (architecture + system-design) kapisi gecti",
+                                                 41: "**Karar (Onur devri → araştırmayla):** **kutuphane (MIT)**, en son **stabil** surume sabitlendi."}, 60)
+    for k, nm in enumerate(("0003-kimlik-cekirdegi-v7-YAZIM-DEVAM-EDIYOR", "0003-kimlik-cekirdegi")):
+        d["docs/ADR/%s.md" % nm] = _dosya({1: "# ADR 0003 — Kimlik Çekirdeği ('slice-3c-auth', 1/2)",
+                                           3: "Durum: 🟡 TASLAK v6 — KİLİTLİ DEĞİL; 6. TUR BAĞIMSIZ KAPIYI BEKLİYOR (v%d)" % k,
+                                           5: "1. **'§1-K KANONİK SAYILAR' doğdu.** Her tavan, ömür, uzunluk ve boyut **bir kez** yazılır; gövde **gerekçe** taşır.",
+                                           19: "- **⚠ DİLİM ADI DEĞİŞTİ [K14-h]:** *Gerekçe:* 'slice-3a' **zaten vardır**."}, 40)
     # gercek Momentum'un gurultusu: alanli doldurma kayitlari (butce yolu kosar; altin kaynaklar siralamada ONLARIN ARASINDA)
-    for i in range(10):
+    for i in range(14):
         d["IS-EMRI-o84-f%02d.md" % i] = _dosya({1: "# IS-EMRI-o84-f%02d — doldurma kaydi" % i, 3: "## Neden — doldurma %d" % i,
                                                   5: "*Gerekçe: doldurma kaydi %d, ADRES defteri butce yolunu kosar.*" % i}, 8)
     # GEREKCESIZ doldurma (dosya adi siralamasinda R4'ten ONCE): dogru sirada alintili kayitlarin ARKASINA duser; eski sirada butceyi yer
@@ -212,6 +221,7 @@ def main():
                 return 0 if n >= ESIK else 1
             t, n, blok = olc_fixture(motor, tmp)
             _yaz_tablo(t, n)
+            print("  fixture blok: %d bayt (tavan 8192)" % len(blok.encode("utf-8")))
             if n < ESIK:
                 print("\nSONUC: KIRMIZI — altin eslesme %d/%d (esik %d)." % (n, len(t), ESIK))
                 return 1

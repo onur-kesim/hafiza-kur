@@ -576,16 +576,21 @@ işaretçisi dahil). En önemlileri:
   (`🔴 **…gerekçesi COEP BLOKLAMASI DEĞİLDİR.**`), etiketli `Gerekçe:` olmadığı için alıntılanmadı; blokta yalnız `## 3. GEREKÇE`
   başlığı kaldı ve okuyucu gerçeğin TERSİNİ tahmin etti. **(1) Satır içi `gerekce` alıntı önceliği** (dosya başına ≤ 3, sırayla
   doldurulur): sınıf 1 etiketli `Gerekçe:`/`Neden:`/`Rationale:` · sınıf 2 satır BAŞINDA `Gerekçesi`/`Gerekçe`/`Neden` sözcüğü ·
-  sınıf 3 `🔴` ya da `**` vurgusu + aynı sözcüklerden biri (sözcük sınırlı); aynı sınıfta `🔴` önce, sonra satır sırası. Tablo (`|`)
-  ve başlık satırları hiçbir sınıfa girmez. Yalnız BAŞLIK adresli kayıtta (hiç alıntı yok) kayıt satırının sonuna
+  sınıf 3 `🔴` ya da `**` vurgusu + aynı sözcüklerden biri (sözcük sınırı: `_` sözcüğün parçası); aynı sınıfta `🔴` önce (ORİJİNAL
+  satırdan), sonra satır sırası. Tablo (`|`) ve başlık satırları hiçbir sınıfa girmez; BAŞKA alanın (bedel/alternatif) etiketini taşıyan
+  satır `gerekce` sınıf 2/3'e girmez. Yalnız BAŞLIK adresi kalan kayıtta (alıntı yok) başlık satırının sonuna
   `(yalniz baslik: icerik icin dosyayi ac)` yazılır: boşluk tahminle doldurulmaz. **(2) Sıralama** (deterministik): grup — alıntılı →
-  yalnız başlık → `GEREKCESIZ` → `OLCULEMEDI`; her grupta durum `GECERLI` → `BEYANSIZ` → `TASLAK` → `GECERSIZ`/`SINIFLANAMADI`; sonra dosya
-  yolu. Bütçe aynı (TÜM gövde ≤ 8192 B); kesilenlerin durum dağılımı `listelenmedi: BEYANSIZ 9 · TASLAK 1` satırıyla beyan edilir.
-  **Kayıt tavanı:** tek kayıt ≤ 320 bayt (başlık + ilk alan satırı HER ZAMAN; alıntı satırları başlık adreslerinden önce; fazlası
-  `+ n satir daha (kayit tavani; sayildi)`) — bütçe kayıt SAYISINDAN çok kayıt BOYUNA harcanıyordu (ADR 0003 çifti ~1,2 KB'tı).
-  **Sınırlar:** sınıf 3 gürültülüdür (başlık dışı her `🔴`/`**` + `gerekçe` satırı; Momentum ADR 0004'te L32 de adaydır, `🔴` önceliği
-  L66'yı öne alır) · sıra TASLAK'ı sona iter (ADR 0004 TASLAK: bütçe daralırsa ilk düşen odur — kapı bunu 4/4 ile ölçer) ·
-  alıntı ilk 160 karakterle sınırlıdır (L66'da "COEP BLOKLAMASI DEĞİLDİR" görünür, devamı dosyadadır).
+  yalnız başlık (H7 maskeli-yalnız dahil) → `GEREKCESIZ` → `OLCULEMEDI`; her grupta durum `GECERLI` → `BEYANSIZ` → `TASLAK` →
+  `GECERSIZ`/`SINIFLANAMADI`; sonra dosya yolu. Bütçe aynı (TÜM gövde ≤ 8192 B); kesilenlerin durum dağılımı
+  `listelenmedi: BEYANSIZ 9 · TASLAK 1` satırıyla beyan edilir. P1 gövdesi bütçeyi doldurmuşsa kayıt bölümü LİSTELENMEZ, özet satırı
+  `… · kayitlar listelenmedi (butce)` der. **Kayıt tavanı:** tek kayıt ≤ 280 bayt — başlık + ilk alan satırı HER ZAMAN; `GECERLI`
+  kayıtta her alanın İLK alıntısı da (bedel/alternatif dahil) kesilmez; alıntı satırları (alan sırasıyla) başlık adreslerinden ÖNCE
+  gelir; kesilen satır sayısı (özet satırlarındaki sayılar dahil) başlık sonuna `(+n satir daha: kayit tavani; sayildi)` yazılır,
+  H7 maskeli satır varsa `; H7 maskeli m`. **Ölçülmüş marj (Momentum `d4b5417`):** 29 karar, 20'si listelenir (alıntılı/yalnız-başlık
+  hepsi), 9'u `+9 kayit` (GEREKCESIZ); blok 8095 bayt, tavana ~100 B — yeni bir alıntılı kayıt eklenince ilk düşen TASLAK ADR'dir (kapı
+  bunu 4/4 ile ölçer, fixture aynı baskıyı taşır). **Sınırlar:** sınıf 3 gürültülüdür (başlık dışı her `🔴`/`**` + `gerekçe` satırı;
+  `🔴` önceliği L66'yı öne alır) · alıntı ilk 160 karakterle sınırlıdır (L66'da "COEP BLOKLAMASI DEĞİLDİR" görünür, devamı dosyadadır) ·
+  TASLAK kayıtta yalnız ilk satır garantidir (taslak karar DEĞİLDİR; ayrıntı dosyada).
 
 - **Taslak ≠ karar: `karar-kaynagi` bloğu ADR'leri dört sınıf grubunda verir (P1, 6 Eki 2026) —
   BİLİNÇLİ DÖNÜŞ.** K-DURUM "motor durumu YORUMLAMAZ" demişti; ölçüm (Momentum kör okuma, R1 yanlış ×2)
