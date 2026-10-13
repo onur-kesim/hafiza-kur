@@ -1771,7 +1771,7 @@ KS_SABOTAJLAR = (
      '    elif not kd:\n',
      '    elif False:      # MUTANT\n', ('pkaldir',)),
     ("M-Z16 rezerv YOK (ozet/kirpma/baslik satirlari tavani asar)", 'PDREZERV',
-     '_KD_REZERV = 400                  # tavan satiri + bolum basligi + kirpma/durum dagilimi satiri + ozet (+ H7 maske satiri) icin ayrilan bayt\n',
+     '_KD_REZERV = 320                  # tavan satiri + bolum basligi + kirpma/durum dagilimi satiri + ozet (+ H7 maske satiri) icin ayrilan bayt\n',
      '_KD_REZERV = 0      # MUTANT\n', ('ptavan8',)),
     ("M-Z17 sinif 2 KAPALI (satir basi `Gerekcesi`/`Neden` sozcugu alintilanmaz)", 'PDSINIF2',
      '    if _KD_SINIF2.match(k):\n',
