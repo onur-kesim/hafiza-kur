@@ -1241,7 +1241,9 @@ def _pd_dosyalar():
             "IS-EMRI-s3.md": "# S3\n\n🔴 **--x'in gerekçesi COEP BLOKLAMASI DEĞİLDİR.** Devam.\n",
             "IS-EMRI-tb.md": "# Tb\n\n| x | gerekçesi |\n|---|---|\n| a | **neden** 🔴 gerekçe |\n",
             "IS-EMRI-hb.md": "# Hb\n\n## Gerekçe\nmetin\n",
-            "IS-EMRI-o.md": "# Once\n\n**gerekçesi** a1\n**gerekçesi** a2\n**gerekçesi** a3\nGerekçe: net sebep.\n"}
+            "IS-EMRI-o.md": "# Once\n\n**gerekçesi** a1\n**gerekçesi** a2\n**gerekçesi** a3\nGerekçe: net sebep.\n",
+            "IS-EMRI-r.md": "# Emoji\n\nx **gerekçe** a\nx 🔴 gerekçe b\n",
+            "IS-EMRI-v.md": "# Uzun kayit\n\n" + "".join("Gerekce: %s\n" % (c * 141) for c in "abc")}
 
 
 def pd_defter(motor, taban):
@@ -1259,8 +1261,8 @@ def pd_defter(motor, taban):
     g = _pk_govde(kok)
     adr = _pd_kayit(g, "0007-adres")
     bek = ["- K-0007-adres · ADR 0007 — Adres karari · ADR · durum GECERLI",
-           "  gerekce docs/ADR/0007-adres.md:8 (4. Gerekçe)",
            '  gerekce docs/ADR/0007-adres.md:9 "Gerekce metni burada."',
+           "  gerekce docs/ADR/0007-adres.md:8 (4. Gerekçe)",
            '  bedel docs/ADR/0007-adres.md:10 "Kabul edilen ödünleşim: bakim yuku artar."',
            "  alternatif docs/ADR/0007-adres.md:12 (5. Alternatifler)"]
     if adr[:1] != bek[:1]:
@@ -1294,8 +1296,13 @@ def pd_defter(motor, taban):
     if _pd_kayit(g, "IS-EMRI-b") != ["- K-IS-EMRI-b · Backtick · IS-EMRI · durum BEYANSIZ",
                                      "  gerekce IS-EMRI-b.md:3 \"Gerekçe: bu 'kod' ve [a] (b) iceriyor, kararlar /0003-x.md atfi.\""]:
         b.append(("PDBACKTICK", "backtick/`](`/`kararlar/dddd` etkisizlestirilmedi: %r" % _pd_kayit(g, "IS-EMRI-b")))
-    if "KARAR DEFTERI: 1 ADR + 18 IS-EMRI/diger tarandi · 19 karar · 4 GEREKCESIZ" not in g.splitlines():
-        b.append(("PDGEREKCESIZ", "blok sonu ozeti `1 ADR + 18 IS-EMRI/diger tarandi · 19 karar · 4 GEREKCESIZ` degil: %r" % g[-200:]))
+    if "KARAR DEFTERI: 1 ADR + 20 IS-EMRI/diger tarandi · 21 karar · 4 GEREKCESIZ" not in g.splitlines():
+        b.append(("PDGEREKCESIZ", "blok sonu ozeti `1 ADR + 20 IS-EMRI/diger tarandi · 21 karar · 4 GEREKCESIZ` degil: %r" % g[-200:]))
+    if _pd_kayit(g, "IS-EMRI-r")[1:] != ['  gerekce IS-EMRI-r.md:4 "x 🔴 gerekçe b"', '  gerekce IS-EMRI-r.md:3 "x **gerekçe** a"']:
+        b.append(("PDEMOJI", "ayni sinifta `🔴` satiri ONCE alintilanmali: %r" % _pd_kayit(g, "IS-EMRI-r")))
+    uz = _pd_kayit(g, "IS-EMRI-v")
+    if uz[1:] != ['  gerekce IS-EMRI-v.md:3 "Gerekce: %s"' % ("a" * 141), "  + 2 satir daha (kayit tavani; sayildi)"]:
+        b.append(("PDKAYIT", "kayit tavani (320 B): baslik + ilk alinti kalir, kalan SAYILIR: %r" % [x[:90] for x in uz]))
     if _pd_kayit(g, "IS-EMRI-h") != ["- K-IS-EMRI-h · Mask · IS-EMRI · durum BEYANSIZ",
                                      "  gerekce IS-EMRI-h.md:3 (maskelendi: H7 isareti)"] or "gosterilmedi" in g:
         b.append(("PDMASKE", "H7 isaretli satir: ADRES `(maskelendi: H7 isareti)` ile durmali, metin yazilmamali, `gosterilmedi` YOK: %r"
@@ -1341,6 +1348,44 @@ def pd_defter(motor, taban):
     gr = _kp_gruplar(kok)
     if not any(x.startswith("0007-adres.md") and x.endswith("[durum: Kabul edildi]") for x in gr.get("GECERLI", ("", []))[1]):
         b.append(("PDDURUM", "P1 sinif grubu (GECERLI) ADR'yi ham beyanla TASIMIYOR: %r" % gr.get("GECERLI")))
+    return b
+
+
+def _pd_basliklar(g):
+    return [x[len("- K-"):].split(" · ")[0] for x in g.splitlines() if x.startswith("- K-")]
+
+
+def pd_sira(motor, taban):
+    """PDSIRA: grup sirasi (alintili -> yalniz baslik -> GEREKCESIZ), her grupta durum (GECERLI -> BEYANSIZ -> TASLAK), sonra dosya adi.
+    PDBUTCE: butce dolunca alintili GECERLI kayit listede, TASLAK DISARIDA · PDDAGILIM: kesilenlerin durum dagilimi tek satirda."""
+    b = []
+    kok = os.path.join(taban, "pd_s")
+    f = {"docs/ADR/0001-a.md": "# ADR 1 a\n\nDurum: Kabul edildi\n\nGerekçe: a nedeni.\n",
+         "docs/ADR/0002-b.md": "# ADR 2 b\n\nDurum: Taslak\n\nGerekçe: b nedeni.\n",
+         "docs/ADR/0003-c.md": "# ADR 3 c\n\nDurum: Kabul edildi\n\n## Gerekçe\nmetin\n",
+         "IS-EMRI-q.md": "# Q\n\nGerekçe: q nedeni.\n", "IS-EMRI-h2.md": "# H2\n\n## Gerekçe\nmetin\n", "IS-EMRI-e.md": "# E\n\nhicbir sey\n"}
+    rc, c = hal_yol(motor, kok, f, DURUM_BOLUMLU)
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    sira = _pd_basliklar(_pk_govde(kok))
+    bek = ["0001-a", "IS-EMRI-q", "0002-b", "0003-c", "IS-EMRI-h2", "IS-EMRI-e"]
+    if sira != bek:
+        b.append(("PDSIRA", "kayit sirasi %r (beklenen %r)" % (sira, bek)))
+    kb = os.path.join(taban, "pd_sb")
+    f = {"docs/ADR/0100-g.md": "# ADR 100 g\n\nDurum: Kabul edildi\n\nGerekçe: g nedeni.\n",
+         "docs/ADR/0101-t.md": "# ADR 101 t\n\nDurum: Taslak\n\nGerekçe: t nedeni.\n"}
+    f.update({"IS-EMRI-z%03d.md" % i: "# Z%d\n\nGerekçe: " % i + "z" * 120 + "\n" for i in range(60)})
+    rc, c = hal_yol(motor, kb, f, DURUM_BOLUMLU)
+    if rc != 0:
+        raise Kurulamadi("devral basarisiz (exit=%s): %s" % (rc, c.strip().split("\n")[-1][:160]))
+    g = _pk_govde(kb)
+    bas = _pd_basliklar(g)
+    if "0100-g" not in bas or "0101-t" in bas:
+        b.append(("PDBUTCE", "butce dolunca alintili GECERLI kayit listede, TASLAK DISARIDA olmali: ilk 3 %r, 0101-t listede=%s"
+                  % (bas[:3], "0101-t" in bas)))
+    dag = [x for x in g.splitlines() if x.startswith("listelenmedi: ")]
+    if len(dag) != 1 or not re.fullmatch(r"listelenmedi: BEYANSIZ \d+ · TASLAK 1", dag[0]):
+        b.append(("PDDAGILIM", "kesilenlerin durum dagilimi tek satir olmali (`listelenmedi: BEYANSIZ n · TASLAK 1`): %r" % dag))
     return b
 
 
@@ -1423,7 +1468,8 @@ def ks_hepsi(motor, taban, motor_metin, tag, yalniz=None, yaz_=False):
               ("P4", "ptavan", lambda: pk_tavan(motor, os.path.join(taban, tag + "k2"))),
               ("P4", "pdefter", lambda: pd_defter(motor, os.path.join(taban, tag + "k3"))),
               ("P4", "ptavan8", lambda: pd_tavan8(motor, os.path.join(taban, tag + "k4"))),
-              ("P4", "pkaldir", lambda: pd_kaldir(motor, os.path.join(taban, tag + "k5"))))
+              ("P4", "pkaldir", lambda: pd_kaldir(motor, os.path.join(taban, tag + "k5"))),
+              ("P4", "psira", lambda: pd_sira(motor, os.path.join(taban, tag + "k6"))))
     b = []
     for grup, ad, kol in kollar:
         if yalniz is None or ad in yalniz:
@@ -1688,7 +1734,7 @@ KS_SABOTAJLAR = (
      '    elif not kd:\n',
      '    elif False:      # MUTANT\n', ('pkaldir',)),
     ("M-Z16 rezerv YOK (ozet/kirpma/baslik satirlari tavani asar)", 'PDREZERV',
-     '_KD_REZERV = 320                  # tavan satiri + bolum basligi + kirpma satiri + ozet (+ H7 maske satiri) icin ayrilan bayt\n',
+     '_KD_REZERV = 400                  # tavan satiri + bolum basligi + kirpma/durum dagilimi satiri + ozet (+ H7 maske satiri) icin ayrilan bayt\n',
      '_KD_REZERV = 0      # MUTANT\n', ('ptavan8',)),
     ("M-Z17 sinif 2 KAPALI (satir basi `Gerekcesi`/`Neden` sozcugu alintilanmaz)", 'PDSINIF2',
      '    if _KD_SINIF2.match(k):\n',
@@ -1706,8 +1752,23 @@ KS_SABOTAJLAR = (
      '    elif not alintili and not any("(maskelendi: H7 isareti)" in x for x in g):\n',
      '    elif not any("(maskelendi: H7 isareti)" in x for x in g):      # MUTANT\n', ('pdefter',)),
     ("M-Z22 satir ici oncelik YOK (yalniz satir sirasi)", 'PDONCELIK',
-     '    ici["gerekce"].sort(key=lambda x: (x[2], x[0]))      # ONCELIK: sinif, sonra satir sirasi\n',
+     '    ici["gerekce"].sort(key=lambda x: (x[2], "🔴" not in x[1], x[0]))      # ONCELIK: sinif, `🔴` once, sonra satir sirasi\n',
      '    ici["gerekce"].sort(key=lambda x: x[0])      # MUTANT\n', ('pdefter',)),
+    ("M-Z23 `🔴` onceligi YOK (sinif sonra satir sirasi)", 'PDEMOJI',
+     '    ici["gerekce"].sort(key=lambda x: (x[2], "🔴" not in x[1], x[0]))      # ONCELIK: sinif, `🔴` once, sonra satir sirasi\n',
+     '    ici["gerekce"].sort(key=lambda x: (x[2], x[0]))      # MUTANT\n', ('pdefter',)),
+    ("M-Z24 kayit bayt tavani YOK (uzun kayit tamamen yazilir)", 'PDKAYIT',
+     '    if i >= len(g):\n        return g\n',
+     '    return g      # MUTANT\n', ('pdefter',)),
+    ("M-Z25 eski sira (yalniz dosya adi: TASLAK ADR bos/alintili ayrimi olmadan once gelir)", 'PDBUTCE',
+     '    for grup, drm, _rl, _r, satir, bos, tur in sorted(kayitlar, key=lambda x: x[:4]):\n',
+     '    for grup, drm, _rl, _r, satir, bos, tur in sorted(kayitlar, key=lambda x: x[2:4]):      # MUTANT\n', ('psira',)),
+    ("M-Z26 durum dagilimi satiri BASILMAZ (kesilenler anonim)", 'PDDAGILIM',
+     '        out.append("listelenmedi: " + " · ".join("%s %d" % (a, n) for a, n in zip(_KD_DURUM_AD, kesilen) if n))\n',
+     '        pass      # MUTANT\n', ('psira',)),
+    ("M-Z27 durum sirasi YOK (GECERLI/BEYANSIZ/TASLAK ayrimi yapilmaz; yalniz grup)", 'PDSIRA',
+     '    for grup, drm, _rl, _r, satir, bos, tur in sorted(kayitlar, key=lambda x: x[:4]):\n',
+     '    for grup, drm, _rl, _r, satir, bos, tur in sorted(kayitlar, key=lambda x: (x[0],) + x[2:4]):      # MUTANT\n', ('psira',)),
 )
 
 
