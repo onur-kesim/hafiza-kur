@@ -2482,6 +2482,9 @@ jobs:
   #     sabotaj (M-K1..M-K10 kaynak kesfi, M-Z1..M-Z10 adres+alinti defteri) ve
   #     `faz0/karar_adres_kapisi.py` (altin 4 kararin >= 3'u adreslenmis mi;
   #     kapi kendi isirigini sinar) ayni isin icinde kosar (toplam 73 sabotaj).
+  #     P4.1 (13 Eki 2026): +17 sabotaj (M-Z17..M-Z27: sinif 2/3, tablo, beyan,
+  #     oncelik, sira, butce, dagilim, kayit tavani; toplam 90) ve kapi ESIGI 4
+  #     (R3 icin L66 alintisi + COEP; dort sabotajli motorda KIRMIZI).
   # ---------------------------------------------------------------------------
   guncel_durum_kapisi_mutanti:
     name: guncel durum kapisi mutanti (${{ matrix.os }})

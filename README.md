@@ -556,9 +556,8 @@ işaretçisi dahil). En önemlileri:
   `…` + `[kirpildi: n kr]`). Alansız kayıt `GEREKCESIZ <yol>` (SAYILIR). Blok sonu: `KARAR DEFTERI: <a> ADR + <b> IS-EMRI/diger
   tarandi · <k> karar · <g> GEREKCESIZ`. Motor YORUM YAPMAZ: adres + diskteki metin (yalnız backtick, `](`, `kararlar/NNNN-` kalıpları
   H4/H11 yüzünden etkisizleştirilir; ardışık boşluk tek). **Tavanlar:** TÜM blok gövdesi ≤ 8192 bayt (P1 gövdesi AYNEN kalır, kalan
-  bütçe kayıtlara); kayıt SIRASI deterministik: ALANLI kayıtlar (kaynak sırasıyla) önce, `GEREKCESIZ` olanlar sonra; sığmayan
-  `… +n kayit (listelenmedi; hepsi sayildi)`; alan başına en çok 2 başlık adresi + 1 satır içi alıntı (fazlası `+ satir daha
-  (alintilanmadi; sayildi): ...`), aynı satır iki alanda tekrar alıntılanmaz; kod çitlerinin içi (CommonMark: `kod_disi`) taranmaz; dosyanın ilk 1 MiB'ı; eşleşme satırın
+  bütçe kayıtlara); kayıt SIRASI P4.1'de değişti (aşağıda); sığmayan
+  `… +n kayit (listelenmedi; hepsi sayildi)`; aynı satır iki alanda tekrar alıntılanmaz; kod çitlerinin içi (CommonMark: `kod_disi`) taranmaz; dosyanın ilk 1 MiB'ı; eşleşme satırın
   40. karakterinden sonraysa alıntı eşleşen anahtardan başlar (`"…*Gerekçe: ...*"`); BOM atılır. **H7:** kalıcı-kural işareti (`ASLA`,
   `PAZARLIKSIZ`, ...) taşıyan satırın METNİ yazılmaz (motor blok maskesi onu sessizce düşürür ve kaydı "boş" gösterirdi), ADRESİ
   `(maskelendi: H7 isareti)` ile durur; okunamayan dosya `OLCULEMEDI <yol> (okunamadi)` (özette `· n OLCULEMEDI`). Karar dizini YOK ve
@@ -566,12 +565,27 @@ işaretçisi dahil). En önemlileri:
   **Sınırlar (gizlenmez):** anlam ÖLÇÜLMEZ — başlıkta `Neden` geçiyorsa `gerekce` der (gerçekten gerekçe olup olmadığı okuyucunun
   işidir; ölçülmüş gürültü: "Neden bugüne kadar görünmedi:" satırı da alıntılanır) · commit mesajları KAPSAM DIŞI (Momentum'da `karar:` /
   `decision:` satırı 0 ölçüldü) · `IS_EMRI_*` (alt çizgi), `.txt`, `notlar/IS-EMRI-y.md` (kök dışı) kaynak DEĞİLDİR · 8 KB'a sığmayan kayıt
-  listelenmez ama SAYILIR (Momentum `d4b5417`: 29 karar, 14'ü listelenir, 15'i `+15 kayit`; altın 4 karardan 3'ü adreslenir,
-  `IS-EMRI-o86-D` tavanın ötesindedir) · ham `[durum: …]` beyanı yalnız P1 gruplarındadır (kayıt satırı sınıfı taşır).
-  **Kapı:** `faz0/karar_adres_kapisi.py` (CI) — dört ALTIN karardan (kör okumanın sorduğu) en az ÜÇÜ blokta adreslenmiş olmalı
-  ("gösterir" = aynı dosyaya işaret eden adres altın aralıkta ya da aralığı içeren bölümün başlık satırı); Momentum CI'da olmadığından
-  ölçüt FIXTURE'a taşındı (dosya adı + satır konumu + biçim), `--momentum <dizin>` ham sonucu basar; kapı KENDİ ısırığını da sınar
-  (satır kayması ve `IS-EMRI-*` deseni düşmesi KIRMIZI yakmalı).
+  listelenmez ama SAYILIR (Momentum `d4b5417`, P4.1: 29 karar, 20'si listelenir, 9'u `+9 kayit`; altın 4/4 adreslenir) · ham `[durum: …]` beyanı yalnız P1 gruplarındadır (kayıt satırı sınıfı taşır).
+  **Kapı:** `faz0/karar_adres_kapisi.py` (CI) — dört ALTIN karardan (kör okumanın sorduğu) DÖRDÜ blokta adreslenmiş olmalı (P4.1: eşik 4;
+  "gösterir" = aynı dosyaya işaret eden adres altın aralığın İÇİNDE; R3 için ayrıca alıntıda `COEP` — yalnız `## 3. GEREKÇE` başlığı
+  YETMEZ); Momentum CI'da olmadığından ölçüt FIXTURE'a taşındı (dosya adı + satır konumu + biçim), `--momentum <dizin>` ham sonucu
+  basar; kapı KENDİ ısırığını da sınar (satır kayması · `IS-EMRI-*` deseni düşmesi · sınıf 3 kapalı · eski sıra → hepsi KIRMIZI).
+
+- **P4.1 (13 Eki 2026, Onur kilidi "iki bulguyu da hallet") — içeriksiz adres yanlış tahmine itmesin, 8 KB bütçe doğru kararları
+  taşısın.** Ölçüm (kör okuma, `besli-paket\OLCUM_RAPORU_13EKIM_P4_BAGIMSIZ.md`): ADR 0004'ün gerçek gerekçesi L66'daydı
+  (`🔴 **…gerekçesi COEP BLOKLAMASI DEĞİLDİR.**`), etiketli `Gerekçe:` olmadığı için alıntılanmadı; blokta yalnız `## 3. GEREKÇE`
+  başlığı kaldı ve okuyucu gerçeğin TERSİNİ tahmin etti. **(1) Satır içi `gerekce` alıntı önceliği** (dosya başına ≤ 3, sırayla
+  doldurulur): sınıf 1 etiketli `Gerekçe:`/`Neden:`/`Rationale:` · sınıf 2 satır BAŞINDA `Gerekçesi`/`Gerekçe`/`Neden` sözcüğü ·
+  sınıf 3 `🔴` ya da `**` vurgusu + aynı sözcüklerden biri (sözcük sınırlı); aynı sınıfta `🔴` önce, sonra satır sırası. Tablo (`|`)
+  ve başlık satırları hiçbir sınıfa girmez. Yalnız BAŞLIK adresli kayıtta (hiç alıntı yok) kayıt satırının sonuna
+  `(yalniz baslik: icerik icin dosyayi ac)` yazılır: boşluk tahminle doldurulmaz. **(2) Sıralama** (deterministik): grup — alıntılı →
+  yalnız başlık → `GEREKCESIZ` → `OLCULEMEDI`; her grupta durum `GECERLI` → `BEYANSIZ` → `TASLAK` → `GECERSIZ`/`SINIFLANAMADI`; sonra dosya
+  yolu. Bütçe aynı (TÜM gövde ≤ 8192 B); kesilenlerin durum dağılımı `listelenmedi: BEYANSIZ 9 · TASLAK 1` satırıyla beyan edilir.
+  **Kayıt tavanı:** tek kayıt ≤ 320 bayt (başlık + ilk alan satırı HER ZAMAN; alıntı satırları başlık adreslerinden önce; fazlası
+  `+ n satir daha (kayit tavani; sayildi)`) — bütçe kayıt SAYISINDAN çok kayıt BOYUNA harcanıyordu (ADR 0003 çifti ~1,2 KB'tı).
+  **Sınırlar:** sınıf 3 gürültülüdür (başlık dışı her `🔴`/`**` + `gerekçe` satırı; Momentum ADR 0004'te L32 de adaydır, `🔴` önceliği
+  L66'yı öne alır) · sıra TASLAK'ı sona iter (ADR 0004 TASLAK: bütçe daralırsa ilk düşen odur — kapı bunu 4/4 ile ölçer) ·
+  alıntı ilk 160 karakterle sınırlıdır (L66'da "COEP BLOKLAMASI DEĞİLDİR" görünür, devamı dosyadadır).
 
 - **Taslak ≠ karar: `karar-kaynagi` bloğu ADR'leri dört sınıf grubunda verir (P1, 6 Eki 2026) —
   BİLİNÇLİ DÖNÜŞ.** K-DURUM "motor durumu YORUMLAMAZ" demişti; ölçüm (Momentum kör okuma, R1 yanlış ×2)

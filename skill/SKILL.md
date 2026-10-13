@@ -456,7 +456,8 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   `KARAR KAYNAGI: n dosya, 200 tarandi`). Kayıt: `- K-<ad> · <başlık> · <tür> · durum <P1 sınıfı|BEYANSIZ>` + BULUNAN alanlar
   (`gerekce|bedel|alternatif <yol>:<N> (<başlık>)` ya da satır içi `"<alıntı ≤160 kr>"`); alansız `GEREKCESIZ <yol>`; sonda
   `KARAR DEFTERI: <a> ADR + <b> IS-EMRI/diger tarandi · <k> karar · <g> GEREKCESIZ`. Motor YORUM YAPMAZ, anlamı ÖLÇMEZ; blok ≤ 8 KB
-  (alanlı kayıtlar önce, sığmayan `… +n kayit`, hepsi sayılır). Commit mesajları KAPSAM DIŞI. Ayrıntı ve sınırlar: README.
+  (P4.1: alıntılı → yalnız başlık → GEREKCESIZ; GECERLI → BEYANSIZ → TASLAK; yalnız başlık adresli kayıt `(yalniz baslik: icerik icin
+  dosyayi ac)` der; sığmayan `… +n kayit` + `listelenmedi: <durum dağılımı>`, hepsi sayılır). Commit mesajları KAPSAM DIŞI. Ayrıntı ve sınırlar: README.
 - **Taslak ≠ karar: `karar-kaynagi` bloğu ADR'leri dört sınıf grubunda verir (P1, 6 Eki 2026) —
   BİLİNÇLİ DÖNÜŞ.** K-DURUM "motor durumu YORUMLAMAZ" demişti; ölçüm (Momentum kör okuma, R1 yanlış ×2)
   etiketin okuyucuya ulaştığını ama okuyucunun taslağın içeriğini yine karar diye aktardığını gösterdi.
