@@ -10,16 +10,17 @@ NEDEN VAR (olculdu 12 Eki 2026, Momentum d4b5417; besli-paket/OLCUM_RAPORU_07EKI
 NE OLCER
   Momentum'un dort altin kaynaginin YAPISINI (dosya adi, satir numarasi, baslik/satir ici bicim) FIXTURE olarak kurar (Momentum CI'da
   YOK; ham Momentum sonucu `--momentum <dizin>` ile ayrica olculur), `devral --esle canli=DURUM.md,kural=CLAUDE.md` + `derle` kosar ve
-  blogta her altin icin "gosterir" hukmu verir. "Gosterir" = ayni dosyaya isaret eden bir adresin satiri altin araligin ICINDE ya
-  da altin araligi ICEREN bolumun BASLIK satiri. Esik: 4 altinin >= 3'u. Fixture kurulamazsa ya da blok yoksa KIRMIZI (BOS YESIL YOK).
+  blogta her altin icin "gosterir" hukmu verir. "Gosterir" = ayni dosyaya isaret eden bir adresin satiri altin araligin ICINDE
+  (R3 icin ayrica alintida `COEP`). Esik (P4.1): 4 altinin 4'u. Fixture kurulamazsa ya da blok yoksa KIRMIZI (BOS YESIL YOK).
     R1 IS-EMRI-o83-kimlik.md:44-45           satir ici `*Gerekce: ...*`
     R2 docs/ADR/0002-senkron-mekanigi.md:193-196   `*Gerekce:*` + `*Kabul edilen odunlesim ...*`
-    R3 docs/ADR/0004-web-capraz-koken-izolasyonu.md:66-71   `## 3. GEREKCE` bolumu (54) bu araligi kapsar
-    R4 IS-EMRI-o86-D.md:51-57 (+ 4-7)        `### 2.3 Neden ...` basligi
-  KAPININ KENDI ISIRIGI: ayni olcum KALEM 2/KALEM 1 sabotajli iki motorla (M-Z1 satir numarasi kayar · M-K1 `IS-EMRI-*` deseni duser)
-  KOSULUR ve ikisinde de KIRMIZI olmalidir; yesil kalirsa kapi KOR'dur (exit 1).
+    R3 docs/ADR/0004-web-capraz-koken-izolasyonu.md:66-71   `🔴 **...gerekcesi COEP BLOKLAMASI DEGILDIR.**` ALINTISI (COEP gecmeli)
+    R4 IS-EMRI-o86-D.md:51-57 (+ 4-7)        `### 2.3 Neden ...` basligi ya da L7 `Gerekcesi §2.3'te ...` alintisi
+  KAPININ KENDI ISIRIGI: ayni olcum dort sabotajli motorla KOSULUR, dordunde de KIRMIZI olmalidir (yesil kalirsa kapi KOR, exit 1):
+  M-Z1 satir numarasi kayar · M-K1 `IS-EMRI-*` deseni duser · M-Z18 satir ici sinif 3 (`🔴`/`**` + gerekce) KAPALI (R3'un L66 alintisi
+  kaybolur: yalniz L54 basligi artik YETMEZ) · M-Z25 eski sira (KALEM 2: GEREKCESIZ kayitlar alintilanin onune gecer, R4 butceden duser).
 
-CIKIS KODU  0 temiz motor >= 3/4 VE iki sabotajli motorda KIRMIZI · 1 temiz motor < 3/4 ya da kapi KOR · 2 OLCULEMEDI (git yok, duzenek
+CIKIS KODU  0 temiz motor 4/4 VE dort sabotajli motorda KIRMIZI · 1 temiz motor < 4/4 ya da kapi KOR · 2 OLCULEMEDI (git yok, duzenek
             kurulamadi)
 KULLANIM    python faz0/karar_adres_kapisi.py [motor.py] [--momentum <Momentum dizini>]
 """
@@ -43,10 +44,12 @@ VARSAYILAN = os.path.join(AYNI, "..", "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 78
 _GIT_ENV = dict(os.environ, GIT_AUTHOR_NAME="p4kapi", GIT_AUTHOR_EMAIL="p4@example.invalid",
                 GIT_COMMITTER_NAME="p4kapi", GIT_COMMITTER_EMAIL="p4@example.invalid", GIT_CONFIG_NOSYSTEM="1")
-ALTIN = (("R1", "IS-EMRI-o83-kimlik.md", 44, 45), ("R2", "docs/ADR/0002-senkron-mekanigi.md", 193, 196),
-         ("R3", "docs/ADR/0004-web-capraz-koken-izolasyonu.md", 66, 71), ("R4", "IS-EMRI-o86-D.md", 51, 57))
-ESIK = 3
-ADRES = re.compile(r"^  (?:gerekce|bedel|alternatif) (\S+?):(\d+) ", re.M)
+# (kod, dosya, [(a, b), ...] aralik adaylari, adreste GECMESI gereken metin ya da None). P4.1: R3 icin yalniz `## 3. GEREKCE` basligi (L54) YETMEZ —
+# aralik 66-71 icinde ve `COEP` iceren ALINTI sarttir; R4 icin L7 alintisi ya da L51 basligi (aralik 4-7 ya da 51-57).
+ALTIN = (("R1", "IS-EMRI-o83-kimlik.md", ((44, 45),), None), ("R2", "docs/ADR/0002-senkron-mekanigi.md", ((193, 196),), None),
+         ("R3", "docs/ADR/0004-web-capraz-koken-izolasyonu.md", ((66, 71),), "COEP"), ("R4", "IS-EMRI-o86-D.md", ((51, 57), (4, 7)), None))
+ESIK = 4
+ADRES = re.compile(r"^  (?:gerekce|bedel|alternatif) (\S+?):(\d+) (.*)$", re.M)
 BLOK = re.compile(r'<!-- blok konu="karar-kaynagi"[^>]*-->\n(.*?)\n<!-- /blok -->', re.S)
 
 
@@ -99,6 +102,9 @@ def fixture():
     for i in range(10):
         d["IS-EMRI-o84-f%02d.md" % i] = _dosya({1: "# IS-EMRI-o84-f%02d — doldurma kaydi" % i, 3: "## Neden — doldurma %d" % i,
                                                   5: "*Gerekçe: doldurma kaydi %d, ADRES defteri butce yolunu kosar.*" % i}, 8)
+    # GEREKCESIZ doldurma (dosya adi siralamasinda R4'ten ONCE): dogru sirada alintili kayitlarin ARKASINA duser; eski sirada butceyi yer
+    for i in range(48):
+        d["IS-EMRI-o85-g%02d.md" % i] = "# Bos doldurma %02d — alan yok\n\nsade metin\n" % i
     return d
 
 
@@ -136,39 +142,22 @@ def kur_ve_derle(motor, kok, dosyalar=None):
     return m.group(1) if m else ""
 
 
-def _baslik_bolumu(kok, yol, n, a, b):
-    """n. satir araliktan ONCE (n <= a) gelen bir BASLIKSA ve bolumu (ayni/ust seviyeli sonraki baslik) b'yi KAPSIYORSA True."""
-    if n > a:
-        return False
-    try:
-        with io.open(os.path.join(kok, *yol.split("/")), encoding="utf-8", errors="replace") as f:
-            L = f.read().split("\n")
-    except OSError:
-        return False
-    m = re.match(r"^ {0,3}(#{1,6})[ \t]+\S", L[n - 1]) if 0 < n <= len(L) else None
-    if not m:
-        return False
-    sev = len(m.group(1))
-    for i in range(n, min(b, len(L))):
-        k = re.match(r"^ {0,3}(#{1,6})[ \t]+\S", L[i])
-        if k and len(k.group(1)) <= sev:
-            return False
-    return True
-
-
 def hukum(kok, blok):
-    """-> ([(kod, yol, a, b, gosterir, kanit)], gosteren_sayi)."""
-    adres = [(y, int(n)) for y, n in ADRES.findall(blok)]
+    """-> ([(kod, yol, aralik, gosterir, kanit)], gosteren_sayi). "Gosterir" = ayni dosyaya isaret eden bir adres altin araliklardan
+    birinin ICINDE ve (varsa) adresin alinti/baslik metni zorunlu sozcugu icerir. Baslik-bolum kurali YOK (P4.1)."""
+    adres = [(y, int(n), r) for y, n, r in ADRES.findall(blok)]
     out = []
-    for kod, yol, a, b in ALTIN:
-        kanit = next(((y, n) for y, n in adres if y == yol and (a <= n <= b or _baslik_bolumu(kok, y, n, a, b))), None)
-        out.append((kod, yol, a, b, kanit is not None, kanit))
-    return out, sum(1 for x in out if x[4])
+    for kod, yol, araliklar, must in ALTIN:
+        kanit = next(((y, n) for y, n, r in adres
+                      if y == yol and any(a <= n <= b for a, b in araliklar) and (must is None or must in r)), None)
+        out.append((kod, yol, araliklar, kanit is not None, kanit))
+    return out, sum(1 for x in out if x[3])
 
 
 def _yaz_tablo(t, n):
-    for kod, yol, a, b, g, kanit in t:
-        print("  %-3s %-52s %3d-%-3d  %s" % (kod, yol, a, b, ("GOSTERIR  (%s:%d)" % kanit) if g else "GOSTERMEZ"))
+    for kod, yol, araliklar, g, kanit in t:
+        print("  %-3s %-52s %-10s  %s" % (kod, yol, ",".join("%d-%d" % x for x in araliklar),
+                                          ("GOSTERIR  (%s:%d)" % kanit) if g else "GOSTERMEZ"))
     print("  altin eslesme: %d/%d (esik %d)" % (n, len(t), ESIK))
 
 
@@ -227,7 +216,7 @@ def main():
                 print("\nSONUC: KIRMIZI — altin eslesme %d/%d (esik %d)." % (n, len(t), ESIK))
                 return 1
             kor = []
-            for onek in ("M-Z1", "M-K1"):
+            for onek in ("M-Z1", "M-K1", "M-Z18", "M-Z25"):
                 y, ad = _sabotajli_motor(motor, tmp, onek)
                 os.makedirs(os.path.join(tmp, onek))
                 try:
@@ -242,7 +231,7 @@ def main():
             if kor:
                 print("\nSONUC: KAPI KOR — sabotajli motorda YESIL kaldi: %s" % ", ".join(kor))
                 return 1
-            print("\nSONUC: YESIL — altin %d/4, sabotajli iki motorda kapi KIRMIZI." % n)
+            print("\nSONUC: YESIL — altin %d/4, sabotajli dort motorda kapi KIRMIZI." % n)
             return 0
         except Kurulamadi as e:
             print("SONUC: OLCULEMEDI — %s" % e)
