@@ -1927,7 +1927,7 @@ def _asistan_blok(canli):
 def _asistan_bagli(kok, p):
     """Dosya (ya da kokten itibaren BIR ust dizini) sembolik baga/junction'a mi cikiyor?"""
     x = kok
-    for parca in os.path.relpath(p, kok).split(os.sep):
+    for parca in _rel(p, kok).split("/"):
         x = os.path.join(x, parca)
         if os.path.lexists(x) and (os.path.islink(x) or kok_disina_mi(kok, x)):
             return True
