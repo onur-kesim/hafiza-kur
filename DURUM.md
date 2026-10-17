@@ -1,12 +1,12 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin = main = `131cb075`; CI #132 198/198; P4.1 push edildi; P3 başladı)
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin = main = `131cb075`; CI #132 198/198; P3 `7b1aefb`..`45b543a` yerelde)
 Son güncelleme: 17 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## DEVİR O22 → O23 (17 Eki) — P3 BAŞLADI: KALEM 0 BİTTİ, KALEM 1-3 YAPILMADI · PUSH YOK
-Taban `131cb075` = origin = main (CI #132 198/198). Oturum SARI'ya girdi (774k): kod yok, tasarım notu aşağıda. **İş emri:** `besli-paket\IS_EMRI_P3_ASISTAN_DOSYALARI.md` (KISITLAR + ONUR KİLİDİ önce). **Açılış:** `hafiza-kur · O23 · başla`.
-**Kod haritası (`hafiza.py`):** `_ISARETCI`+`_isaretci_var` ~1806 · `_kapi_isaretci(N,y)` ~1821 (H19 asistan dalı BURAYA; `_kapi_govde` 80 satır tavanı) · `cmd_kur` parçaları `_kur_on_kontrol…_kur_rapor` (etki imzası `cmd_kur_bolme_mutanti`: çağrıyı mevcut parçaya KOŞULSUZ tek satır ekle) · `cmd_devral` CC 99: yalnız koşulsuz tek satır (rc.update ~3409, `--kesif` bloğu `return 0` öncesi, `_isaretci_oneri` sonrası ~3552) · `rc_oku`: doğrulama ayrı `_asistan_rc_dogrula` · argparse ~12125.
-**Karar:** `--asistan` `nargs="?", const="*"`; bilinmeyen anahtar `oldur` (exit 2) yazımdan ÖNCE · tek sabit `_ASISTAN_DOSYA` · blok `<!-- hafiza-kur:asistan -->`…`<!-- /hafiza-kur:asistan -->` · hal fonksiyonu SAF (`--kesif` ve yazıcı AYNI) · ekleme `open(p,"ab")` (önek bayt-birebir; CRLF/BOM; UTF-16 yazma) · yeni dosya `"xb"` · bağ/junction (`kok_disina_mi`) → `SEMBOLIK BAG` · `git check-ignore -q` → `IZLENMEZ`/`OLCULEMEDI` · `.hafizarc asistan` zincir halkasından ÖNCE · kurulu projede ekleme = `kur --asistan` · AGENTS.md kural evi ise `KURAL EVI`.
-**Sıra:** K1 (+`asistan_mutanti.py`, 6 sabotaj, `capraz.yml` adımı + YAML parse) → K2 (H19, 3 sabotaj) → K3 (README sınırları, SKILL tek satır; CLAUDE.md'ye DOKUNMA). **Tuzak:** `\n` (Write ile yama) · `rm -rf` yasak · çapalar kayar · Windows symlink yetkisiz olabilir.
+## DEVİR O23 → O24 (17 Eki) — P3 BİTTİ (yerelde) · PUSH YOK · Cowork kabulü bekler
+Taban `131cb075` = origin. Zincir: K0 `7b1aefb` · K1 `e1f6930` · K2 `7b9eb1a` · K3 `60fb399` · yol-ayracı düzeltmesi `45b543a`. `kur`/`devral --asistan` (OPT-IN; bayraksız 0 bayt; `--kesif` yazmaz): AGENTS.md · GEMINI.md · `.cursor/rules/hafiza-kur.mdc` · `.github/copilot-instructions.md`'ye SONA `<!-- hafiza-kur:asistan -->` bloğu (önek bayt-birebir, CRLF/BOM korunur, ikinci koşum blok yazmaz; yarım blok/yabancı .mdc/sembolik bağ/UTF-16/kural evi YAZILMAZ ve beyan edilir; `.hafizarc asistan`). H19: listedeki her dosya AYRI UYARI, exit değişmez.
+**Ölçüm:** `faz0/asistan_mutanti.py` 12 kol + 9 sabotaj hepsi ISIRDI · tam tur `_olcum\p3_tur\ci_son2.log` (45b543a): 75 OK / 9 bilinen KIRMIZI / 2 SKIP · `sabotaj.py` 67/0 · `karmasiklik` 7/9/99/30 AYNI · `altin_cikti` FARK YOK · motor +198 satır/+10.356 B. **Yakalanan:** ilk tam tur `yol_ayraci_kapisi` KAPI-1'i kırmızı yaktı (`_asistan_bagli` `os.sep` bölüyordu) → `_rel` ile düzeltildi (ci_son.log eski, ci_son2 geçerli).
+**Sınırlar (README):** Cursor AGENTS.md'yi de okur (çift yükleme) · `.mdc` biçim riski · Gemini `context.fileName` · asistanın dosyayı GERÇEKTEN okuduğu ÖLÇÜLMEZ (E4) · kurulu projeye ekleme = `kur --asistan`. **ÖLÇÜLEMEDİ:** Cowork kabulü (a-e: Momentum/fxa/Graphify kopyaları) · Windows dışı platformlarda sembolik bağ kolu (CI #133) · bağımsız inceleme ajanı bu tura KOŞULMADI (context TURUNCU).
+**Sıradaki:** Cowork kabulü + 1 rastgele beyan → Onur push → CI. **Uyarı:** `\n` tuzağı · `rm -rf` yasak · çapalar kayar.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **25 Ağu yazısı** KAPSAM DIŞI · **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
