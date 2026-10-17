@@ -1,19 +1,19 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin `0e3e535`; P4.1 `1f03d12`..`5a15f3c` yerelde; tam tur 74 OK/9 bilinen KIRMIZI)
-Son güncelleme: 13 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin = main = `131cb075`; CI #132 198/198; P4.1 push edildi; P3 başladı)
+Son güncelleme: 17 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## DEVİR O21 → O22 (13 Eki) — P4.1 BİTTİ (yerelde) · PUSH YOK · Cowork kabulü + kör okuma tekrarı bekler
-Taban `0e3e535` = origin. Zincir: K1 `1f03d12` · K2 `246c825` · K3 `10e21df` · belge `3d22807` · inceleme düzeltmeleri `0d79516` · çapa `5a15f3c`. `karar-kaynagi` (İKİNCİ blok YOK): satır içi `gerekce` önceliği (etiketli > satır başı sözcük > `🔴`/`**`+sözcük; tablo/başlık hariç) · yalnız-başlık beyanı `(yalniz baslik: icerik icin dosyayi ac)` · sıra alıntılı→yalnız başlık→GEREKCESIZ, GECERLI→BEYANSIZ→TASLAK · kayıt ≤ 280 B (GECERLI'de her alanın ilk alıntısı korunur) · `listelenmedi: <durum dağılımı>` · kapı 4/4 + R3 için L66 (COEP).
-**Ölçüm:** harness 95 sabotaj/0 çapa bozuk, hepsi ISIRDI (M-Z17..32) · tam tur `_olcum\p41_tur\ci_son.log`: 74 OK / 9 bilinen KIRMIZI / 2 SKIP · `sabotaj.py` 67/0 · `karmasiklik` 7/9/99/30 AYNI · `altin_cikti` FARK YOK · motor +93 satır/+4.963 B · **Momentum `d4b5417` (ham `_olcum\p41_momentum.txt`): altın 4/4**, R3 `:66` COEP alıntısı, blok 8095 B (marj ~100 B), 20/29 listelenir.
-**Bağımsız inceleme 7 bulgu** (durum ayrıştırma · bedel tavanda düşüyordu · sayım · etiket kayması · P1 bütçe guard'i · fixture TASLAK değildi · `🔴`) **hepsi kapandı**. **Sınırlar:** sınıf 3 gürültülü · alıntı ilk 160 kr · marj ~100 B: ilk düşen TASLAK ADR · TASLAK'ta yalnız ilk satır garanti.
-**Sıradaki:** Cowork: mekanik kabul + 1 rastgele beyan + kör okuma tekrarı (aynı protokol; hedef KARAR > 1,83, R3'te YANLIŞ 0) → Onur push → CI. **Uyarı:** `\n` tuzağı (yama Write ile) · `rm -rf` yasak · sabotaj çapaları kod değişince kayar.
+## DEVİR O22 → O23 (17 Eki) — P3 BAŞLADI: KALEM 0 BİTTİ, KALEM 1-3 YAPILMADI · PUSH YOK
+Taban `131cb075` = origin = main (CI #132 198/198). Oturum SARI'ya girdi (774k): kod yok, tasarım notu aşağıda. **İş emri:** `besli-paket\IS_EMRI_P3_ASISTAN_DOSYALARI.md` (KISITLAR + ONUR KİLİDİ önce). **Açılış:** `hafiza-kur · O23 · başla`.
+**Kod haritası (`hafiza.py`):** `_ISARETCI`+`_isaretci_var` ~1806 · `_kapi_isaretci(N,y)` ~1821 (H19 asistan dalı BURAYA; `_kapi_govde` 80 satır tavanı) · `cmd_kur` parçaları `_kur_on_kontrol…_kur_rapor` (etki imzası `cmd_kur_bolme_mutanti`: çağrıyı mevcut parçaya KOŞULSUZ tek satır ekle) · `cmd_devral` CC 99: yalnız koşulsuz tek satır (rc.update ~3409, `--kesif` bloğu `return 0` öncesi, `_isaretci_oneri` sonrası ~3552) · `rc_oku`: doğrulama ayrı `_asistan_rc_dogrula` · argparse ~12125.
+**Karar:** `--asistan` `nargs="?", const="*"`; bilinmeyen anahtar `oldur` (exit 2) yazımdan ÖNCE · tek sabit `_ASISTAN_DOSYA` · blok `<!-- hafiza-kur:asistan -->`…`<!-- /hafiza-kur:asistan -->` · hal fonksiyonu SAF (`--kesif` ve yazıcı AYNI) · ekleme `open(p,"ab")` (önek bayt-birebir; CRLF/BOM; UTF-16 yazma) · yeni dosya `"xb"` · bağ/junction (`kok_disina_mi`) → `SEMBOLIK BAG` · `git check-ignore -q` → `IZLENMEZ`/`OLCULEMEDI` · `.hafizarc asistan` zincir halkasından ÖNCE · kurulu projede ekleme = `kur --asistan` · AGENTS.md kural evi ise `KURAL EVI`.
+**Sıra:** K1 (+`asistan_mutanti.py`, 6 sabotaj, `capraz.yml` adımı + YAML parse) → K2 (H19, 3 sabotaj) → K3 (README sınırları, SKILL tek satır; CLAUDE.md'ye DOKUNMA). **Tuzak:** `\n` (Write ile yama) · `rm -rf` yasak · çapalar kayar · Windows symlink yetkisiz olabilir.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **25 Ağu yazısı** KAPSAM DIŞI · **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**P4** (O20, push edildi): karar adres defteri · **P4.1** (O21): Momentum 4/4 · **P5.4** (O19, push edildi): `not` bayat defterde H20 taze kümesi (`43a260d`/`aed4169`/`e7b2ae2`) · **P2.1** (O16): `adres` tembel kurulum·maske·atlama · **P2** (O15): 4 dil · **H14** (O14) · **P1** (O13) · **O10-O12:** K-DURUM·K-GECIS·K-ISARET·K-SATIR·K-YOL·K-BAYAT (H18/H19) · B1+B2 (H16).
+**P4** (O20) karar adres defteri · **P4.1** (O21) Momentum 4/4: ikisi de PUSH EDİLDİ (CI #132) · **P5.4** (O19, push edildi): `not` bayat defterde H20 taze kümesi (`43a260d`/`aed4169`/`e7b2ae2`) · **P2.1** (O16): `adres` tembel kurulum·maske·atlama · **P2** (O15): 4 dil · **H14** (O14) · **P1** (O13) · **O10-O12:** K-DURUM·K-GECIS·K-ISARET·K-SATIR·K-YOL·K-BAYAT (H18/H19) · B1+B2 (H16).
 **ÜRÜN HAZIRLIĞI** (30 Eyl, CI #117; K7 yok). **AÇIK:** büyük/küçük harf çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
 
 ## Bilinen sınırlar (ölçülmüş)
