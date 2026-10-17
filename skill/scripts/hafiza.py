@@ -510,6 +510,7 @@ def rc_oku(kok):
         oldur("%s > politika_gerekce bir NESNE olmali (ornek: "
               "{\"tavan_kb\": \"devralinan dosya 2 MB\"})" % RC_AD)
     d.setdefault("politika_gerekce", {})
+    _asistan_rc_dogrula(d)                      # P3: `asistan` listesi (yoksa [])
     return d
 
 # ------------------------------------------------------- beyan defterleri (Y-3)
@@ -1671,6 +1672,7 @@ SAB_RC = """{{
 
 
 def _kur_on_kontrol(a):
+    _asistan_coz(a)                             # P3: bilinmeyen anahtar exit 2, HICBIR yazimdan once
     kok = os.path.abspath(a.kok or os.getcwd())
     if not os.path.isdir(kok):
         oldur("kok yok: " + kok)
@@ -1802,7 +1804,7 @@ def _kur_dizinler(kok, rc, y):
 # kural evine yalniz baslik + "Bu dosya her oturumda yuklenir" yaziyordu; canli defterin ADI yoktu => defter yalniz skill
 # tetiklenirse okunuyordu (Cursor/Codex'te hic yol yok). Yeni kural evi ikinci satirda ISARETCI tasir. Kural evi ZATEN
 # VARSA dosyaya DOKUNULMAZ (sahiplik: motor proje metnine tek karakter yazmaz) — `ISARETCI YOK: ... eklemek icin: <satir>`
-# SOYLER. `kapi` (H19) ayni olcumu yapar: UYARI, cikis kodu DEGISMEZ. AGENTS.md YAZILMAZ (Onur kilidi: yalniz isaretci).
+# SOYLER. `kapi` (H19) ayni olcumu yapar: UYARI, cikis kodu DEGISMEZ. AGENTS.md: 17 Eki 2026'dan beri YALNIZ `--asistan` ile (P3, Onur kilidi) yazilir.
 _ISARETCI = "> Canli defter: %s — her oturum basinda once onu oku (hafiza-kur)."
 
 
@@ -1828,6 +1830,168 @@ def _kapi_isaretci(N, y):
     if not _isaretci_var(oku(y.kural), canli):
         N.append("H19: kural evi (%s) canli defterin adini (%s) anmiyor — her oturum yuklenen dosya deftere yol "
                  "vermiyor; eklemek icin: %s" % (_rel(y.kural, y.kok), canli, _ISARETCI % canli))
+
+
+# KALEM P3 (besli-paket/IS_EMRI_P3_ASISTAN_DOSYALARI.md, 17 Eki 2026, Onur kilidi). `kur`/`devral --asistan`: Claude DISI asistanlar
+# (Codex/Gemini/Cursor/Copilot) deftere yol bulsun diye DORT dosyaya isaretci + acilis protokolu yazilir. OPT-IN: bayraksiz TEK BAYT
+# yazilmaz; `devral --kesif` yazacagini basar. Dosya varsa SONA isaretli blok eklenir (mevcut baytlar ONEK olarak AYNEN kalir; LF/CRLF ve
+# BOM korunur), tekrar kosum ikinci blok yazmaz. Sembolik baga YAZILMAZ. Isaret `<!-- hafiza-kur:asistan -->` (motorun `<!-- blok`
+# ayristiricisina GIRMEZ). Motor YORUM YAPMAZ: gövde TEK sabitten (`_asistan_blok`). Asistanin dosyayi GERCEKTEN okudugu OLCULMEZ.
+_ASISTAN_DOSYA = (("agents", "AGENTS.md"), ("gemini", "GEMINI.md"), ("cursor", ".cursor/rules/hafiza-kur.mdc"),
+                  ("copilot", ".github/copilot-instructions.md"))
+_ASISTAN_BAS = "<!-- hafiza-kur:asistan -->"
+_ASISTAN_SON = "<!-- /hafiza-kur:asistan -->"
+_ASISTAN_PROTOKOL = ("1. Canli defteri oku; `Sonraki adim` bolumundeki ilk isten devam et. Sohbet gecmisini hafiza sayma.",
+                     "2. Motor (`hafiza.py`) varsa: `python hafiza.py kapi` — YESIL gormeden isleme baslama.",
+                     "3. Degisiklikte: `python hafiza.py not --konu=<konu> --metin=<ozet>`.",
+                     "4. Oturum kapanisinda: `python hafiza.py derle`.")
+_ASISTAN_MDC_ON = "---\ndescription: hafiza-kur — canli defter ve acilis protokolu\nalwaysApply: true\n---\n"
+_ASISTAN_ISTEK = [None]               # `--asistan` cozumu (anahtar listesi) ya da None: kur/devral arasinda tek hucre
+
+
+def _asistan_coz(a):
+    """`--asistan` -> sirali anahtar listesi ya da None (bayrak yok). Bilinmeyen anahtar: exit 2 + gecerli liste (sessiz atlama YOK)."""
+    v = getattr(a, "asistan", None)
+    _ASISTAN_ISTEK[0] = None
+    if v is None:
+        return None
+    gecerli = [k for k, _r in _ASISTAN_DOSYA]
+    istek = gecerli if v == "*" else [x.strip() for x in v.split(",") if x.strip()]
+    kotu = [x for x in istek if x not in gecerli]
+    if kotu or not istek:
+        oldur("bilinmeyen asistan anahtari: %s — gecerli: %s" % (", ".join(kotu) or "(bos)", ", ".join(gecerli)))
+    _ASISTAN_ISTEK[0] = [k for k in gecerli if k in istek]
+    return _ASISTAN_ISTEK[0]
+
+
+def _asistan_rc_dogrula(d):
+    """`.hafizarc asistan` (liste; yoksa []) sinirda dogrulanir."""
+    v = d.setdefault("asistan", [])
+    gecerli = [k for k, _r in _ASISTAN_DOSYA]
+    if not isinstance(v, list) or any(x not in gecerli for x in v):
+        oldur("%s > asistan, su anahtarlardan olusan bir LISTE olmali: %s (su an: %r)" % (RC_AD, ", ".join(gecerli), v))
+
+
+def _asistan_rc_devral():
+    return {"asistan": list(_ASISTAN_ISTEK[0])} if _ASISTAN_ISTEK[0] else {}
+
+
+def _asistan_rc_yaz(y):
+    """`kur --asistan`: kayit = mevcut liste ∪ istek. Degismediyse `.hafizarc`a DOKUNULMAZ; degisirse yalniz `asistan` degeri yazilir (digerleri
+    bayt-bayt). Zincir halkasindan ONCE cagrilir (politika dosyasi halka yukunde)."""
+    if not _ASISTAN_ISTEK[0]:
+        return
+    rcp = os.path.join(y.kok, RC_AD)
+    mevcut = rc_oku(y.kok).get("asistan", [])
+    yeni = [k for k, _r in _ASISTAN_DOSYA if k in mevcut or k in _ASISTAN_ISTEK[0]]
+    if yeni == mevcut:
+        return
+    t = oku(rcp)
+    deger = json.dumps(yeni)
+    if re.search(r'"asistan"\s*:\s*\[[^\]]*\]', t):
+        yaz(rcp, re.sub(r'"asistan"\s*:\s*\[[^\]]*\]', lambda m: '"asistan": ' + deger, t, count=1))
+        return
+    son = t.rstrip().rfind("}")
+    once = t[:son].rstrip()
+    yaz(rcp, '%s%s\n  "asistan": %s\n%s' % (once, "" if once.endswith("{") else ",", deger, t[son:]))
+
+
+def _asistan_blok(canli):
+    return [_ASISTAN_BAS, _ISARETCI % canli] + list(_ASISTAN_PROTOKOL) + [_ASISTAN_SON]
+
+
+def _asistan_bagli(kok, p):
+    """Dosya (ya da kokten itibaren BIR ust dizini) sembolik baga/junction'a mi cikiyor?"""
+    x = kok
+    for parca in os.path.relpath(p, kok).split(os.sep):
+        x = os.path.join(x, parca)
+        if os.path.lexists(x) and (os.path.islink(x) or kok_disina_mi(kok, x)):
+            return True
+    return False
+
+
+def _asistan_hal(kok, anahtar, rel, kural_p):
+    """SAF (yazmaz): -> (hal, mutlak yol). hal: YAZILACAK · EKLENECEK · ZATEN VAR · YARIM BLOK · SEMBOLIK BAG · KURAL EVI · CAKISMA ·
+    KODLAMA · DOSYA DEGIL. `--kesif` ve yazici AYNI fonksiyonu okur."""
+    p = os.path.join(kok, *rel.split("/"))
+    if _asistan_bagli(kok, p):
+        return "SEMBOLIK BAG", p
+    if not os.path.lexists(p):
+        return "YAZILACAK", p
+    if not os.path.isfile(p):
+        return "DOSYA DEGIL", p
+    if kural_p and os.path.realpath(p) == os.path.realpath(kural_p):
+        return "KURAL EVI", p
+    with open(p, "rb") as f:
+        ham = f.read()
+    if ham[:2] in (b"\xff\xfe", b"\xfe\xff"):
+        return "KODLAMA", p
+    t = ham.decode("utf-8", "replace")
+    bas, son = t.find(_ASISTAN_BAS), t.find(_ASISTAN_SON)
+    if bas >= 0 and son > bas:
+        return "ZATEN VAR", p
+    if bas >= 0 or son >= 0:
+        return "YARIM BLOK", p
+    return ("CAKISMA" if anahtar == "cursor" else "EKLENECEK"), p
+
+
+def _asistan_izlenmez(kok, rel):
+    """`git check-ignore`: '' (izleniyor) · 'IZLENMEZ' (.gitignore yutuyor) · 'OLCULEMEDI' (git yok/depo degil)."""
+    try:
+        r = subprocess.run(["git", "-C", kok, "check-ignore", "-q", "--", rel], capture_output=True)
+    except OSError:
+        return "OLCULEMEDI"
+    return {0: "IZLENMEZ", 1: ""}.get(r.returncode, "OLCULEMEDI")
+
+
+def _asistan_yaz_dosya(p, anahtar, canli):
+    """YAZILACAK/EKLENECEK hali yazar. Yeni dosya `xb`; mevcut dosyaya `ab` (onek bayt-birebir; LF/CRLF ve BOM korunur)."""
+    blok = _asistan_blok(canli)
+    if not os.path.lexists(p):
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        govde = ("\n".join(blok) + "\n").encode("utf-8")
+        with open(p, "xb") as f:
+            f.write((_ASISTAN_MDC_ON.encode("utf-8") if anahtar == "cursor" else b"") + govde)
+        return "YAZILDI"
+    with open(p, "rb") as f:
+        ham = f.read()
+    n_crlf = ham.count(b"\r\n")
+    eol = b"\r\n" if n_crlf and n_crlf >= ham.count(b"\n") - n_crlf else b"\n"
+    ek = b"" if not ham else ((b"" if ham.endswith(b"\n") else eol) + eol)
+    with open(p, "ab") as f:
+        f.write(ek + eol.join(x.encode("utf-8") for x in blok) + eol)
+    return "EKLENDI"
+
+
+def _asistan_uygula(y):
+    """`kur`/`devral --asistan` yazici: her dosya icin hal BEYAN edilir (sessiz atlama YOK)."""
+    istek = _ASISTAN_ISTEK[0]
+    if not istek:
+        return
+    rc = rc_oku(y.kok)
+    for anahtar, rel in _ASISTAN_DOSYA:
+        if anahtar not in istek:
+            continue
+        hal, p = _asistan_hal(y.kok, anahtar, rel, y.kural)
+        if hal in ("YAZILACAK", "EKLENECEK"):
+            hal = _asistan_yaz_dosya(p, anahtar, rc["canli"])
+            iz = _asistan_izlenmez(y.kok, rel)
+            print("ASISTAN %s: %s%s" % (hal, rel, (" · " + iz + " (.gitignore)") if iz else ""))
+        elif hal == "KURAL EVI":
+            print("ASISTAN KURAL EVI: %s kural evi — isaretci yolu gecerli: %s" % (rel, _ISARETCI % rc["canli"]))
+        else:
+            print("ASISTAN %s: %s — yazilmadi" % (hal, rel))
+
+
+def _asistan_kesif(kok, envanter):
+    """`devral --kesif`: yazacagini BASAR, TEK BAYT yazmaz (hal fonksiyonu saf)."""
+    istek = _ASISTAN_ISTEK[0]
+    if not istek:
+        return
+    kural = os.path.join(kok, (devir_rol_adaylari(envanter, "kural_evi") or ["CLAUDE.md"])[0])
+    for anahtar, rel in _ASISTAN_DOSYA:
+        if anahtar in istek:
+            print("  asistan %-8s : %s -> %s" % (anahtar, rel, _asistan_hal(kok, anahtar, rel, kural)[0]))
 
 
 def _kur_dosyalar(ad, rc, y):
@@ -1873,6 +2037,7 @@ def _kur_dosyalar(ad, rc, y):
 
 def _kur_halka(y, yabanci=None):
 
+    _asistan_rc_yaz(y)                          # P3: `.hafizarc asistan` zincir halkasindan ONCE
     # arsiv dizini bolumunu tazele
     _arsiv_dizini_tazele(y)
 
@@ -1899,6 +2064,7 @@ def _kur_rapor(kok, rc, y, yabanci=None):
     print("  canli hafiza  : " + rc["canli"])
     print("  cipa SHA      : " + sha_dosya(y.snap)[:16] + "...")
     print("\nSonraki: python %s kapi --kok=\"%s\"" % (os.path.basename(__file__), kok))
+    _asistan_uygula(y)                          # P3: `--asistan` verilmediyse HICBIR sey yapmaz
 
 
 def cmd_kur(a):
@@ -3203,6 +3369,7 @@ def cmd_devral(a):
     GERCEKTEN turetir (basliklar, arsiv turleri, tavan) — varsayimla ilk gun kirmizi
     seli uretmez. (3) Canli dosyayi ONCE yedekler. (4) Sonunda TRIYAJLI devir raporu verir.
     """
+    _asistan_coz(a)                             # P3: bilinmeyen anahtar exit 2, HICBIR yazimdan once
     kok = os.path.abspath(a.kok or os.getcwd())
     if not os.path.isdir(kok):
         oldur("kok yok: " + kok)
@@ -3236,6 +3403,7 @@ def cmd_devral(a):
             print("  secilecek canli   : YOK — yazan kosum DURUR "
                   "(`--esle canli=<dosya>` ile kilitle)")
         print("  (yazmak icin `--kesif` olmadan kos)")
+        _asistan_kesif(kok, envanter)           # P3: yazacagi dosyalari + hallerini basar, yazmaz
         return 0
     if os.path.isfile(os.path.join(kok, RC_AD)):
         oldur(RC_AD + " ZATEN VAR — bu proje kurulu/devralinmis. Devir bir kez yapilir.\n"
@@ -3407,6 +3575,7 @@ def cmd_devral(a):
         "ek_arsiv_dosyalari": sorted(ek),
     }
     rc.update(_devral_karar_rc(karar_dizini))   # K-YOL: ADR'siz projede BOS -> .hafizarc bayt-bayt eskisi
+    rc.update(_asistan_rc_devral())             # P3: `--asistan` verildiyse opt-in kaydi (yoksa {})
     y = Y(kok, rc)
     # `devral` yol tiplerini hic dogrulamiyordu (bagimsiz denetim: canli dosya DIZIN ya da
     # link dongusu -> ham IsADirectoryError/OSError).
@@ -3553,6 +3722,7 @@ def cmd_devral(a):
                      % (rc["ad"], _ISARETCI % rc["canli"]))
     else:
         _isaretci_oneri(y, rc)
+    _asistan_uygula(y)                          # P3: `--asistan` verilmediyse HICBIR sey yapmaz
     _devral_karar_konusu(y, rc)                 # K-YOL: DEVIR halkasindan ONCE (politika dosyasi yukte)
     _dnot = "ilerlemis proje devralindi (%s)" % hdir_rel
     if tum_izler:
@@ -12124,12 +12294,16 @@ def main():
     p.add_argument("--kok"); p.add_argument("--ad")
     p.add_argument("--yine-de", dest="yine_de", action="store_true",
                    help="baska aracin defteri taninsa bile kur (zincire duser)")
+    p.add_argument("--asistan", nargs="?", const="*", default=None, metavar="ANAHTAR[,ANAHTAR]",
+                   help="OPT-IN: AGENTS.md/GEMINI.md/.cursor/rules/hafiza-kur.mdc/.github/copilot-instructions.md'ye isaretci blogu (agents,gemini,cursor,copilot)")
     p.set_defaults(fn=cmd_kur)
 
     p = alt.add_parser("devral", aliases=_takma_ad("devral"), help="ilerlemis/mevcut sistemi olan projeyi v2'ye devralir")
     p.add_argument("--kok"); p.add_argument("--ad"); p.add_argument("--canli")
     p.add_argument("--kesif", action="store_true", help="KURU PROVA: envanteri ve rol eslemesini basar, TEK BAYT yazmaz")
     p.add_argument("--esle", help="rol kilidi: canli=<dosya>[,kural=<dosya>,gunluk=…,indeks=…,disarida=…]")
+    p.add_argument("--asistan", nargs="?", const="*", default=None, metavar="ANAHTAR[,ANAHTAR]",
+                   help="OPT-IN: asistan dosyalarina isaretci blogu (agents,gemini,cursor,copilot); --kesif yazacagini basar")
     p.set_defaults(fn=cmd_devral)
 
     p = alt.add_parser("bloklastir", aliases=_takma_ad("bloklastir"), help="devralinan bolumleri geriye donuk blok isaretine alir")

@@ -2517,6 +2517,37 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
+  # P3) ASISTAN DOSYALARI MUTANTI — besli-paket/IS_EMRI_P3_ASISTAN_DOSYALARI.md
+  #     (17 Eki 2026, Onur kilidi). `kur`/`devral --asistan`: AGENTS.md · GEMINI.md ·
+  #     .cursor/rules/hafiza-kur.mdc · .github/copilot-instructions.md'ye sona
+  #     isaretli blok. OPT-IN (bayraksiz TEK BAYT yok), onek bayt-birebir, CRLF/BOM
+  #     korunur, sembolik baga yazilmaz, `--kesif` yazmaz. 11 kol + 6 sabotaj.
+  # ---------------------------------------------------------------------------
+  asistan_mutanti:
+    name: asistan dosyalari mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: "asistan dosyalari: dogum, onek, CRLF, ikinci kosum, sembolik bag, kesif, Graphify (11 kol, 6 sabotaj)"
+        shell: bash
+        run: python faz0/asistan_mutanti.py 2>&1 | tee asistan-cikti.txt
+      - name: asistan mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asistan-mutanti-${{ matrix.os }}
+          path: asistan-cikti.txt
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
   # 2b-33) ORTAM SINIFI MUTANTI — besli-paket/IS_EMRI_B4.md (9 Eylul, B4-3/B4-4/
   #     grep-tuzagi) + besli-paket/IS_EMRI_B4E_OLCEN_TARAF.md (12 Eylul, Onur
   #     kilidi "SIK D = A + C" — OLCEN TARAFIN korlugu): DORT KAPI:
