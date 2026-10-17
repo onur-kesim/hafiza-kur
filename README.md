@@ -544,6 +544,25 @@ işaretçisi dahil). En önemlileri:
   (Momentum, kör okuma): KARAR 2/4; okuyucu `TASLAK` etiketini görüp yine taslağı karar sandı
   (R1 yanlış ×2). Ayrıca H19 yalnız ADI ölçer: "X'i ASLA okuma" satırı kapıyı susturur.
 
+- **Claude DIŞI asistanlar: `kur --asistan` / `devral --asistan` (P3, 17 Eki 2026, Onur kilidi).** Cursor/Codex/Gemini/Copilot'ta deftere
+  giden TEK yol, o aracın kendi talimat dosyasıdır. `--asistan` (değersiz = dördü; `--asistan agents,cursor` = alt küme; anahtarlar
+  `agents` · `gemini` · `cursor` · `copilot`; bilinmeyen anahtar exit 2 + geçerli liste, HİÇBİR yazımdan önce) şu dosyalara
+  `> Canlı defter: <canlı> — …` işaretçisi + 4 satır açılış protokolünü yazar: `AGENTS.md` · `GEMINI.md` · `.cursor/rules/hafiza-kur.mdc`
+  (frontmatter `description` + `alwaysApply: true`) · `.github/copilot-instructions.md`. **OPT-IN:** bayraksız TEK BAYT yazılmaz;
+  `devral --kesif --asistan` yazacağı dosyaları ve hallerini basar, yazmaz. Dosya varsa **SONA** `<!-- hafiza-kur:asistan -->` …
+  `<!-- /hafiza-kur:asistan -->` bloğu eklenir (mevcut baytlar önek olarak AYNEN kalır; LF/CRLF ve BOM korunur; son satırda newline yoksa
+  önce yalnız o eklenir); yoksa yaratılır; tekrar koşum ikinci blok yazmaz (`ZATEN VAR`). YazılMAYANLAR ve her biri BEYAN edilir:
+  yarım blok (`YARIM BLOK`), sembolik bağ/junction (`SEMBOLIK BAG`), UTF-16 dosya (`KODLAMA`), isaretimizi taşımayan `hafiza-kur.mdc`
+  (`CAKISMA`), kural evi olan dosya (`KURAL EVI`: işaretçi yolu geçerli). `.gitignore` yutuyorsa yazar ama `IZLENMEZ`, ölçemezse
+  `OLCULEMEDI` der. Kayıt `.hafizarc` `asistan` listesi (yoksa `[]`). Başka aracın bölümüne (Graphify `## graphify`, `graphify.mdc`)
+  DOKUNULMAZ. **H19:** listedeki her asistan dosyası için AYRI `H19: asistan dosyasi (<yol>) …` UYARISI (yok · işaret yok · işaret var
+  ama canlı adı yok); çıkış kodu DEĞİŞMEZ; listede olmayan dosya için ses yok. **Sınırlar (gizlenmez):** Cursor `AGENTS.md`'yi de
+  okur ⇒ `AGENTS.md` + `.mdc` birlikte yazılırsa işaretçi ÇİFT yüklenir (bilinçli) · `.cursor/rules/*.mdc` biçimi araç tarafından
+  "legacy" sayılıyor, `RULE.md` klasör biçimi raporlarda çalışmıyor — biçim değişirse bayatlar · Gemini CLI varsayılan `GEMINI.md`'yi
+  okur, `context.fileName` değişmişse okumaz (motor `~/.gemini`'yi OKUMAZ) · motor asistanın dosyayı GERÇEKTEN okuduğunu ÖLÇMEZ (E4
+  işi) · kurulu projeye sonradan eklemek = `kur --asistan` (`devral` kurulu projede zaten reddeder). Ölçüm: `faz0/asistan_mutanti.py`
+  (12 kol, 9 sabotaj).
+
 - **Karar adres defteri (P4, 12 Eki 2026, Onur kilidi: yaklaşım KARAR ADRES DEFTERİ).** Ölçüm (Momentum `d4b5417`,
   kör okuma): karar sorularının cevabı projede YAZILIYDI, eksik olan ADRESTİ. `karar-kaynagi` bloğu (İKİNCİ blok YOK; P1 sınıf
   hükmü ve `KARAR SINIFI` satırı AYNEN) genişler: **(1) Kaynak keşfi** = karar dizini + kökte `IS-EMRI-*` · `GOREV-*` · `RFC-*` ·

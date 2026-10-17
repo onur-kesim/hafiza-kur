@@ -450,7 +450,7 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
   yazmaz); çıktıya tek satır düşer: `ISARETCI YOK: <kural evi> canli deftere isaret etmiyor — eklemek icin:
   <tam satır>` — eklemek insanındır. `kapi` aynısını **H19** olarak ölçer: kural evinde canlı defterin adı
   (dosya adı, harf duyarsız) geçmiyorsa UYARI (çıkış kodu DEĞİŞMEZ), geçiyorsa sessiz. Sınır: "ad geçiyor"
-  yalnız ADI ölçer — satırın okuyucuya "önce oku" dediğini ölçmez. `AGENTS.md` YAZILMAZ.
+  yalnız ADI ölçer — satırın okuyucuya "önce oku" dediğini ölçmez. `AGENTS.md` ve diğer asistan dosyaları YALNIZ `kur`/`devral --asistan` ile yazılır (P3, opt-in; ayrıntı README).
 - **Karar adres defteri (P4, 12 Eki 2026): `karar-kaynagi` bloğu kaynak başına ADRES + BİREBİR ALINTI taşır.** Kaynak =
   karar dizini + kökte `IS-EMRI-*`/`GOREV-*`/`RFC-*`/`DECISION*`/`ADR-*` (`.md`, harf duyarsız) + `docs/decisions/*.md` (tavan 200;
   `KARAR KAYNAGI: n dosya, 200 tarandi`). Kayıt: `- K-<ad> · <başlık> · <tür> · durum <P1 sınıfı|BEYANSIZ>` + BULUNAN alanlar
