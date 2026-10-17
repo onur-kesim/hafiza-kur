@@ -1820,10 +1820,34 @@ def _isaretci_oneri(y, rc):
               % (rc["kural_evi_dosya"], _ISARETCI % rc["canli"]))
 
 
+def _kapi_asistan(N, y):
+    """H19 (P3 KALEM 2): `.hafizarc asistan` listesindeki HER dosya icin AYRI uyari: yok · hafiza-kur isareti yok · isaret var ama canli defterin
+    adi yok. UYARI: yalniz N kanali (`fail`/`O` YOK — cikis kodu DEGISMEZ). Listede OLMAYAN dosya icin ses YOK (Graphify'li projede gurultu
+    uretmez). Kural evi ile ayni dosya `_kapi_isaretci`nin K-ISARET yoluna birakilir. Cagri yeri `_kapi_isaretci` basi: `_kapi_govde` 80
+    satir tavaninda yeni cagri satiri EKLENMEZ."""
+    istek = rc_oku(y.kok).get("asistan", [])
+    canli = _rel(y.canli, y.kok)
+    uyari = []
+    for anahtar, rel in _ASISTAN_DOSYA:
+        p = os.path.join(y.kok, *rel.split("/"))
+        if anahtar not in istek or (os.path.isfile(p) and os.path.realpath(p) == os.path.realpath(y.kural)):
+            continue
+        t = oku(p) if os.path.isfile(p) else None
+        if t is None:
+            uyari.append("H19: asistan dosyasi (%s) YOK — `kur --asistan %s` ile yeniden yaz" % (rel, anahtar))
+        elif _ASISTAN_BAS not in t:
+            uyari.append("H19: asistan dosyasi (%s) hafiza-kur isaretini tasimiyor — `kur --asistan %s` ile ekle" % (rel, anahtar))
+        elif not _isaretci_var(t, canli):
+            uyari.append("H19: asistan dosyasi (%s) isaret tasiyor ama canli defterin adini (%s) anmiyor" % (rel, canli))
+    for x in uyari:
+        N.append(x)
+
+
 def _kapi_isaretci(N, y):
     """H19 KURAL EVI -> CANLI ISARETCI (K-ISARET). UYARI: yalniz N kanalina yazar (`fail`/`O` YOK — cikis kodu
     DEGISMEZ). Kural evi yoksa ya da canli ile AYNI dosyaysa sessiz; kural evinde canli defterin adi geciyorsa sessiz.
     Cagri yeri `_kapi_h18` basi: `_kapi_govde` 80 satir tavaninda (K-SATIR ile ayni gerekce)."""
+    _kapi_asistan(N, y)                         # P3: asistan dosyalari (listede olanlar) AYRI satir
     if not os.path.isfile(y.kural) or os.path.realpath(y.kural) == os.path.realpath(y.canli):
         return
     canli = _rel(y.canli, y.kok)

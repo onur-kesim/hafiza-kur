@@ -181,7 +181,53 @@ def k_anahtar_kesif_graphify(motor, taban):
     return b
 
 
-KOLLAR = (k_dogum_bayraksiz, k_onek_crlf, k_ikinci_yarim_cakisma, k_sembolik, k_anahtar_kesif_graphify)
+def _h19(c):
+    return sorted(x.strip() for x in c.splitlines() if "H19: asistan dosyasi (" in x)
+
+
+def k_h19(motor, taban):
+    """H19KOL (KALEM 2): listedeki her dosya AYRI satir, exit DEGISMEZ, listede olmayan dosya icin ses YOK."""
+    b = []
+    k0 = yeni_proje(taban, "h19taban")
+    kur(motor, k0, "--asistan")
+    e0, c0 = kos(motor, k0, "kapi")
+    if _h19(c0):
+        b.append(("H19KOL", "saglam kurulumda asistan satiri OLMAMALI: %r" % _h19(c0)))
+    for anahtar, rel in (("agents", DOSYALAR[0]), ("gemini", DOSYALAR[1]), ("cursor", DOSYALAR[2]), ("copilot", DOSYALAR[3])):
+        k = yeni_proje(taban, "h19_" + anahtar)
+        kur(motor, k, "--asistan")
+        p = os.path.join(k, *rel.split("/"))
+        with open(p, "wb") as f:
+            f.write(b"# bozuk: isaret yok\n")
+        e1, c1 = kos(motor, k, "kapi")
+        if len(_h19(c1)) != 1 or ("(%s)" % rel) not in _h19(c1)[0]:
+            b.append(("H19KOL", "yalniz %s icin TEK satir beklenir: %r" % (rel, _h19(c1))))
+        if e1 != e0:
+            b.append(("H19EXIT", "H19 UYARIDIR, cikis kodu DEGISMEZ: taban=%s bozuk=%s" % (e0, e1)))
+    kc = yeni_proje(taban, "h19canli")                      # isaret VAR ama canli defterin adi yok
+    kur(motor, kc, "--asistan", "gemini")
+    pg = os.path.join(kc, "GEMINI.md")
+    with open(pg, "wb") as f:
+        f.write(oku_b(kc, "GEMINI.md").replace(b"PROJE_HAFIZA.md", b"X.md"))
+    if len(_h19(kos(motor, kc, "kapi")[1])) != 1:
+        b.append(("H19KOL", "isaret var ama canli adi yok: TEK satir beklenir"))
+    ki = yeni_proje(taban, "h19iki")                        # iki bozuk dosya: IKI ayri satir (dosya ayrimi kaybolmaz)
+    kur(motor, ki, "--asistan")
+    for rel in (DOSYALAR[0], DOSYALAR[3]):
+        with open(os.path.join(ki, *rel.split("/")), "wb") as f:
+            f.write(b"# bozuk\n")
+    if len(_h19(kos(motor, ki, "kapi")[1])) != 2:
+        b.append(("H19KOL", "iki bozuk dosya: IKI ayri H19 satiri beklenir"))
+    k2 = yeni_proje(taban, "h19liste")                      # listede OLMAYAN bozuk AGENTS.md: ses YOK
+    kur(motor, k2, "--asistan", "cursor")
+    with open(os.path.join(k2, "AGENTS.md"), "wb") as f:
+        f.write(b"# bozuk\n")
+    if _h19(kos(motor, k2, "kapi")[1]):
+        b.append(("H19LISTE", "listede olmayan dosya icin ses OLMAMALI"))
+    return b
+
+
+KOLLAR = (k_dogum_bayraksiz, k_onek_crlf, k_ikinci_yarim_cakisma, k_sembolik, k_anahtar_kesif_graphify, k_h19)
 
 # (ad, etiket, ankor, yeni): ankor motorda TAM 1 kez gecmeli
 SABOTAJLAR = (
@@ -202,6 +248,12 @@ SABOTAJLAR = (
      '            h_, p_ = _asistan_hal(kok, anahtar, rel, kural)      # MUTANT\n'
      '            print("  asistan %-8s : %s -> %s" % (anahtar, rel, h_))\n'
      '            if h_ in ("YAZILACAK", "EKLENECEK"):\n                _asistan_yaz_dosya(p_, anahtar, "PROJE_HAFIZA.md")\n'),
+    ("M-H1 H19 asistan dali KAPALI", "H19KOL",
+     '    _kapi_asistan(N, y)                         # P3: asistan dosyalari (listede olanlar) AYRI satir\n', '    pass      # MUTANT\n'),
+    ("M-H2 H19 asistan satirlari TEK satirda birlesir", "H19KOL",
+     '    for x in uyari:\n        N.append(x)\n', '    if uyari:      # MUTANT\n        N.append(" | ".join(uyari))\n'),
+    ("M-H3 H19 asistan uyarisi cikis kodunu 1'e cikarir", "H19EXIT",
+     '    for x in uyari:\n        N.append(x)\n', '    for x in uyari:\n        N.append(x)\n    if uyari:      # MUTANT\n        sys.exit(1)\n'),
 )
 
 
@@ -263,7 +315,7 @@ def main():
         if kacan:
             print("SONUC: KAPI KOR — %s" % "; ".join(kacan))
             return 1
-        print("SONUC: YESIL — 11 kol temiz, %d sabotaj AYRI eksende ISIRDI." % len(SABOTAJLAR))
+        print("SONUC: YESIL — 12 kol temiz, %d sabotaj AYRI eksende ISIRDI." % len(SABOTAJLAR))
         return 0
     finally:
         def onar(fonk, p, *_):
