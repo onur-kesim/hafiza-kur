@@ -1676,6 +1676,7 @@ def _kur_on_kontrol(a):
     kok = os.path.abspath(a.kok or os.getcwd())
     if not os.path.isdir(kok):
         oldur("kok yok: " + kok)
+    _asistan_yazilabilir(kok)                   # P3.1 K4: yazilabilirlik yazimdan ONCE
     # Fable Bulgu 5: belge "mevcut sistemde kur KOSMA" diyordu ama arac kendini korumuyordu.
     # Artik v1 izleri kod seviyesinde taranir ve `kur` DURUR.
     izler = []
@@ -1960,6 +1961,18 @@ def _asistan_bag_hedef(kok, rel):
     if _asistan_git_modu(kok, rel) == "120000":
         return (oku(x).strip().splitlines() or ["OLCULEMEDI"])[0][:200]
     return "OLCULEMEDI"
+
+
+def _asistan_yazilabilir(kok):
+    """P3.1 K4: yazilacak/eklenecek asistan dosyasi (yoksa en yakin mevcut ust dizin) YAZILABILIR mi — HICBIR yazimdan ONCE; degilse exit 2 + yol.
+    Salt-okunur ayrimi `os.access`tir: Windows'ta yalniz dosyanin salt-okunur bayragini gorur, DIZIN izni ve root OLCULEMEZ (yazim yine hata verir)."""
+    istek = _ASISTAN_ISTEK[0] or []
+    for anahtar, rel in _ASISTAN_DOSYA:
+        hal, p = _asistan_hal(kok, anahtar, rel, None) if anahtar in istek else ("", "")
+        while hal in ("YAZILACAK", "EKLENECEK") and not os.path.lexists(p):
+            p = os.path.dirname(p)
+        if hal in ("YAZILACAK", "EKLENECEK") and not os.access(p, os.W_OK):
+            oldur("asistan dosyasi yazilamaz (salt-okunur): " + p)
 
 
 def _asistan_hal(kok, anahtar, rel, kural_p):
@@ -3429,6 +3442,8 @@ def cmd_devral(a):
     kok = os.path.abspath(a.kok or os.getcwd())
     if not os.path.isdir(kok):
         oldur("kok yok: " + kok)
+    if not getattr(a, "kesif", False):
+        _asistan_yazilabilir(kok)               # P3.1 K4: yazilabilirlik yazimdan ONCE (kuru prova yazmaz)
     # --- KESIF (md.6) — TEK EV: kuru prova da yazan yol da BURAYI okur -------
     esleme = devir_esle_coz(kok, getattr(a, "esle", None))
     if a.canli and esleme.get("canli") and esleme["canli"] != a.canli.replace(os.sep, "/"):
@@ -5493,8 +5508,22 @@ def _h14_git_durumu(kok):
     return git_var, kirli, izlenen
 
 
+def _asistan_saf_yollar(kok, y):
+    """P3.1 K3: `.hafizarc asistan` listesindeki dosyalardan motorun YARATTIGI ve hic dokunulmamis olanlar (icerik == uretilen govde, satir sonu
+    normallesir). Durumsuz: yaratilan/eklenen ayrimi ICERIKTEN olculur (rc yazimi zincir halkasindan once, dosya yazimi sonra — sira cakisir).
+    Kullanici metni tasiyan (EKLENDI) ya da sonradan duzenlenen dosya proje dosyasi KALIR."""
+    istek, saf = rc_oku(kok).get("asistan", []), set()
+    govde = "\n".join(_asistan_blok(_rel(y.canli, kok))) + "\n"
+    for anahtar, rel in _ASISTAN_DOSYA:
+        p = os.path.join(kok, *rel.split("/"))
+        if anahtar in istek and os.path.isfile(p) and oku(p).replace("\r\n", "\n") == (_ASISTAN_MDC_ON if anahtar == "cursor" else "") + govde:
+            saf.add(rel)
+    return saf
+
+
 def _h14_adaylar(kok, y):
     haric = {".git", "node_modules", "__pycache__", ".venv", "arsiv", "gunluk", "dist", "build"}
+    saf = _asistan_saf_yollar(kok, y)
     adaylar = []                                     # (rel, mtime)
     for r0, d0, f0 in os.walk(kok):
         d0[:] = [d for d in d0 if d not in haric]
@@ -5508,6 +5537,8 @@ def _h14_adaylar(kok, y):
             try:
                 m0 = os.path.getmtime(p0)
             except OSError:
+                continue
+            if _rel(p0, kok) in saf:                 # P3.1 K3: motorun yarattigi asistan dosyasi proje degisikligi DEGIL
                 continue
             adaylar.append((_rel(p0, kok), m0))
     return adaylar

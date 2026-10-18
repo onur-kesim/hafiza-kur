@@ -193,6 +193,64 @@ def k_git_bag(motor, taban):
     return b
 
 
+def _h14_satiri(c):
+    return sorted(x.strip() for x in c.splitlines() if "H14" in x)
+
+
+def _eski_proje(taban, ad, *ek):
+    """Eski proje: tek kod dosyasi + kur; hafiza tarihi (bugun) projeden cok ILERIDE olacak sekilde tum mtime'lar eskitilir."""
+    import time
+    k = yeni_proje(taban, ad, {"kod.py": b"x = 1\n"})
+    kur(motor_, k, *ek)
+    eski = time.time() - 60 * 86400
+    for r0, d, f0 in os.walk(k):
+        d[:] = [x for x in d if x != ".git"]
+        for f in f0:
+            if f not in ("PROJE_HAFIZA.md", "AGENTS.md", "GEMINI.md", "hafiza-kur.mdc", "copilot-instructions.md"):
+                os.utime(os.path.join(r0, f), (eski, eski))
+    return k
+
+
+def k_h14_yaratilan(motor, taban):
+    """H14YARAT (P3.1 K3): motorun YARATTIGI asistan dosyalari proje degisikligi sayilmaz; asistansiz tabanla AYNI H14 satiri."""
+    global motor_
+    motor_ = motor
+    b = []
+    k0 = _eski_proje(taban, "h14taban")
+    k1 = _eski_proje(taban, "h14asistan", "--asistan")
+    t0, t1 = _h14_satiri(kos(motor, k0, "kapi")[1]), _h14_satiri(kos(motor, k1, "kapi")[1])
+    if not t0 or t0 != t1:
+        b.append(("H14YARAT", "asistan dosyalari YARATILINCA H14 bulgusu asistansiz tabanla AYNI olmali: taban=%r asistan=%r" % (t0, t1)))
+    k2 = _eski_proje(taban, "h14ekle")                      # EKLENDI: mevcut kullanici dosyasina ekleme proje dosyasi KALIR (sinir)
+    with open(os.path.join(k2, "AGENTS.md"), "wb") as f:
+        f.write(b"# kullanici kurali\n")
+    kur(motor, k2, "--asistan", "agents")
+    if _h14_satiri(kos(motor, k2, "kapi")[1]) == t0:
+        b.append(("H14YARAT", "mevcut dosyaya EKLENEN asistan dosyasi proje dosyasi KALMALI (H14 tarihi tazelenir)"))
+    return b
+
+
+def k_salt_okunur(motor, taban):
+    """SALTOKU (P3.1 K4): salt-okunur AGENTS.md -> `kur --asistan` HICBIR sey yazmadan exit 2 + yol. Windows'ta bayrak `os.access` ile gorulur
+    (dizin izni OLCULEMEZ); bayrak kurulamazsa kol OLCULEMEDI yazar."""
+    import stat
+    ham = b"# kullanici\n"
+    k = yeni_proje(taban, "saltoku", {"AGENTS.md": ham})
+    p = os.path.join(k, "AGENTS.md")
+    os.chmod(p, stat.S_IREAD)
+    try:
+        if os.access(p, os.W_OK):
+            print("      (SALTOKU OLCULEMEDI: salt-okunur bayragi bu hesapta etkisiz — root?)")
+            return []
+        once = manifest(k)
+        rc, c = kur(motor, k, "--asistan", "agents")
+        if rc != 2 or "AGENTS.md" not in c or manifest(k) != once:
+            return [("SALTOKU", "salt-okunur hedef: exit 2 + yol + HICBIR yazim beklenir: exit=%s %r" % (rc, c[-160:]))]
+        return []
+    finally:
+        os.chmod(p, stat.S_IWRITE | stat.S_IREAD)
+
+
 def k_anahtar_kesif_graphify(motor, taban):
     b = []
     k = yeni_proje(taban, "anahtar")
@@ -260,7 +318,7 @@ def k_h19(motor, taban):
     return b
 
 
-KOLLAR = (k_dogum_bayraksiz, k_onek_crlf, k_ikinci_yarim_cakisma, k_sembolik, k_git_bag, k_anahtar_kesif_graphify, k_h19)
+KOLLAR = (k_dogum_bayraksiz, k_onek_crlf, k_ikinci_yarim_cakisma, k_sembolik, k_git_bag, k_h14_yaratilan, k_salt_okunur, k_anahtar_kesif_graphify, k_h19)
 
 # (ad, etiket, ankor, yeni): ankor motorda TAM 1 kez gecmeli
 SABOTAJLAR = (
@@ -279,6 +337,12 @@ SABOTAJLAR = (
      '    if False:      # MUTANT\n'),
     ("M-H4 H19 bag icin eski metin (`kur --asistan` onerir)", "H19BAG",
      '        if m and _asistan_hal(y.kok, anahtar, rel, None)[0].startswith("SEMBOLIK BAG"):',
+     '        if False:      # MUTANT'),
+    ("M-H5 H14 hariç tutma KAPALI (yaratilan asistan dosyasi proje sayilir)", "H14YARAT",
+     '            if _rel(p0, kok) in saf:',
+     '            if False:      # MUTANT'),
+    ("M-A8 yazilabilirlik denetimi KAPALI (yazim sirasinda patlar)", "SALTOKU",
+     '        if hal in ("YAZILACAK", "EKLENECEK") and not os.access(p, os.W_OK):',
      '        if False:      # MUTANT'),
     ("M-A5 CRLF/satir sonu dusurulur (hep LF)", "CRLF",
      '    eol = b"\\r\\n" if n_crlf and n_crlf >= ham.count(b"\\n") - n_crlf else b"\\n"\n', '    eol = b"\\n"      # MUTANT\n'),
@@ -354,7 +418,7 @@ def main():
         if kacan:
             print("SONUC: KAPI KOR — %s" % "; ".join(kacan))
             return 1
-        print("SONUC: YESIL — 14 kol temiz, %d sabotaj AYRI eksende ISIRDI." % len(SABOTAJLAR))
+        print("SONUC: YESIL — 16 kol temiz, %d sabotaj AYRI eksende ISIRDI." % len(SABOTAJLAR))
         return 0
     finally:
         def onar(fonk, p, *_):
