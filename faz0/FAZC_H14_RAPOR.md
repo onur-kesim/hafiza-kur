@@ -202,6 +202,8 @@ küme 22 ölçümde bit-bit aynı olduğu için bu kesindir). Refactoring turund
 davranış değiştirilmez; **düzeltilmedi**, ayrı bir tura yazıldı. Kenar mutantı
 bu hâli okurken FAIL satırını önceler, yoksa hâl "eş" sanılır.
 
+**KAPANDI `1fe544c`** (18 Eki 2026) — `faz0/h14_tek_hukum_mutanti.py`: M-TEK1 ESKI IF/IF-ELSE · M-TEK2 ES NOTU KOSULSUZ · M-TEK3 ILERIDE SOKULUR (`if`→`elif`, mesajlar aynı).
+
 ---
 
 ## 7. NE ÖLÇÜLEMEDİ

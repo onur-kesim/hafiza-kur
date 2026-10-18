@@ -325,7 +325,11 @@ def _h14_satiri(cikti):
     "es" saniyor. Bu bir DAVRANIS bulgusudur, bolmenin urunu degildir: bolme
     ONCESI motor da ayni ikisini basar (altin kume BIT-BIT ayni oldugu icin
     biliniyor) — burada yalniz GORUNUR kilindi, DUZELTILMEDI (refactor turunda
-    davranis degistirilmez)."""
+    davranis degistirilmez).
+
+    KAPANDI `1fe544c` (18 Eki 2026): motor artik ters yonde YALNIZ FAIL basar; bu oncelik
+    SAVUNMA amaclidir (eski yapi geri gelirse hal "es" sanilmasin) - asil hukmu
+    `h14_tek_hukum_mutanti.py` olcer."""
     satirlar = [s.strip() for s in cikti.split("\n")]
     for d in satirlar:
         if d.startswith("[H14]"):
