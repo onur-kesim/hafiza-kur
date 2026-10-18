@@ -160,6 +160,25 @@ def k_sembolik(motor, taban):
     return []
 
 
+def k_git_bag(motor, taban):
+    """GITBAG (P3.1 K1): `core.symlinks=false` checkout'unda git bagi (index 120000) DUZ DOSYA olur (icerik = hedef yolu); yazilmamali.
+    M-A4'ten AYRI eksen: o `islink`i, bu index modunu olcer. Duzenek: index'e 120000 girdisi + diskte duz dosya."""
+    k = yeni_proje(taban, "gitbag")
+    ham = b"hedef.md"
+    h = subprocess.run(["git", "-C", k, "hash-object", "-w", "--stdin"], input=ham, capture_output=True)
+    sha = h.stdout.decode().strip()
+    with open(os.path.join(k, "AGENTS.md"), "wb") as f:
+        f.write(ham)
+    if h.returncode != 0 or subprocess.run(["git", "-C", k, "update-index", "--add", "--cacheinfo", "120000,%s,AGENTS.md" % sha],
+                                           capture_output=True, env=_GIT).returncode != 0:
+        raise Kurulamadi("git index'e 120000 girdisi eklenemedi")
+    rc, c = kur(motor, k, "--asistan", "agents")
+    if oku_b(k, "AGENTS.md") != ham or "SEMBOLIK BAG (git)" not in c:
+        return [("GITBAG", "index modu 120000 olan dosya (diskte duz) yazilmamali + `SEMBOLIK BAG (git)` beyani: %r %r"
+                 % (oku_b(k, "AGENTS.md")[:60], c[-160:]))]
+    return []
+
+
 def k_anahtar_kesif_graphify(motor, taban):
     b = []
     k = yeni_proje(taban, "anahtar")
@@ -227,7 +246,7 @@ def k_h19(motor, taban):
     return b
 
 
-KOLLAR = (k_dogum_bayraksiz, k_onek_crlf, k_ikinci_yarim_cakisma, k_sembolik, k_anahtar_kesif_graphify, k_h19)
+KOLLAR = (k_dogum_bayraksiz, k_onek_crlf, k_ikinci_yarim_cakisma, k_sembolik, k_git_bag, k_anahtar_kesif_graphify, k_h19)
 
 # (ad, etiket, ankor, yeni): ankor motorda TAM 1 kez gecmeli
 SABOTAJLAR = (
@@ -241,6 +260,9 @@ SABOTAJLAR = (
      '    pass      # MUTANT\n'),
     ("M-A4 sembolik bagi izleme (baglanti dizinine yazilir)", "SEMBOLIK",
      '    if _asistan_bagli(kok, p):\n        return "SEMBOLIK BAG", p\n', '    if False:      # MUTANT\n        return "SEMBOLIK BAG", p\n'),
+    ("M-A7 git index modu (120000) kontrolu KAPALI", "GITBAG",
+     '    if os.path.lexists(p) and _asistan_git_modu(kok, rel) == "120000":\n',
+     '    if False:      # MUTANT\n'),
     ("M-A5 CRLF/satir sonu dusurulur (hep LF)", "CRLF",
      '    eol = b"\\r\\n" if n_crlf and n_crlf >= ham.count(b"\\n") - n_crlf else b"\\n"\n', '    eol = b"\\n"      # MUTANT\n'),
     ("M-A6 `--kesif` yazar", "KESIF",
@@ -315,7 +337,7 @@ def main():
         if kacan:
             print("SONUC: KAPI KOR — %s" % "; ".join(kacan))
             return 1
-        print("SONUC: YESIL — 12 kol temiz, %d sabotaj AYRI eksende ISIRDI." % len(SABOTAJLAR))
+        print("SONUC: YESIL — 13 kol temiz, %d sabotaj AYRI eksende ISIRDI." % len(SABOTAJLAR))
         return 0
     finally:
         def onar(fonk, p, *_):

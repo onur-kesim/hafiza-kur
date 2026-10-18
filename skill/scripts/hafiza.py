@@ -1934,12 +1934,25 @@ def _asistan_bagli(kok, p):
     return False
 
 
+def _asistan_git_modu(kok, rel):
+    """P3.1 K1: `git ls-files -s -- <rel>` index modu: '120000' (git sembolik bagi) · '' (izlenmiyor/baska mod) · 'OLCULEMEDI' (git yok/hata)."""
+    try:
+        r = subprocess.run(["git", "-C", kok, "ls-files", "-s", "--", rel], capture_output=True)
+    except OSError:
+        return "OLCULEMEDI"
+    if r.returncode != 0:
+        return "OLCULEMEDI"
+    return r.stdout.decode("utf-8", "replace").split(" ", 1)[0]
+
+
 def _asistan_hal(kok, anahtar, rel, kural_p):
     """SAF (yazmaz): -> (hal, mutlak yol). hal: YAZILACAK · EKLENECEK · ZATEN VAR · YARIM BLOK · SEMBOLIK BAG · KURAL EVI · CAKISMA ·
     KODLAMA · DOSYA DEGIL. `--kesif` ve yazici AYNI fonksiyonu okur."""
     p = os.path.join(kok, *rel.split("/"))
     if _asistan_bagli(kok, p):
         return "SEMBOLIK BAG", p
+    if os.path.lexists(p) and _asistan_git_modu(kok, rel) == "120000":
+        return "SEMBOLIK BAG (git)", p        # P3.1 K1: core.symlinks=false checkout'unda bag DUZ DOSYA gorunur
     if not os.path.lexists(p):
         return "YAZILACAK", p
     if not os.path.isfile(p):
@@ -1998,9 +2011,11 @@ def _asistan_uygula(y):
             continue
         hal, p = _asistan_hal(y.kok, anahtar, rel, y.kural)
         if hal in ("YAZILACAK", "EKLENECEK"):
+            olc = hal == "EKLENECEK" and _asistan_git_modu(y.kok, rel) == "OLCULEMEDI"
             hal = _asistan_yaz_dosya(p, anahtar, rc["canli"])
             iz = _asistan_izlenmez(y.kok, rel)
-            print("ASISTAN %s: %s%s" % (hal, rel, (" · " + iz + " (.gitignore)") if iz else ""))
+            print("ASISTAN %s: %s%s%s" % (hal, rel, (" · " + iz + " (.gitignore)") if iz else "",
+                                          " · bag modu OLCULEMEDI" if olc else ""))
         elif hal == "KURAL EVI":
             print("ASISTAN KURAL EVI: %s kural evi — isaretci yolu gecerli: %s" % (rel, _ISARETCI % rc["canli"]))
         else:
