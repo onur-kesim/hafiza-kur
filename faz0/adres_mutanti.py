@@ -305,22 +305,109 @@ def kol_tanim(motor, taban):
 
 # DOGRUSALLIK (P2-ONCEDEN-01): bozuk/bitmemis girdide sure dogrusal kalir. (1) bitmemis yorum = uzun BOSLUK dizisi: bitisik `\s*`
 # ciftleri/ucluleri desende n^2/n^3 geri izleme verir (eski motor 2 KB'de 30 s). (2) satir sonu dizisi: ASI hukmu dizinin HER satir
-# sonu icin yeniden hesaplanirsa n^2 (eski motor 16 KB'de 22 s). Zaman asimi SABOTAJ bayragidir; saglam motor milisaniyeler tutar.
-SURE_TS = {"src/yorum.ts": "class A {\n  async checkCu/*" + "x" * 4000 + "\n",
-           "src/satir.ts": "class A {\n  foo =" + "\n" * 40000 + " 1\n}\n"}
-SURE_ZAMAN_ASIMI = 20
+# sonu icin yeniden hesaplanirsa n^2 (eski motor 16 KB'de 22 s). Saglam motor milisaniyeler tutar (sure = surec acilisi).
+#
+# HUKUM ORANLA (IS_EMRI_ADRES_SURE_EKSENI.md, CI #133): "20 s mutlak" esik DUVAR SAATINE baglidir — hizli runner'da kubik geri izleme
+# 20 s'nin altinda bitip M-T5'i gorunmez kildi (aralikli: #130 kirmizi, #131/#132 yesil, #133 kirmizi). Duvar saati esigi hukum DEGILDIR;
+# ayni girdi iki boyutta (n ve 4n) kosulur, hukum ORANDAN verilir. Dogrusal ≈4, kuadratik ≈16, kubik ≈64.
+SURE_BOYUT = {"yorum": (2000, 8000), "satir": (20000, 80000)}      # (n, 4n): yorum = `x` sayisi, satir = `\n` sayisi
+SURE_ZAMAN_ASIMI = 20       # (a) MUTLAK ust sinir: asarsa hukum kesin (sabotajli motor dakikalar surer; sinir yalniz kosuyu kisaltir)
+SURE_KOSUM = 2              # her boyutta en az 2 kosum, MIN alinir (tek kosumluk gurultu hukmu cevirmez)
+SURE_TABAN = 0.5            # (b) gurultu tabani (s): t(4n) bunun altindaysa oran ANLAMSIZ (surec acilisi ~0.35 s, oran ~1 cikar)
+SURE_ORAN = 8               # (b) t(4n)/t(n) bunu asarsa dogrusal degil (ara deger: dogrusal 4 < 8 < kuadratik 16)
+SURE_ORAN_ACIK = True       # OLCUT SINAMASI bunu kapatip eski (yalniz mutlak) hukmu yeniden uretir
+SURE_KAYIT = []             # ham olcumler (eksen, n, [sureler], zaman_asimi_mi): `ADRES_SURE_KAYIT=<dosya>` ile jsonl'a da yazilir
+
+
+def _sure_girdi(eksen, n):
+    if eksen == "yorum":
+        return {"src/yorum.ts": "class A {\n  async checkCu/*" + "x" * n + "\n"}
+    return {"src/satir.ts": "class A {\n  foo =" + "\n" * n + " 1\n}\n"}
+
+
+def sure_olc(motor, taban, eksen, n):
+    """`adres --kur`u taze projede SURE_KOSUM kez kosar -> (min sure | None (zaman asimi), exit/hata bulgusu | None). Zaman asimi ilk kosumda keser."""
+    ham = []
+    for _ in range(SURE_KOSUM):
+        kok = proje(taban, "sure_%s_%d_%d" % (eksen, n, len(SURE_KAYIT) * 10 + len(ham)), _sure_girdi(eksen, n))
+        t0 = time.time()
+        try:
+            kod, o, e = kos(motor, kok, "adres", "--kur", zaman_asimi=SURE_ZAMAN_ASIMI)
+        except subprocess.TimeoutExpired:
+            _sure_kayit(eksen, n, ham, True)
+            return None, None
+        ham.append(round(time.time() - t0, 3))
+        if kod != 0:
+            _sure_kayit(eksen, n, ham, False)
+            return min(ham), "exit=%s: %r" % (kod, (o + e).strip()[-120:])
+    _sure_kayit(eksen, n, ham, False)
+    return min(ham), None
+
+
+def _sure_kayit(eksen, n, ham, asim):
+    SURE_KAYIT.append((eksen, n, list(ham), asim))
+    d = os.environ.get("ADRES_SURE_KAYIT")
+    if d:
+        with io.open(d, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"eksen": eksen, "n": n, "ham_sn": ham, "zaman_asimi": asim, "platform": sys.platform}) + "\n")
+
+
+def sure_hukmu(t1, t4, oran_acik=True):
+    """SAF hukum: t1 = t(n), t4 = t(4n) (None = zaman asimi) -> None (dogrusal) | gerekce. Duvar saati esigi tek basina hukum DEGILDIR."""
+    if t1 is None or t4 is None:
+        return "%d s MUTLAK siniri asti" % SURE_ZAMAN_ASIMI
+    if oran_acik and t4 >= SURE_TABAN and t4 / max(t1, 1e-3) > SURE_ORAN:
+        return "sure orani %.1f > %d (t(n)=%.2f s, t(4n)=%.2f s; dogrusal ≈4, kuadratik ≈16, kubik ≈64)" % (t4 / max(t1, 1e-3), SURE_ORAN, t1, t4)
+    return None
+
+
+def sure_olcumleri(motor, taban, boyut):
+    """-> {eksen: (t1, t4, hata)}; hata = exit != 0 bulgusu."""
+    out = {}
+    for eksen, (n, n4) in sorted(boyut.items()):
+        t1, h1 = sure_olc(motor, taban, eksen, n)
+        t4, h4 = (None, None) if t1 is None else sure_olc(motor, taban, eksen, n4)
+        out[eksen] = (t1, t4, h1 or h4)
+    return out
+
+
+SURE_OLCUT_BOYUT = {"yorum": (500, 2000)}      # "HIZLI RUNNER" benzetimi: M-T5 burada 20 s'nin cok altinda bitmeli (yerelde ~7 s)
+
+
+def olcut_sinamasi(s, taban):
+    """OLCUTUN KENDI SABOTAJI (hafiza-kur_olcut_dersi): oran kontrolu KAPALI (yalniz mutlak sinir) + girdi KUCUK -> M-T5 KACMALI; ayni
+    olcumde oran ACIK -> YAKALAMALI. Eski/yeni olcut AYNI olcum uzerinde yarisir (tek koşum, iki hukum). -> bulgu listesi."""
+    ad = [x for x in SABOTAJLAR if x[0].startswith("M-T5 ")][0]
+    if s.count(ad[3]) != 1:
+        raise Kurulamadi("olcut sinamasi: M-T5 capasi %d yerde" % s.count(ad[3]))
+    sab, hata = _motor_yaz(s.replace(ad[3], ad[4], 1), os.path.join(taban, "olcut"), "olcut")
+    if sab is None:
+        raise Kurulamadi("olcut sinamasi: " + hata)
+    (t1, t4, hata), = sure_olcumleri(sab, os.path.join(taban, "olcutk"), SURE_OLCUT_BOYUT).values()
+    eski, yeni = sure_hukmu(t1, t4, False), sure_hukmu(t1, t4, True)
+    print("  OLCUT SINAMASI (M-T5, n=%d/%d, t(n)=%s t(4n)=%s): eski olcut (oran KAPALI) -> %s · yeni olcut -> %s" % (
+        SURE_OLCUT_BOYUT["yorum"] + ("ASIM" if t1 is None else "%.2f s" % t1, "ASIM" if t4 is None else "%.2f s" % t4,
+                                      "KACTI" if not eski else "yakaladi", "YAKALADI" if yeni else "KACTI")))
+    b = []
+    if eski:
+        b.append("OLCUT-DUZENEK: kucuk girdide eski (mutlak) olcut zaten yakaladi — benzetim hizli runner'i temsil etmiyor (%s)" % eski)
+    if not yeni:
+        b.append("OLCUT-KOR: oran olcutu hizli-runner benzetiminde M-T5'i YAKALAMADI")
+    return b
 
 
 def kol_tanim_sure(motor, taban):
-    """A-TANIM (SURE): bozuk TS girdisinde `adres --kur` zaman asimina UGRAMAZ ve temiz biter."""
-    kok = proje(taban, "sure", SURE_TS)
-    try:
-        kod, o, e = kos(motor, kok, "adres", "--kur", zaman_asimi=SURE_ZAMAN_ASIMI)
-    except subprocess.TimeoutExpired:
-        return [("TANIM-TS-SURE", "bozuk TS girdisinde `adres --kur` %d s icinde BITMEDI (dogrusal degil)" % SURE_ZAMAN_ASIMI)]
-    if kod != 0:
-        return [("TANIM-TS-SURE", "bozuk TS girdisinde `adres --kur` exit=%s: %r" % (kod, (o + e).strip()[-120:]))]
-    return []
+    """A-TANIM (SURE): bozuk TS girdisinde `adres --kur` temiz biter ve suresi DOGRUSAL kalir (oranla; bkz. SURE_*)."""
+    b = []
+    for eksen, (t1, t4, hata) in sure_olcumleri(motor, taban, SURE_BOYUT).items():
+        g = sure_hukmu(t1, t4, SURE_ORAN_ACIK)
+        print("      [sure %s n=%d/%d] t(n)=%s t(4n)=%s%s" % (eksen, SURE_BOYUT[eksen][0], SURE_BOYUT[eksen][1],
+              "ASIM" if t1 is None else "%.2f s" % t1, "ASIM" if t4 is None else "%.2f s" % t4, " -> " + g if g else ""))
+        if hata:
+            b.append(("TANIM-TS-SURE", "bozuk TS girdisinde (%s) `adres --kur` %s" % (eksen, hata)))
+        elif g:
+            b.append(("TANIM-TS-SURE", "bozuk TS girdisinde (%s) `adres --kur` DOGRUSAL degil: %s" % (eksen, g)))
+    return b
 
 
 def _cagiranlar(cikti):
@@ -3843,6 +3930,13 @@ def main():
             else:
                 print("  %-60s -> KACTI ✗  (%s ekseni sabotajda TEMIZ; atesleyen: %s)" % (ad, etiket, ", ".join(sorted(atesler)) or "hicbiri"))
                 kacan.append(ad)
+        if sabotaj_sec is None and "A-TANIM" in kollar:
+            os.makedirs(os.path.join(taban, "olcutk"), exist_ok=True)
+            try:
+                kacan += olcut_sinamasi(s, taban)
+            except Kurulamadi as e:
+                print("SONUC: OLCULEMEDI — %s" % e)
+                return 2
         print(CIZGI)
         if kacan:
             print("SONUC: KIRMIZI — KACTI: %s" % "; ".join(kacan))
