@@ -176,7 +176,21 @@ def k_git_bag(motor, taban):
     if oku_b(k, "AGENTS.md") != ham or "SEMBOLIK BAG (git)" not in c:
         return [("GITBAG", "index modu 120000 olan dosya (diskte duz) yazilmamali + `SEMBOLIK BAG (git)` beyani: %r %r"
                  % (oku_b(k, "AGENTS.md")[:60], c[-160:]))]
-    return []
+    b = []
+    h19 = _h19(kos(motor, k, "kapi")[1])                    # K2: bag icin H19 `kur --asistan` ONERMEZ, hedefi soyler
+    if len(h19) != 1 or "kur --asistan" in h19[0] or "sembolik bag -> hedef hedef.md; isaretciyi hedefe elle ekle" not in h19[0]:
+        b.append(("H19BAG", "s2 (duz git bagi): H19 `sembolik bag -> hedef <h>` demeli, `kur --asistan` ICERMEMELI: %r" % h19))
+    k1 = yeni_proje(taban, "gercekbag")                     # s1: gercek dosya sembolik bagi (yetki yoksa OLCULEMEDI)
+    try:
+        os.symlink("hedef.md", os.path.join(k1, "AGENTS.md"))
+    except (OSError, NotImplementedError):
+        print("      (H19BAG s1 OLCULEMEDI: dosya sembolik bagi kurulamadi — bu platformda yetki yok; s2 olculdu)")
+        return b
+    kur(motor, k1, "--asistan", "agents")
+    h19 = _h19(kos(motor, k1, "kapi")[1])
+    if len(h19) != 1 or "kur --asistan" in h19[0] or "hedef hedef.md" not in h19[0]:
+        b.append(("H19BAG", "s1 (gercek bag): H19 `sembolik bag -> hedef <h>` demeli, `kur --asistan` ICERMEMELI: %r" % h19))
+    return b
 
 
 def k_anahtar_kesif_graphify(motor, taban):
@@ -263,6 +277,9 @@ SABOTAJLAR = (
     ("M-A7 git index modu (120000) kontrolu KAPALI", "GITBAG",
      '    if os.path.lexists(p) and _asistan_git_modu(kok, rel) == "120000":\n',
      '    if False:      # MUTANT\n'),
+    ("M-H4 H19 bag icin eski metin (`kur --asistan` onerir)", "H19BAG",
+     '        if m and _asistan_hal(y.kok, anahtar, rel, None)[0].startswith("SEMBOLIK BAG"):',
+     '        if False:      # MUTANT'),
     ("M-A5 CRLF/satir sonu dusurulur (hep LF)", "CRLF",
      '    eol = b"\\r\\n" if n_crlf and n_crlf >= ham.count(b"\\n") - n_crlf else b"\\n"\n', '    eol = b"\\n"      # MUTANT\n'),
     ("M-A6 `--kesif` yazar", "KESIF",
@@ -337,7 +354,7 @@ def main():
         if kacan:
             print("SONUC: KAPI KOR — %s" % "; ".join(kacan))
             return 1
-        print("SONUC: YESIL — 13 kol temiz, %d sabotaj AYRI eksende ISIRDI." % len(SABOTAJLAR))
+        print("SONUC: YESIL — 14 kol temiz, %d sabotaj AYRI eksende ISIRDI." % len(SABOTAJLAR))
         return 0
     finally:
         def onar(fonk, p, *_):

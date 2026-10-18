@@ -1833,12 +1833,17 @@ def _kapi_asistan(N, y):
         if anahtar not in istek or (os.path.isfile(p) and os.path.realpath(p) == os.path.realpath(y.kural)):
             continue
         t = oku(p) if os.path.isfile(p) else None
+        m = None
         if t is None:
-            uyari.append("H19: asistan dosyasi (%s) YOK — `kur --asistan %s` ile yeniden yaz" % (rel, anahtar))
+            m = "H19: asistan dosyasi (%s) YOK — `kur --asistan %s` ile yeniden yaz" % (rel, anahtar)
         elif _ASISTAN_BAS not in t:
-            uyari.append("H19: asistan dosyasi (%s) hafiza-kur isaretini tasimiyor — `kur --asistan %s` ile ekle" % (rel, anahtar))
+            m = "H19: asistan dosyasi (%s) hafiza-kur isaretini tasimiyor — `kur --asistan %s` ile ekle" % (rel, anahtar)
         elif not _isaretci_var(t, canli):
-            uyari.append("H19: asistan dosyasi (%s) isaret tasiyor ama canli defterin adini (%s) anmiyor" % (rel, canli))
+            m = "H19: asistan dosyasi (%s) isaret tasiyor ama canli defterin adini (%s) anmiyor" % (rel, canli)
+        if m and _asistan_hal(y.kok, anahtar, rel, None)[0].startswith("SEMBOLIK BAG"):   # P3.1 K2: bag icin `kur` ISE YARAMAZ (yazmaz)
+            m = "H19: asistan dosyasi (%s) sembolik bag -> hedef %s; isaretciyi hedefe elle ekle" % (rel, _asistan_bag_hedef(y.kok, rel))
+        if m:
+            uyari.append(m)
     for x in uyari:
         N.append(x)
 
@@ -1943,6 +1948,18 @@ def _asistan_git_modu(kok, rel):
     if r.returncode != 0:
         return "OLCULEMEDI"
     return r.stdout.decode("utf-8", "replace").split(" ", 1)[0]
+
+
+def _asistan_bag_hedef(kok, rel):
+    """P3.1 K2: bagin hedefi: yoldaki ilk gercek bagin `readlink`i; git bagi (duz dosya) ise ilk satir; ikisi de degilse 'OLCULEMEDI'."""
+    x = kok
+    for parca in rel.split("/"):
+        x = os.path.join(x, parca)
+        if os.path.islink(x):
+            return os.readlink(x)
+    if _asistan_git_modu(kok, rel) == "120000":
+        return (oku(x).strip().splitlines() or ["OLCULEMEDI"])[0][:200]
+    return "OLCULEMEDI"
 
 
 def _asistan_hal(kok, anahtar, rel, kural_p):
