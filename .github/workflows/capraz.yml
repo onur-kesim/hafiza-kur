@@ -2339,8 +2339,9 @@ jobs:
   #     satir 14 + satir 23). Duzeltme `if` -> `elif`; mesaj metinleri DEGISMEDI.
   #     HALLER: es · geride · ileri (mtime yolu) · ileri_git (izlenen-TEMIZ, commit
   #     eski, mtime taze — taze klon/devral yolu). KAPI: her halde H14 satirlari
-  #     YALNIZ kendi sinifindan ve TEK; ILERIDE/GERIDE'de kapi exit 1 (hukum
-  #     gevsemez). Saglam motorda YESIL; UC mutantin her biri KIRMIZI yakar:
+  #     YALNIZ kendi sinifindan ve TEK; hukum gevsemez = ILERIDE/GERIDE'de `[H14]`
+  #     FAIL satiri basilir (exit 1 yedektir: bu hallerde baska FAIL de var, exit tek
+  #     basina H14'u ayirt etmez). Saglam motorda YESIL; UC mutantin her biri KIRMIZI yakar:
   #         M-TEK1 ESKI IF/IF-ELSE · M-TEK2 ES NOTU KOSULSUZ · M-TEK3 ILERIDE SOKULUR
   #     Eski kapilar M-TEK1'i GORMUYORDU: eski yapi 18 Eki'ye kadar CI'dan YESIL
   #     geciyordu (CI #134 = e5a7b8fc). 🔴 UC PLATFORM, `continue-on-error` YOK.

@@ -33,7 +33,10 @@ Dort proje hali, her biri `kapi` ile olculur; H14 satirlari SINIFLANIR:
                  (commit tarihi eski, mtime taze: taze klon / Momentum+devral yolu)
 "YALNIZ" = o halin H14 satirlari arasinda baska sinifin satiri YOK ve H14 satiri
 tektir. Uc yolun imzasi (es / geride / ileride) birbirinden de ayrisir.
-HUKUM GEVSEMEZ: ILERIDE ve GERIDE hallerinde `kapi` exit 1 olmaya DEVAM eder.
+HUKUM GEVSEMEZ: ILERIDE ve GERIDE hallerinde FAIL satiri (`[H14]` kanali) basilmaya
+DEVAM eder; nota dusurulmus FAIL `· [H14]` onekiyle DIGER sayilir -> kirmizi. `kapi`
+exit 1 de beklenir ama YEDEKTIR: bu hallerde H14 disi FAIL'ler de vardir (h_es'te bile
+exit 1, olculdu), yani exit tek basina H14'u ayirt ETMEZ — asil koruma satir sinifidir.
 
 SAGLAM motorda kapi YESIL; asagidaki uc mutantin HER BIRINDE KIRMIZI yanmalidir:
     M-TEK1 ESKI IF/IF-ELSE   `elif` -> `if` (ters yon iki hukum birden — iki olcumun kusuru)
@@ -61,6 +64,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -222,6 +226,21 @@ def hal_kur(motor, ad, tip, taban):
     else:
         raise Kurulamadi("bilinmeyen hal tipi: %s" % tip)
     return kok
+
+
+def _agaci_sil(yol):
+    """Windows'ta git nesneleri SALT-OKUNURDUR; `ignore_errors=True` onlari sessizce birakir
+    (her kosumda %TEMP%'te `h14tek_*` birikir). Yazma izni acip yeniden dener."""
+    def _ac_ve_sil(fn, p, *_):
+        try:
+            os.chmod(p, stat.S_IWRITE)
+            fn(p)
+        except OSError:
+            pass
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(yol, onexc=_ac_ve_sil)
+    else:
+        shutil.rmtree(yol, onerror=_ac_ve_sil)
 
 
 def haller_kur(motor_temiz, taban):
@@ -391,7 +410,7 @@ def main():
                 print("  !  %-26s KACTI       kapi YESIL kaldi -> bu sabotaj OLCULMUYOR: %s" % (ad, aciklama))
             sys.stdout.flush()
     finally:
-        shutil.rmtree(taban, ignore_errors=True)
+        _agaci_sil(taban)
 
     print(CIZGI)
     print("SONUC: %d isirdi - %d kacti - %d olculemedi (toplam %d)"
@@ -407,4 +426,8 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except (OSError, subprocess.SubprocessError) as e:      # zaman asimi / kopyalama hatasi: ARAC kusuru
+        print("OLCULEMEDI: arac hatasi (%s: %s) — kapi hukmu YOK." % (type(e).__name__, e))
+        sys.exit(2)
