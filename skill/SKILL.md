@@ -4,9 +4,9 @@ description: >-
   Projeye kalıcı HAFIZA + DOSYALAMA + ARŞİVLEME düzeni kurar ve işletir (v2). "Hafıza
   düzenini kur", "arşivleme sistemi kur", "proje hafızası", "karar günlüğü", "ADR",
   "emekliye ayır", "hafızayı derle", "kapıyı koş", "devir notu", "dosyalar şişti"
-  dendiğinde YA DA yeni bir proje/klasör bağlanıp orada `.hafizarc` / `PROJE_HAFIZA.md`
-  bulunmadığında DEVREYE GİR. Her oturum AÇILIŞINDA ve KAPANIŞINDA protokolü uygular.
-  Hiçbir satır silinmez, taşınır; ölçülmeyene "temiz" denmez.
+  dendiğinde, kullanıcı istediğinde ya da şablonlu projede (`DURUM.md` + `CLAUDE.md`)
+  KUR'da hafiza-kur seçildiğinde DEVREYE GİR; mevcut defterli projede `devral`. Her
+  oturum AÇILIŞINDA ve KAPANIŞINDA protokolü uygular. Ölçülmeyene "temiz" denmez.
 ---
 
 # Hafıza ve Arşivleme Düzeni — v2
@@ -24,8 +24,9 @@ bütünlük, kendi kapısını koşan araçlar, mutant kanıtı) ve sektörün o
 > "bu projeye hafıza kur" · "dosya düzeni kur" · "proje hafızası" · "canlı hafıza" · "karar
 > günlüğü" · "ADR" · "karar kaydı" · "emekliye ayır" · "hafızayı derle" · "hafıza kapısı" ·
 > "kapıyı koş" · "devir notu" · "oturum protokolü" · "dosyalar şişti" · "hangi dosya nereye" ·
-> "eski sürümleri arşivle" — YA DA yeni bir proje/klasör bağlanıp orada `.hafizarc` /
-> `PROJE_HAFIZA.md` bulunmadığında. Her oturum AÇILIŞINDA ve KAPANIŞINDA protokolü uygula.
+> "eski sürümleri arşivle" — YA DA kullanıcı istediğinde ya da şablonlu projede (`DURUM.md` +
+> `CLAUDE.md`) KUR'da hafiza-kur seçildiğinde; mevcut defterli projede `devral`. `.hafizarc`'ın
+> yokluğu tek başına tetik DEĞİLDİR. Her oturum AÇILIŞINDA ve KAPANIŞINDA protokolü uygula.
 
 ---
 
@@ -63,6 +64,7 @@ Kararsızsan: **kod varsa KAPILI, yoksa HAFİF.** Hafif'ten Kapılı'ya sonradan
 | Yeni / boş | `kur` |
 | İlerlemiş, hafıza sistemi **yok** | **`devral`** |
 | İlerlemiş, **başka bir hafıza sistemi var** | önce **`devral --kesif`**, sonra `devral --esle …` |
+| Şablonlu proje (`DURUM.md` + `CLAUDE.md`, şablon v0.3.0) | **`devral --esle canli=DURUM.md`** — `bolum-kur` gerekmez: şablon bölümleri hazır getirir (Cowork ölçümü, 18 Eki 2026) |
 
 > ⛔ **Mevcut hafıza sistemi olan bir projede `kur` KOŞMA.** Ölçüldü: zinciri kırar,
 > ikinci çıpa doğurur ve eski sistemin dizin kapısını kırmızıya düşürür.
