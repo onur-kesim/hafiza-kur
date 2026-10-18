@@ -552,7 +552,9 @@ işaretçisi dahil). En önemlileri:
   `devral --kesif --asistan` yazacağı dosyaları ve hallerini basar, yazmaz. Dosya varsa **SONA** `<!-- hafiza-kur:asistan -->` …
   `<!-- /hafiza-kur:asistan -->` bloğu eklenir (mevcut baytlar önek olarak AYNEN kalır; LF/CRLF ve BOM korunur; son satırda newline yoksa
   önce yalnız o eklenir); yoksa yaratılır; tekrar koşum ikinci blok yazmaz (`ZATEN VAR`). YazılMAYANLAR ve her biri BEYAN edilir:
-  yarım blok (`YARIM BLOK`), sembolik bağ/junction (`SEMBOLIK BAG`), UTF-16 dosya (`KODLAMA`), isaretimizi taşımayan `hafiza-kur.mdc`
+  yarım blok (`YARIM BLOK`), sembolik bağ/junction (`SEMBOLIK BAG`) ve git'in sembolik bağı — `core.symlinks=false` checkout'unda düz dosya görünür, index modu `120000`
+  ölçülür (`SEMBOLIK BAG (git)`; git ölçemezse yazar ve `bag modu OLCULEMEDI` der) — bağ için H19 `kur` ÖNERMEZ: `sembolik bag -> hedef <h>;
+  isaretciyi hedefe elle ekle` der, UTF-16 dosya (`KODLAMA`), isaretimizi taşımayan `hafiza-kur.mdc`
   (`CAKISMA`), kural evi olan dosya (`KURAL EVI`: işaretçi yolu geçerli). `.gitignore` yutuyorsa yazar ama `IZLENMEZ`, ölçemezse
   `OLCULEMEDI` der. Kayıt `.hafizarc` `asistan` listesi (yoksa `[]`). Başka aracın bölümüne (Graphify `## graphify`, `graphify.mdc`)
   DOKUNULMAZ. **H19:** listedeki her asistan dosyası için AYRI `H19: asistan dosyasi (<yol>) …` UYARISI (yok · işaret yok · işaret var
@@ -560,8 +562,10 @@ işaretçisi dahil). En önemlileri:
   okur ⇒ `AGENTS.md` + `.mdc` birlikte yazılırsa işaretçi ÇİFT yüklenir (bilinçli) · `.cursor/rules/*.mdc` biçimi araç tarafından
   "legacy" sayılıyor, `RULE.md` klasör biçimi raporlarda çalışmıyor — biçim değişirse bayatlar · Gemini CLI varsayılan `GEMINI.md`'yi
   okur, `context.fileName` değişmişse okumaz (motor `~/.gemini`'yi OKUMAZ) · motor asistanın dosyayı GERÇEKTEN okuduğunu ÖLÇMEZ (E4
-  işi) · kurulu projeye sonradan eklemek = `kur --asistan` (`devral` kurulu projede zaten reddeder). Ölçüm: `faz0/asistan_mutanti.py`
-  (12 kol, 9 sabotaj).
+  işi) · kurulu projeye sonradan eklemek = `kur --asistan` (`devral` kurulu projede zaten reddeder) · H14: motorun YARATTIĞI ve dokunulmamış asistan dosyası proje değişikliği sayılmaz; **mevcut
+  dosyaya ekleme H14 tarihini tazeler** (kullanıcı metni taşıyan dosya proje dosyasıdır) · yazılabilirlik yazımdan ÖNCE ölçülür (salt-okunur
+  hedef → hiçbir şey yazılmadan exit 2 + yol); Windows'ta yalnız dosyanın salt-okunur bayrağı görülür, dizin izni ve root ÖLÇÜLEMEZ.
+  Ölçüm: `faz0/asistan_mutanti.py` (16 kol, 13 sabotaj; gerçek-bağ kolu Windows'ta yetki yoksa OLCULEMEDI).
 
 - **Karar adres defteri (P4, 12 Eki 2026, Onur kilidi: yaklaşım KARAR ADRES DEFTERİ).** Ölçüm (Momentum `d4b5417`,
   kör okuma): karar sorularının cevabı projede YAZILIYDI, eksik olan ADRESTİ. `karar-kaynagi` bloğu (İKİNCİ blok YOK; P1 sınıf

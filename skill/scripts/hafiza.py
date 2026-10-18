@@ -1963,10 +1963,10 @@ def _asistan_bag_hedef(kok, rel):
     return "OLCULEMEDI"
 
 
-def _asistan_yazilabilir(kok):
+def _asistan_yazilabilir(kok, kuru=False):
     """P3.1 K4: yazilacak/eklenecek asistan dosyasi (yoksa en yakin mevcut ust dizin) YAZILABILIR mi — HICBIR yazimdan ONCE; degilse exit 2 + yol.
     Salt-okunur ayrimi `os.access`tir: Windows'ta yalniz dosyanin salt-okunur bayragini gorur, DIZIN izni ve root OLCULEMEZ (yazim yine hata verir)."""
-    istek = _ASISTAN_ISTEK[0] or []
+    istek = [] if kuru else (_ASISTAN_ISTEK[0] or [])
     for anahtar, rel in _ASISTAN_DOSYA:
         hal, p = _asistan_hal(kok, anahtar, rel, None) if anahtar in istek else ("", "")
         while hal in ("YAZILACAK", "EKLENECEK") and not os.path.lexists(p):
@@ -3442,8 +3442,7 @@ def cmd_devral(a):
     kok = os.path.abspath(a.kok or os.getcwd())
     if not os.path.isdir(kok):
         oldur("kok yok: " + kok)
-    if not getattr(a, "kesif", False):
-        _asistan_yazilabilir(kok)               # P3.1 K4: yazilabilirlik yazimdan ONCE (kuru prova yazmaz)
+    _asistan_yazilabilir(kok, getattr(a, "kesif", False))    # P3.1 K4: yazilabilirlik yazimdan ONCE (kuru prova yazmaz)
     # --- KESIF (md.6) — TEK EV: kuru prova da yazan yol da BURAYI okur -------
     esleme = devir_esle_coz(kok, getattr(a, "esle", None))
     if a.canli and esleme.get("canli") and esleme["canli"] != a.canli.replace(os.sep, "/"):
