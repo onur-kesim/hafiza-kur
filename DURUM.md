@@ -3,12 +3,11 @@
 Son güncelleme: 18 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
 ## DEVİR O25 → O26 (18 Eki) — P3.1 BİTTİ (yerelde) · PUSH ETME · P3+P3.1 TEK push
-Taban yerel main `4bf1490` (P3.1: `929a47c` K1 · `1a151e9` K2 · `1727c8f` K3+K4 · `4bf1490` README/CC) · origin `131cb075` (`ls-remote` 18 Eki). Tam tur (`_olcum	ur_o25\son2`): **75 OK / 9 bilinen KIRMIZI** (taban ile AYNI küme; ruff/mypy/bandit sayıları taban çıktısıyla satır satır FARKLANMADI). `asistan_mutanti` 16 kol / 13 sabotaj YEŞİL. CC: `cmd_devral` 99, CC>20 7, ihlal 9 (korundu).
-**Kararlar:** K2 = bağ `.hafizarc asistan`'a girmeye devam eder, yalnız H19 metni değişti. **K3 SAPMA (iş emri rc kaydı dedi):** ayrım İÇERİKTEN (dosya == üretilen gövde) — `rc_yaz` zincir halkasından ÖNCE, dosya yazımı SONRA koşar, kayıt sırası çakışır; sonradan düzenlenen dosya proje sayılır. K4 `--kesif`'te koşmaz.
-**ÖLÇÜLEMEDİ:** gerçek dosya sembolik bağı (s1) bu Windows hesabında yetkisiz → yalnız düz git bağı (s2) · Momentum H14 satırı taban ile aynı mı gerçek projede KOŞULMADI (fixture'da aynı) · dizin izni/root salt-okunur ölçümü.
-**Sıradaki:** Cowork kabulü (rapordaki s2 komutları `git status` temiz + Momentum H14 + P3 (a)(b)(d)(e)) → Onur tek push → CI. Açılış: `hafiza-kur · O26 · başla`.
-**Tuzak:** `
-` (python heredoc ters bölü yine bozdu — Edit aracıyla düzelt) · `rm -rf` yasak · arka plan işi `&` ile değil `run_in_background`la.
+Taban yerel main `4bf1490` (P3.1: `929a47c` K1 · `1a151e9` K2 · `1727c8f` K3+K4 · `4bf1490` README/CC) · origin `131cb075`. Tam tur = `capraz.yml` HER `run:` adımı (YML'den türetildi, 67 iş, 86 adım; `ci_surucu.py`, taze klon, Win): **75 OK / 9 bilinen KIRMIZI / 2 SKIP** (ortam#2, kalite#2: sudo/pip). KIRMIZI = kanit#7 · kanit#8 · win_kill_probu · y2_mutant · kalite#3-6 · readme_kapisi — taban AYNI; ruff/mypy/bandit sayıları satır satır FARKLANMADI. Ham log `D:\PROJELER\hafiza-kur\_olcum\tur_o25\son2.log` (`son.log` YARIM, geçersiz); özet `son2\sonuclar.jsonl`. `asistan_mutanti` 16 kol / 13 sabotaj YEŞİL. CC: `cmd_devral` 99, CC>20 7, ihlal 9.
+**Kararlar:** K2 = bağ `.hafizarc asistan`'a girmeye devam eder, yalnız H19 metni değişti. **K3 SAPMA (iş emri rc kaydı dedi):** ayrım İÇERİKTEN (dosya == üretilen gövde) (`rc_yaz` dosya yazımından ÖNCE koşar); düzenlenen dosya proje sayılır. K4 `--kesif`'te koşmaz.
+**ÖLÇÜLEMEDİ:** gerçek dosya sembolik bağı (s1) bu Windows hesabında yetkisiz → yalnız düz git bağı (s2) · (Cowork kabulü 18 Eki: K1 s2 `git status` temiz · K2 hedef metni · K3 Momentum H14 taban ile AYNI · K4 exit 2/0 bayt — TUTTU) · dizin izni/root salt-okunur ölçümü.
+**Sıradaki:** Onur tek push (P3+P3.1) → CI. Açılış: `hafiza-kur · O26 · başla`.
+**Tuzak:** python heredoc ters bölüyü bozar (Edit kullan) · `rm -rf` yasak · arka plan `&` değil `run_in_background`.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **25 Ağu yazısı** KAPSAM DIŞI · **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
