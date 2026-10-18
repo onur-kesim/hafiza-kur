@@ -1,18 +1,21 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin `131cb075`; yerel main `2af5313` = P3, PUSH ETME; P3.1 sırada)
-Son güncelleme: 17 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin `131cb075`; yerel main `4bf1490` = P3+P3.1, PUSH ETME)
+Son güncelleme: 18 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## DEVİR O24 → O25 (18 Eki) — P3.1 BAŞLAMADI (kod yok) · P3 yerelde, PUSH ETME · P3+P3.1 TEK push
-Taban yerel main `2af5313` (P3: `7b1aefb`..`45b543a`; tam tur 75 OK/9 bilinen KIRMIZI; asistan_mutanti 12 kol/9 sabotaj) · origin `131cb075`. **Cowork P3 kabulü:** (a)(b)(d)(e)+rastgele beyan TUTTU; 🔴 K1: `core.symlinks=false` checkout'unda git bağı (index 120000) düz dosya olur, motor içine blok ekler (fxa: AGENTS.md + copilot-instructions.md). **İş emri:** `besli-paket\IS_EMRI_P3_1_SEMBOLIK_BAG_VE_DELIL.md` (rapor `OLCUM_RAPORU_18EKIM_P3_BAGIMSIZ.md`). **Açılış:** `hafiza-kur · O25 · başla`. Oturum 845k'de durdu.
-**Plan (`hafiza.py` P3 bloğu, `_asistan_hal` ~1940):** K1 `_asistan_hal` içine `git ls-files -s -- <yol>` (mod `120000` → hal `SEMBOLIK BAG (git)`; git yok/hata → mevcut `islink` + `bag modu OLCULEMEDI`; hal SAF kalır, `--kesif` aynısını basar) + `asistan_mutanti` yeni kol (`core.symlinks=false` checkout) + sabotaj (M-A4'ten AYRI eksen) · K2 `_kapi_asistan`: bağ için `kur --asistan` ÖNERME, `sembolik bag -> hedef <h>; isaretciyi hedefe elle ekle` (seçimi DURUM'a yaz) · K3 `.hafizarc asistan` YAZILDI/EKLENDI ayrımı → yaratılan dosya H14 kümesine girmez (`_kapi_h14`; README sınırı "mevcut dosyaya ekleme H14 tarihini tazeler") · K4 yazılabilirlik yazımdan ÖNCE (exit 2 + yol; salt-okunur bayrak ölçülemezse ÖLÇÜLEMEDİ). Her kalem ayrı commit+mutant+sabotaj; `capraz.yml` run: push öncesi; çapalar: CC>20 7/ihlal 9, `yol_ayraci_kapisi` (os.sep yasak).
-**Tuzak:** `\n` (Write ile yama) · `rm -rf` yasak · sabotaj çapaları kod değişince kayar.
+## DEVİR O25 → O26 (18 Eki) — P3.1 BİTTİ (yerelde) · PUSH ETME · P3+P3.1 TEK push
+Taban yerel main `4bf1490` (P3.1: `929a47c` K1 · `1a151e9` K2 · `1727c8f` K3+K4 · `4bf1490` README/CC) · origin `131cb075` (`ls-remote` 18 Eki). Tam tur (`_olcum	ur_o25\son2`): **75 OK / 9 bilinen KIRMIZI** (taban ile AYNI küme; ruff/mypy/bandit sayıları taban çıktısıyla satır satır FARKLANMADI). `asistan_mutanti` 16 kol / 13 sabotaj YEŞİL. CC: `cmd_devral` 99, CC>20 7, ihlal 9 (korundu).
+**Kararlar:** K2 = bağ `.hafizarc asistan`'a girmeye devam eder, yalnız H19 metni değişti. **K3 SAPMA (iş emri rc kaydı dedi):** ayrım İÇERİKTEN (dosya == üretilen gövde) — `rc_yaz` zincir halkasından ÖNCE, dosya yazımı SONRA koşar, kayıt sırası çakışır; sonradan düzenlenen dosya proje sayılır. K4 `--kesif`'te koşmaz.
+**ÖLÇÜLEMEDİ:** gerçek dosya sembolik bağı (s1) bu Windows hesabında yetkisiz → yalnız düz git bağı (s2) · Momentum H14 satırı taban ile aynı mı gerçek projede KOŞULMADI (fixture'da aynı) · dizin izni/root salt-okunur ölçümü.
+**Sıradaki:** Cowork kabulü (rapordaki s2 komutları `git status` temiz + Momentum H14 + P3 (a)(b)(d)(e)) → Onur tek push → CI. Açılış: `hafiza-kur · O26 · başla`.
+**Tuzak:** `
+` (python heredoc ters bölü yine bozdu — Edit aracıyla düzelt) · `rm -rf` yasak · arka plan işi `&` ile değil `run_in_background`la.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **25 Ağu yazısı** KAPSAM DIŞI · **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**P3** (O23, yerelde) `--asistan` + H19: Cowork kabulü TUTTU, 🔴 bağ bulgusu → P3.1 · **P4** (O20) karar adres defteri · **P4.1** (O21) Momentum 4/4: ikisi de PUSH EDİLDİ (CI #132) · **P5.4** (O19, push edildi): `not` bayat defterde H20 taze kümesi (`43a260d`/`aed4169`/`e7b2ae2`) · **P2.1** (O16): `adres` tembel kurulum·maske·atlama · **P2** (O15): 4 dil · **H14** (O14) · **P1** (O13) · **O10-O12:** K-DURUM·K-GECIS·K-ISARET·K-SATIR·K-YOL·K-BAYAT (H18/H19) · B1+B2 (H16).
+**P3.1** (O25, yerelde) git bağı + H19 bağ metni + H14 yaratılan + yazılabilirlik · **P3** (O23, yerelde) `--asistan` + H19: Cowork kabulü TUTTU, 🔴 bağ bulgusu → P3.1 · **P4** (O20) karar adres defteri · **P4.1** (O21) Momentum 4/4: ikisi de PUSH EDİLDİ (CI #132) · **P5.4** (O19, push edildi): `not` bayat defterde H20 taze kümesi (`43a260d`/`aed4169`/`e7b2ae2`) · **P2.1** (O16): `adres` tembel kurulum·maske·atlama · **P2** (O15): 4 dil · **H14** (O14) · **P1** (O13) · **O10-O12:** K-DURUM·K-GECIS·K-ISARET·K-SATIR·K-YOL·K-BAYAT (H18/H19) · B1+B2 (H16).
 **ÜRÜN HAZIRLIĞI** (30 Eyl, CI #117; K7 yok). **AÇIK:** büyük/küçük harf çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
 
 ## Bilinen sınırlar (ölçülmüş)
