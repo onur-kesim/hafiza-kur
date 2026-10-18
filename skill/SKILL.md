@@ -64,7 +64,7 @@ Kararsızsan: **kod varsa KAPILI, yoksa HAFİF.** Hafif'ten Kapılı'ya sonradan
 | Yeni / boş | `kur` |
 | İlerlemiş, hafıza sistemi **yok** | **`devral`** |
 | İlerlemiş, **başka bir hafıza sistemi var** | önce **`devral --kesif`**, sonra `devral --esle …` |
-| Şablonlu proje (`DURUM.md` + `CLAUDE.md`, şablon v0.3.0) | **`devral --esle canli=DURUM.md`** — `bolum-kur` gerekmez: şablon bölümleri hazır getirir (Cowork ölçümü, 18 Eki 2026) |
+| Şablonlu proje (`DURUM.md` + `CLAUDE.md`, şablon v0.3.0) | **`devral --esle canli=DURUM.md`** — şablon bölümleri hazır getirir, `bolum-kur` gerekmez (Cowork ölçümü, 18 Eki 2026; şablon burada ölçülmedi). `kapi` `[H6]`/`[H17]` "bölüm yok" derse `bolum-kur` |
 
 > ⛔ **Mevcut hafıza sistemi olan bir projede `kur` KOŞMA.** Ölçüldü: zinciri kırar,
 > ikinci çıpa doğurur ve eski sistemin dizin kapısını kırmızıya düşürür.
