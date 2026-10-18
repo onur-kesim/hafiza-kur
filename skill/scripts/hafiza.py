@@ -5609,7 +5609,7 @@ def _h14_hukum(F, N, gecikme, t_son, en_yeni_t, en_yeni_f):
         fark = (d_proje - t_son).days
         if fark < -gecikme:
             fail("H14", "hafiza tarihi proje dosyalarindan %d gun ILERIDE — tutarsiz." % (-fark))
-        if fark > gecikme:
+        elif fark > gecikme:   # UC AYRIK YOL: ILERIDE / GERIDE / es (FAZC_H14_RAPOR §6)
             # KALEM 3 (Onur kilidi 6 Eyl 2026, IS_EMRI_DEVRAL.md): OLCULDU — bu
             # kol "hafiza tarafi"ni t_son'dan (BEYAN) okuyordu, "proje tarafi"ni
             # git'ten (KANIT) okuyordu; git elinin altindayken hafiza defterlerine
