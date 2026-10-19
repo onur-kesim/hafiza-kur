@@ -3089,3 +3089,42 @@ jobs:
           name: gitkeep-${{ matrix.os }}
           path: gitkeep-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-31) IKINCI KLON KAPISI — besli-paket/IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 3
+  #     (Cowork O16 -> Code, 18 Eki 2026; Onur kilidi 23:28). OLCULDU (Windows 11,
+  #     `core.autocrlf=true`, hafiza.py 6EA0A2ED): proje-sablonu'ndan klon + `devral`
+  #     + `not` + `derle` + commit -> ayni makinede `kapi` YESIL; AYNI depo ikinci kez
+  #     klonlaninca `kapi` exit 1, FAIL 10 (`[H0] CIPA BOZULDU` + 9x `defter MUHURSUZ
+  #     degismis`): git checkout LF'i CRLF'e cevirir, muhurlu dosyalar BAYT-TAM hash'lidir.
+  #     Sinif UCUNCU kez isirdi. Bu is GERCEK ikinci klonu kurar (simulasyon degil):
+  #     `kur` -> `not` -> `derle` -> commit -> `kapi` (pozitif kontrol) -> `git clone` ->
+  #     `kapi` exit 0. TABANDA (`.gitattributes` blogu yazilmadan once) bu adim KIRMIZIDIR
+  #     (ham cikti: FAIL 11, ayni H0 ailesi); `kur`/`devral` blogu yazinca YESIL.
+  #     `core.autocrlf=true`: adim `git config --global` ile kurar; GIT_CONFIG_GLOBAL gecici
+  #     dosyaya cevrilir (runner'da ayni etki; yerelde kullanicinin GERCEK ayarina
+  #     DOKUNULMAZ) ve betik ayni ayari kendi izole "global"ine de yazar.
+  #     YALNIZ windows-latest (is emri); 🔴 `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  ikinci_klon_kapisi:
+    name: ikinci klon kapisi (windows-latest, autocrlf=true)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: autocrlf=true altinda kur ve commit ve IKINCI KLON ve kapi exit 0
+        shell: bash
+        run: |
+          export GIT_CONFIG_GLOBAL="$(mktemp)"
+          git config --global core.autocrlf true
+          python faz0/ikinci_klon_kapisi.py 2>&1 | tee ikinci-klon-cikti.txt
+      - name: ikinci klon kapisi ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ikinci-klon
+          path: ikinci-klon-cikti.txt
+          if-no-files-found: warn
