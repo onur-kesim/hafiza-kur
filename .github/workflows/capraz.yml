@@ -3091,7 +3091,7 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
-  # 2b-31) IKINCI KLON KAPISI — besli-paket/IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 3
+  # 2b-43) IKINCI KLON KAPISI — besli-paket/IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 3
   #     (Cowork O16 -> Code, 18 Eki 2026; Onur kilidi 23:28). OLCULDU (Windows 11,
   #     `core.autocrlf=true`, hafiza.py 6EA0A2ED): proje-sablonu'ndan klon + `devral`
   #     + `not` + `derle` + commit -> ayni makinede `kapi` YESIL; AYNI depo ikinci kez
@@ -3130,16 +3130,17 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
-  # 2b-32) GITATTRIBUTES MUHUR MUTANTI — IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 1
+  # 2b-44) GITATTRIBUTES MUHUR MUTANTI — IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 1
   #     `kur` ve `devral` kokteki `.gitattributes`'a isaretli blok yazar (`# hafiza-kur
   #     BASLA` ... `# hafiza-kur BITIR`): `<arsiv dizini>/** -text` + her politika dosyasi
   #     icin `<ad> -text`; kurallar SABIT liste degil MUHURLU KUMEDEN turetilir. ON
-  #     BIR HAL (KUR · TEKRAR · MEVCUT · MEVCUT_CRLF · ASISTAN · BAG · SALTOKU · NS · DEVRAL +
-  #     gercek ikinci klon IKLON/IKLON_NS) bagimsiz bir orakele karsi; saglam motorda YESIL,
-  #     YEDI sabotajin her biri KENDI halinde KIRMIZI (yanlis sebeple isirmak sayilmaz):
+  #     IKI HAL (KUR · TEKRAR · MEVCUT · MEVCUT_CRLF · ASISTAN · BAG · SALTOKU · BOM · NS ·
+  #     DEVRAL + gercek ikinci klon IKLON/IKLON_NS) bagimsiz bir orakele karsi; saglam motorda
+  #     YESIL, ON sabotajin her biri KENDI halinde KIRMIZI (yanlis sebeple isirmak sayilmaz):
   #         M-GA1 BLOK YAZIMI KAPALI · M-GA2 LISTE SABIT (ad alani) · M-GA7 ASISTAN
   #         DOSYASI GIRER · M-GA8 BLOK DISINA DOKUNUR · M-GA9 IKINCI KOSUM TEKRAR YAZAR
-  #         · M-GA10 GIT BAGI KORUNMAZ · M-GA12 SALT-OKUNUR OLCULMEZ
+  #         · M-GA10 GIT BAGI KORUNMAZ · M-GA12 SALT-OKUNUR OLCULMEZ · M-GA14 DEVRAL
+  #         YAZMAZ · M-GA15 TAZELEME YAZMAZ · M-GA16 BOM ISARETI GIZLER
   #     Linux/macOS'ta `core.autocrlf=true` GIT_CONFIG_GLOBAL ile simule edilir (git'in
   #     checkout donusumu platformdan bagimsizdir). 🔴 UC PLATFORM, `continue-on-error` YOK.
   # ---------------------------------------------------------------------------
@@ -3156,7 +3157,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: muhurlu kume satir sonu cevriminden korunuyor mu (on bir hal, yedi sabotaj)
+      - name: muhurlu kume satir sonu cevriminden korunuyor mu (on iki hal, on sabotaj)
         shell: bash
         run: python faz0/gitattributes_muhur_mutanti.py 2>&1 | tee gitattributes-muhur-cikti.txt
       - name: gitattributes muhur mutanti ciktisi (artefakt)
@@ -3168,17 +3169,18 @@ jobs:
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
-  # 2b-33) GITATTRIBUTES UYARI MUTANTI — IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 2
+  # 2b-45) GITATTRIBUTES UYARI MUTANTI — IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 2
   #     `kapi` H21: git deposunda muhurlu kumeden IZLENEN en az bir yol icin `git
   #     check-attr text` `unset` DEGILSE "satir sonu cevrimi muhurlu dosyayi bozabilir"
   #     UYARISI (Onur kilidi 18 Eki 23:31: hukum sinifi UYARI — yalniz N kanali, cikis
   #     kodu DEGISMEZ; mevcut Linux/macOS projelerini kirmiziya bogmamak icin). Depo
   #     degilse sessiz (H9 zaten `git YOK ... OLCULEMIYOR` der); `.git` var ama git
-  #     calismiyorsa `H21: OLCULEMEDI`. ALTI HAL (KORUMASIZ · KORUMALI · GITSIZ ·
-  #     KOMITSUZ · KENDI · GITYOK); saglam motorda YESIL, BES sabotajin her biri KENDI
-  #     halinde KIRMIZI: M-GA3 CHECK-ATTR KOR · M-GA4 OLCULEMEDI SUSAR · M-GA5 IZLENEN
-  #     KOSULU KALKAR · M-GA6 DEPO-DEGIL SESSIZLIGI BOZULUR · M-GA11 UYARI KIRMIZIYA
-  #     TERFI. 🔴 UC PLATFORM, `continue-on-error` YOK.
+  #     calismiyorsa `H21: OLCULEMEDI`; blok calisma agacinda var ama commit'siz ise ayri
+  #     satir. YEDI HAL (KORUMASIZ · KORUMALI · GITSIZ · KOMITSUZ · KENDI · GACOMMITSIZ ·
+  #     GITYOK); saglam motorda YESIL, ALTI sabotajin her biri KENDI halinde KIRMIZI:
+  #     M-GA3 CHECK-ATTR KOR · M-GA4 OLCULEMEDI SUSAR · M-GA5 IZLENEN KOSULU KALKAR ·
+  #     M-GA6 DEPO-DEGIL SESSIZLIGI BOZULUR · M-GA11 UYARI KIRMIZIYA TERFI · M-GA13 COMMIT
+  #     DENETIMI YOK. 🔴 UC PLATFORM, `continue-on-error` YOK.
   # ---------------------------------------------------------------------------
   gitattributes_uyari_mutanti:
     name: gitattributes uyari mutanti (${{ matrix.os }})
@@ -3193,7 +3195,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: H21 koruma yoklugunu gizlemiyor ve yalniz UYARI (alti hal, bes sabotaj)
+      - name: H21 koruma yoklugunu gizlemiyor ve yalniz UYARI (yedi hal, alti sabotaj)
         shell: bash
         run: python faz0/gitattributes_uyari_mutanti.py 2>&1 | tee gitattributes-uyari-cikti.txt
       - name: gitattributes uyari mutanti ciktisi (artefakt)

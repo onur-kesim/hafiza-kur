@@ -1793,7 +1793,7 @@ def _ga_kurallar(y):
     for rel in _ga_muhur_yollari(y):
         d = dizin + "/**" if rel.startswith(dizin + "/") else rel
         govde = d[:-3] if d.endswith("/**") else d
-        if rel.startswith("..") or not _GA_GUVENLI.match(govde):
+        if rel == ".." or rel.startswith("../") or not _GA_GUVENLI.fullmatch(govde):
             if d not in atlanan:
                 atlanan.append(d)
         elif d not in desenler:
@@ -1818,15 +1818,18 @@ def _ga_hal(kok):
         return "SEMBOLIK BAG (git)", p            # core.symlinks=false checkout'unda bag DUZ DOSYA gorunur (P3.1 K1)
     if not os.path.isfile(p):
         return "DOSYA DEGIL", p
-    with open(p, "rb") as f:
-        ham = f.read()
+    try:
+        with open(p, "rb") as f:
+            ham = f.read()
+    except OSError:
+        return "OKUNAMADI", p                     # kilitli/yetkisiz: kurulumu DUSURMEZ, hal beyan edilir (kuru prova da cokmez)
     if ham[:2] in (b"\xff\xfe", b"\xfe\xff"):
         return "KODLAMA", p
-    ls = [x.strip() for x in ham.decode("utf-8", "replace").splitlines()]
-    if _GA_BAS in ls and _GA_SON in ls:
+    ls = [x.strip() for x in ham.decode("utf-8-sig", "replace").splitlines()]       # UTF-8 BOM isareti gizlemez
+    if _GA_BAS in ls and _GA_SON in ls and ls.index(_GA_BAS) < ls.index(_GA_SON):
         return "ZATEN VAR", p
     if _GA_BAS in ls or _GA_SON in ls:
-        return "YARIM BLOK", p
+        return "YARIM BLOK", p                    # tek isaret YA DA ters sira
     return ("EKLENECEK" if os.access(p, os.W_OK) else "SALT-OKUNUR"), p
 
 
@@ -1852,6 +1855,7 @@ def _ga_bildir(hal, desenler, atlanan):
     """Her hal BEYAN edilir (sessiz atlama YOK). Yazilamayan halde elle eklenecek satirlar basilir."""
     if hal in ("YAZILDI", "EKLENDI"):
         print("GITATTRIBUTES %s: %s · %d kural (%s)" % (hal, _GA_AD, len(desenler), ", ".join(desenler)))
+        print("    -> %s'i COMMIT'le: klonun gorecegi koruma yalniz commit'li dosyadan gelir (kapi H21 aksini uyarir)" % _GA_AD)
     elif hal == "ZATEN VAR":
         print("GITATTRIBUTES ZATEN VAR: %s — yazilmadi" % _GA_AD)
     else:
@@ -1889,6 +1893,22 @@ def _ga_check_attr(kok, yollar):
     parca = [x.decode("utf-8", "replace") for x in r.stdout.split(b"\0")]
     deger = dict((parca[i], parca[i + 2]) for i in range(0, len(parca) - 2, 3))
     return deger, set(x.decode("utf-8", "replace") for x in t.stdout.split(b"\0") if x), None
+
+
+def _ga_commitsiz(kok):
+    """`.gitattributes` calisma agacinda VAR ama klonun gorecegi surum DEGIL mi: izlenmiyor ya da HEAD'den farkli (`git diff --quiet HEAD`)? Klon
+    yalniz COMMIT'li dosyayi tasir; `check-attr` calisma agacina bakar. -> True | False. HEAD yok / git hatasi => False (sessiz: henuz klonlanacak
+    bir sey yok ya da olculemedi; sorgu hatalari H21'in `OLCULEMEDI` kolunda zaten gorunur)."""
+    if not os.path.lexists(os.path.join(kok, _GA_AD)):
+        return False
+    try:
+        iz = _adres_git(kok, "--literal-pathspecs", "ls-files", "-z", "--", _GA_AD, timeout=30, stdin=subprocess.DEVNULL)
+        fark = _adres_git(kok, "diff", "--quiet", "HEAD", "--", _GA_AD, timeout=30, stdin=subprocess.DEVNULL)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if iz.returncode != 0:
+        return False
+    return not iz.stdout.strip(b"\0") or fark.returncode == 1
 
 
 def _kur_rc(a, kok):
@@ -3603,7 +3623,7 @@ def cmd_devral(a):
                   "(`--esle canli=<dosya>` ile kilitle)")
         print("  (yazmak icin `--kesif` olmadan kos)")
         _asistan_kesif(kok, envanter)           # P3: yazacagi dosyalari + hallerini basar, yazmaz
-        print("  gitattributes     : %s -> %s" % (_GA_AD, _ga_hal(kok)[0]))     # KALEM GA: yazacagi blogun hali (yazmaz)
+        print("  gitattributes     : %s -> %s" % (_GA_AD, _ga_hal(kok)[0].lower()))     # KALEM GA: yazacagi blogun hali (yazmaz)
         return 0
     if os.path.isfile(os.path.join(kok, RC_AD)):
         oldur(RC_AD + " ZATEN VAR — bu proje kurulu/devralinmis. Devir bir kez yapilir.\n"
@@ -12016,7 +12036,8 @@ def _kapi_h20(N, kok, y):
 def _kapi_h21(N, kok, y):
     """H21 SATIR SONU MUHRU (besli-paket/IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 2, Onur kilidi 18 Eki 23:31). UYARI: yalniz N; `fail`/`O` YOK, cikis
     kodu DEGISMEZ (H18/H19 kalibi; mevcut Linux/macOS projelerini kirmiziya bogmamak icin). Git deposunda muhurlu kumeden IZLENEN en az bir yol icin
-    `git check-attr text` `unset` DEGILSE: satir sonu cevrimi (core.autocrlf) o dosyayi ikinci klonda bozabilir. Depo DEGILSE sessiz (cevrim
+    `git check-attr text` `unset` DEGILSE: satir sonu cevrimi (core.autocrlf) o dosyayi ikinci klonda bozabilir. Koruma calisma agacinda GORUNUYOR
+    ama `.gitattributes` izlenmiyor/HEAD'den farkliysa (klon yalniz COMMIT'li dosyayi tasir) ayri satir. Depo DEGILSE sessiz (cevrim
     yok; H9 zaten `git YOK ... OLCULEMIYOR` der). `.git` VAR ama git calismiyorsa ya da sorgu basarisizsa OLCULEMEDI (sessiz PASS yok)."""
     if not shutil.which("git"):
         if os.path.lexists(os.path.join(kok, ".git")):
@@ -12034,6 +12055,9 @@ def _kapi_h21(N, kok, y):
         N.append("H21: satir sonu cevrimi muhurlu dosyayi bozabilir — izlenen %d muhurlu yoldan %d'inde `text` unset DEGIL (%s=%s). "
                  "`hafiza.py kur` (blok YOKSA %s blogunu yazar; blok eskiyse once sil) ya da elle `-text`"
                  % (len([p for p in yollar if p in izlenen]), len(acik), acik[0], deger.get(acik[0], "unspecified"), _GA_AD))
+    elif izlenen and _ga_commitsiz(kok):
+        N.append("H21: %s commit'lenmemis (izlenmiyor ya da HEAD'den farkli) — `-text` korumasi KLONDA GORUNMEZ; `git add %s` ve commit"
+                 % (_GA_AD, _GA_AD))
 
 
 def _kapi_uyarilar(N, kok, y):

@@ -18,7 +18,8 @@ NE OLCER (gercek ikinci klon — simulasyon degil)
   2. AYNI makinede `kapi` exit 0                                               (POZITIF KONTROL)
   3. `git clone` ikinci kopya -> `kapi` exit 0                                 (HUKUM)
   Kurulum ya da pozitif kontrol kirmizi ise OLCULEMEDI (exit 2): ikinci klonun kirmizisi o zaman
-  autocrlf'e YAZILAMAZ.
+  autocrlf'e YAZILAMAZ. NEGATIF KONTROL: klonda `core.autocrlf=true` GERCEKTEN CRLF uretmediyse (ayar
+  etkisiz) hukum YOK (OLCULEMEDI): vakum YESIL sahte guvence olurdu.
   `core.autocrlf=true` TEK AYARDIR ve ELLE kurulur: `GIT_CONFIG_GLOBAL` ile gecici bir "global" dosyaya
   yazilir (CI'da `git config --global core.autocrlf true` ile ayni etki; yerelde kullanicinin GERCEK
   global ayarina DOKUNULMAZ). Sistem ayari (runner'in ne dedigi) ezilir: sonuc runner'a bagli degildir.
@@ -70,7 +71,9 @@ def git_ortami(taban):
     with open(g, "w", encoding="utf-8", newline="\n") as f:
         f.write("[core]\n\tautocrlf = true\n[user]\n\tname = ikiklon\n\temail = ikiklon@example.invalid\n"
                 "[init]\n\tdefaultBranch = main\n[commit]\n\tgpgsign = false\n")
-    return dict(os.environ, GIT_CONFIG_GLOBAL=g, PYTHONIOENCODING="utf-8")
+    haric = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT")      # baska deponun/komutun ortami sizmasin
+    ortam = dict((k, v) for k, v in os.environ.items() if k not in haric)
+    return dict(ortam, GIT_CONFIG_GLOBAL=g, PYTHONIOENCODING="utf-8")
 
 
 def git(ortam, *args, cwd=None):
@@ -156,9 +159,13 @@ def olc(motor, taban, ad_alani=None):
         raise Kurulamadi("POZITIF KONTROL kirmizi: ILK projede `kapi` exit %s (ikinci klonun kirmizisi "
                          "autocrlf'e yazilamaz):\n%s" % (rc0, "\n".join(c0.strip().split("\n")[-12:])))
     git(ortam, "clone", "-q", proje, klon)
+    crlf_p, crlf_k = _crlf_sayisi(proje), _crlf_sayisi(klon)
+    if crlf_k <= crlf_p:
+        # NEGATIF KONTROL: `core.autocrlf=true` klonda GERCEKTEN CRLF uretmediyse (eski git GIT_CONFIG_GLOBAL'i yok sayar, ayar ezilmis olabilir)
+        # YESIL vakumdur: korumayi degil ayarin etkisizligini olcmus oluruz.
+        raise Kurulamadi("core.autocrlf=true klonda CRLF URETMEDI (proje %d, klon %d CRLF'li dosya): ayar etkisiz — hukum YOK" % (crlf_p, crlf_k))
     rc1, c1 = kos(motor, ["kapi"], klon, ortam)
-    return ("YESIL" if rc1 == 0 else "KIRMIZI"), {"exit": rc1, "cikti": c1, "crlf_proje": _crlf_sayisi(proje),
-                                                  "crlf_klon": _crlf_sayisi(klon)}
+    return ("YESIL" if rc1 == 0 else "KIRMIZI"), {"exit": rc1, "cikti": c1, "crlf_proje": crlf_p, "crlf_klon": crlf_k}
 
 
 def main():

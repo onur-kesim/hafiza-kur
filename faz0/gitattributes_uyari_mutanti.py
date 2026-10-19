@@ -3,26 +3,28 @@
 """GITATTRIBUTES UYARI MUTANTI — `kapi` H21: satir sonu korumasinin YOKLUGU gizlenemez mi, ve yalniz UYARI mi?
 (besli-paket/IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 2, 18 Eki 2026; hukum sinifi UYARI = Onur kilidi 18 Eki 23:31)
 
-NE OLCER — altı HAL, her biri `kapi` ciktisindaki `H21` satirlariyla ve cikis koduyla yargilanir:
+NE OLCER — yedi HAL, her biri `kapi` ciktisindaki `H21` satirlariyla ve cikis koduyla yargilanir:
     KORUMASIZ   git deposu, defterler commit'li, `.gitattributes` YOK   -> TEK `· H21: satir sonu cevrimi ... bozabilir` satiri (UYARI kanali)
     KORUMALI    ayni, `kur`un yazdigi blok VAR                           -> H21 SATIRI YOK; cikis kodu KORUMASIZ ile AYNI (UYARI exit'i degistirmez)
     GITSIZ      depo DEGIL                                               -> H21 SATIRI YOK (cevrim yok; H9 zaten `git YOK ... OLCULEMIYOR` der)
     KOMITSUZ    git deposu ama defterler HENUZ izlenmiyor                -> H21 SATIRI YOK (altin cikti BIREBIR; ikinci klon zaten yok)
     KENDI       kullanici `.gitattributes`'i `* -text` (blok yok)        -> H21 SATIRI YOK (koruma baska kuraldan; yanlis alarm yok)
+    GACOMMITSIZ blok calisma agacinda VAR ama commit'e GIRMEDI               -> TEK `· H21: .gitattributes commit'lenmemis` (klon korumasiz); exit AYNI
     GITYOK      `.git` VAR ama git calistirilamiyor (PATH bos)           -> TEK `H21: OLCULEMEDI` satiri (sessiz PASS yok)
-  SAGLAM motorda hepsi YESIL; asagidaki bes sabotajin HER BIRI KENDI halinde KIRMIZI yakmalidir (yanlis sebeple isirmak sayilmaz):
+  SAGLAM motorda hepsi YESIL; asagidaki alti sabotajin HER BIRI KENDI halinde KIRMIZI yakmalidir (yanlis sebeple isirmak sayilmaz):
     M-GA3 CHECK-ATTR KOR                `git check-attr` okumasi her yola `unset` der      -> KORUMASIZ
     M-GA4 OLCULEMEDI SUSAR              git yokken OLCULEMEDI satiri basilmaz               -> GITYOK
     M-GA5 IZLENEN KOSULU KALKAR         izlenmeyen yol da uyari uretir                      -> KOMITSUZ
     M-GA6 DEPO-DEGIL SESSIZLIGI BOZULUR depo olmayan projede de sorgu yapilir (gurultu)      -> GITSIZ
     M-GA11 UYARI KIRMIZIYA TERFI        uyarilar F (hata) kanalina yazilir: cikis kodu degisir -> KORUMASIZ (exit)
+    M-GA13 COMMIT DENETIMI YOK          calisma agacindaki blok koruma sayilir (commit'siz)  -> GACOMMITSIZ
 
 NE OLCMEZ
   Mevcut Linux/macOS projelerinin ilk gercek kullanimdaki gurultu orani (Onur kilidi: UYARI, kirmiziya bogmamak icin). `check-attr`in
   `core.autocrlf` AYARINI degil yalniz OZNITELIGI okudugu (iki ayri ekseni: oznitelik proje korumasidir, ayar kullanicinin makinesidir).
 
 KULLANIM    python3 faz0/gitattributes_uyari_mutanti.py [motor.py]
-CIKIS KODU  0 saglam YESIL ve bes mutantin HEPSI kendi halinde KIRMIZI yakti · 1 saglam kirmizi/mutant KACTI · 2 OLCULEMEDI
+CIKIS KODU  0 saglam YESIL ve alti mutantin HEPSI kendi halinde KIRMIZI yakti · 1 saglam kirmizi/mutant KACTI · 2 OLCULEMEDI
 """
 import os
 import shutil
@@ -48,7 +50,7 @@ _cikti_kodlamasini_guvenceye_al()
 KOK = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VARSAYILAN_MOTOR = os.path.join(KOK, "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 84
-HALLER = ["KORUMASIZ", "KORUMALI", "GITSIZ", "KOMITSUZ", "KENDI", "GITYOK"]
+HALLER = ["KORUMASIZ", "KORUMALI", "GITSIZ", "KOMITSUZ", "KENDI", "GACOMMITSIZ", "GITYOK"]
 
 
 class Kurulamadi(Exception):
@@ -60,7 +62,9 @@ def git_ortami(taban):
     if not os.path.isfile(g):
         with open(g, "w", encoding="utf-8", newline="\n") as f:
             f.write("[user]\n\tname = gauyr\n\temail = gauyr@example.invalid\n[init]\n\tdefaultBranch = main\n[commit]\n\tgpgsign = false\n")
-    return dict(os.environ, GIT_CONFIG_GLOBAL=g, PYTHONIOENCODING="utf-8")
+    haric = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT")   # baska deponun ortami sizmasin
+    ortam = dict((k, v) for k, v in os.environ.items() if k not in haric)
+    return dict(ortam, GIT_CONFIG_GLOBAL=g, PYTHONIOENCODING="utf-8")
 
 
 def git(ortam, *args, cwd=None):
@@ -133,6 +137,11 @@ def gozle(motor, taban):
         f.write("* -text\n")
     komitle(ortam, k)
     kokler["KENDI"] = k
+    k = proje(motor, taban, ortam, "gacommitsiz")          # blok calisma agacinda VAR ama commit'e GIRMEDI: klon korumasiz kalir
+    git(ortam, "add", "-A", cwd=k)
+    git(ortam, "reset", "-q", "--", ".gitattributes", cwd=k)
+    git(ortam, "commit", "-q", "-m", "taban (.gitattributes haric)", cwd=k)
+    kokler["GACOMMITSIZ"] = k
     k = proje(motor, taban, ortam, "gityok")
     ga_sil(k)
     komitle(ortam, k)
@@ -166,6 +175,11 @@ def ihlaller(g):
     s5 = g["GITYOK"][1]
     if len(s5) != 1 or not s5[0].startswith("· H21: OLCULEMEDI"):
         out.append(("GITYOK", "TEK `H21: OLCULEMEDI` satiri beklenir (sessiz PASS yok): %r" % s5))
+    rc6, s6 = g["GACOMMITSIZ"]
+    if len(s6) != 1 or not s6[0].startswith("· H21: .gitattributes commit'lenmemis"):
+        out.append(("GACOMMITSIZ", "blok commit'siz: TEK `H21: .gitattributes commit'lenmemis` satiri beklenir: %r" % s6))
+    if rc6 != rc1:
+        out.append(("GACOMMITSIZ", "UYARI cikis kodunu DEGISTIRDI (commit'siz %s != korumali %s)" % (rc6, rc1)))
     return out
 
 
@@ -185,6 +199,8 @@ MUTANTLAR = [
        "    yollar = _ga_muhur_yollari(y)   # MUTANT")]),
     ("M-GA11 UYARI KIRMIZIYA TERFI", "uyarilar F (hata) kanalina yazilir: cikis kodu degisir", {"KORUMASIZ"},
      [("    _kapi_uyarilar(N, kok, y)\n", "    _kapi_uyarilar(F, kok, y)   # MUTANT\n")]),
+    ("M-GA13 COMMIT DENETIMI YOK", "calisma agacindaki blok koruma sayilir (klonun gorecegi commit'li surum degil)", {"GACOMMITSIZ"},
+     [("    elif izlenen and _ga_commitsiz(kok):\n", "    elif False:   # MUTANT\n")]),
 ]
 
 
@@ -268,7 +284,7 @@ def main():
     if kacti:
         print("  KACAN mutant = bu kapinin KOR oldugu yapi.")
         return 1
-    print("  Saglam motor YESIL, bes sabotajin hepsi KENDI halinde KIRMIZI: H21 olculuyor ve yalniz UYARI.")
+    print("  Saglam motor YESIL, alti sabotajin hepsi KENDI halinde KIRMIZI: H21 olculuyor ve yalniz UYARI.")
     return 0
 
 

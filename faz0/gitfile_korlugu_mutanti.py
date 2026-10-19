@@ -417,8 +417,9 @@ def sinama_kaynak_kapisi():
     gorunmez). GUNCEL hali UC sayacin UCUNU BIRDEN olcer:
       · eski desen `_ISDIR_DESEN`               -> KEHANET: 0
       · `_HELPER_CAGRI_DESEN`                    -> KEHANET: TAM BEKLENEN_HELPER
-        (1 tanim + 5 cagri: cmd_hook · _kapi_h9 · _h14_git_durumu ·
-        _h4_git_yoksayilanlar · _h12_hafiza_git_tarihi)
+        (1 tanim + 8 cagri: cmd_hook · _kapi_h9 · _h14_git_durumu ·
+        _h4_git_yoksayilanlar · _h12_hafiza_git_tarihi · mutant_git ·
+        _h4_git_yoksayilan_dosyalar · _kapi_h21)
       · `_EXISTS_DESEN` (helper'in KENDI icinde) -> KEHANET: TAM 1
     UCU BIRDEN dogru olmadan kol BEKLENDIGI GIBI SAYILMAZ — `_HELPER_CAGRI_
     DESEN` sayaci BEKLENEN_HELPER'DAN AZSA helper tanimli ama bir cagri
@@ -438,8 +439,9 @@ def sinama_kaynak_kapisi():
     _kayit(ad, BEKLENDIGI_GIBI if dogru else BEKLENMEDIK,
           "%s %s"
           % (mesaj,
-             "TAM DUZELTILMIS VE BES CAGRI YERI DE (cmd_hook, _kapi_h9, "
-             "_h14_git_durumu, _h4_git_yoksayilanlar, _h12_hafiza_git_tarihi) "
+             "TAM DUZELTILMIS VE SEKIZ CAGRI YERI DE (cmd_hook, _kapi_h9, "
+             "_h14_git_durumu, _h4_git_yoksayilanlar, _h12_hafiza_git_tarihi, mutant_git, "
+             "_h4_git_yoksayilan_dosyalar, _kapi_h21) "
              "HELPER'A BAGLANMIS."
              if dogru else
              "_kapi_h9 VE/veya _h14_git_durumu hala eski deseni tasiyor, "

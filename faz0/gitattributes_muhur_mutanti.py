@@ -9,7 +9,7 @@ NEDEN VAR (OLCULDU 18 Eki 2026, Windows 11, `core.autocrlf=true`, hafiza.py 6EA0
   `.gitattributes`'a isaretli blok yazar (`# hafiza-kur BASLA` ... `# hafiza-kur BITIR`): `<arsiv dizini>/** -text` +
   her politika dosyasi icin `<ad> -text`. Kurallar SABIT liste degil, MUHURLU KUMEDEN turetilir.
 
-NE OLCER — on bir HAL, her biri bagimsiz bir ORAKELe (bu dosyada elle yazili beklenen kural listesi) karsi:
+NE OLCER — on iki HAL, her biri bagimsiz bir ORAKELe (bu dosyada elle yazili beklenen kural listesi) karsi:
     KUR        taze git deposunda `kur` -> blok VAR, TEK, kurallar beklenenle ESIT
     TEKRAR     ikinci `kur` -> dosya BAYT-BIREBIR ayni, `ZATEN VAR` beyan edilir
     MEVCUT     kullanicinin `.gitattributes`'i VAR (son satirsonu yok) -> mevcut baytlar ONEK olarak AYNEN kalir, blok eklenir
@@ -17,11 +17,12 @@ NE OLCER — on bir HAL, her biri bagimsiz bir ORAKELe (bu dosyada elle yazili b
     ASISTAN    `kur --asistan agents` -> AGENTS.md MUHURLU DEGIL => kurala GIRMEZ
     BAG        `.gitattributes` git sembolik bagi (index 120000) -> YAZILMAZ, hal beyan edilir, elle eklenecek satirlar basilir
     SALTOKU    `.gitattributes` salt-okunur (yazilabilirlik YAZIMDAN ONCE olculur) -> YAZILMAZ, `SALT-OKUNUR` beyani + elle eklenecek satirlar
+    BOM        UTF-8 BOM'lu dosyada TAM blok -> `ZATEN VAR` (git BOM'u atlar, koruma aktif), dosya degismez
     NS         arsiv dizini FARKLI ad alaninda (`.hafizarc hafiza_dizini`) -> kural O ad alanindan TUREMIS olmali
     DEVRAL     `devral --esle canli=DURUM.md` -> blok yazilir
     IKLON      GERCEK ikinci klon (`faz0/ikinci_klon_kapisi.py`, core.autocrlf=true) -> `kapi` exit 0     [yalniz M-GA1/M-GA2 icin kosulur]
     IKLON_NS   ayni, farkli ad alaninda                                                                    [yalniz M-GA2 icin kosulur]
-  SAGLAM motorda hepsi YESIL; asagidaki yedi sabotajin HER BIRI KENDI halinde KIRMIZI yakmalidir (yanlis sebeple isirmak sayilmaz):
+  SAGLAM motorda hepsi YESIL; asagidaki on sabotajin HER BIRI KENDI halinde KIRMIZI yakmalidir (yanlis sebeple isirmak sayilmaz):
     M-GA1 BLOK YAZIMI KAPALI         `_gitattributes_uygula` hicbir sey yazmaz            -> KUR · IKLON
     M-GA2 LISTE SABIT                kurallar eski 4 satira cakili (ad alani gormez)      -> NS · IKLON_NS
     M-GA7 ASISTAN DOSYASI GIRER      `AGENTS.md` muhurlu kumeye sokulur                   -> ASISTAN
@@ -29,6 +30,9 @@ NE OLCER — on bir HAL, her biri bagimsiz bir ORAKELe (bu dosyada elle yazili b
     M-GA9 IKINCI KOSUM TEKRAR YAZAR  blok-var denetimi yok -> her `kur` bir blok daha      -> TEKRAR
     M-GA10 GIT BAGI KORUNMAZ         index 120000 denetimi yok -> duz dosyaya yazar        -> BAG
     M-GA12 SALT-OKUNUR OLCULMEZ      yazilabilirlik yazimdan ONCE olculmez (yazim dener) -> SALTOKU
+    M-GA14 DEVRAL YAZMAZ             `cmd_devral` cagri yeri sokulur                       -> DEVRAL
+    M-GA15 TAZELEME YAZMAZ           yalniz taze kur yazar, idempotent tazeleme onarmaz    -> NS
+    M-GA16 BOM ISARETI GIZLER        UTF-8 BOM'lu dosyada tam blok `YARIM BLOK` sanilir      -> BOM
 
 NE OLCMEZ
   macOS/Linux'ta `core.autocrlf=true` simulasyonu `-c`/GIT_CONFIG_GLOBAL ile yapilir; GERCEK Windows dosya sistemi yalniz Windows bacaginda. Dosya
@@ -36,7 +40,7 @@ NE OLCMEZ
   ve kullanicinin blogu elle silmesi bu kapinin DISINDADIR (DURUM.md siniri).
 
 KULLANIM    python3 faz0/gitattributes_muhur_mutanti.py [motor.py]
-CIKIS KODU  0 saglam YESIL ve yedi mutantin HEPSI kendi halinde KIRMIZI yakti
+CIKIS KODU  0 saglam YESIL ve on mutantin HEPSI kendi halinde KIRMIZI yakti
             1 saglam motorda kirmizi YA DA bir mutant KACTI/yanlis sebeple isirdi
             2 OLCULEMEDI (git yok, hal kurulamadi, anchor tutmadi, arac hatasi)
 """
@@ -76,7 +80,7 @@ def beklenen(dizin="arsiv/hafiza"):
 
 
 BAS, SON = "# hafiza-kur BASLA", "# hafiza-kur BITIR"
-HALLER = ["KUR", "TEKRAR", "MEVCUT", "MEVCUT_CRLF", "ASISTAN", "BAG", "SALTOKU", "NS", "DEVRAL", "IKLON", "IKLON_NS"]
+HALLER = ["KUR", "TEKRAR", "MEVCUT", "MEVCUT_CRLF", "ASISTAN", "BAG", "SALTOKU", "BOM", "NS", "DEVRAL", "IKLON", "IKLON_NS"]
 
 
 class Kurulamadi(Exception):
@@ -89,7 +93,9 @@ def git_ortami(taban):
     if not os.path.isfile(g):
         with open(g, "w", encoding="utf-8", newline="\n") as f:
             f.write("[user]\n\tname = gamut\n\temail = gamut@example.invalid\n[init]\n\tdefaultBranch = main\n[commit]\n\tgpgsign = false\n")
-    return dict(os.environ, GIT_CONFIG_GLOBAL=g, PYTHONIOENCODING="utf-8")
+    haric = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT")   # baska deponun ortami sizmasin
+    ortam = dict((k, v) for k, v in os.environ.items() if k not in haric)
+    return dict(ortam, GIT_CONFIG_GLOBAL=g, PYTHONIOENCODING="utf-8")
 
 
 def git(ortam, *args, cwd=None, girdi=None):
@@ -219,6 +225,16 @@ def hal_saltoku(motor, taban, ortam):
         os.chmod(p, stat.S_IWRITE | stat.S_IREAD)
 
 
+def hal_bom(motor, taban, ortam):
+    """UTF-8 BOM'lu `.gitattributes` + tam blok: git BOM'u atlar (koruma AKTIF); `kur` bunu `ZATEN VAR` saymali, `YARIM BLOK` degil."""
+    k = yeni_proje(taban, "bom", ortam)
+    kur(motor, k, ortam)
+    ham = b"\xef\xbb\xbf" + (_oku_b(k) or b"")
+    _yaz_b(k, ".gitattributes", ham)
+    c = kur(motor, k, ortam)
+    return {"ham": ham, "sonra": _oku_b(k), "cikti": c}
+
+
 def hal_ns(motor, taban, ortam):
     k = yeni_proje(taban, "ns", ortam)
     kur(motor, k, ortam)
@@ -262,7 +278,7 @@ def gozle(motor, taban, iklon, iklon_ns):
     g = {"KUR": hal_kur_(motor, taban, ortam), "TEKRAR": hal_tekrar(motor, taban, ortam),
          "MEVCUT": hal_mevcut(motor, taban, ortam, False), "MEVCUT_CRLF": hal_mevcut(motor, taban, ortam, True),
          "ASISTAN": hal_asistan(motor, taban, ortam), "BAG": hal_bag(motor, taban, ortam),
-         "SALTOKU": hal_saltoku(motor, taban, ortam), "NS": hal_ns(motor, taban, ortam), "DEVRAL": hal_devral(motor, taban, ortam)}
+         "SALTOKU": hal_saltoku(motor, taban, ortam), "BOM": hal_bom(motor, taban, ortam), "NS": hal_ns(motor, taban, ortam), "DEVRAL": hal_devral(motor, taban, ortam)}
     if iklon:
         g["IKLON"] = hal_iklon(motor)
     if iklon_ns:
@@ -321,9 +337,14 @@ def ihlaller(g):
     ekle("SALTOKU", ([] if sk["sonra"] == sk["ham"] else ["salt-okunur dosya DEGISTI"]) +
          ([] if "GITATTRIBUTES SALT-OKUNUR" in sk["cikti"] else ["cikti `SALT-OKUNUR` demiyor (yazim denenmis olabilir)"]) +
          ([] if "    arsiv/hafiza/** -text" in sk["cikti"] else ["elle eklenecek satirlar BASILMADI"]))
+    bm = g["BOM"]
+    ekle("BOM", ([] if bm["sonra"] == bm["ham"] else ["BOM'lu dosya DEGISTI"]) +
+         ([] if "GITATTRIBUTES ZATEN VAR" in bm["cikti"] else ["BOM'lu tam blok `ZATEN VAR` sayilmadi (koruma aktif ama `kur` KORUNMUYOR der)"]))
     ekle("NS", _blok_ihlali(g["NS"]["ham"], beklenen("kayit/hafiza")))
     ekle("DEVRAL", _blok_ihlali(g["DEVRAL"]["ham"], beklenen()))
     for ad in ("IKLON", "IKLON_NS"):
+        if ad in g and g[ad]["rc"] == 2:
+            raise Kurulamadi("%s: ikinci klon kapisi OLCULEMEDI (exit 2): %s" % (ad, g[ad]["cikti"].strip().split("\n")[-1][:160]))
         if ad in g and g[ad]["rc"] != 0:
             ekle(ad, ["gercek ikinci klonda `kapi` YESIL degil (gate exit %s)" % g[ad]["rc"]])
     return out
@@ -349,13 +370,23 @@ MUTANTLAR = [
        "    with open(p, \"wb\") as f:   # MUTANT\n        f.write(ayrac + eol.join(x.encode(\"utf-8\") for x in blok) + eol)\n    return \"EKLENDI\"\n")],
      False, False),
     ("M-GA9 IKINCI KOSUM TEKRAR YAZAR", "blok-var denetimi yok -> her `kur` bir blok daha ekler", {"TEKRAR"},
-     [("    if _GA_BAS in ls and _GA_SON in ls:\n        return \"ZATEN VAR\", p\n    if _GA_BAS in ls or _GA_SON in ls:\n"
-       "        return \"YARIM BLOK\", p\n", "")], False, False),
+     [("    if _GA_BAS in ls and _GA_SON in ls and ls.index(_GA_BAS) < ls.index(_GA_SON):\n        return \"ZATEN VAR\", p\n"
+       "    if _GA_BAS in ls or _GA_SON in ls:\n        return \"YARIM BLOK\", p                    # tek isaret YA DA ters sira\n", "")], False, False),
+    ("M-GA16 BOM ISARETI GIZLER", "UTF-8 BOM'lu dosyada blok `YARIM BLOK` sanilir (koruma var, `kur` 'KORUNMUYOR' der)", {"BOM"},
+     [("ham.decode(\"utf-8-sig\", \"replace\").splitlines()", "ham.decode(\"utf-8\", \"replace\").splitlines()")], False, False),
     ("M-GA10 GIT BAGI KORUNMAZ", "index 120000 denetimi yok -> duz dosya sanilip yazilir", {"BAG"},
      [("    if _asistan_git_modu(kok, _GA_AD) == \"120000\":", "    if False:   # MUTANT")], False, False),
     ("M-GA12 SALT-OKUNUR OLCULMEZ", "yazilabilirlik yazimdan ONCE olculmez (yazim denenir)", {"SALTOKU"},
      [("    return (\"EKLENECEK\" if os.access(p, os.W_OK) else \"SALT-OKUNUR\"), p\n",
        "    return \"EKLENECEK\", p   # MUTANT\n")], False, False),
+    ("M-GA14 DEVRAL YAZMAZ", "`cmd_devral` cagri yeri sokulur (kur yazar, devral yazmaz)", {"DEVRAL"},
+     [("    _gitattributes_uygula(y)                    # KALEM GA: devir raporundaki `kapi`dan ONCE (yoksa H21 yersiz uyarir)\n",
+       "    pass   # MUTANT\n")], False, False),
+    ("M-GA15 TAZELEME YAZMAZ", "yalniz taze `kur` (GENESIS) yazar; idempotent tazeleme mevcut projeyi ONARMAZ", {"NS"},
+     [("        _gitkeep_yaz(y)\n    else:\n        zincir_halka(y, \"KURULUM\", \"hafiza.py kur (idempotent tazeleme)\" + ek)\n"
+       "    _gitattributes_uygula(y)                    # KALEM GA: taze kur VE idempotent tazeleme (mevcut projeyi onarmanin yolu)\n",
+       "        _gitkeep_yaz(y)\n        _gitattributes_uygula(y)   # MUTANT: yalniz GENESIS\n    else:\n"
+       "        zincir_halka(y, \"KURULUM\", \"hafiza.py kur (idempotent tazeleme)\" + ek)\n")], False, False),
 ]
 
 
@@ -415,7 +446,7 @@ def main():
                 print("  ?  %-30s OLCULEMEDI  %s" % (ad, e))
                 continue
             haller = {h for h, _ in ih}
-            if hedef & haller:
+            if hedef <= haller:
                 isirdi.append(ad)
                 print("  +  %-30s ISIRDI      hedef hal: %s · tum ihlal halleri: %s"
                       % (ad, ",".join(sorted(hedef & haller)), ",".join(sorted(haller))))
@@ -436,7 +467,7 @@ def main():
     if kacti:
         print("  KACAN mutant = bu kapinin KOR oldugu yapi.")
         return 1
-    print("  Saglam motor YESIL, yedi sabotajin hepsi KENDI halinde KIRMIZI: muhur korumasi olculuyor.")
+    print("  Saglam motor YESIL, on sabotajin hepsi KENDI halinde KIRMIZI: muhur korumasi olculuyor.")
     return 0
 
 
