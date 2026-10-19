@@ -176,7 +176,8 @@ python araclar/hafiza/hafiza.py isir --kok="<proje kökü>"
 
 `kur` şunları üretir: `.hafizarc` · `PROJE_HAFIZA.md` · `CLAUDE.md` · `SAKLAMA_PLANI.md` ·
 `KONULAR.md` · `kararlar/` · `gunluk/` · `arsiv/hafiza/` (çıpa + defterler + zincir) ·
-`arsiv/<tür>/`.
+`arsiv/<tür>/` · kökteki `.gitattributes`'a `# hafiza-kur BASLA … BITIR` bloğu (mühürlü dosyalar
+için `-text`: Windows `core.autocrlf=true` ikinci klonda mührü bozmasın; yoksa `kapi` **H21** uyarır).
 
 Kurulumdan sonra **`.hafizarc`'ı projeye göre ayarla**: `tavan_kb`, `bayatlik_gun`,
 `arsiv_turleri`, `kanonik_artefakt` (varsa tek doğru sürüm dosyası deseni),

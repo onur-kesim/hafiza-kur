@@ -567,6 +567,26 @@ işaretçisi dahil). En önemlileri:
   hedef → hiçbir şey yazılmadan exit 2 + yol); Windows'ta yalnız dosyanın salt-okunur bayrağı görülür, dizin izni ve root ÖLÇÜLEMEZ.
   Ölçüm: `faz0/asistan_mutanti.py` (16 kol, 13 sabotaj; gerçek-bağ kolu Windows'ta yetki yoksa OLCULEMEDI).
 
+- **Satır sonu mührü (`.gitattributes` bloğu + H21, 19 Eki 2026, Onur kilidi).** Ölçüm (Windows 11, `core.autocrlf=true`): mühürlü
+  defterler BAYT-TAM hash'lenir, git checkout LF'i CRLF'e çevirir ⇒ AYNI depo ikinci kez klonlanınca `kapi` exit 1 (`[H0] CIPA BOZULDU`
+  + `defter MUHURSUZ degismis` ×N) — hiçbir tahrif yokken. **`kur` ve `devral`** kökteki `.gitattributes`'a işaretli blok yazar
+  (`# hafiza-kur BASLA` … `# hafiza-kur BITIR`): `<arşiv dizini>/** -text` + her politika dosyası (`.hafizarc` · `KONULAR.md` ·
+  `SAKLAMA_PLANI.md`) için `<ad> -text`. Kurallar SABİT liste değil, mühürlü kümeden TÜRETİLİR (`zincir_halka`nın `yuk` anahtarları;
+  arşiv dizini `.hafizarc hafiza_dizini`ne göre değişir); `--asistan` dosyaları mühürlü değildir ⇒ listeye GİRMEZ. Dosya yoksa yaratılır;
+  varsa yalnız SONA eklenir (mevcut baytlar önek olarak AYNEN kalır; LF/CRLF korunur); blok varsa yazılmaz (`ZATEN VAR`);
+  idempotent `kur` mevcut projeyi de onarır. YazılMAYANLAR ve her biri BEYAN edilir (elle eklenecek satırlar basılır): yarım blok
+  (`YARIM BLOK`), sembolik bağ (`SEMBOLIK BAG`) ve git bağı (`SEMBOLIK BAG (git)`, index `120000`), UTF-16 (`KODLAMA`), dizin (`DOSYA DEGIL`),
+  salt-okunur (`SALT-OKUNUR`); yazım hatası FATAL değil (`YAZILAMADI`). `devral --kesif` yazacağı halini basar, yazmaz. **H21 (`kapi`):**
+  git deposunda mühürlü kümeden İZLENEN en az bir yol için `git check-attr text` `unset` DEĞİLSE
+  `H21: satir sonu cevrimi muhurlu dosyayi bozabilir …` **UYARISI** (yalnız N kanalı; çıkış kodu DEĞİŞMEZ — Onur kilidi; mevcut
+  Linux/macOS projelerini kırmızıya boğmamak için). Depo DEĞİLSE sessiz (H9 zaten `git YOK` der); `.git` var ama git çalışmıyorsa
+  `H21: OLCULEMEDI`. **Sınırlar (gizlenmez):** kullanıcı bloğu elle silerse H21 uyarır ama motor geri yazmaz · `core.autocrlf=input`
+  ve Git LFS ÖLÇÜLMEDİ · blok SONRASINA eklenen genel bir kural (`* text eol=crlf`) mühür kurallarını geçersiz kılar — H21 bunu
+  `check-attr` ile görür (ölçüldü) · blok bir kez yazılır, sonradan GÜNCELLENMEZ (`ZATEN VAR`): ad alanı sonradan değişirse eski blok kalır,
+  H21 eksik yollar için uyarır (ölçüldü) ve çözüm bloğu silip `kur`u yeniden koşmaktır · deseni güvenle yazılamayan yol (boşluk/özel karakter) `ATLANDI` diye beyan edilir. Ölçüm:
+  `faz0/ikinci_klon_kapisi.py` (GERÇEK ikinci klon, `core.autocrlf=true`: tabanda KIRMIZI, düzeltmede YEŞİL; CI windows-latest) ·
+  `faz0/gitattributes_muhur_mutanti.py` (10 hal, 6 sabotaj) · `faz0/gitattributes_uyari_mutanti.py` (6 hal, 5 sabotaj).
+
 - **Karar adres defteri (P4, 12 Eki 2026, Onur kilidi: yaklaşım KARAR ADRES DEFTERİ).** Ölçüm (Momentum `d4b5417`,
   kör okuma): karar sorularının cevabı projede YAZILIYDI, eksik olan ADRESTİ. `karar-kaynagi` bloğu (İKİNCİ blok YOK; P1 sınıf
   hükmü ve `KARAR SINIFI` satırı AYNEN) genişler: **(1) Kaynak keşfi** = karar dizini + kökte `IS-EMRI-*` · `GOREV-*` · `RFC-*` ·

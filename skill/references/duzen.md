@@ -58,10 +58,15 @@ taşımaz, `derle` fragmanları arşive taşıyınca `gunluk/` boşalır ve proj
 makinede `kapi` `[H16] gunluk YOK` / `kararlar YOK` derdi. `.gitkeep` fragman/ADR/arşiv dosyası
 sayılmaz. **Mevcut kurulu projeye YAZILMAZ** (`kapi` eksik `.gitkeep`'i bulgu yapmaz; onarmak ayrı
 karardır); `arsiv/<tür>/` dizinlerine de yazılmaz. **Sınır (ölçüldü):** Windows'ta Git'in
-varsayılanı `core.autocrlf=true` iken (`.gitattributes` yoksa) klon, `.gitkeep` olsa bile CRLF'ye
-döner ve `kapi` H0'da (çıpa/mühür) KIRMIZI yanar; klonu `git clone -c core.autocrlf=false` ile ya da
-projeye `* -text` içeren bir `.gitattributes` koyarak al. Proje `.gitignore`'u `gunluk/` ya da
-`kararlar/` dizinini yoksayıyorsa `.gitkeep` izlenmez ve klonda `[H16] ... YOK` döner.
+varsayılanı `core.autocrlf=true` iken `.gitattributes`'ta mühürlü dosyalar için `-text` yoksa klon,
+`.gitkeep` olsa bile CRLF'ye döner ve `kapi` H0'da (çıpa/mühür) KIRMIZI yanar. **`kur` ve `devral`
+artık kökteki `.gitattributes`'a bu `-text` bloğunu yazar** (`# hafiza-kur BASLA` … `# hafiza-kur
+BITIR`; `<hafıza dizini>/** -text` + `.hafizarc` · `KONULAR.md` · `SAKLAMA_PLANI.md`); mevcut kurulu
+projeyi onarmak için `kur`u yeniden koş (idempotent). Yazılamazsa (sembolik bağ, salt-okunur) hal
+beyan edilir ve elle eklenecek satırlar basılır; `kapi` korumanın YOKLUĞUNU **H21** UYARISI olarak
+söyler (çıkış kodu değişmez). Açık sınırlar: kullanıcı bloğu silerse, `core.autocrlf=input`, Git LFS.
+Proje `.gitignore`'u `gunluk/` ya da `kararlar/` dizinini yoksayıyorsa `.gitkeep` izlenmez ve klonda
+`[H16] ... YOK` döner.
 
 Hukuk/strateji projesi için tipik türler: `dilekce`, `karar`, `mutalaa`, `delil`,
 `yazisma`, `taslak`. Araştırma projesi için: `kaynak`, `veri`, `analiz`, `taslak`.
