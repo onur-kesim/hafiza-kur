@@ -275,7 +275,9 @@ devralma olayını MÜHÜRLÜ kayda yazar (DEVIR zincir halkasının `ek`i: `dev
 halka hash'i `ek`i kapsar). `ILERIDE` iken ÜÇ koşul BİRLİKTE tutarsa FAIL yerine `[H14] UYARI devralma
 ani: …` satırı (her `kapi`'de, exit değişmez): (a) mühürlü kayıt var · (b) damga devralma gününü geçmemiş
 · (c) proje o günden beri değişmemiş. Biri tutmazsa bugünkü FAIL birebir. `kur` ile kurulan uyuyan proje
-ve eski motorla devral'lanmış proje muafiyet ALMAZ. Kapı: `faz0/h14_devralma_mutanti.py`.
+ve eski motorla devral'lanmış proje muafiyet ALMAZ. Politika dosyası (`KONULAR.md`, `SAKLAMA_PLANI.md`,
+`.hafizarc`) `devral`'dan sonra MÜHÜRSÜZ düzenlenirse zincir doğrulanamaz ve kayıt sayılmaz — düzenledikten sonra
+`muhur "gerekçe"`. Kapı: `faz0/h14_devralma_mutanti.py`.
 
 **Kardeşi:** `derle` fragmansız çalıştırıldığında artık **hata** verir (eskiden sessiz
 uyarıydı). Bilinçli boş tur için `--bos-serbest`.

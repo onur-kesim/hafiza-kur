@@ -3966,6 +3966,8 @@ def cmd_devral(a):
     print("      SABIT CERCEVE'ye tasi, ya o bolumu .hafizarc'ta kural_evi_bolumleri'ne ekle.")
     print("   3. [H10] KONULAR.md tanimsiz: bloklara konu etiketi eklenirken sozluge de ekle.")
     print("   4. [H13] plansiz seri: SAKLAMA_PLANI.md'ye satir ekle.")
+    print("      (3-4: KONULAR.md/SAKLAMA_PLANI.md/.hafizarc duzenledikten sonra `muhur \"gerekce\"` — yoksa [H0] MUHURSUZ"
+          " + devralma muafiyeti de duser, [H14] ILERIDE FAIL geri gelir.)")
     # 26 Eyl (devral GIRIS KAPISI, KALEM 2): 5./6. maddeler artik KOSULLU — yazim
     # bittikten sonra diskteki canli okunur (bkz. yardimci).
     _devral_triyaj_bolum(kok, satirlar(canli_p), 5)

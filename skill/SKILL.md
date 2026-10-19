@@ -330,7 +330,7 @@ Ayrıntı ve her kapının **neden var olduğu**: `references/kapilar.md`.
 | Yeni oturuma geçiliyor | `derle` → `kapi` → devir notu |
 | Devir sonrası eski bölümleri de sisteme almak | `bloklastir` (önce kuru prova) |
 | `[H14]` proje ilerledi, hafıza ilerlemedi | Çalışıldı ama kayıt bırakılmadı → `not` + `derle` |
-| `[H14] UYARI devralma ani` | Taze `devral`: proje uyuyor, damga devral günü — UYARI (exit değişmez); proje değişince/damga ilerleyince normal hüküm döner |
+| `[H14] UYARI devralma ani` | Yapılacak bir şey yok (taze `devral`, exit değişmez); politika dosyasını düzenlersen ardından `muhur`, yoksa muafiyet düşer |
 | İlerlemiş bir projeye ilk kez uygulanıyor | `devral` (asla `kur`) → triyaj raporunu oku |
 | Devir triyajı `[H6]`/`[H17]` "bölüm yok" diyor | `hafiza.py bolum-kur --dene` → `bolum-kur` → `not` + `derle` |
 

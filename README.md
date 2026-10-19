@@ -674,8 +674,11 @@ işaretçisi dahil). En önemlileri:
   motorla `devral`'lanmış proje muafiyet ALMAZ · devral'dan sonra hafıza yazılınca (damga ilerleyince) ya da proje dosyası değişince muafiyet
   BİTER (aynı gün yapılan değişiklik H14'te `es` verir; FAIL geri gelmesi için değişikliğin tarihi damganın `gecikme` günden gerisinde olmalı) ·
   zincir ANAHTARSIZDIR: hash'i yeniden hesaplanmış sahte halka ayırt EDİLEMEZ (bilinen sınır) · (c) git commit tarihi / mtime ölçümüne bağlıdır:
-  projeyi kopyalayıp mtime'ları değiştirmek izlenmeyen/kirli dosyalarda muafiyeti düşürür (FAIL'e geri döner, güvenli yön; kod okuması, ÖLÇÜLMEDİ). Ölçüm:
-  `faz0/h14_devralma_mutanti.py` (6 hal, 5 sabotaj M-DV1…M-DV5; tabanda KIRMIZI, düzeltmede YEŞİL).
+  projeyi kopyalayıp mtime'ları değiştirmek izlenmeyen/kirli dosyalarda muafiyeti düşürür (normal H14 hükmü — es/GERİDE/İLERİDE — döner; ÖLÇÜLDÜ:
+  mtime'ı bugüne çekilen yeni dosya `es` verir, FAIL ancak tarih damgadan `gecikme` günden fazla geride kalırsa) · `devral`'dan sonra
+  `KONULAR.md`/`SAKLAMA_PLANI.md`/`.hafizarc` MÜHÜRSÜZ düzenlenirse zincir doğrulanamaz ⇒ kayıt SAYILMAZ (ÖLÇÜLDÜ: `[H0] MÜHÜRSÜZ` + `[H14] ILERIDE`
+  FAIL geri gelir; `muhur "gerekçe"` sonrası UYARI döner — `devral` triyajı bunu söyler) · `derle` (exit 2 de olsa) damgayı bugüne taşır ⇒ muafiyeti
+  bitirir. Ölçüm: `faz0/h14_devralma_mutanti.py` (6 hal, 5 sabotaj M-DV1…M-DV5; tabanda KIRMIZI, düzeltmede YEŞİL).
 
 - **H14 büyük projede git'e yolları PARÇALI sorar (6 Eki 2026).** mozilla/fxa kopyasında (8.335 izlenen dosya,
   yolların toplamı ~509.000 karakter) `kapi` Windows komut satırı sınırında (~32.767 karakter) `exit 3`
