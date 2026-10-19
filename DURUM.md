@@ -1,19 +1,19 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin = main = `e5a7b8fc`; ölçüm 18 Eki 2026: `git ls-remote` + GitHub API, CI #134 yeşil)
-Son güncelleme: 18 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin/main = `e5a7b8fc`, 18 Eki `git ls-remote`, CI #134 yeşil; yerel main ÖNDE — PUSH Onur'da)
+Son güncelleme: 19 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## DEVİR O25 → O26 (18 Eki) — P3.1 BİTTİ · P3+P3.1 push EDİLDİ (origin `e5a7b8fc`)
-Taban yerel main `4bf1490` (P3.1: `929a47c` K1 · `1a151e9` K2 · `1727c8f` K3+K4 · `4bf1490` README/CC) · origin `131cb075`. Tam tur = `capraz.yml` HER `run:` adımı (YML'den türetildi, 67 iş, 86 adım; `ci_surucu.py`, taze klon, Win): **75 OK / 9 bilinen KIRMIZI / 2 SKIP** (ortam#2, kalite#2: sudo/pip). KIRMIZI = kanit#7 · kanit#8 · win_kill_probu · y2_mutant · kalite#3-6 · readme_kapisi — taban AYNI; ruff/mypy/bandit sayıları satır satır FARKLANMADI. Ham log `D:\PROJELER\hafiza-kur\_olcum\tur_o25\son2.log` (`son.log` YARIM, geçersiz); özet `son2\sonuclar.jsonl`. `asistan_mutanti` 16 kol / 13 sabotaj YEŞİL. CC: `cmd_devral` 99, CC>20 7, ihlal 9.
-**Kararlar:** K2 = bağ `.hafizarc asistan`'a girmeye devam eder, yalnız H19 metni değişti. **K3 SAPMA (iş emri rc kaydı dedi):** ayrım İÇERİKTEN (dosya == üretilen gövde) (`rc_yaz` dosya yazımından ÖNCE koşar); düzenlenen dosya proje sayılır. K4 `--kesif`'te koşmaz.
-**ÖLÇÜLEMEDİ:** gerçek dosya sembolik bağı (s1) bu Windows hesabında yetkisiz → yalnız düz git bağı (s2) · (Cowork kabulü 18 Eki: K1-K4 TUTTU) · dizin izni/root salt-okunur ölçümü.
-**Sıradaki:** push YAPILDI (CI #134 yeşil). Açılış: `hafiza-kur · O26 · başla`.
+## O26 (18-19 Eki) — H14 TEK HÜKÜM + SKILL AÇIKLAMASI BİTTİ (yerelde) · PUSH Onur'da
+Yerel zincir (taban `e5a7b8fc`): `b619f61` başlık · `1fe544c` motor `if`→`elif` + `faz0/h14_tek_hukum_mutanti.py` (3 sabotaj, CI işi) · `842315b` rapor §6 KAPANDI · `8e5b2f2` SKILL.md açıklaması (491 kr) · `dd8c5b6` `2cf8b6a` düzeltme. Momentum `d4b5417` + `devral` (asistansız/`--asistan`): `kapi` H14 TEK satır (eskiden es + ILERIDE), exit 1 kalır. CC/çapa (`_h14_hukum` 6/31 · cmd_devral 99 · CC>20 7 · ihlal 9) DEĞİŞMEDİ. Tam tur (Win): taban `e5a7b8fc` 75 OK / 9 bilinen KIRMIZI / 2 SKIP → son `2cf8b6a` 76 OK / 9 / 2 (+yeni iş); exit farkı 0; çıktı farkı yalnız gürültü + yeni iş. `sabotaj.py` 67 KAPSAMLI / 0. Paket sha256 `C1E57B86…` (867171 B). Ham log `_olcum\tur_o26\`.
+**Karar bekleyen:** devralma anı H14 muafiyeti (iş emri AÇIK SORU) UYGULANMADI; ILERIDE FAIL kalır.
+**ÖLÇÜLEMEDİ:** macOS/Linux CI işleri (yeni kapı WSL Linux'ta ölçüldü) · claude.ai'de aynı istem (Onur yükler; "Her oturum…" cümlesi + KUR/devral jargonu kaldı, TAHMİN) · şablon v0.3.0 ("bolum-kur gerekmez" Cowork ölçümü) · P3.1: gerçek dosya sembolik bağı (s1) + dizin izni.
+**Sıradaki:** Onur push → CI → Cowork kabulü. Açılış: `hafiza-kur · O27 · başla`.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **25 Ağu yazısı** KAPSAM DIŞI · **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**P3.1** (O25) git bağı + H19 bağ metni + H14 yaratılan + yazılabilirlik · **P3** (O23) `--asistan` + H19: Cowork kabulü TUTTU, 🔴 bağ bulgusu → P3.1 · **P4** (O20) karar adres defteri · **P4.1** (O21) Momentum 4/4: ikisi de PUSH EDİLDİ (CI #132) · **P5.4** (O19, push edildi): `not` bayat defterde H20 taze kümesi (`43a260d`/`aed4169`/`e7b2ae2`) · **P2.1** (O16): `adres` tembel kurulum·maske·atlama · **P2** (O15): 4 dil · **H14** (O14) · **P1** (O13) · **O10-O12:** K-DURUM·K-GECIS·K-ISARET·K-SATIR·K-YOL·K-BAYAT (H18/H19) · B1+B2 (H16).
+**P3.1** (O25, push edildi) git bağı + H19 bağ metni + H14 yaratılan + yazılabilirlik · **P3** (O23) `--asistan` + H19: Cowork kabulü TUTTU, 🔴 bağ bulgusu → P3.1 · **P4** (O20) karar adres defteri · **P4.1** (O21) Momentum 4/4: ikisi de PUSH EDİLDİ (CI #132) · **P5.4** (O19, push edildi): `not` bayat defterde H20 taze kümesi (`43a260d`/`aed4169`/`e7b2ae2`) · **P2.1** (O16): `adres` tembel kurulum·maske·atlama · **P2** (O15): 4 dil · **H14** (O14) · **P1** (O13) · **O10-O12:** K-DURUM·K-GECIS·K-ISARET·K-SATIR·K-YOL·K-BAYAT (H18/H19) · B1+B2 (H16).
 **ÜRÜN HAZIRLIĞI** (30 Eyl, CI #117; K7 yok). **AÇIK:** büyük/küçük harf çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
 
 ## Bilinen sınırlar (ölçülmüş)
