@@ -312,8 +312,8 @@ MUTANTLAR = [
        "        if True:\n            N.append(\"H14: hafiza projeyle es")]),
     ("M-TEK3 ILERIDE SOKULUR",
      "ILERIDE FAIL kolu `if False`: ters yon SESSIZ kalir (hukum gevsedi, yalniz es notu)",
-     [("        if fark < -gecikme:\n            fail(\"H14\", \"hafiza tarihi proje dosyalarindan",
-       "        if False:\n            fail(\"H14\", \"hafiza tarihi proje dosyalarindan")]),
+     [("        if fark < -gecikme:\n            devral = _H14_MUAFIYET[0]",
+       "        if False:\n            devral = _H14_MUAFIYET[0]")]),
 ]
 
 

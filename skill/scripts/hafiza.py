@@ -5406,6 +5406,14 @@ def _kapi_h11(F, N, O, y):
 # iki kez kosturulmaz. Desen `_H4_HARIC_SON`/`_KAPI_KOK` ile aynidir.
 _H14_T_GIT_SON = [None]
 
+# KALEM H14-DEVRAL (besli-paket/IS_EMRI_H14_DEVRALMA_KAYITLI_MUAFIYET.md, 19 Eki 2026, Onur kilidi 07:37 "kayitli muafiyet olur"): taze `devral`da hafiza
+# damgasi = bugun, uyuyan projenin son degisikligi eski => ilk `kapi` her zaman `[H14] ... ILERIDE` FAIL (Momentum d4b5417: 40 gun) — sebepsiz kirmizi.
+# Duz sure muafiyeti REDDEDILDI (o pencerede uydurma damgayi gizler). Cozum: `devral` devralma olayini MUHURLU kayda yazar (DEVIR zincir halkasinin `ek`i;
+# halka hash'i `ek`i kapsar, `zincir_dogrula` elle degisikligi KIRIK sayar): `devralma_tarihi` (ISO gun) + `proje_son_t` (devral aninda `_h14_en_yeni` ile
+# OLCULEN proje son degisikligi, epoch). H14 ILERIDE kolu UC kosul BIRLIKTE tutarsa FAIL yerine UYARI basar: (a) muhurlu kayit var, (b) damga devralma
+# gununu gecmemis, (c) proje o gunden beri degismemis. Biri tutmazsa bugunku FAIL BIREBIR. GERIDE ve es kollarina dokunulmaz. Cell: `_H14_T_GIT_SON` deseni.
+_H14_MUAFIYET = [None]
+
 
 def _h12_hafiza_git_tarihi(y, rc):
     """Hafiza defterlerine (canli + hafiza_dizini + ek_arsiv_dosyalari) DOKUNAN
@@ -5759,7 +5767,12 @@ def _h14_hukum(F, N, gecikme, t_son, en_yeni_t, en_yeni_f):
         d_proje = _dt.date.fromtimestamp(en_yeni_t)
         fark = (d_proje - t_son).days
         if fark < -gecikme:
-            fail("H14", "hafiza tarihi proje dosyalarindan %d gun ILERIDE — tutarsiz." % (-fark))
+            devral = _H14_MUAFIYET[0]               # KAYITLI devralma muafiyeti (`_h14_muafiyet`; uc kosul birlikte) ya da None
+            if devral:
+                N.append("[H14] UYARI devralma ani: proje %d gundur uyuyor (devral %s); "
+                         "proje degisince ya da damga ilerleyince normal hukum doner" % (-fark, devral))
+            else:
+                fail("H14", "hafiza tarihi proje dosyalarindan %d gun ILERIDE — tutarsiz." % (-fark))
         elif fark > gecikme:   # UC AYRIK YOL: ILERIDE / GERIDE / es (FAZC_H14_RAPOR §6)
             # KALEM 3 (Onur kilidi 6 Eyl 2026, IS_EMRI_DEVRAL.md): OLCULDU — bu
             # kol "hafiza tarafi"ni t_son'dan (BEYAN) okuyordu, "proje tarafi"ni
@@ -5801,6 +5814,41 @@ def _devral_ek(y, ek):
     return kayit
 
 
+def _devral_kaydi(y):
+    """MUHURLU devralma kaydi -> (devralma_tarihi: date, proje_son_t) | None. Zincir DOGRULANAMIYORSA (halka KIRIK / bozuk / bos) kayit SAYILMAZ: elle
+    eklenen ya da duzenlenen kayit sahte (muhur disi). `~` onekli mtime ISARETI hukum degildir (H0 ile ayni ayrim). Zincir anahtarsizdir (bilinen sinir)."""
+    try:
+        if not os.path.isfile(y.zincir) or any(not h.startswith("~") for h in zincir_dogrula(y)):
+            return None
+        halkalar = jsonl_yukle(y.zincir, ["halka"])
+    except (Exception, SystemExit):  # noqa: BLE001 - okunamayan zincir = kayit yok; H0 hukmunu kendisi basar
+        return None
+    for k in reversed(halkalar):
+        ek = k.get("ek")
+        if k.get("tur") == "DEVIR" and isinstance(ek, dict):
+            try:
+                return _dt.date.fromisoformat(ek["devralma_tarihi"]), ek["proje_son_t"]
+            except (KeyError, ValueError, TypeError):
+                return None
+    return None
+
+
+def _h14_muafiyet(y, t_son, en_yeni_t, en_yeni_f, gecikme):
+    """KALEM 2: ILERIDE iken devralma muafiyeti -> devralma_tarihi (ISO) | None. UC kosul birlikte: (a) muhurlu devralma kaydi var · (b) damga devralma
+    gununu GECMEMIS (`t_son <= devralma_tarihi`) · (c) proje o gunden beri degismemis (`en_yeni_t == proje_son_t`). ILERIDE degilse kayit hic okunmaz."""
+    if en_yeni_t is None or (_dt.date.fromtimestamp(en_yeni_t) - t_son).days >= -gecikme:
+        return None
+    kayit = _devral_kaydi(y)
+    if not kayit:
+        return None
+    tarih, proje_son = kayit
+    if t_son > tarih:
+        return None
+    if en_yeni_f is None or en_yeni_t != proje_son:
+        return None
+    return tarih.isoformat()
+
+
 def _kapi_h14(F, N, O, kok, rc, y, t_son):
     # ---- H14 DISIPLIN (proje ilerledi mi, hafiza ilerledi mi) -----------
     gecikme = rc["hafiza_gecikme_gun"]
@@ -5812,6 +5860,7 @@ def _kapi_h14(F, N, O, kok, rc, y, t_son):
         git_var, kirli, izlenen = _h14_git_durumu(kok)
         adaylar = _h14_adaylar(kok, y)
         en_yeni_t, en_yeni_f = _h14_en_yeni(kok, adaylar, git_var, kirli, izlenen)
+        _H14_MUAFIYET[0] = _h14_muafiyet(y, t_son, en_yeni_t, en_yeni_f, gecikme)
         _h14_hukum(F, N, gecikme, t_son, en_yeni_t, en_yeni_f)
 
 
