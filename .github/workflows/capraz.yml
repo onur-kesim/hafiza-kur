@@ -3166,3 +3166,40 @@ jobs:
           name: gitattributes-muhur-${{ matrix.os }}
           path: gitattributes-muhur-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-33) GITATTRIBUTES UYARI MUTANTI — IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 2
+  #     `kapi` H21: git deposunda muhurlu kumeden IZLENEN en az bir yol icin `git
+  #     check-attr text` `unset` DEGILSE "satir sonu cevrimi muhurlu dosyayi bozabilir"
+  #     UYARISI (Onur kilidi 18 Eki 23:31: hukum sinifi UYARI — yalniz N kanali, cikis
+  #     kodu DEGISMEZ; mevcut Linux/macOS projelerini kirmiziya bogmamak icin). Depo
+  #     degilse sessiz (H9 zaten `git YOK ... OLCULEMIYOR` der); `.git` var ama git
+  #     calismiyorsa `H21: OLCULEMEDI`. ALTI HAL (KORUMASIZ · KORUMALI · GITSIZ ·
+  #     KOMITSUZ · KENDI · GITYOK); saglam motorda YESIL, BES sabotajin her biri KENDI
+  #     halinde KIRMIZI: M-GA3 CHECK-ATTR KOR · M-GA4 OLCULEMEDI SUSAR · M-GA5 IZLENEN
+  #     KOSULU KALKAR · M-GA6 DEPO-DEGIL SESSIZLIGI BOZULUR · M-GA11 UYARI KIRMIZIYA
+  #     TERFI. 🔴 UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  gitattributes_uyari_mutanti:
+    name: gitattributes uyari mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: H21 koruma yoklugunu gizlemiyor ve yalniz UYARI (alti hal, bes sabotaj)
+        shell: bash
+        run: python faz0/gitattributes_uyari_mutanti.py 2>&1 | tee gitattributes-uyari-cikti.txt
+      - name: gitattributes uyari mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitattributes-uyari-${{ matrix.os }}
+          path: gitattributes-uyari-cikti.txt
+          if-no-files-found: warn

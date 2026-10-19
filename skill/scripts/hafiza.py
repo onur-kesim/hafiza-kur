@@ -1876,6 +1876,21 @@ def _gitattributes_uygula(y):
     _ga_bildir(hal, desenler, atlanan)
 
 
+def _ga_check_attr(kok, yollar):
+    """-> ({yol: text degeri}, izlenen yollar kumesi, None) | (None, None, sebep). `git check-attr -z text` + `ls-files -z` (yollar DOSYA ADI olarak,
+    `--literal-pathspecs`); baska deponun ortam degiskenleri susturulur."""
+    try:
+        r = _adres_git(kok, "check-attr", "-z", "text", "--", *yollar, timeout=30, stdin=subprocess.DEVNULL)
+        t = _adres_git(kok, "--literal-pathspecs", "ls-files", "-z", "--", *yollar, timeout=30, stdin=subprocess.DEVNULL)
+    except (OSError, subprocess.SubprocessError) as e:
+        return None, None, type(e).__name__
+    if r.returncode != 0 or t.returncode != 0:
+        return None, None, "git cikis %d/%d" % (r.returncode, t.returncode)
+    parca = [x.decode("utf-8", "replace") for x in r.stdout.split(b"\0")]
+    deger = dict((parca[i], parca[i + 2]) for i in range(0, len(parca) - 2, 3))
+    return deger, set(x.decode("utf-8", "replace") for x in t.stdout.split(b"\0") if x), None
+
+
 def _kur_rc(a, kok):
     ad = a.ad or os.path.basename(kok.rstrip(os.sep)) or "PROJE"
     rc_p = os.path.join(kok, RC_AD)
@@ -11998,10 +12013,37 @@ def _kapi_h20(N, kok, y):
         N.append("H20: OLCULEMEDI (%s)" % type(e).__name__)
 
 
+def _kapi_h21(N, kok, y):
+    """H21 SATIR SONU MUHRU (besli-paket/IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 2, Onur kilidi 18 Eki 23:31). UYARI: yalniz N; `fail`/`O` YOK, cikis
+    kodu DEGISMEZ (H18/H19 kalibi; mevcut Linux/macOS projelerini kirmiziya bogmamak icin). Git deposunda muhurlu kumeden IZLENEN en az bir yol icin
+    `git check-attr text` `unset` DEGILSE: satir sonu cevrimi (core.autocrlf) o dosyayi ikinci klonda bozabilir. Depo DEGILSE sessiz (cevrim
+    yok; H9 zaten `git YOK ... OLCULEMIYOR` der). `.git` VAR ama git calismiyorsa ya da sorgu basarisizsa OLCULEMEDI (sessiz PASS yok)."""
+    if not shutil.which("git"):
+        if os.path.lexists(os.path.join(kok, ".git")):
+            N.append("H21: OLCULEMEDI (git calistirilamiyor, .git var) — satir sonu korumasi olculemedi")
+        return
+    if not _git_kokte_mi(kok):
+        return
+    yollar = _ga_muhur_yollari(y)
+    deger, izlenen, sebep = _ga_check_attr(kok, yollar)
+    if deger is None:
+        N.append("H21: OLCULEMEDI (%s) — satir sonu korumasi olculemedi" % sebep)
+        return
+    acik = [p for p in yollar if p in izlenen and deger.get(p, "unspecified") != "unset"]
+    if acik:
+        N.append("H21: satir sonu cevrimi muhurlu dosyayi bozabilir — izlenen %d muhurlu yoldan %d'inde `text` unset DEGIL (%s=%s). "
+                 "`hafiza.py kur` (blok YOKSA %s blogunu yazar; blok eskiyse once sil) ya da elle `-text`"
+                 % (len([p for p in yollar if p in izlenen]), len(acik), acik[0], deger.get(acik[0], "unspecified"), _GA_AD))
+
+
 def _kapi_uyarilar(N, kok, y):
-    """`_kapi_govde`nin TEK uyari cagrisi (TASARIM §6-2: govde 80 satir tavaninda): H18 (+ icinde H19) · H20. Yalniz N kanali."""
+    """`_kapi_govde`nin TEK uyari cagrisi (TASARIM §6-2: govde 80 satir tavaninda): H18 (+ icinde H19) · H20 · H21. Yalniz N kanali."""
     _kapi_h18(N, kok, y)
     _kapi_h20(N, kok, y)
+    try:
+        _kapi_h21(N, kok, y)
+    except (Exception, SystemExit) as e:  # noqa: BLE001 - H21 istisnasi OLCULEMEDI'dir; diger hukumleri ETKILEYEMEZ (H20 kalibi)
+        N.append("H21: OLCULEMEDI (%s)" % type(e).__name__)
 
 
 # ---------------------------------------------------------------- DOGUSTA BAYAT (P5 KALEM 3)

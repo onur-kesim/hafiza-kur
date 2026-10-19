@@ -70,7 +70,7 @@ EKLENEN uc yeni kol)
      helper'in ikinci cagri yerinden [`_h14_git_durumu`] de cagrildigini
      OLCMUYORDU): `hafiza.py` metninde eski desen
      `os.path.isdir(os.path.join(kok, ".git"))` KAC KEZ geciyor (KEHANET:
-     0), `_git_kokte_mi(` KAC KEZ geciyor (KEHANET: TAM 8 — 1 tanim + 7
+     0), `_git_kokte_mi(` KAC KEZ geciyor (KEHANET: TAM 9 — 1 tanim + 8
      cagri; ucuncusu 6 Eyl 2026'da `cmd_hook` ile geldi, dorduncusu VE
      besincisi AYNI GUN besli-paket KALEM 2/KALEM 3 ile: `_h4_git_
      yoksayilanlar` [H4 havuzu git'e sordurulur] ve `_h12_hafiza_git_
@@ -84,7 +84,9 @@ EKLENEN uc yeni kol)
      tam yoksayilan-dosya listesini ceker. Ciplak `os.path.exists` yerine
      bilerek helper KULLANILDI: worktree/gitfile/submodule'lu SAGLIKLI bir
      projeyi de "git var" dogru tanimasi gerekir — bu dosyanin sinadigi AYNI
-     sinif) ve helper'in KENDI icindeki
+     sinif; sekizincisi 19 Eki 2026'da besli-paket IS_EMRI_GITATTRIBUTES_MUHUR.md
+     KALEM 2 ile: `_kapi_h21` yalniz git DEPOSUNDA sorgular — depo degilse
+     sessiz kalir, H9 zaten `git YOK` der) ve helper'in KENDI icindeki
      `os.path.exists(os.path.join(kok, ".git"))` KAC KEZ geciyor (KEHANET:
      TAM 1). OLCULDU (Onur denetimi, 19 Agu 2026): eski motorda eski desen
      2, yarim duzeltmede (yalniz `_kapi_h9`) 1, tam duzeltmede 0 — desen
@@ -374,17 +376,19 @@ _EXISTS_DESEN = 'os.path.exists(os.path.join(kok, ".git"))'
 # ve karsilastirma kosulu AYNI degiskeni okur; boylece bir daha ayrisamazlar
 # (ONCEKI hali "(beklenen 3)" YAZIYORDU ama kod `== 4` siniyordu — bagimsiz
 # olcumde YAKALANDI). Sayi BAGIMSIZ dogrulandi (aracin kendi ciktisindan
-# DEGIL): `grep -c '_git_kokte_mi(' skill/scripts/hafiza.py` -> 8 (7 Eyl 2026,
-# besli-paket IS_EMRI_H4_YOKSAYILAN.md KALEM 1 ile 7 -> 8; ONCEKI: 7).
-#   1 tanim + 7 cagri: cmd_hook (6 Eyl, KALEM 5) · _kapi_h9 · _h14_git_durumu ·
+# DEGIL): `grep -c '_git_kokte_mi(' skill/scripts/hafiza.py` -> 9 (19 Eki 2026,
+# besli-paket IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 2 ile 8 -> 9; ONCEKI: 8).
+#   1 tanim + 8 cagri: cmd_hook (6 Eyl, KALEM 5) · _kapi_h9 · _h14_git_durumu ·
 #   _h4_git_yoksayilanlar (6 Eyl, besli-paket KALEM 2 — H4 havuzu git'e
 #   sordurulur) · _h12_hafiza_git_tarihi (6 Eyl, besli-paket KALEM 3 — H12/H14
 #   hafiza defterlerine dokunan son commit'i sorar) · `mutant_git` (7 Eyl,
 #   IS_EMRI_UYGULANMAZ.md KALEM 1 — projede git yoksa MutantUygulanmaz firlatir) ·
 #   `_h4_git_yoksayilan_dosyalar` (7 Eyl, besli-paket IS_EMRI_H4_YOKSAYILAN.md
 #   KALEM 1 — H4'un ikinci-sans kontrolu VE H9'un ayrimi PAYLASILAN, --directory
-#   OLMAYAN tam yoksayilan-dosya listesini ceker).
-BEKLENEN_HELPER = 8
+#   OLMAYAN tam yoksayilan-dosya listesini ceker) · `_kapi_h21` (19 Eki 2026,
+#   besli-paket IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 2 — satir sonu muhru UYARISI
+#   yalniz git deposunda sorulur; 8 -> 9, `grep -c` ile BAGIMSIZ dogrulandi).
+BEKLENEN_HELPER = 9
 
 
 def _kaynak_kapisi_olc(src):
