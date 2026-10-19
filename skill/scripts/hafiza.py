@@ -1763,6 +1763,119 @@ def _gitkeep_yaz(y):
                   % (_rel(d, y.kok), e), file=sys.stderr)
 
 
+# KALEM GA (besli-paket/IS_EMRI_GITATTRIBUTES_MUHUR.md, 18 Eki 2026, Onur kilidi 23:28). OLCULDU (Windows 11, `core.autocrlf=true`): hafiza.py
+# muhurlu defterleri BAYT-TAM hash'ler; git checkout LF'i CRLF'e cevirir; ayni depo ikinci kez klonlaninca `kapi` exit 1 (`[H0] CIPA BOZULDU` +
+# 9x `defter MUHURSUZ degismis`) — hicbir tahrif yokken. Sinif UCUNCU kez isirdi. `kur`/`devral` kokteki `.gitattributes`'a isaretli blok yazar
+# (`# hafiza-kur BASLA` ... `# hafiza-kur BITIR`); kurallar SABIT liste degil, MUHURLU KUMEDEN turetilir (`zincir_halka`nin `yuk` anahtarlari:
+# DEFTERLER · _KAYNAK.md · POLITIKA_DOSYALARI; ad alani `hafiza_dizini`). Blok DISINA dokunulmaz (mevcut baytlar ONEK olarak AYNEN kalir); blok
+# varsa yazilmaz. `--asistan` dosyalari muhurlu degildir (zincir yukunde YOK) => listeye GIRMEZ. Salt-okunur ya da sembolik bag `.gitattributes`
+# YAZILMAZ: hal beyan edilir + elle eklenecek satirlar basilir (P3.1 K1 dersi). `kapi` ayni korumanin YOKLUGUNU H21 ile gizlenemez kilar.
+_GA_AD = ".gitattributes"
+_GA_BAS = "# hafiza-kur BASLA"
+_GA_SON = "# hafiza-kur BITIR"
+_GA_ACIKLAMA = "# muhurlu dosyalar BAYT-TAM hash'lenir; satir sonu cevrimi (core.autocrlf) onlari bozar. kur/devral yazar."
+_GA_GUVENLI = re.compile(r"^[\w.+@%,=/-]+$")      # gitattributes deseni olarak OLDUGU GIBI yazilabilen yol (bosluk/glob/#/!/tirnak YOK)
+
+
+def _ga_muhur_yollari(y):
+    """Muhurlu kume = `zincir_halka`nin `yuk` anahtarlarinin YOL karsiliklari (+ zincirin kendisi). TEK kaynak: DEFTERLER · POLITIKA_DOSYALARI ·
+    y.h/y.snap (sabit liste YOK; ad alani `hafiza_dizini`ne gore degisir). Kokten goreli, '/' ayracli."""
+    yollar = [os.path.join(y.h, d) for d in DEFTERLER] + [y.snap, y.zincir]
+    yollar += [os.path.join(y.kok, pd) for pd in POLITIKA_DOSYALARI]
+    return [_rel(p, y.kok) for p in yollar]
+
+
+def _ga_kurallar(y):
+    """-> (desenler, atlanan). Arsiv dizini altindaki muhurlu yollar TEK `<dizin>/**` olur, kokteki politika dosyalari `<ad>`. Guvenle yazilamayan
+    yol (bosluk/glob/ozel karakter, koke gore dis yol) `atlanan`a duser ve BEYAN edilir."""
+    dizin = _rel(y.h, y.kok)
+    desenler, atlanan = [], []
+    for rel in _ga_muhur_yollari(y):
+        d = dizin + "/**" if rel.startswith(dizin + "/") else rel
+        govde = d[:-3] if d.endswith("/**") else d
+        if rel.startswith("..") or not _GA_GUVENLI.match(govde):
+            if d not in atlanan:
+                atlanan.append(d)
+        elif d not in desenler:
+            desenler.append(d)
+    return desenler, atlanan
+
+
+def _ga_blok(desenler):
+    return [_GA_BAS, _GA_ACIKLAMA] + ["%s -text" % d for d in desenler] + [_GA_SON]
+
+
+def _ga_hal(kok):
+    """SAF (yazmaz): -> (hal, mutlak yol). hal: YAZILACAK · EKLENECEK · ZATEN VAR · YARIM BLOK · SEMBOLIK BAG · SEMBOLIK BAG (git) · DOSYA DEGIL ·
+    KODLAMA · SALT-OKUNUR. `--kesif` ve yazici AYNI fonksiyonu okur."""
+    p = os.path.join(kok, _GA_AD)
+    bag = _asistan_bagli(kok, p)
+    if bag:
+        return "SEMBOLIK BAG", p
+    if not os.path.lexists(p):
+        return ("YAZILACAK" if os.access(kok, os.W_OK) else "SALT-OKUNUR"), p
+    if _asistan_git_modu(kok, _GA_AD) == "120000":
+        return "SEMBOLIK BAG (git)", p            # core.symlinks=false checkout'unda bag DUZ DOSYA gorunur (P3.1 K1)
+    if not os.path.isfile(p):
+        return "DOSYA DEGIL", p
+    with open(p, "rb") as f:
+        ham = f.read()
+    if ham[:2] in (b"\xff\xfe", b"\xfe\xff"):
+        return "KODLAMA", p
+    ls = [x.strip() for x in ham.decode("utf-8", "replace").splitlines()]
+    if _GA_BAS in ls and _GA_SON in ls:
+        return "ZATEN VAR", p
+    if _GA_BAS in ls or _GA_SON in ls:
+        return "YARIM BLOK", p
+    return ("EKLENECEK" if os.access(p, os.W_OK) else "SALT-OKUNUR"), p
+
+
+def _ga_yaz(p, hal, blok):
+    """YAZILACAK/EKLENECEK hali yazar (`_asistan_yaz_dosya` ile ayni kalip): yeni dosya `xb` (LF); mevcut dosyaya `ab` — onek bayt-birebir,
+    satir sonu dosyanin baskin bicimi (LF/CRLF), BOM korunur."""
+    if hal == "YAZILACAK":
+        with open(p, "xb") as f:
+            f.write(("\n".join(blok) + "\n").encode("utf-8"))
+        return "YAZILDI"
+    with open(p, "rb") as f:
+        ham = f.read()
+    crlf = ham.count(b"\r\n")
+    lf = ham.count(b"\n") - crlf
+    eol = b"\r\n" if crlf and crlf >= lf else b"\n"
+    ayrac = b"" if not ham else ((b"" if ham.endswith(b"\n") else eol) + eol)
+    with open(p, "ab") as f:
+        f.write(ayrac + eol.join(x.encode("utf-8") for x in blok) + eol)
+    return "EKLENDI"
+
+
+def _ga_bildir(hal, desenler, atlanan):
+    """Her hal BEYAN edilir (sessiz atlama YOK). Yazilamayan halde elle eklenecek satirlar basilir."""
+    if hal in ("YAZILDI", "EKLENDI"):
+        print("GITATTRIBUTES %s: %s · %d kural (%s)" % (hal, _GA_AD, len(desenler), ", ".join(desenler)))
+    elif hal == "ZATEN VAR":
+        print("GITATTRIBUTES ZATEN VAR: %s — yazilmadi" % _GA_AD)
+    else:
+        print("GITATTRIBUTES %s: %s — yazilmadi; muhurlu dosyalar satir sonu cevriminden KORUNMUYOR. Elle ekle:" % (hal, _GA_AD))
+        for d in desenler:
+            print("    %s -text" % d)
+    for rel in atlanan:
+        print("GITATTRIBUTES ATLANDI: %s — desen guvenle yazilamaz (bosluk/ozel karakter); elle `-text` ekle" % rel)
+
+
+def _gitattributes_uygula(y):
+    """`kur`/`devral`: muhurlu kume icin `.gitattributes` `-text` blogu. Liste ve hal YAZIMDAN ONCE hesaplanir; yazim hatasi FATAL DEGIL (kurulum
+    zaten tamam; `_gitkeep_yaz` ile ayni): hal 'YAZILAMADI' diye beyan edilir."""
+    desenler, atlanan = _ga_kurallar(y)
+    hal, p = _ga_hal(y.kok)
+    if hal in ("YAZILACAK", "EKLENECEK"):
+        try:
+            hal = _ga_yaz(p, hal, _ga_blok(desenler))
+        except OSError as e:
+            print("UYARI: %s yazilamadi (%s)" % (_GA_AD, e), file=sys.stderr)
+            hal = "YAZILAMADI"
+    _ga_bildir(hal, desenler, atlanan)
+
+
 def _kur_rc(a, kok):
     ad = a.ad or os.path.basename(kok.rstrip(os.sep)) or "PROJE"
     rc_p = os.path.join(kok, RC_AD)
@@ -2121,6 +2234,7 @@ def _kur_halka(y, yabanci=None):
         _gitkeep_yaz(y)
     else:
         zincir_halka(y, "KURULUM", "hafiza.py kur (idempotent tazeleme)" + ek)
+    _gitattributes_uygula(y)                    # KALEM GA: taze kur VE idempotent tazeleme (mevcut projeyi onarmanin yolu)
 
 
 def _kur_rapor(kok, rc, y, yabanci=None):
@@ -3474,6 +3588,7 @@ def cmd_devral(a):
                   "(`--esle canli=<dosya>` ile kilitle)")
         print("  (yazmak icin `--kesif` olmadan kos)")
         _asistan_kesif(kok, envanter)           # P3: yazacagi dosyalari + hallerini basar, yazmaz
+        print("  gitattributes     : %s -> %s" % (_GA_AD, _ga_hal(kok)[0]))     # KALEM GA: yazacagi blogun hali (yazmaz)
         return 0
     if os.path.isfile(os.path.join(kok, RC_AD)):
         oldur(RC_AD + " ZATEN VAR — bu proje kurulu/devralinmis. Devir bir kez yapilir.\n"
@@ -3802,6 +3917,7 @@ def cmd_devral(a):
                  ek={"onceki_kurulum_izi": tum_izler[:20]} if tum_izler else None)
     print("  cipa + defterler + zincir kuruldu (%s)" % hdir_rel)
     _gitkeep_yaz(y)
+    _gitattributes_uygula(y)                    # KALEM GA: devir raporundaki `kapi`dan ONCE (yoksa H21 yersiz uyarir)
 
     print("\n=== DEVIR RAPORU — kapi (salt okuma) ===")
     kod, cikti = _kapi_metni(kok)

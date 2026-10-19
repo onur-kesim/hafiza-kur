@@ -3128,3 +3128,41 @@ jobs:
           name: ikinci-klon
           path: ikinci-klon-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-32) GITATTRIBUTES MUHUR MUTANTI — IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 1
+  #     `kur` ve `devral` kokteki `.gitattributes`'a isaretli blok yazar (`# hafiza-kur
+  #     BASLA` ... `# hafiza-kur BITIR`): `<arsiv dizini>/** -text` + her politika dosyasi
+  #     icin `<ad> -text`; kurallar SABIT liste degil MUHURLU KUMEDEN turetilir. ON
+  #     BIR HAL (KUR · TEKRAR · MEVCUT · MEVCUT_CRLF · ASISTAN · BAG · SALTOKU · NS · DEVRAL +
+  #     gercek ikinci klon IKLON/IKLON_NS) bagimsiz bir orakele karsi; saglam motorda YESIL,
+  #     YEDI sabotajin her biri KENDI halinde KIRMIZI (yanlis sebeple isirmak sayilmaz):
+  #         M-GA1 BLOK YAZIMI KAPALI · M-GA2 LISTE SABIT (ad alani) · M-GA7 ASISTAN
+  #         DOSYASI GIRER · M-GA8 BLOK DISINA DOKUNUR · M-GA9 IKINCI KOSUM TEKRAR YAZAR
+  #         · M-GA10 GIT BAGI KORUNMAZ · M-GA12 SALT-OKUNUR OLCULMEZ
+  #     Linux/macOS'ta `core.autocrlf=true` GIT_CONFIG_GLOBAL ile simule edilir (git'in
+  #     checkout donusumu platformdan bagimsizdir). 🔴 UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  gitattributes_muhur_mutanti:
+    name: gitattributes muhur mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: muhurlu kume satir sonu cevriminden korunuyor mu (on bir hal, yedi sabotaj)
+        shell: bash
+        run: python faz0/gitattributes_muhur_mutanti.py 2>&1 | tee gitattributes-muhur-cikti.txt
+      - name: gitattributes muhur mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitattributes-muhur-${{ matrix.os }}
+          path: gitattributes-muhur-cikti.txt
+          if-no-files-found: warn
