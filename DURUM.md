@@ -1,24 +1,24 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin/main = `e5a7b8fc`, 18 Eki `git ls-remote`, CI #134 yeşil; yerel main ÖNDE — PUSH Onur'da)
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin/main = `7eb71b0`, CI #135 yeşil; yerel main ÖNDE — PUSH Onur'da)
 Son güncelleme: 19 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## O26 (18-19 Eki) — H14 TEK HÜKÜM + SKILL AÇIKLAMASI BİTTİ (yerelde) · PUSH Onur'da
-Yerel zincir (taban `e5a7b8fc`): `b619f61` başlık · `1fe544c` motor `if`→`elif` + `faz0/h14_tek_hukum_mutanti.py` (3 sabotaj, CI işi) · `842315b` rapor §6 KAPANDI · `8e5b2f2` SKILL.md açıklaması (491 kr) · `dd8c5b6` `2cf8b6a` düzeltme. Momentum `d4b5417` + `devral` (asistansız/`--asistan`): `kapi` H14 TEK satır (eskiden es + ILERIDE), exit 1 kalır. CC/çapa (`_h14_hukum` 6/31 · cmd_devral 99 · CC>20 7 · ihlal 9) DEĞİŞMEDİ. Tam tur (Win): taban `e5a7b8fc` 75 OK / 9 bilinen KIRMIZI / 2 SKIP → son `2cf8b6a` 76 OK / 9 / 2 (+yeni iş); exit farkı 0; çıktı farkı yalnız gürültü + yeni iş. `sabotaj.py` 67 KAPSAMLI / 0. Paket sha256 `C1E57B86…` (867171 B). Ham log `_olcum\tur_o26\`.
-**Karar bekleyen:** devralma anı H14 muafiyeti (iş emri AÇIK SORU) UYGULANMADI; ILERIDE FAIL kalır.
-**ÖLÇÜLEMEDİ:** macOS/Linux CI işleri (yeni kapı WSL Linux'ta ölçüldü) · claude.ai'de aynı istem (Onur yükler; "Her oturum…" cümlesi + KUR/devral jargonu kaldı, TAHMİN) · şablon v0.3.0 ("bolum-kur gerekmez" Cowork ölçümü) · P3.1: gerçek dosya sembolik bağı (s1) + dizin izni.
-**Sıradaki:** Onur push → CI → Cowork kabulü. Açılış: `hafiza-kur · O27 · başla`.
+## O27 (19 Eki) — .gitattributes MÜHRÜ BİTTİ (yerelde) · PUSH Onur'da
+Taban `7eb71b0`. Zincir: `3be462a` K3 ikinci-klon kapısı (tabanda KIRMIZI, FAIL 11) · `31b6b47` K1 `kur`/`devral` `.gitattributes` bloğu · `eac7270` K2 `kapi` H21 UYARI · `6af4474` belge · `73e904b` düzeltme. Kapılar: `ikinci_klon_kapisi` · `gitattributes_muhur_mutanti` (12 hal/10 sabotaj) · `gitattributes_uyari_mutanti` (7/6). Tam tur (Win): 79 OK/9 bilinen KIRMIZI/2 SKIP (taban 76/9/2 + 3 yeni), exit farkı 0; tek davranış farkı: gitfile kol 3 (submodule klonu) 1→0 = düzeltmenin kendisi. `sabotaj.py` 67/0; CC/çapa DEĞİŞMEDİ; paket `89697145…`. Log `_olcum\tur_o27`.
+**SAPMA (Onur'a):** H21 depo olmayan/izlenmeyen yolda SESSİZ (altın küme bit-bit; iş emri "git yoksa ÖLÇÜLEMEDİ"); `.git` var + git yoksa OLCULEMEDI. `gitfile_korlugu` BEKLENEN_HELPER 8→9.
+**ÖLÇÜLEMEDİ:** macOS CI (Linux WSL'de ölçüldü) · `autocrlf=input` · LFS · yerel attribute kaynağı · şablon v0.3.0 · claude.ai (O26) · P3.1 sembolik bağ.
+**Sıradaki:** Onur push → CI (3 yeni iş) → Cowork kabulü. Açılış: `hafiza-kur · O28 · başla`.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **25 Ağu yazısı** KAPSAM DIŞI · **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**P3.1** (O25, push edildi) git bağı + H19 bağ metni + H14 yaratılan + yazılabilirlik · **P3** (O23) `--asistan` + H19: Cowork kabulü TUTTU, 🔴 bağ bulgusu → P3.1 · **P4** (O20) karar adres defteri · **P4.1** (O21) Momentum 4/4: ikisi de PUSH EDİLDİ (CI #132) · **P5.4** (O19, push edildi): `not` bayat defterde H20 taze kümesi (`43a260d`/`aed4169`/`e7b2ae2`) · **P2.1** (O16): `adres` tembel kurulum·maske·atlama · **P2** (O15): 4 dil · **H14** (O14) · **P1** (O13) · **O10-O12:** K-DURUM·K-GECIS·K-ISARET·K-SATIR·K-YOL·K-BAYAT (H18/H19) · B1+B2 (H16).
+**O26** (push edildi) H14 TEK hüküm + SKILL açıklaması; AÇIK: devralma anı H14 muafiyeti (Onur) · **P3.1** (O25, push edildi) git bağı + H19 bağ metni + H14 yaratılan + yazılabilirlik · **P3** (O23) `--asistan` + H19: Cowork kabulü TUTTU, 🔴 bağ bulgusu → P3.1 · **P4** (O20) karar adres defteri · **P4.1** (O21) Momentum 4/4 (CI #132) · **P5.4** (O19, push edildi): `not` bayat defterde H20 taze kümesi · **P2.1** (O16): `adres` tembel kurulum·maske·atlama · **P2** (O15): 4 dil · **H14** (O14) · **P1** (O13) · **O10-O12:** K-DURUM·K-GECIS·K-ISARET·K-SATIR·K-YOL·K-BAYAT (H18/H19) · B1+B2 (H16).
 **ÜRÜN HAZIRLIĞI** (30 Eyl, CI #117; K7 yok). **AÇIK:** büyük/küçük harf çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
 
 ## Bilinen sınırlar (ölçülmüş)
 - 🔴 `isir` exit 0 böl-kur'lu/devral'li projede ULAŞILAMAZ (5 Eki): `kapi --siki` bolum-kur başlıklarını BEYANSIZ sayar → M-H1s KURULAMADI → exit 2 (taban Momentum'da da). M-DEVIR ölçütü canlıda ÖNCEDEN `CAPA DEVRI` varken sabotajı GÖRMEZ · `.kilit` varken M-KILIT `isir`i öldürür.
-- 🔴 `.gitkeep` sınırı (5 Eki): Win varsayılan klon (`autocrlf=true`, `.gitattributes` yok) `.gitkeep`'ten BAĞIMSIZ H0 KIRMIZI (`kur` yazmıyor) · `.gitignore` dizini yutarsa izlenmez · B2 mevcut projeyi onarmaz · `not/derle/karar` dizin yaratır, `.gitkeep` yazmaz (bilerek).
+- 🔴 `.gitkeep`/autocrlf sınırı (19 Eki): `kur`/`devral` `.gitattributes` `-text` bloğu yazar ⇒ Win `autocrlf=true` ikinci klon YEŞİL; yokluğu/commit'sizliği `kapi` H21 UYARI (exit değişmez). AÇIK: bloğu silme / blok SONRASI genel `text` kuralı (H21 uyarır, `kapi` yazmaz) · blok güncellenmez · `autocrlf=input`, LFS ÖLÇÜLMEDİ · `.gitignore` dizini yutarsa izlenmez · B2 onarmaz · `not/derle/karar` `.gitkeep` yazmaz.
 - 🔴 "GERÇEK ORTAMDA OLMAZ" DEMEDEN ÖNCE ORTAMI ÖLÇ (6 Eyl; M-Y2 macOS'ta tam oradaydı). POZİTİF KONTROLSÜZ DÜZELTME KAPANMIŞ SAYILMAZ. Push'u `git ls-remote` ölçer.
 - 🔴 ÖLÇÜM ORTAMI HÜKMÜ ÇARPITIR (6 Eyl): root'ta `fazB_*`/`y4_mutant` SAHTE KIRMIZI ⇒ `olcum` kullanıcısıyla koş (WSL; Windows'ta `t_y42`/`readme_mutanti` KAPI-2 symlink 1314'ten çöker). Ağır doğrulama SOLO (paralel yük `isir`'i 300 sn aştırır).
 - 🔴 `continue-on-error` TAŞIYAN YEŞİL KAPI DEĞİLDİR (4 Eyl). Talimat yalnız YAML yorumunda durursa iş emrine girmez. Bilinçli ÖLÇÜM işleri: `win_kill_probu` · `boru_probu` · `ortam` · `kalite` · `kanit`.
