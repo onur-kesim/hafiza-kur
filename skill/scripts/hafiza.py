@@ -3949,7 +3949,7 @@ def cmd_devral(a):
         _dnot += (" — DIKKAT: bu dizinde ONCEKI bir kurulumun %d izi vardi; "
                   "yeni capa ONCEKI DENETIM IZINI KAPSAMAZ" % len(tum_izler))
     zincir_halka(y, "DEVIR", _dnot,
-                 ek={"onceki_kurulum_izi": tum_izler[:20]} if tum_izler else None)
+                 ek=_devral_ek(y, {"onceki_kurulum_izi": tum_izler[:20]} if tum_izler else {}))   # + devralma_tarihi/proje_son_t (H14 muafiyeti)
     print("  cipa + defterler + zincir kuruldu (%s)" % hdir_rel)
     _gitkeep_yaz(y)
     _gitattributes_uygula(y)                    # KALEM GA: devir raporundaki `kapi`dan ONCE (yoksa H21 yersiz uyarir)
@@ -5782,6 +5782,23 @@ def _h14_hukum(F, N, gecikme, t_son, en_yeni_t, en_yeni_f):
         else:
             N.append("H14: hafiza projeyle es (en yeni degisiklik %s, hafiza %s)"
                      % (d_proje.isoformat(), t_son.isoformat()))
+
+
+def _h14_proje_son(y):
+    """Devral ANINDAKI proje son degisikligi (epoch) — `_kapi_h14` ile AYNI olcum (`_h14_en_yeni`); olculemezse None (muafiyet o zaman VERILMEZ)."""
+    try:
+        gv, kr, iz = _h14_git_durumu(y.kok)
+        return _h14_en_yeni(y.kok, _h14_adaylar(y.kok, y), gv, kr, iz)[0]
+    except (Exception, SystemExit):  # noqa: BLE001 - olcum arizasi `devral`i DUSURMEZ; kayitta None => muafiyet yok (bugunku FAIL)
+        return None
+
+
+def _devral_ek(y, ek):
+    """KALEM 1: DEVIR halkasinin `ek`ine devralma olayini yazar. Halka hash'i `ek`i kapsar => kayit MUHURLUDUR (elle degisiklik halkayi KIRIK yapar)."""
+    kayit = dict(ek)
+    kayit["devralma_tarihi"] = bugun()
+    kayit["proje_son_t"] = _h14_proje_son(y)
+    return kayit
 
 
 def _kapi_h14(F, N, O, kok, rc, y, t_son):
