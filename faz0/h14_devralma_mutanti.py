@@ -18,10 +18,12 @@ NE OLCER — alti HAL (her biri `kapi` H14 satirlariyla yargilanir; hepsi AYNI u
     KAYITSIZ      `kur` ile kurulmus uyuyan proje (kayit YOK)    -> bugunku FAIL (ILERIDE) BIREBIR, UYARI YOK
     SAHTE         KAYITSIZ + elle eklenmis DEVIR halkasi (muhur  -> FAIL (kayit muhur disi: halka KIRIK, kayit SAYILMAZ)
                   disi, hash tutmuyor)
-    DAMGA         `devral` 3 gun ONCE (saat kaydirilarak), sonra  -> FAIL (kosul b: damga devralma gununu gecti)
-                  bugun yalniz `not`+`derle` (proje DEGISMEDI)
-    PROJE_COMMIT  TAZE + proje dosyasi GERIYE tarihli commit      -> FAIL geri gelir (kosul c, git commit yolu)
-    PROJE_MTIME   TAZE + izlenmeyen yeni proje dosyasi (mtime)    -> FAIL geri gelir (kosul c, mtime yolu)
+    DAMGA         `devral` 1 gun ONCE (saat kaydirilarak), sonra  -> FAIL (kosul b: damga devralma gununu 1 gun gecti; `gecikme` payi
+                  bugun yalniz `not`+`derle` (proje DEGISMEDI)       eklenseydi muafiyet verilirdi: hal bunu KIRMIZI yakar)
+    PROJE_COMMIT  TAZE + proje dosyasi GERIYE tarihli commit      -> FAIL geri gelir (kosul c, git commit yolu; degisiklik proje_son_t'den
+                  (proje_son_t'den YALNIZ 1 GUN sonra)                  YALNIZ 1 gun sonra: `gecikme` payi eklenseydi muafiyet verilirdi)
+    PROJE_MTIME   TAZE + izlenmeyen yeni proje dosyasi (mtime,    -> FAIL geri gelir (kosul c, mtime yolu; yine proje_son_t + 1 gun)
+                  proje_son_t'den 1 gun sonra)
   SAGLAM motorda hepsi YESIL; asagidaki bes sabotajin HER BIRI KENDI halinde KIRMIZI yakmalidir (hedef hal TAMAMI isirmali):
     M-DV1 KAYIT YAZIMI KAPALI        `devral` `devralma_tarihi` yazmaz                   -> TAZE
     M-DV2 MUHUR DISI KAYIT KABUL     zincir dogrulamasi atlanir (elle eklenen kayit gecer) -> SAHTE
@@ -213,9 +215,9 @@ def gozle(motor, taban):
     shutil.copytree(k, k2)
     sahte_halka_ekle(k2, ct)
     kokler["SAHTE"] = k2
-    k, _ = iskelet(taban, "damga", ortam)                                  # DAMGA: devral 3 gun ONCE, bugun yalniz `not`
-    devral_et(motor, k, ortam, gun_geri=3)
-    commitle(ortam, k, "devral (3 gun once)", tarih=bugun - _dt.timedelta(days=3))
+    k, _ = iskelet(taban, "damga", ortam)                                  # DAMGA: devral 1 gun ONCE (pay >= 1 gevsetmesi de isirsin), bugun not+derle
+    devral_et(motor, k, ortam, gun_geri=1)
+    commitle(ortam, k, "devral (1 gun once)", tarih=bugun - _dt.timedelta(days=1))
     rc, c = kos(motor, ["not", "--konu=genel-durum", "--tur=durum", "--metin=devralmadan sonra yalniz not (proje degismedi)"], k, ortam)
     if rc != 0:
         raise Kurulamadi("not basarisiz (exit %s): %s" % (rc, c.strip().split("\n")[-1][:140]))
@@ -229,7 +231,7 @@ def gozle(motor, taban):
     commitle(ortam, k, "devral")
     with open(os.path.join(k, "kod.py"), "a", encoding="utf-8", newline="\n") as f:
         f.write("DEGER = 2   # devralmadan sonra degisti\n")
-    commitle(ortam, k, "proje degisti", tarih=bugun - _dt.timedelta(days=20))
+    commitle(ortam, k, "proje degisti", tarih=bugun - _dt.timedelta(days=GUN - 1))   # proje_son_t + 1 gun: epoch/gun payi gevsetmesi de isirsin
     kokler["PROJE_COMMIT"] = k
     k, _ = iskelet(taban, "proje_mtime", ortam)                            # PROJE_MTIME: izlenmeyen yeni dosya (mtime yolu)
     devral_et(motor, k, ortam)
@@ -237,7 +239,7 @@ def gozle(motor, taban):
     yeni = os.path.join(k, "yeni.py")
     with open(yeni, "w", encoding="utf-8", newline="\n") as f:
         f.write("YENI = 1\n")
-    ts = _dt.datetime.combine(bugun - _dt.timedelta(days=20), _dt.time(12, 0)).timestamp()
+    ts = _dt.datetime.combine(bugun - _dt.timedelta(days=GUN - 1), _dt.time(12, 0)).timestamp()   # proje_son_t + 1 gun
     os.utime(yeni, (ts, ts))
     kokler["PROJE_MTIME"] = k
     out = {}
@@ -246,6 +248,25 @@ def gozle(motor, taban):
         u, f, s = h14_coz(c)
         out[hal] = (rc, u, f, s)
     return out
+
+
+def gozle_tarihli(motor, taban):
+    """gozle() + tarih damgasi. Gece yarisi gozle() ICINDEN gecerse (devral/commit/kapi FARKLI gune dusebilir) bir kez yeniden kurar;
+    yine gecerse OLCULEMEDI (sahte KIRMIZI yok)."""
+    for deneme in (1, 2):
+        bas = _dt.date.today()
+        g = gozle(motor, os.path.join(taban, "d%d" % deneme))
+        if _dt.date.today() == bas:
+            g["_bugun"] = bas
+            return g
+    raise Kurulamadi("yerel gece yarisi iki kez gozle() icinden gecti")
+
+
+def sebep_dogru(g, hal):
+    """ISIRDI yalniz sabotajin KENDI belirtisiyle sayilir: TAZE'de muafiyet KAYBI (FAIL basildi), digerlerinde muafiyet VERILMESI (UYARI basildi).
+    Motoru COKERTEN sabotaj (exit 3, H14 satiri yok) 'yanlis sebep' olur."""
+    rc, u, f, s = g[hal]
+    return bool(f) and rc == 1 if hal == "TAZE" else bool(u)
 
 
 _UYARI = re.compile(r"^· \[H14\] UYARI devralma ani: proje (\d+) gundur uyuyor \(devral (\d{4}-\d{2}-\d{2})\); "
@@ -257,9 +278,10 @@ def ihlaller(g):
     out = []
     rc, u, f, s = g["TAZE"]
     m = _UYARI.match(u[0]) if len(u) == 1 else None
-    if not m or int(m.group(1)) != GUN or m.group(2) != _dt.date.today().isoformat():
+    bugun = g["_bugun"].isoformat()
+    if not m or int(m.group(1)) != GUN or m.group(2) != bugun:
         out.append(("TAZE", "TEK `[H14] UYARI devralma ani: proje %d gundur uyuyor (devral %s); ...` beklenir: uyari=%r fail=%r"
-                    % (GUN, _dt.date.today().isoformat(), u, f)))
+                    % (GUN, bugun, u, f)))
     if f:
         out.append(("TAZE", "taze devralda [H14] FAIL basildi: %r" % f))
     if rc != 0 or not s.startswith("SONUC: YESIL"):
@@ -325,7 +347,7 @@ def main():
     taban = tempfile.mkdtemp(prefix="h14dv_")
     try:
         try:
-            g = gozle(motor, os.path.join(taban, "temiz"))
+            g = gozle_tarihli(motor, os.path.join(taban, "temiz"))
         except Kurulamadi as e:
             print("OLCULEMEDI: haller kurulamadi: %s" % e)
             return 2
@@ -346,18 +368,20 @@ def main():
             os.makedirs(d, exist_ok=True)
             try:
                 sab = sabotajli_motor(kaynak, degisim, d)
-                ih = ihlaller(gozle(sab, os.path.join(d, "hal")))
+                gs = gozle_tarihli(sab, os.path.join(d, "hal"))
+                ih = ihlaller(gs)
             except Kurulamadi as e:
                 olculemedi.append(ad)
                 print("  ?  %-34s OLCULEMEDI  %s" % (ad, e))
                 continue
             haller = {h for h, _ in ih}
-            if hedef <= haller:
+            if hedef <= haller and all(sebep_dogru(gs, h) for h in hedef):
                 isirdi.append(ad)
                 print("  +  %-34s ISIRDI      hedef hal: %s · tum ihlal halleri: %s" % (ad, ",".join(sorted(hedef)), ",".join(sorted(haller))))
             elif ih:
                 kacti.append(ad)
-                print("  !  %-34s YANLIS SEBEP ihlal %s var ama HEDEF hal (%s) susuyor" % (ad, ",".join(sorted(haller)), ",".join(sorted(hedef))))
+                print("  !  %-34s YANLIS SEBEP ihlal %s var ama HEDEF hal (%s) ya susuyor ya sabotajin KENDI belirtisini (UYARI/FAIL) vermiyor"
+                      % (ad, ",".join(sorted(haller)), ",".join(sorted(hedef))))
             else:
                 kacti.append(ad)
                 print("  !  %-34s KACTI       kapi YESIL kaldi -> bu sabotaj OLCULMUYOR: %s" % (ad, aciklama))
