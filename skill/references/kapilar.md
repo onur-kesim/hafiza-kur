@@ -269,6 +269,14 @@ hiçbir kapı kırmızı yanmaz. H14 unutmayı **ölçülebilir** hale getirir: 
 ama hafıza ilerlememişse kapı durdurur. `hafiza_gecikme_gun: 0` ile kapatılabilir —
 kapatıldığı da raporda "bilinçli" diye yazılır.
 
+**Devralma anı (kayıtlı muafiyet, 19 Eki 2026):** taze `devral`da hafıza damgası = bugün, uyuyan
+projenin son değişikliği eski olduğundan ilk `kapi` her zaman `ILERIDE` FAIL verirdi. `devral` artık
+devralma olayını MÜHÜRLÜ kayda yazar (DEVIR zincir halkasının `ek`i: `devralma_tarihi` + `proje_son_t`;
+halka hash'i `ek`i kapsar). `ILERIDE` iken ÜÇ koşul BİRLİKTE tutarsa FAIL yerine `[H14] UYARI devralma
+ani: …` satırı (her `kapi`'de, exit değişmez): (a) mühürlü kayıt var · (b) damga devralma gününü geçmemiş
+· (c) proje o günden beri değişmemiş. Biri tutmazsa bugünkü FAIL birebir. `kur` ile kurulan uyuyan proje
+ve eski motorla devral'lanmış proje muafiyet ALMAZ. Kapı: `faz0/h14_devralma_mutanti.py`.
+
 **Kardeşi:** `derle` fragmansız çalıştırıldığında artık **hata** verir (eskiden sessiz
 uyarıydı). Bilinçli boş tur için `--bos-serbest`.
 

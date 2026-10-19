@@ -663,6 +663,20 @@ işaretçisi dahil). En önemlileri:
   approved` sözlükte yok: `kabul`/`approved` GECERLI sayılır); sınıf 60 karakterlik GÖRÜNEN metinden
   türer, kırpılmış kuyruk sınıfı değiştirmez.
 
+- **H14 devralma anına KAYITLI muafiyet (19 Eki 2026, Onur kilidi).** Ölçüm (Momentum `d4b5417` + `devral`): hafıza damgası = bugün, uyuyan
+  projenin son değişikliği 40 gün eski ⇒ ilk `kapi` HER ZAMAN `[H14] … ILERIDE` FAIL (sebepsiz kırmızı). Düz süre muafiyeti REDDEDİLDİ (o
+  pencerede UYDURMA damgayı gizler). `devral` devralma olayını **mühürlü** kayda yazar: `DEVIR` zincir halkasının `ek`i (`devralma_tarihi` ISO
+  gün + `proje_son_t` = devral anında `_h14_en_yeni` ile ÖLÇÜLEN proje son değişikliği, epoch); halka hash'i `ek`i kapsar, elle değişiklik
+  halkayı KIRIK yapar ve kayıt SAYILMAZ. H14 `ILERIDE` kolu ÜÇ koşul BİRLİKTE tutarsa FAIL yerine **UYARI** basar (`[H14] UYARI devralma ani:
+  proje <N> gundur uyuyor (devral <tarih>); proje degisince ya da damga ilerleyince normal hukum doner`; N hafıza damgasına göre gün; satır
+  her `kapi`'de, yalnız N kanalı ⇒ exit DEĞİŞMEZ): (a) mühürlü kayıt var · (b) `t_son <= devralma_tarihi` · (c) şimdiki `en_yeni_t == proje_son_t`.
+  Biri tutmazsa bugünkü FAIL birebir; GERİDE ve `es` kollarına dokunulmaz. **Sınırlar (gizlenmez):** `kur` ile kurulan uyuyan proje ve eski
+  motorla `devral`'lanmış proje muafiyet ALMAZ · devral'dan sonra hafıza yazılınca (damga ilerleyince) ya da proje dosyası değişince muafiyet
+  BİTER (aynı gün yapılan değişiklik H14'te `es` verir; FAIL geri gelmesi için değişikliğin tarihi damganın `gecikme` günden gerisinde olmalı) ·
+  zincir ANAHTARSIZDIR: hash'i yeniden hesaplanmış sahte halka ayırt EDİLEMEZ (bilinen sınır) · (c) git commit tarihi / mtime ölçümüne bağlıdır:
+  projeyi kopyalayıp mtime'ları değiştirmek izlenmeyen/kirli dosyalarda muafiyeti düşürür (FAIL'e geri döner, güvenli yön; kod okuması, ÖLÇÜLMEDİ). Ölçüm:
+  `faz0/h14_devralma_mutanti.py` (6 hal, 5 sabotaj M-DV1…M-DV5; tabanda KIRMIZI, düzeltmede YEŞİL).
+
 - **H14 büyük projede git'e yolları PARÇALI sorar (6 Eki 2026).** mozilla/fxa kopyasında (8.335 izlenen dosya,
   yolların toplamı ~509.000 karakter) `kapi` Windows komut satırı sınırında (~32.767 karakter) `exit 3`
   (`[WinError 206]`) veriyordu. `_git_son_ct` yolları girdi SIRASIYLA parçalara böler (her parçada karakter

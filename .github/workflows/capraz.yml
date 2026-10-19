@@ -3205,3 +3205,43 @@ jobs:
           name: gitattributes-uyari-${{ matrix.os }}
           path: gitattributes-uyari-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-46) H14 DEVRALMA MUTANTI — besli-paket/IS_EMRI_H14_DEVRALMA_KAYITLI_MUAFIYET.md
+  #     (Cowork O17 -> Code, 19 Eki 2026; Onur kilidi 07:37 "kayitli muafiyet olur"). OLCULDU:
+  #     Momentum d4b5417 + `devral` -> hafiza damgasi = bugun, uyuyan proje 40 gun eski => ilk `kapi`
+  #     HER ZAMAN `[H14] ... ILERIDE` FAIL (sebepsiz kirmizi). Duz sure muafiyeti REDDEDILDI (uydurma
+  #     damgayi gizler). `devral` devralma olayini MUHURLU kayda yazar (DEVIR zincir halkasinin `ek`i:
+  #     devralma_tarihi + proje_son_t); H14 ILERIDE kolu UC kosul BIRLIKTE tutarsa FAIL yerine UYARI:
+  #     (a) muhurlu kayit var · (b) damga devralma gununu gecmemis · (c) proje degismemis. Biri tutmazsa
+  #     bugunku FAIL BIREBIR; cikis kodu YALNIZ bu kolda degisir.
+  #     ALTI HAL (TAZE · KAYITSIZ · SAHTE · DAMGA · PROJE_COMMIT · PROJE_MTIME); saglam motorda YESIL,
+  #     BES sabotajin her biri KENDI halinde KIRMIZI (hedef hal TAMAMI isirmali):
+  #         M-DV1 KAYIT YAZIMI KAPALI · M-DV2 MUHUR DISI KAYIT KABUL · M-DV3 DAMGA KOSULU KALKAR ·
+  #         M-DV4 COMMIT YOLU KORLESIR · M-DV5 PROJE KOSULU HER ZAMAN DOGRU
+  #     DAMGA halinde `devral` N gun ONCE yapilmis gibi kosulur: SAAT KAYDIRICI yalniz olcum aletidir
+  #     (motorun `_dt` modulu sarilir). 🔴 UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  h14_devralma_mutanti:
+    name: H14 devralma mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: taze devralda H14 yalniz UC kosul birlikte UYARI (alti hal, bes sabotaj)
+        shell: bash
+        run: python faz0/h14_devralma_mutanti.py 2>&1 | tee h14-devralma-cikti.txt
+      - name: h14 devralma mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h14-devralma-${{ matrix.os }}
+          path: h14-devralma-cikti.txt
+          if-no-files-found: warn
