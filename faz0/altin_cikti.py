@@ -593,14 +593,15 @@ def kendini_sina(motor):
 def _git_ust_depo(dizin):
     """`dizin` bir git calisma agacinin ICINDE mi? -> ust deponun koku | None. H21 SESSIZLIK (20 Eki 2026): altin kume `git deposu degil` halleri
     icerir; TEMP bir deponun altindaysa H9/H21 `KOKU degil` der ve 14 SAHTE FARK uretir (OLCULDU, bagimsiz dogrulama) — bu OLCULEMEDI'dir, regresyon DEGIL."""
-    if not shutil.which("git"):
-        return None
-    try:
-        r = subprocess.run(["git", "-C", dizin, "rev-parse", "--show-toplevel"], capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=60)
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return (r.stdout or "").strip() if r.returncode == 0 else None
+    d = os.path.abspath(dizin)
+    while True:                                                    # ATALARDA `.git` girdisi (dizin YA DA gitfile; bozuk/hayalet olsa da): rev-parse basarisiz olsa bile sezilir
+        p = os.path.join(d, ".git")
+        if os.path.lexists(p):
+            return p
+        ust = os.path.dirname(d)
+        if ust == d:
+            return None
+        d = ust
 
 
 def main():
@@ -640,7 +641,7 @@ def main():
             shutil.rmtree(taban)
         except OSError:
             pass
-        print("OLCULEMEDI: gecici dizin bir git deposunun ICINDE (%s) — `git deposu degil` halleri kurulamaz (H9/H21 `KOKU degil` der); TMP/TEMP'i depo disina al." % ust_depo)
+        print("OLCULEMEDI: gecici dizinin ATALARINDA `.git` girdisi var (%s) — `git deposu degil` halleri kurulamaz (H9/H21 `KOKU degil` der); TMP/TEMP'i depo disina al." % ust_depo)
         return 2
     calisma_tabani = taban
     if a.uzun_yol:

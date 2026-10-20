@@ -1889,7 +1889,8 @@ def _ga_check_attr(kok, yollar):
     except (OSError, subprocess.SubprocessError) as e:
         return None, None, type(e).__name__
     if r.returncode != 0 or t.returncode != 0:
-        return None, None, "git cikis %d/%d" % (r.returncode, t.returncode)
+        ilk = _ilk_satir_isaretli(((r.stderr or b"") + (t.stderr or b"")).decode("utf-8", "replace").strip())
+        return None, None, "git cikis %d/%d%s" % (r.returncode, t.returncode, (": " + ilk) if ilk else "")
     parca = [x.decode("utf-8", "replace") for x in r.stdout.split(b"\0")]
     deger = dict((parca[i], parca[i + 2]) for i in range(0, len(parca) - 2, 3))
     return deger, set(x.decode("utf-8", "replace") for x in t.stdout.split(b"\0") if x), None
@@ -12200,7 +12201,7 @@ def _h21_yoksayilan(kok, adaylar):
 def _h21_commitsiz_dizin(kok, top):
     """Koruma kaynagi `.gitattributes` COMMIT'li mi? `kok`tekinden baslar; alt dizin kipinde (`top` = ust deponun koku) ust depoya kadar her dizindeki
     `.gitattributes`e bakar (`check-attr` calisma agacindaki HERHANGI birini sayar; klon yalniz COMMIT'liyi tasir). -> ilk commit'siz dizin | None."""
-    d = os.path.abspath(kok)
+    d = os.path.realpath(kok)
     n = lambda p: os.path.normcase(os.path.realpath(p))
     while True:
         if _ga_commitsiz(d):
@@ -12234,12 +12235,15 @@ def _h21_satir(kok, top, deger, izlenen, var, yok):
                 "`hafiza.py kur` (blok YOKSA %s blogunu yazar; blok eskiyse once sil) ya da elle `-text`"
                 % (nerede, len(var), iz, len(var) - iz, len(acik), acik[0], deger.get(acik[0], "unspecified"), _GA_AD))
     if cdizin:
-        ad = _GA_AD if os.path.normcase(os.path.abspath(cdizin)) == os.path.normcase(os.path.abspath(kok)) else os.path.join(cdizin, _GA_AD)
-        return ("H21: %s commit'lenmemis (izlenmiyor ya da HEAD'den farkli) — `-text` korumasi KLONDA GORUNMEZ; `git add %s` ve commit"
-                % (ad, ad))
+        ad = _GA_AD if os.path.normcase(os.path.realpath(cdizin)) == os.path.normcase(os.path.realpath(kok)) else os.path.join(cdizin, _GA_AD).replace("\\", "/")
+        return ("H21: %s commit'lenmemis (izlenmiyor ya da HEAD'den farkli) — `-text` korumasi KLONDA GORUNMEZ; `git add %s` ve commit "
+                "(.gitignore'daysa `git add -f`)" % (ad, ad))
     if top:
-        return ("H21: alt dizin (ust depo %s) — satir sonu korumasi OLCULDU: %d muhurlu yolun hepsinde `text` unset%s"
-                % (top, len(var), (" · %d yol .gitignore'da (klona girmez)" % len(yok)) if yok else ""))
+        ign = (" · %d yol .gitignore'da (klona girmez)" % len(yok)) if yok else ""
+        if not var:
+            return "H21: alt dizin (ust depo %s) — klona girecek muhurlu yol YOK%s" % (top, ign)
+        return ("H21: alt dizin (ust depo %s) — calisma agacinda `text` unset: %d muhurlu yolun hepsi%s "
+                "(`.git/info/attributes` ve `core.attributesFile` klona TASINMAZ, OLCULMEZ)" % (top, len(var), ign))
     return None
 
 
