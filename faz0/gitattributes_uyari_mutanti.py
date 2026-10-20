@@ -184,12 +184,12 @@ MUTANTLAR = [
      [("    deger = dict((parca[i], parca[i + 2]) for i in range(0, len(parca) - 2, 3))\n",
        "    deger = dict((parca[i], \"unset\") for i in range(0, len(parca) - 2, 3))   # MUTANT\n")]),
     ("M-GA4 OLCULEMEDI SUSAR", "git yokken OLCULEMEDI satiri basilmaz", {"GITYOK"},
-     [("        N.append(\"H21: OLCULEMEDI (git calistirilamiyor, .git %s)",
-       "        _x = (\"H21: OLCULEMEDI (git calistirilamiyor, .git %s)")]),
+     [("        N.append(\"H21: OLCULEMEDI (git calistirilamiyor, %s)",
+       "        _x = (\"H21: OLCULEMEDI (git calistirilamiyor, %s)")]),
     ("M-GA11 UYARI KIRMIZIYA TERFI", "uyarilar F (hata) kanalina yazilir: cikis kodu degisir", {"KORUMASIZ"},
      [("    _kapi_uyarilar(N, kok, y)\n", "    _kapi_uyarilar(F, kok, y)   # MUTANT\n")]),
     ("M-GA13 COMMIT DENETIMI YOK", "calisma agacindaki blok koruma sayilir (klonun gorecegi commit'li surum degil)", {"GACOMMITSIZ"},
-     [("    elif izlenen and _ga_commitsiz(kok):\n", "    elif False:   # MUTANT\n")]),
+     [("    cdizin = _h21_commitsiz_dizin(kok, top) if (izlenen and not acik) else None\n", "    cdizin = None   # MUTANT\n")]),
 ]
 
 

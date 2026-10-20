@@ -590,6 +590,19 @@ def kendini_sina(motor):
 
 # --------------------------------------------------------------- ANA
 
+def _git_ust_depo(dizin):
+    """`dizin` bir git calisma agacinin ICINDE mi? -> ust deponun koku | None. H21 SESSIZLIK (20 Eki 2026): altin kume `git deposu degil` halleri
+    icerir; TEMP bir deponun altindaysa H9/H21 `KOKU degil` der ve 14 SAHTE FARK uretir (OLCULDU, bagimsiz dogrulama) — bu OLCULEMEDI'dir, regresyon DEGIL."""
+    if not shutil.which("git"):
+        return None
+    try:
+        r = subprocess.run(["git", "-C", dizin, "rev-parse", "--show-toplevel"], capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return (r.stdout or "").strip() if r.returncode == 0 else None
+
+
 def main():
     ap = argparse.ArgumentParser(description="kapi ciktisi esdegerlik kapisi")
     ap.add_argument("--motor", default=VARSAYILAN_MOTOR)
@@ -621,6 +634,14 @@ def main():
         return kendini_sina(motor)
 
     taban = tempfile.mkdtemp(prefix="altin_")
+    ust_depo = _git_ust_depo(taban)
+    if ust_depo:
+        try:
+            shutil.rmtree(taban)
+        except OSError:
+            pass
+        print("OLCULEMEDI: gecici dizin bir git deposunun ICINDE (%s) — `git deposu degil` halleri kurulamaz (H9/H21 `KOKU degil` der); TMP/TEMP'i depo disina al." % ust_depo)
+        return 2
     calisma_tabani = taban
     if a.uzun_yol:
         # KALEM 2 (H16-KESME-DUZELTME-BRIEF.md): kok'u ESIGI (eski kesme: 160)

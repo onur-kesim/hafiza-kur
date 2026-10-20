@@ -583,7 +583,7 @@ işaretçisi dahil). En önemlileri:
   Linux/macOS projelerini kırmızıya boğmamak için; satır izlenen/izlenmeyen sayısını AYRI verir). H21 hiçbir dalda SESSİZ DEĞİLDİR
   (20 Eki 2026, H21 SESSİZLİK): depo DEĞİLSE `H21: OLCULEMEDI (git deposu degil)`, git çalışmıyorsa `H21: OLCULEMEDI (git calistirilamiyor, .git var|yok)`,
   projeniz bir deponun ALT dizinindeyse `check-attr` alt dizinde GERÇEKTEN ölçülür (göreli yollarla; üst deponun `.gitattributes`'i de sayılır;
-  uyarı `(alt dizin: ust depo …)` taşır; korumalıysa sessiz — korumalı durum gürültü üretmez). Koruma çalışma ağacında görünür ama `.gitattributes` izlenmiyor/HEAD'den farklıysa AYRI `H21: .gitattributes commit'lenmemis …`
+  uyarı `(alt dizin: ust depo …)` taşır; korumalıysa TEK bilgi satırı basar — `H21: alt dizin (ust depo …) — satir sonu korumasi OLCULDU: N muhurlu yolun hepsinde `text` unset`; koruma kaynağı ÜST depo olabileceği için; `.gitignore`'daki yollar klona girmez ⇒ sayılmaz ve yanlış alarm vermez; üst deponun COMMIT'SİZ `.gitattributes`'i de AYRI `commit'lenmemis` uyarısı üretir). Koruma çalışma ağacında görünür ama `.gitattributes` izlenmiyor/HEAD'den farklıysa AYRI `H21: .gitattributes commit'lenmemis …`
   UYARISI (ölçüldü: komitsiz blok kaynakta YEŞİL, klonda KIRMIZI). **Sınırlar (gizlenmez):** kullanıcı bloğu elle silerse `kapi` H21 ile uyarır
   ama `kapi` geri yazmaz (`kur` yeniden koşulunca blok yeniden eklenir) · H21 çalışma ağacının `check-attr` sonucuna bakar: yerel kaynaklar
   (`.git/info/attributes`, `core.attributesFile`) klona TAŞINMAZ ama koruma 'var' sayılır (ÖLÇÜLMEDİ) · `core.autocrlf=input`
@@ -592,7 +592,7 @@ işaretçisi dahil). En önemlileri:
   H21 eksik yollar için uyarır (ölçüldü) ve çözüm bloğu silip `kur`u yeniden koşmaktır · deseni güvenle yazılamayan yol (boşluk/özel karakter) `ATLANDI` diye beyan edilir. Ölçüm:
   `faz0/ikinci_klon_kapisi.py` (GERÇEK ikinci klon, `core.autocrlf=true`: tabanda KIRMIZI, düzeltmede YEŞİL; CI windows-latest) ·
   `faz0/gitattributes_muhur_mutanti.py` (12 hal, 10 sabotaj) · `faz0/gitattributes_uyari_mutanti.py` (5 hal, 4 sabotaj) ·
-  `faz0/h21_sessizlik_mutanti.py` (7 hal, 6 sabotaj M-S1/M-S2/M-S3/M-H9alt/M-H9depo/M-H9bin).
+  `faz0/h21_sessizlik_mutanti.py` (13 hal, 15 sabotaj: M-S1 · M-S2 · M-S3 · M-S3b · M-S4 · M-IGNORE · M-UST-KOMITSUZ · M-SAYI · M-UST-YOL · M-OKU-H21 · M-OKU-H9 · M-OKU-SINIF · M-H9alt · M-H9depo · M-H9bin; her biri YALNIZ kendi dalını bozar).
 
 - **H21 hiçbir dalda sessiz değil + H9 üç ayrı cümle (20 Eki 2026, Onur: "h21 düzeltmesini yapalım").** Ölçüm (Cowork, Windows 11, motor 3085c1a):
   (S1) proje bir deponun ALT dizininde ⇒ `kur` `alt\.gitattributes` yazdı ama `kapi` H21 satırı YOK ve **H9 "git YOK"** diyordu (git VAR, depo VAR —
@@ -601,8 +601,8 @@ işaretçisi dahil). En önemlileri:
   (`H9: git YOK (git programi PATH'te bulunamadi)`) · depo yok (`H9: bu dizin bir git deposu degil (ust dizinlerde de yok)`) · kök değil
   (`H9: git deposunun KOKU degil (ust depo: <top>)`); git yanıtsızsa `H9: git deposu OKUNAMADI: …`. Hüküm sınıfı (O) ve çıkış kodu DEĞİŞMEZ; yalnız METİN.
   **Seçim (alt dizin):** ÖLÇMEK `OLCULEMEDI` demekten ucuz çıktı — motor zaten kök'e göreli yollarla sorar ve git üst deponun özniteliklerini hesaba
-  katar; ikinci klon ÜST deponun klonudur ve `alt/.gitattributes` orada geçerlidir. **Sınırlar (gizlenmez):** korumalı durumda H21 pozitif satır
-  BASMAZ (kök depo ile aynı; sessizlik = ölçüldü ve koruma var) · git yanıtsız dalı (`dubious ownership`) bu kapıda ölçülmez (`h9_kesme_mutanti` H9 metnini sınar) ·
+  katar; ikinci klon ÜST deponun klonudur ve `alt/.gitattributes` orada geçerlidir. **Sınırlar (gizlenmez):** korumalı KÖK depoda H21 pozitif satır
+  BASMAZ (sessizlik = ölçüldü ve koruma var); korumalı ALT dizinde TEK bilgi satırı basar (tasarım seçimi: S1 kabulü + koruma kaynağı üst depo olabilir; Onur istemezse kaldırılır) · git yanıtsız dalı (`H21: OLCULEMEDI (git deposu OKUNAMADI …)` / `H9: git deposu OKUNAMADI: …`) bozuk/hayalet üst `.git` ile TETİKLENİR ve sabotajlanır (M-OKU-*); gerçek `dubious ownership` bu makinede kurulamadı (aynı dal) · ustte `.git` VARKEN git `not a git repository` derse (bozuk HEAD, hayalet gitdir) `depo yok` DENMEZ, OKUNAMADI denir (bağımsız doğrulama bulgusu) · `.git/info/attributes` ve `core.attributesFile` korumayı 'var' gösterir ama klona taşınmaz (ÖLÇÜLMEDİ, taban da aynı) · kapı başına +2..6 git sorgusu (alt dizinde ≈ +0,3 sn; ÖLÇÜLDÜ) · TEMP bir git deposunun İÇİNDEYSE altın küme ve `h21_sessizlik_mutanti` OLCULEMEDI (exit 2) der (sahte FARK değil) ·
   H21 uyarı metni sayıları değişti (`izlenen N, izlenmeyen M`) · altın küme yeniden üretildi (14 kayıtta YALNIZ H9 cümlesi + H21 satırı; exit farkı 0).
 
 - **Karar adres defteri (P4, 12 Eki 2026, Onur kilidi: yaklaşım KARAR ADRES DEFTERİ).** Ölçüm (Momentum `d4b5417`,

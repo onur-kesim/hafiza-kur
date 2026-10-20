@@ -5094,12 +5094,26 @@ def _git_kokte_mi(kok):
     return _n(tepe) == _n(kok)
 
 
+def _ust_git_izi(kok):
+    """`kok`ten yukari yuruyup ilk `.git` girdisini (dizin YA DA gitfile) bulur -> yol | None. `_git_hali` 'depo yok' demeden ONCE bakar:
+    ustte `.git` VARKEN git 'not a git repository' diyorsa (bozuk HEAD, hayalet gitdir) depo YOK degil, git OKUYAMIYOR demektir."""
+    d = os.path.abspath(kok)
+    while True:
+        p = os.path.join(d, ".git")
+        if os.path.lexists(p):
+            return p
+        ust = os.path.dirname(d)
+        if ust == d:
+            return None
+        d = ust
+
+
 def _git_hali(kok):
     """H21 SESSIZLIK (besli-paket/IS_EMRI_H21_SESSIZLIK.md, 20 Eki 2026): `kok` git KOKU degilken NEDEN degil? -> (hal, ayrinti).
-    BINARY_YOK (git calistirilamiyor) · KOK_DEGIL (ust depo var; ayrinti = ust deponun kokU) · DEPO_DEGIL (ne burasi ne ustu depo) ·
-    OKUNAMADI (git sorusunu yanitlamadi: dubious ownership vb.; ayrinti = ilk satir) · TUTARSIZ (git kok esit diyor ama kok sinamasi
-    False dedi: asla olmamali). git mesaji LC_ALL=C ile sorulur (yerellesmis mesaj sinifi saptirmasin). Yalniz H9/H21 METNINI belirler;
-    hukum/exit buradan degismez."""
+    BINARY_YOK (git calistirilamiyor) · KOK_DEGIL (ust depo var; ayrinti = ust deponun kokU) · DEPO_DEGIL (ne burasi ne ustu depo: git 'not a
+    git repository' diyor VE yukarida hicbir `.git` girdisi yok) · OKUNAMADI (git sorusunu yanitlamadi: dubious ownership, bozuk/hayalet ust
+    `.git` vb.; ayrinti = ilk satir) · TUTARSIZ (git kok esit diyor ama kok sinamasi False dedi: asla olmamali). git mesaji LC_ALL=C ile
+    sorulur (yerellesmis mesaj sinifi saptirmasin). Yalniz H9/H21 METNINI belirler; hukum/exit buradan degismez."""
     if not shutil.which("git"):
         return "BINARY_YOK", ""
     ortam = dict(os.environ, LC_ALL="C", LANGUAGE="C")
@@ -5110,9 +5124,11 @@ def _git_hali(kok):
         return "OKUNAMADI", "sorgu basarisiz (%s)" % type(e).__name__
     hata = (r.stderr or "").strip()
     if r.returncode != 0:
-        if "not a git repository" in hata and "dubious ownership" not in hata:
+        iz = _ust_git_izi(kok)
+        if "not a git repository" in hata.lower() and "dubious ownership" not in hata and iz is None:
             return "DEPO_DEGIL", ""
-        return "OKUNAMADI", _ilk_satir_isaretli(hata) or "git cikis %d" % r.returncode
+        ayr = _ilk_satir_isaretli(hata) or "git cikis %d" % r.returncode
+        return "OKUNAMADI", ayr if iz is None else "%s (ust dizinde .git var: %s)" % (ayr, iz)
     tepe = (r.stdout or "").strip()
     n = lambda p: os.path.normcase(os.path.realpath(p))
     if not tepe or n(tepe) == n(kok):
@@ -5133,7 +5149,9 @@ def _h9_git_yok_cumlesi(kok):
         return "H9: git deposunun KOKU degil (ust depo: %s)%s" % (ayr, _H9_SONEK)
     if hal == "OKUNAMADI":
         return "H9: git deposu OKUNAMADI: %s" % ayr
-    return "H9: git YOK%s%s" % (" (git programi PATH'te bulunamadi)" if hal == "BINARY_YOK" else "", _H9_SONEK)
+    if hal == "TUTARSIZ":
+        return "H9: git durumu TUTARSIZ (git kok esit diyor ama kok sinamasi reddetti)" + _H9_SONEK
+    return "H9: git YOK (git programi PATH'te bulunamadi)" + _H9_SONEK
 
 
 def _kapi_h9(F, N, O, kok, y):
@@ -12144,52 +12162,105 @@ def _kapi_h20(N, kok, y):
 
 
 def _h21_nerede(N, kok):
-    """H21 SESSIZLIK (besli-paket/IS_EMRI_H21_SESSIZLIK.md, 20 Eki 2026): olcum YAPILABILIR mi? -> (olculur, aciklama). Olculemiyorsa
+    """H21 SESSIZLIK (besli-paket/IS_EMRI_H21_SESSIZLIK.md, 20 Eki 2026): olcum YAPILABILIR mi? -> (olculur, ust_depo_koku | None). Olculemiyorsa
     OLCULEMEDI satirini KENDISI basar (hicbir dalda sessiz YOK): git calistirilamiyor · depo degil · git sorusu yanitsiz. Alt dizin ('KOK_DEGIL')
     OLCULUR: `check-attr`/`ls-files` kok'e GORELI yollarla calisir ve ust deponun `.gitattributes`ini de hesaba katar (secim gerekcesi: DURUM O29)."""
     if not shutil.which("git"):
-        N.append("H21: OLCULEMEDI (git calistirilamiyor, .git %s) — satir sonu korumasi olculemedi"
-                 % ("var" if os.path.lexists(os.path.join(kok, ".git")) else "yok"))
-        return False, ""
+        iz = ".git var" if os.path.lexists(os.path.join(kok, ".git")) else ("ust dizinde .git var" if _ust_git_izi(kok) else ".git yok")
+        N.append("H21: OLCULEMEDI (git calistirilamiyor, %s) — satir sonu korumasi olculemedi" % iz)
+        return False, None
     if _git_kokte_mi(kok):
-        return True, ""
+        return True, None
     hal, ayr = _git_hali(kok)
     if hal == "KOK_DEGIL":
-        return True, " (alt dizin: ust depo %s)" % ayr
+        return True, ayr
     if hal == "TUTARSIZ":
-        return True, ""
+        return True, None
     if hal == "DEPO_DEGIL":
         N.append("H21: OLCULEMEDI (git deposu degil) — satir sonu korumasi olculemedi")
-        return False, ""
+        return False, None
     N.append("H21: OLCULEMEDI (git deposu OKUNAMADI: %s) — satir sonu korumasi olculemedi" % ayr)
-    return False, ""
+    return False, None
+
+
+def _h21_yoksayilan(kok, adaylar):
+    """`.gitignore`a takilan izlenmeyen yollar klona GIRMEZ (satir sonu cevrimi onlari bozamaz): -> kume. `check-ignore` hata verirse bos kume
+    (uyari AZALTILMAZ: sessiz PASS yok)."""
+    if not adaylar:
+        return set()
+    try:
+        r = _adres_git(kok, "check-ignore", "-z", "--stdin", timeout=30, input=("\0".join(adaylar) + "\0").encode("utf-8"))
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    if r.returncode not in (0, 1):
+        return set()
+    return set(x.decode("utf-8", "replace") for x in r.stdout.split(b"\0") if x)
+
+
+def _h21_commitsiz_dizin(kok, top):
+    """Koruma kaynagi `.gitattributes` COMMIT'li mi? `kok`tekinden baslar; alt dizin kipinde (`top` = ust deponun koku) ust depoya kadar her dizindeki
+    `.gitattributes`e bakar (`check-attr` calisma agacindaki HERHANGI birini sayar; klon yalniz COMMIT'liyi tasir). -> ilk commit'siz dizin | None."""
+    d = os.path.abspath(kok)
+    n = lambda p: os.path.normcase(os.path.realpath(p))
+    while True:
+        if _ga_commitsiz(d):
+            return d
+        ust = os.path.dirname(d)
+        if not top or n(d) == n(top) or ust == d:
+            return None
+        d = ust
+
+
+def _h21_olc(kok, y):
+    """`check-attr` olcumu -> (deger, izlenen, var, yok) | (None, sebep, None, None). `var`: diskte VAR (izlenen ya da izlenmeyen) ve `.gitignore`da
+    OLMAYAN muhurlu yollar (klona girenler); `yok`: `.gitignore`dakiler (klona girmez)."""
+    yollar = _ga_muhur_yollari(y)
+    deger, izlenen, sebep = _ga_check_attr(kok, yollar)
+    if deger is None:
+        return None, sebep, None, None
+    var = [p for p in yollar if p in izlenen or os.path.lexists(os.path.join(kok, p))]
+    yok = _h21_yoksayilan(kok, [p for p in var if p not in izlenen])
+    return deger, izlenen, [p for p in var if p not in yok], yok
+
+
+def _h21_satir(kok, top, deger, izlenen, var, yok):
+    """Olcumden H21 satiri -> metin | None (korumali kok depoda sessiz; alt dizinde TEK bilgi satiri)."""
+    nerede = (" (alt dizin: ust depo %s)" % top) if top else ""
+    acik = [p for p in var if deger.get(p, "unspecified") != "unset"]
+    cdizin = _h21_commitsiz_dizin(kok, top) if (izlenen and not acik) else None
+    if acik:
+        iz = len([p for p in var if p in izlenen])
+        return ("H21: satir sonu cevrimi muhurlu dosyayi bozabilir%s — muhurlu %d yol (izlenen %d, izlenmeyen %d); %d'inde `text` unset DEGIL (%s=%s). "
+                "`hafiza.py kur` (blok YOKSA %s blogunu yazar; blok eskiyse once sil) ya da elle `-text`"
+                % (nerede, len(var), iz, len(var) - iz, len(acik), acik[0], deger.get(acik[0], "unspecified"), _GA_AD))
+    if cdizin:
+        ad = _GA_AD if os.path.normcase(os.path.abspath(cdizin)) == os.path.normcase(os.path.abspath(kok)) else os.path.join(cdizin, _GA_AD)
+        return ("H21: %s commit'lenmemis (izlenmiyor ya da HEAD'den farkli) — `-text` korumasi KLONDA GORUNMEZ; `git add %s` ve commit"
+                % (ad, ad))
+    if top:
+        return ("H21: alt dizin (ust depo %s) — satir sonu korumasi OLCULDU: %d muhurlu yolun hepsinde `text` unset%s"
+                % (top, len(var), (" · %d yol .gitignore'da (klona girmez)" % len(yok)) if yok else ""))
+    return None
 
 
 def _kapi_h21(N, kok, y):
     """H21 SATIR SONU MUHRU (besli-paket/IS_EMRI_GITATTRIBUTES_MUHUR.md KALEM 2, Onur kilidi 18 Eki 23:31; H21 SESSIZLIK 20 Eki). UYARI: yalniz N;
     `fail`/`O` YOK, cikis kodu DEGISMEZ (H18/H19 kalibi; mevcut Linux/macOS projelerini kirmiziya bogmamak icin). Muhurlu kumeden DISKTE VAR olan
-    (izlenen ya da izlenmeyen) bir yol icin `git check-attr text` `unset` DEGILSE: satir sonu cevrimi (core.autocrlf) o dosyayi ikinci klonda
-    bozabilir; satir izlenen/izlenmeyen sayisini AYRI verir (izlenme sarti YOK: koruma yoklugu ilk commit'e kadar gizlenmez). Koruma calisma
-    agacinda GORUNUYOR ama `.gitattributes` izlenmiyor/HEAD'den farkliysa (klon yalniz COMMIT'li dosyayi tasir) ayri satir. Hicbir dalda SESSIZ
-    DEGIL: depo degil / git calistirilamiyor / git yanitsiz / sorgu basarisiz => OLCULEMEDI (sessiz PASS yok); alt dizin OLCULUR."""
-    olculur, nerede = _h21_nerede(N, kok)
+    (izlenen ya da izlenmeyen; `.gitignore`dakiler HARIC: klona girmezler) bir yol icin `git check-attr text` `unset` DEGILSE: satir sonu cevrimi
+    (core.autocrlf) o dosyayi ikinci klonda bozabilir; satir izlenen/izlenmeyen sayisini AYRI verir (izlenme sarti YOK: koruma yoklugu ilk
+    commit'e kadar gizlenmez). Koruma calisma agacinda GORUNUYOR ama `.gitattributes` (projenin ya da, alt dizinde, ust deponun) izlenmiyor/HEAD'den
+    farkliysa (klon yalniz COMMIT'li dosyayi tasir) ayri satir. Hicbir dalda SESSIZ DEGIL: depo degil / git calistirilamiyor / git yanitsiz / sorgu
+    basarisiz => OLCULEMEDI (sessiz PASS yok); alt dizin OLCULUR ve korumali olsa da TEK bilgi satiri basar (koruma kaynagi ust depo olabilir)."""
+    olculur, top = _h21_nerede(N, kok)
     if not olculur:
         return
-    yollar = _ga_muhur_yollari(y)
-    deger, izlenen, sebep = _ga_check_attr(kok, yollar)
+    deger, izlenen, var, yok = _h21_olc(kok, y)
     if deger is None:
-        N.append("H21: OLCULEMEDI (%s) — satir sonu korumasi olculemedi" % sebep)
+        N.append("H21: OLCULEMEDI (%s) — satir sonu korumasi olculemedi" % izlenen)
         return
-    var = [p for p in yollar if p in izlenen or os.path.lexists(os.path.join(kok, p))]
-    acik = [p for p in var if deger.get(p, "unspecified") != "unset"]
-    if acik:
-        iz = len([p for p in var if p in izlenen])
-        N.append("H21: satir sonu cevrimi muhurlu dosyayi bozabilir%s — muhurlu %d yol (izlenen %d, izlenmeyen %d); %d'inde `text` unset DEGIL (%s=%s). "
-                 "`hafiza.py kur` (blok YOKSA %s blogunu yazar; blok eskiyse once sil) ya da elle `-text`"
-                 % (nerede, len(var), iz, len(var) - iz, len(acik), acik[0], deger.get(acik[0], "unspecified"), _GA_AD))
-    elif izlenen and _ga_commitsiz(kok):
-        N.append("H21: %s commit'lenmemis (izlenmiyor ya da HEAD'den farkli) — `-text` korumasi KLONDA GORUNMEZ; `git add %s` ve commit"
-                 % (_GA_AD, _GA_AD))
+    satir = _h21_satir(kok, top, deger, izlenen, var, yok)
+    if satir:
+        N.append(satir)
 
 
 def _kapi_uyarilar(N, kok, y):

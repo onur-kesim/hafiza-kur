@@ -202,8 +202,9 @@ değiştirilmemelidir. Bilinçli değiştirdiysen kapı kırmızı yanar — **d
 Git yoksa `ÖLÇEMİYORUM` der — sessiz PASS vermez. **Sebep üç AYRI cümledir** (20 Eki 2026, H21 SESSİZLİK;
 hüküm sınıfı ve çıkış kodu aynı): `H9: git YOK (git programi PATH'te bulunamadi)` · `H9: bu dizin bir git deposu degil
 (ust dizinlerde de yok)` · `H9: git deposunun KOKU degil (ust depo: <top>)` (proje bir deponun ALT dizininde); git yanıt
-vermezse `H9: git deposu OKUNAMADI: …`. Aynı günden **H21** (`.gitattributes` mührü uyarısı) hiçbir dalda sessiz değildir:
-depo değil / git yok / izlenmeyen yol satır basar, alt dizinde `check-attr` gerçekten ölçülür.
+vermezse (ya da ustte bozuk/hayalet `.git` varken git `not a git repository` derse) `H9: git deposu OKUNAMADI: …`. Aynı günden **H21**
+(`.gitattributes` mührü uyarısı) hiçbir dalda sessiz değildir: depo değil / git yok / git yanıtsız / izlenmeyen yol satır basar, alt
+dizinde `check-attr` gerçekten ölçülür (korumalıysa tek bilgi satırı; üst deponun commit'siz `.gitattributes`'i uyarılır).
 
 **Neden:** Depo-içi zincirin ötesinde gerçek bir içerik-adresli tarih yalnız git'tir.
 Ama `.gitignore`'a takılmış bir zincir git'te **yok** demektir; o zaman zincir tarih

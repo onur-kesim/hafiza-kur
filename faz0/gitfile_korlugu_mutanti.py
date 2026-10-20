@@ -224,7 +224,8 @@ SONUC = []          # (ad, durum, ayrinti)
 _YOK_BINARY = "H9: git YOK"                              # git programi yok (ya da tutarsiz sorgu): eski onek korunur
 _YOK_DEPO = "H9: bu dizin bir git deposu degil"          # ne burasi ne ustleri depo
 _YOK_KOK = "H9: git deposunun KOKU degil"                # ust depo var, kok burasi degil
-_YANLIS_TESHIS = (_YOK_BINARY, _YOK_DEPO, _YOK_KOK)
+_YOK_TUTARSIZ = "H9: git durumu TUTARSIZ"                # git kok esit diyor ama `_git_kokte_mi` False dedi (asla olmamali): sabotajli `_git_kokte_mi` BU cumleyi uretir
+_YANLIS_TESHIS = (_YOK_BINARY, _YOK_DEPO, _YOK_KOK, _YOK_TUTARSIZ)
 _KEHANET = _YOK_BINARY                                   # geriye uyum (kol 5 mesaji)
 
 

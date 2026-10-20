@@ -3254,16 +3254,20 @@ jobs:
   #     yok -> H21 sessiz (izlenme suzgeci koruma yoklugunu ilk commit'e kadar gizliyordu). Duzeltme: H21
   #     HICBIR dalda sessiz degil (alt dizinde `check-attr` GERCEKTEN olculur; depo degil / git yok /
   #     izlenmeyen yol satir basar; cikis kodu DEGISMEZ) ve H9 `git kokte degil` dali UC AYRI cumle
-  #     (binary yok / depo yok / kok degil). YEDI HAL (ALT_KORUMALI · ALT_KORUMASIZ · ALT_UST_KORUMA ·
-  #     DEPO_DEGIL · IZLENMEYEN · BINARY_YOK · KOK_KORUMALI); saglam motorda YESIL, ALTI sabotajin her biri
-  #     YALNIZ KENDI dalinda KIRMIZI (kirilan hal kumesi hedefe TAM ESIT; motoru cokerten sabotaj isirdi
-  #     sayilmaz): M-S1 ALT DIZIN SESSIZE DONER · M-S2 DEPO-DEGIL SESSIZE DONER · M-S3 IZLENME SUZGECI GERI
-  #     GELIR · M-H9alt · M-H9depo · M-H9bin. 🔴 UC PLATFORM, `continue-on-error` YOK.
+  #     (binary yok / depo yok / kok degil). Bagimsiz dogrulama (3 ajan) ek buldu: ustte hayalet/bozuk `.git`
+  #     varken 'depo yok' yanlis teshisi, ust deponun COMMIT'SIZ `.gitattributes`i, `.gitignore` yanlis alarmi,
+  #     sayilarin dogrulanmamasi, OKUNAMADI dalinin mutantsizligi. ON UC HAL (ALT_KORUMALI · ALT_KORUMASIZ ·
+  #     ALT_UST_KORUMA · ALT_UST_KOMITSUZ · ALT_IGNORE · ALT_BOZUK_UST · ALT_HAYALET · DEPO_DEGIL · IZLENMEYEN ·
+  #     KARISIK · EKSIK_YOL · BINARY_YOK · KOK_KORUMALI) BIR KEZ kurulur; saglam motorda YESIL, ON BES sabotajin
+  #     her biri YALNIZ KENDI dalinda KIRMIZI (kirilan (hal, kategori) kumesi beklenene TAM ESIT; motoru cokerten
+  #     sabotaj isirdi sayilmaz): M-S1 · M-S2 · M-S3 · M-S3b · M-S4 · M-IGNORE · M-UST-KOMITSUZ · M-SAYI · M-UST-YOL ·
+  #     M-OKU-H21 · M-OKU-H9 · M-OKU-SINIF · M-H9alt · M-H9depo · M-H9bin. TEMP bir git deposunun icindeyse
+  #     OLCULEMEDI (exit 2). 🔴 UC PLATFORM, `continue-on-error` YOK.
   # ---------------------------------------------------------------------------
   h21_sessizlik_mutanti:
     name: H21 sessizlik mutanti (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -3273,7 +3277,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: H21 hicbir dalda sessiz degil ve H9 uc ayri cumle (yedi hal, alti sabotaj)
+      - name: H21 hicbir dalda sessiz degil ve H9 ayri cumleler (on uc hal, on bes sabotaj)
         shell: bash
         run: python faz0/h21_sessizlik_mutanti.py 2>&1 | tee h21-sessizlik-cikti.txt
       - name: h21 sessizlik mutanti ciktisi (artefakt)
