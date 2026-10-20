@@ -5120,6 +5120,22 @@ def _git_hali(kok):
     return "KOK_DEGIL", tepe
 
 
+_H9_SONEK = " — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)"
+
+
+def _h9_git_yok_cumlesi(kok):
+    """H9 `git kokte degil` dali: UC AYRI cumle (binary yok / depo yok / kok degil) + OKUNAMADI; hukum sinifi (O) ve exit DEGISMEZ.
+    Eski tek cumle ('git YOK') depoyu ve alt dizini de 'git yok' diye YANLIS teshis ediyordu (P-1 sinifi)."""
+    hal, ayr = _git_hali(kok)
+    if hal == "DEPO_DEGIL":
+        return "H9: bu dizin bir git deposu degil (ust dizinlerde de yok)" + _H9_SONEK
+    if hal == "KOK_DEGIL":
+        return "H9: git deposunun KOKU degil (ust depo: %s)%s" % (ayr, _H9_SONEK)
+    if hal == "OKUNAMADI":
+        return "H9: git deposu OKUNAMADI: %s" % ayr
+    return "H9: git YOK%s%s" % (" (git programi PATH'te bulunamadi)" if hal == "BINARY_YOK" else "", _H9_SONEK)
+
+
 def _kapi_h9(F, N, O, kok, y):
     fail = lambda k, m: F.append("[%s] %s" % (k, m))
     # ---- H9 GERCEK (git) -----------------------------------------------
@@ -5169,7 +5185,7 @@ def _kapi_h9(F, N, O, kok, y):
                 _sb = _ilk_satir_isaretli((r.stderr or _rg.stderr or "").strip())
                 O.append("H9: git deposu OKUNAMADI%s" % ((": " + _sb) if _sb else ""))
     else:
-        O.append("H9: git YOK — icerik-adresli tarih OLCULEMIYOR (sessiz PASS verilmedi)")
+        O.append(_h9_git_yok_cumlesi(kok))
 
 
 # ----------------------------------------------- H10 ALT-BOLMESI (FAZ C)

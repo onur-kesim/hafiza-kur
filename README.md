@@ -593,6 +593,17 @@ işaretçisi dahil). En önemlileri:
   `faz0/ikinci_klon_kapisi.py` (GERÇEK ikinci klon, `core.autocrlf=true`: tabanda KIRMIZI, düzeltmede YEŞİL; CI windows-latest) ·
   `faz0/gitattributes_muhur_mutanti.py` (12 hal, 10 sabotaj) · `faz0/gitattributes_uyari_mutanti.py` (5 hal, 4 sabotaj).
 
+- **H21 hiçbir dalda sessiz değil + H9 üç ayrı cümle (20 Eki 2026, Onur: "h21 düzeltmesini yapalım").** Ölçüm (Cowork, Windows 11, motor 3085c1a):
+  (S1) proje bir deponun ALT dizininde ⇒ `kur` `alt\.gitattributes` yazdı ama `kapi` H21 satırı YOK ve **H9 "git YOK"** diyordu (git VAR, depo VAR —
+  YANLIŞ TEŞHİS, P-1 sınıfı); (S2) depo değil ⇒ H21 sessiz; (S3) depo, hiç commit yok, koruma yok ⇒ H21 sessiz (izlenme süzgeci koruma yokluğunu
+  ilk commit'e kadar gizliyordu). Düzeltme: H21 her dalda satır basar (yukarıdaki), **H9 `git kökte değil` dalı ÜÇ AYRI cümle**: git programı yok
+  (`H9: git YOK (git programi PATH'te bulunamadi)`) · depo yok (`H9: bu dizin bir git deposu degil (ust dizinlerde de yok)`) · kök değil
+  (`H9: git deposunun KOKU degil (ust depo: <top>)`); git yanıtsızsa `H9: git deposu OKUNAMADI: …`. Hüküm sınıfı (O) ve çıkış kodu DEĞİŞMEZ; yalnız METİN.
+  **Seçim (alt dizin):** ÖLÇMEK `OLCULEMEDI` demekten ucuz çıktı — motor zaten kök'e göreli yollarla sorar ve git üst deponun özniteliklerini hesaba
+  katar; ikinci klon ÜST deponun klonudur ve `alt/.gitattributes` orada geçerlidir. **Sınırlar (gizlenmez):** korumalı durumda H21 pozitif satır
+  BASMAZ (kök depo ile aynı; sessizlik = ölçüldü ve koruma var) · git yanıtsız dalı (`dubious ownership`) bu kapıda ölçülmez (`h9_kesme_mutanti` H9 metnini sınar) ·
+  H21 uyarı metni sayıları değişti (`izlenen N, izlenmeyen M`) · altın küme yeniden üretildi (14 kayıtta YALNIZ H9 cümlesi + H21 satırı; exit farkı 0).
+
 - **Karar adres defteri (P4, 12 Eki 2026, Onur kilidi: yaklaşım KARAR ADRES DEFTERİ).** Ölçüm (Momentum `d4b5417`,
   kör okuma): karar sorularının cevabı projede YAZILIYDI, eksik olan ADRESTİ. `karar-kaynagi` bloğu (İKİNCİ blok YOK; P1 sınıf
   hükmü ve `KARAR SINIFI` satırı AYNEN) genişler: **(1) Kaynak keşfi** = karar dizini + kökte `IS-EMRI-*` · `GOREV-*` · `RFC-*` ·

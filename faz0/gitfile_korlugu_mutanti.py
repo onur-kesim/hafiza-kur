@@ -20,6 +20,12 @@ OLCER" bolumlerindeki gecmis-zamanli anlatim BILEREKTIR — kusurun neden var
 OLDUGUNU aciklar; kollarin KENDISI (kurulum kodu) DEGISMEDI, yalniz
 BEKLENEN HUKUM DEGISTI (BEKLENMEDIK -> BEKLENDIGI GIBI).
 
+GUNCELLEME (20 Eki 2026, H21 SESSIZLIK — besli-paket/IS_EMRI_H21_SESSIZLIK.md KALEM 2): H9'un `git kokte degil` dali artik UC AYRI
+cumle soyler — binary yok (`H9: git YOK (git programi PATH'te bulunamadi)`; "H9: git YOK" oneki KORUNDU) · depo yok (`H9: bu dizin bir git
+deposu degil`) · kok degil (`H9: git deposunun KOKU degil (ust depo: <top>)`). Asagidaki kollarda "H9: git YOK" GECMELI/GECMEMELI diyen her
+yer buna gore okunur: SAGLIKLI depoda (kol 1-3, 9) UC cumlenin HICBIRI gecmemeli (`_YANLIS_TESHIS`); kol 4 (salt dizin) depo-yok ya da kok-degil;
+kol 5 (PATH bos) binary-yok; kol 8 (alt dizin) kok-degil. Kollarin KURULUM kodu degismedi; yalniz beklenen METIN.
+
 NEDEN VAR (my4-epsilon/MY4_OLCUM_RAPORU.md §4, M-Y4 turunun YAN URUNU)
   `_kapi_h9`, git varligini `os.path.isdir(kok/".git")` ile SINARDI (bu
   fonksiyonun kendi govdesinde) — AYNI kontrol `_h14_git_durumu`de `git_var`
@@ -212,7 +218,14 @@ BEKLENMEDIK = "BEKLENMEDIK"
 OLCULEMEDI = "OLCULEMEDI"
 SONUC = []          # (ad, durum, ayrinti)
 
-_KEHANET = "H9: git YOK"
+# H21 SESSIZLIK (besli-paket/IS_EMRI_H21_SESSIZLIK.md KALEM 2, 20 Eki 2026): H9 `git kokte degil` dali UC AYRI cumle soyler.
+# Eski TEK cumle ("H9: git YOK") depoyu ve alt dizini de "git yok" diye YANLIS teshis ediyordu. SAGLIKLI bir depoda (kol 1-3) UCUNUN de
+# gecmemesi gerekir: sabotajli bir `_git_kokte_mi` worktree'yi "kok degil" sanarsa yanlis teshis YENI cumleyle gelir.
+_YOK_BINARY = "H9: git YOK"                              # git programi yok (ya da tutarsiz sorgu): eski onek korunur
+_YOK_DEPO = "H9: bu dizin bir git deposu degil"          # ne burasi ne ustleri depo
+_YOK_KOK = "H9: git deposunun KOKU degil"                # ust depo var, kok burasi degil
+_YANLIS_TESHIS = (_YOK_BINARY, _YOK_DEPO, _YOK_KOK)
+_KEHANET = _YOK_BINARY                                   # geriye uyum (kol 5 mesaji)
 
 
 class AracKusuru(Exception):
@@ -272,9 +285,9 @@ def _kapi_ham(kok, env=None):
     return _kos(["kapi", "--kok=" + kok], env=env)
 
 
-def _sinama(taban, etiket, ad, kok_kurucu, beklenen_gecer):
+def _sinama(taban, etiket, ad, kok_kurucu, beklenen_gecer, aranan=_YANLIS_TESHIS):
     """`kok_kurucu(alt_taban) -> kok` kurar; `kapi` kosar; KEHANET
-    (_KEHANET metninin gecip gecmemesi) `beklenen_gecer`le KARSILASTIRILIR.
+    (`aranan` cumlelerinden HERHANGI BIRININ gecip gecmemesi) `beklenen_gecer`le KARSILASTIRILIR.
     `etiket` KISA, dosya-adi-guvenli bir alt dizin adidir (`ad` insan-okur
     aciklamadir, dizin adina PARSE EDILMEZ — sondaki nokta/parantez Windows'ta
     gecersiz dizin adi uretirdi)."""
@@ -289,11 +302,11 @@ def _sinama(taban, etiket, ad, kok_kurucu, beklenen_gecer):
     if rc is None:
         _kayit(ad, OLCULEMEDI, "kapi kosturulamadi: %s" % c)
         return
-    gecti = _KEHANET in c
+    gecti = any(a in c for a in aranan)
     dogru = (gecti == beklenen_gecer)
     _kayit(ad, BEKLENDIGI_GIBI if dogru else BEKLENMEDIK,
           "exit=%s | '%s' gecti mi=%s (beklenen: %s)\n      kok=%s"
-          % (rc, _KEHANET, "VAR" if gecti else "yok",
+          % (rc, " | ".join(aranan), "VAR" if gecti else "yok",
              "VAR" if beklenen_gecer else "yok", kok))
 
 
@@ -636,12 +649,12 @@ def sinama_alt_dizin(taban):
             olculemedi = True
             detaylar.append("%s: kapi kosturulamadi: %s" % (isim, c))
             continue
-        gecti = _KEHANET in c
+        gecti = _YOK_KOK in c
         dogru = gecti and (rc == 0)
         hepsi_dogru = hepsi_dogru and dogru
         detaylar.append(
             "%s: exit=%s (beklenen 0) | '%s' gecti mi=%s (beklenen: VAR)"
-            % (isim, rc, _KEHANET, "VAR" if gecti else "yok"))
+            % (isim, rc, _YOK_KOK, "VAR" if gecti else "yok"))
     if olculemedi:
         _kayit(ad, OLCULEMEDI, "\n      ".join(detaylar))
         return
@@ -711,14 +724,14 @@ def sinama_bozuk_gitfile(taban):
             detaylar.append("%s: kapi kosturulamadi: %s" % (isim, c))
             continue
         okunamadi = _KEHANET_OKUNAMADI in c
-        yanlis_git_yok = _KEHANET in c
+        yanlis_git_yok = any(a in c for a in _YANLIS_TESHIS)
         dogru = okunamadi and not yanlis_git_yok
         hepsi_dogru = hepsi_dogru and dogru
         detaylar.append(
             "%s: exit=%s | '%s' gecti mi=%s (beklenen: VAR) · '%s' gecti "
             "mi=%s (beklenen: yok)"
             % (isim, rc, _KEHANET_OKUNAMADI, "VAR" if okunamadi else "yok",
-               _KEHANET, "VAR" if yanlis_git_yok else "yok"))
+               " | ".join(_YANLIS_TESHIS), "VAR" if yanlis_git_yok else "yok"))
     if olculemedi:
         _kayit(ad, OLCULEMEDI, "\n      ".join(detaylar))
         return
@@ -794,8 +807,8 @@ def main():
         _sinama(taban, "wt", "1. worktree (KUSUR KOLU)", _kur_worktree, False)
         _sinama(taban, "sgd", "2. separate-git-dir (KUSUR KOLU)", _kur_ayri_gitdir, False)
         _sinama(taban, "sub", "3. submodule (KUSUR KOLU)", _kur_submodule, False)
-        _sinama(taban, "yok", "4. git hic yok (KONTROL)", _kur_git_yok, True)
-        _sinama(taban, "yolsuz", "5. git PATH'te yok (KONTROL, AYRI EKSEN)", _kur_git_path_disi, True)
+        _sinama(taban, "yok", "4. git hic yok (KONTROL)", _kur_git_yok, True, aranan=(_YOK_DEPO, _YOK_KOK))
+        _sinama(taban, "yolsuz", "5. git PATH'te yok (KONTROL, AYRI EKSEN)", _kur_git_path_disi, True, aranan=(_YOK_BINARY,))
         sinama_kaynak_kapisi()
         sinama_davranis_bastirma(taban)
         sinama_alt_dizin(taban)
