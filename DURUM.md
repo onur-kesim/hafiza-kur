@@ -1,26 +1,26 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin/main = `e0e3fca`, CI #136 yeşil; yerel main ÖNDE — PUSH Onur'da)
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin/main = `3085c1a`; yerel main ÖNDE — PUSH Onur'da)
 Son güncelleme: 20 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## O28 (19-20 Eki) — H14 KAYITLI MUAFİYET BİTTİ (yerelde) · PUSH Onur'da
-Taban `e0e3fca`. K1 `devral` DEVIR halkasına `devralma_tarihi`+`proje_son_t` yazar · K2 H14 İLERİDE→UYARI (3 koşul) · `h14_devralma_mutanti` 6 hal/5 sabotaj+CI işi · 2 düzeltme. Tam tur (Win) 80 OK/9 bilinen KIRMIZI/2 SKIP, exit farkı 0 (taban `tur_o27`, kod-eş); WSL: mutant 5/5, `t_y42` 58/58; `sabotaj.py` 67/0; CC/çapa aynı; paket `FA5A265F…`.
-**KALEM 0:** gecikme=2 (`VARSAYILAN_RC`); devral günü İLERİDE FAIL 40 gün; `not` damgayı taşımaz, `derle` taşır, FAIL kalır.
-**ÖLÇÜLEMEDİ:** macOS CI · Python 3.11/3.13 · `t_y42` Win'de (1314) · büyük depoda devral süresi · `autocrlf=input` · LFS · yerel attribute kaynağı · şablon v0.3.0 · claude.ai (O26) · P3.1 sembolik bağ.
-**SAPMA (Onur'a, AÇIK):** H21 depo olmayan/izlenmeyen yolda SESSİZ · KABUL md.2: bugün tarihli proje commit'i FAIL değil `es` verir (FAIL yalnız damgadan >gecikme gün geride tarihli değişiklikte).
-**Sıradaki:** Onur push → CI (+1 iş) → Cowork kabulü. Açılış: `hafiza-kur · O29 · başla`.
+## O29 (20 Eki) — H21 SESSİZLİK + H9 AYRI CÜMLELER BİTTİ (yerelde) · PUSH Onur'da
+Taban `3085c1a`; 5 commit (K1 H21 · K2 H9 · kapı 18 hal/21 sabotaj · 2 düzeltme). Tam tur (Win) 81 OK/9 bilinen KIRMIZI/2 SKIP, exit farkı 0 (taban `tur_o28`); WSL: yeni kapı 21/21, `gitfile` 10/10, `uyari` 4/4, altın küme FARK YOK, `t_y42` 58/0; `sabotaj.py` 67/0; paket `2540E18B…`.
+**SEÇİM:** alt dizinde `check-attr` ÖLÇÜLÜR (üst `.gitattributes`, commit'siz üst/ara dosya, `.gitignore`'lu yol, bozuk/hayalet üst `.git` AYRI ele alındı); korumalı ALT dizinde tek bilgi satırı, korumalı KÖK'te sessiz. **SAPMA KAPANDI** (O27). **Onur'a:** bilgi satırı istenmezse kaldırılır.
+**ÖLÇÜLEMEDİ:** macOS CI · Python 3.11/3.13 · gerçek `dubious ownership` · sembolik bağ (Win yetkisiz; P3.1 + H21 halleri Linux'ta ölçüldü) · `autocrlf=input` · LFS · şablon v0.3.0 · claude.ai (O26).
+**Sıradaki:** Onur push → CI (+1 iş) → Cowork kabulü. Açılış: `hafiza-kur · O30 · başla`.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
 **25 Ağu yazısı** KAPSAM DIŞI · **Deneme**: BEŞLİ PAKET kapandı, Onur kilidi bekler.
 🔒 **Tuzak Avcısı ölçüm fixture'ı DEĞİL (6 Eyl kilidi) — gerçek-proje regresyonu YALNIZ Momentum.**
 
 ## ✅ KAPANANLAR (tek satır — ayrıntı git geçmişinde)
-**O27** (push edildi, CI #136) `.gitattributes` `-text` mührü + H21 UYARI · **O26** H14 TEK hüküm + SKILL açıklaması · **P3.1/P3** (O23-25) git bağı·H19·`--asistan` · **P4/P4.1** (O20-21) karar adres defteri, Momentum 4/4 · **P5.4** (O19) H20 · **O10-O16** P1·P2·P2.1·H14·K-*·B1+B2.
+**O26-O28** (push edildi) H14 TEK hüküm+SKILL açıklaması · `.gitattributes` mührü+H21 UYARI+ikinci klon · H14 devralma kayıtlı muafiyet · **P3-P4.1** (O20-25) git bağı·H19·`--asistan`·P4.
 **ÜRÜN HAZIRLIĞI**. **AÇIK:** büyük/küçük harf çakışan adlar · `name:` YAML ölçülmez · `--guncelle`+izin hatası boş yedek · DETERMİNİZM yalnız aynı makinede.
 
 ## Bilinen sınırlar (ölçülmüş)
 - 🔴 `isir` exit 0 böl-kur'lu/devral'li projede ULAŞILAMAZ (5 Eki): `kapi --siki` bolum-kur başlıklarını BEYANSIZ sayar → M-H1s KURULAMADI → exit 2 (taban Momentum'da da). M-DEVIR ölçütü canlıda ÖNCEDEN `CAPA DEVRI` varken sabotajı GÖRMEZ · `.kilit` varken M-KILIT `isir`i öldürür.
 - 🔴 `.gitkeep`/autocrlf sınırı (19 Eki): `kur`/`devral` `.gitattributes` `-text` bloğu yazar ⇒ Win `autocrlf=true` ikinci klon YEŞİL; yokluğu/commit'sizliği `kapi` H21 UYARI (exit değişmez). AÇIK: bloğu silme / blok SONRASI genel `text` kuralı (H21 uyarır, `kapi` yazmaz) · blok güncellenmez · `autocrlf=input`, LFS ÖLÇÜLMEDİ · `.gitignore` dizini yutarsa izlenmez · B2 onarmaz · `not/derle/karar` `.gitkeep` yazmaz.
-- 🔴 H14 devralma muafiyeti (20 Eki): taze `devral`daki sebepsiz İLERİDE FAIL → UYARI. AÇIK: ömrü fiilen devral günü (ertesi gün `derle` damgayı ilerletir ⇒ uyuyan projede FAIL geri gelir, çıkış proje dosyasına dokunmak/`gecikme=0`; kalıcı beyan = Onur kilidi) · `kur`'lu ve eski motorla devral'lı proje muafiyet ALMAZ · politika dosyası mühürsüz düzenlenirse düşer (`muhur`) · zincir ANAHTARSIZ: hash'i yeniden hesaplanmış sahte halka ayırt EDİLEMEZ · (c) git/mtime ölçümüne bağlı.
+- 🔴 H14 devralma muafiyeti (20 Eki): AÇIK: ömrü fiilen devral günü (ertesi gün `derle` damgayı ilerletir ⇒ uyuyan projede FAIL döner; çıkış proje dosyasına dokunmak/`gecikme=0`; kalıcı beyan = Onur kilidi) · `kur`'lu ve eski motorla devral'lı proje muafiyet ALMAZ · mühürsüz politika düzenlemesi düşürür (`muhur`) · zincir ANAHTARSIZ · (c) git/mtime'a bağlı.
+- 🔴 H21/H9 (20 Eki): AÇIK: H21 çalışma ağacına bakar — `.git/info/attributes`/`core.attributesFile`/kök altı `.gitattributes` klonda görünmeyebilir, H21 sessiz (taban da) · ilgisiz commit'siz üst `.gitattributes` uyarı verir (gürültü) · +2..6 git sorgusu/kapı · `check-ignore` hata dalı sınanmaz.
 - 🔴 "GERÇEK ORTAMDA OLMAZ" DEMEDEN ÖNCE ORTAMI ÖLÇ (6 Eyl; M-Y2 macOS'ta tam oradaydı). POZİTİF KONTROLSÜZ DÜZELTME KAPANMIŞ SAYILMAZ. Push'u `git ls-remote` ölçer.
 - 🔴 ÖLÇÜM ORTAMI HÜKMÜ ÇARPITIR (6 Eyl): root'ta `fazB_*`/`y4_mutant` SAHTE KIRMIZI ⇒ `olcum` kullanıcısıyla koş (WSL; Windows'ta `t_y42`/`readme_mutanti` KAPI-2 symlink 1314'ten çöker). Ağır doğrulama SOLO (paralel yük `isir`'i 300 sn aştırır).
 - 🔴 `continue-on-error` TAŞIYAN YEŞİL KAPI DEĞİLDİR (4 Eyl). Talimat yalnız YAML yorumunda durursa iş emrine girmez. Bilinçli ÖLÇÜM işleri: `win_kill_probu` · `boru_probu` · `ortam` · `kalite` · `kanit`.
