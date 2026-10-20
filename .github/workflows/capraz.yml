@@ -3173,14 +3173,14 @@ jobs:
   #     `kapi` H21: git deposunda muhurlu kumeden IZLENEN en az bir yol icin `git
   #     check-attr text` `unset` DEGILSE "satir sonu cevrimi muhurlu dosyayi bozabilir"
   #     UYARISI (Onur kilidi 18 Eki 23:31: hukum sinifi UYARI — yalniz N kanali, cikis
-  #     kodu DEGISMEZ; mevcut Linux/macOS projelerini kirmiziya bogmamak icin). Depo
-  #     degilse sessiz (H9 zaten `git YOK ... OLCULEMIYOR` der); `.git` var ama git
-  #     calismiyorsa `H21: OLCULEMEDI`; blok calisma agacinda var ama commit'siz ise ayri
-  #     satir. YEDI HAL (KORUMASIZ · KORUMALI · GITSIZ · KOMITSUZ · KENDI · GACOMMITSIZ ·
-  #     GITYOK); saglam motorda YESIL, ALTI sabotajin her biri KENDI halinde KIRMIZI:
-  #     M-GA3 CHECK-ATTR KOR · M-GA4 OLCULEMEDI SUSAR · M-GA5 IZLENEN KOSULU KALKAR ·
-  #     M-GA6 DEPO-DEGIL SESSIZLIGI BOZULUR · M-GA11 UYARI KIRMIZIYA TERFI · M-GA13 COMMIT
-  #     DENETIMI YOK. 🔴 UC PLATFORM, `continue-on-error` YOK.
+  #     kodu DEGISMEZ; mevcut Linux/macOS projelerini kirmiziya bogmamak icin). `.git` var
+  #     ama git calismiyorsa `H21: OLCULEMEDI`; blok calisma agacinda var ama commit'siz
+  #     ise ayri satir. (20 Eki 2026, H21 SESSIZLIK: depo-degil ve izlenmeyen-yol dallari
+  #     ARTIK SESSIZ DEGIL — onlar `h21_sessizlik_mutanti` isinde.) BES HAL (KORUMASIZ ·
+  #     KORUMALI · KENDI · GACOMMITSIZ · GITYOK); saglam motorda YESIL, DORT sabotajin her
+  #     biri KENDI halinde KIRMIZI: M-GA3 CHECK-ATTR KOR · M-GA4 OLCULEMEDI SUSAR ·
+  #     M-GA11 UYARI KIRMIZIYA TERFI · M-GA13 COMMIT DENETIMI YOK. 🔴 UC PLATFORM,
+  #     `continue-on-error` YOK.
   # ---------------------------------------------------------------------------
   gitattributes_uyari_mutanti:
     name: gitattributes uyari mutanti (${{ matrix.os }})
@@ -3195,7 +3195,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: H21 koruma yoklugunu gizlemiyor ve yalniz UYARI (yedi hal, alti sabotaj)
+      - name: H21 koruma yoklugunu gizlemiyor ve yalniz UYARI (bes hal, dort sabotaj)
         shell: bash
         run: python faz0/gitattributes_uyari_mutanti.py 2>&1 | tee gitattributes-uyari-cikti.txt
       - name: gitattributes uyari mutanti ciktisi (artefakt)
