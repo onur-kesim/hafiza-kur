@@ -3245,3 +3245,41 @@ jobs:
           name: h14-devralma-${{ matrix.os }}
           path: h14-devralma-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # 2b-47) H21 SESSIZLIK MUTANTI — besli-paket/IS_EMRI_H21_SESSIZLIK.md KALEM 1+2
+  #     (Cowork O17 -> Code, 20 Eki 2026; Onur: "h21 duzeltmesini yapalim"). OLCULDU (Cowork, Windows 11,
+  #     motor 3085c1a1): S1 proje bir deponun ALT dizininde -> H21 satiri YOK ve H9 "git YOK" (git VAR,
+  #     depo VAR: yanlis teshis, P-1 sinifi); S2 depo degil -> H21 sessiz; S3 depo, hic commit yok, koruma
+  #     yok -> H21 sessiz (izlenme suzgeci koruma yoklugunu ilk commit'e kadar gizliyordu). Duzeltme: H21
+  #     HICBIR dalda sessiz degil (alt dizinde `check-attr` GERCEKTEN olculur; depo degil / git yok /
+  #     izlenmeyen yol satir basar; cikis kodu DEGISMEZ) ve H9 `git kokte degil` dali UC AYRI cumle
+  #     (binary yok / depo yok / kok degil). YEDI HAL (ALT_KORUMALI · ALT_KORUMASIZ · ALT_UST_KORUMA ·
+  #     DEPO_DEGIL · IZLENMEYEN · BINARY_YOK · KOK_KORUMALI); saglam motorda YESIL, ALTI sabotajin her biri
+  #     YALNIZ KENDI dalinda KIRMIZI (kirilan hal kumesi hedefe TAM ESIT; motoru cokerten sabotaj isirdi
+  #     sayilmaz): M-S1 ALT DIZIN SESSIZE DONER · M-S2 DEPO-DEGIL SESSIZE DONER · M-S3 IZLENME SUZGECI GERI
+  #     GELIR · M-H9alt · M-H9depo · M-H9bin. 🔴 UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  h21_sessizlik_mutanti:
+    name: H21 sessizlik mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: H21 hicbir dalda sessiz degil ve H9 uc ayri cumle (yedi hal, alti sabotaj)
+        shell: bash
+        run: python faz0/h21_sessizlik_mutanti.py 2>&1 | tee h21-sessizlik-cikti.txt
+      - name: h21 sessizlik mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h21-sessizlik-${{ matrix.os }}
+          path: h21-sessizlik-cikti.txt
+          if-no-files-found: warn

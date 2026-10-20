@@ -591,7 +591,8 @@ işaretçisi dahil). En önemlileri:
   `check-attr` ile görür (ölçüldü) · blok bir kez yazılır, sonradan GÜNCELLENMEZ (`ZATEN VAR`): ad alanı sonradan değişirse eski blok kalır,
   H21 eksik yollar için uyarır (ölçüldü) ve çözüm bloğu silip `kur`u yeniden koşmaktır · deseni güvenle yazılamayan yol (boşluk/özel karakter) `ATLANDI` diye beyan edilir. Ölçüm:
   `faz0/ikinci_klon_kapisi.py` (GERÇEK ikinci klon, `core.autocrlf=true`: tabanda KIRMIZI, düzeltmede YEŞİL; CI windows-latest) ·
-  `faz0/gitattributes_muhur_mutanti.py` (12 hal, 10 sabotaj) · `faz0/gitattributes_uyari_mutanti.py` (5 hal, 4 sabotaj).
+  `faz0/gitattributes_muhur_mutanti.py` (12 hal, 10 sabotaj) · `faz0/gitattributes_uyari_mutanti.py` (5 hal, 4 sabotaj) ·
+  `faz0/h21_sessizlik_mutanti.py` (7 hal, 6 sabotaj M-S1/M-S2/M-S3/M-H9alt/M-H9depo/M-H9bin).
 
 - **H21 hiçbir dalda sessiz değil + H9 üç ayrı cümle (20 Eki 2026, Onur: "h21 düzeltmesini yapalım").** Ölçüm (Cowork, Windows 11, motor 3085c1a):
   (S1) proje bir deponun ALT dizininde ⇒ `kur` `alt\.gitattributes` yazdı ama `kapi` H21 satırı YOK ve **H9 "git YOK"** diyordu (git VAR, depo VAR —
