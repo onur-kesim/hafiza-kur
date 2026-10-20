@@ -671,14 +671,16 @@ işaretçisi dahil). En önemlileri:
   proje <N> gundur uyuyor (devral <tarih>); proje degisince ya da damga ilerleyince normal hukum doner`; N hafıza damgasına göre gün; satır
   her `kapi`'de, yalnız N kanalı ⇒ exit DEĞİŞMEZ): (a) mühürlü kayıt var · (b) `t_son <= devralma_tarihi` · (c) şimdiki `en_yeni_t == proje_son_t`.
   Biri tutmazsa bugünkü FAIL birebir; GERİDE ve `es` kollarına dokunulmaz. **Sınırlar (gizlenmez):** `kur` ile kurulan uyuyan proje ve eski
-  motorla `devral`'lanmış proje muafiyet ALMAZ · devral'dan sonra hafıza yazılınca (damga ilerleyince) ya da proje dosyası değişince muafiyet
-  BİTER (aynı gün yapılan değişiklik H14'te `es` verir; FAIL geri gelmesi için değişikliğin tarihi damganın `gecikme` günden gerisinde olmalı) ·
+  motorla `devral`'lanmış proje muafiyet ALMAZ · muafiyetin ömrü FİİLEN `devral` günüdür: o günden SONRAKİ bir günde koşan `derle` (exit 2 de
+  olsa) damgayı ilerletir ⇒ muafiyet biter ve proje hâlâ uyuyorsa sebepsiz `ILERIDE` FAIL geri gelir (ÖLÇÜLDÜ; bugünkü FAIL BİREBİR korunur, satırında
+  çıkış yolu ipucu YOK; çıkış: proje dosyasına dokunmak ya da `hafiza_gecikme_gun: 0`; kalıcı "uyuyor" beyanı TASARIM KARARIDIR, Onur kilidi ister);
+  aynı gün `not`/`derle` etkisizdir · proje dosyası değişince de biter (bugün tarihli değişiklik H14'te `es` verir; FAIL ancak değişikliğin tarihi
+  damganın `gecikme` günden gerisinde kalırsa döner) · UYARI'daki N hafıza damgasına göre gündür (geç günde bugünkü gün sayısından eksik görünür) ·
   zincir ANAHTARSIZDIR: hash'i yeniden hesaplanmış sahte halka ayırt EDİLEMEZ (bilinen sınır) · (c) git commit tarihi / mtime ölçümüne bağlıdır:
   projeyi kopyalayıp mtime'ları değiştirmek izlenmeyen/kirli dosyalarda muafiyeti düşürür (normal H14 hükmü — es/GERİDE/İLERİDE — döner; ÖLÇÜLDÜ:
   mtime'ı bugüne çekilen yeni dosya `es` verir, FAIL ancak tarih damgadan `gecikme` günden fazla geride kalırsa) · `devral`'dan sonra
   `KONULAR.md`/`SAKLAMA_PLANI.md`/`.hafizarc` MÜHÜRSÜZ düzenlenirse zincir doğrulanamaz ⇒ kayıt SAYILMAZ (ÖLÇÜLDÜ: `[H0] MÜHÜRSÜZ` + `[H14] ILERIDE`
-  FAIL geri gelir; `muhur "gerekçe"` sonrası UYARI döner — `devral` triyajı bunu söyler) · `derle` (exit 2 de olsa) damgayı bugüne taşır ⇒ muafiyeti
-  bitirir. Ölçüm: `faz0/h14_devralma_mutanti.py` (6 hal, 5 sabotaj M-DV1…M-DV5; tabanda KIRMIZI, düzeltmede YEŞİL).
+  FAIL geri gelir; `muhur "gerekçe"` sonrası UYARI döner — `devral` triyajı bunu söyler). Ölçüm: `faz0/h14_devralma_mutanti.py` (6 hal, 5 sabotaj M-DV1…M-DV5; tabanda KIRMIZI, düzeltmede YEŞİL).
 
 - **H14 büyük projede git'e yolları PARÇALI sorar (6 Eki 2026).** mozilla/fxa kopyasında (8.335 izlenen dosya,
   yolların toplamı ~509.000 karakter) `kapi` Windows komut satırı sınırında (~32.767 karakter) `exit 3`
