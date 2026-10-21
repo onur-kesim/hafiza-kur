@@ -3,9 +3,10 @@
 Son güncelleme: 20 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
 ## O29 (20 Eki) — H21 SESSİZLİK + H9 AYRI CÜMLELER BİTTİ (yerelde) · PUSH Onur'da
-Taban `3085c1a`; 5 commit (K1 H21 · K2 H9 · kapı 18 hal/21 sabotaj · 2 düzeltme). Tam tur (Win) 81 OK/9 bilinen KIRMIZI/2 SKIP, exit farkı 0 (taban `tur_o28`); WSL: yeni kapı 21/21, `gitfile` 10/10, `uyari` 4/4, altın küme FARK YOK, `t_y42` 58/0; `sabotaj.py` 67/0; paket `2540E18B…`.
-**SEÇİM:** alt dizinde `check-attr` ÖLÇÜLÜR (üst `.gitattributes`, commit'siz üst/ara dosya, `.gitignore`'lu yol, bozuk/hayalet üst `.git` AYRI ele alındı); korumalı ALT dizinde tek bilgi satırı, korumalı KÖK'te sessiz. **SAPMA KAPANDI** (O27). **Onur'a:** bilgi satırı istenmezse kaldırılır.
+Taban `3085c1a`; 5 commit (K1 H21 · K2 H9 · kapı 18 hal/21 sabotaj · 2 düzeltme). Tam tur (Win) 81 OK/9 bilinen KIRMIZI/2 SKIP, exit farkı 0; WSL: yeni kapı 21/21, `gitfile` 10/10, `uyari` 4/4, altın küme FARK YOK, `t_y42` 58/0; `sabotaj.py` 67/0.
+**SEÇİM:** alt dizinde `check-attr` ÖLÇÜLÜR (üst `.gitattributes`, commit'siz üst/ara dosya, `.gitignore`'lu yol, bozuk/hayalet üst `.git` AYRI ele alındı); korumalı ALT dizinde tek bilgi satırı, korumalı KÖK'te sessiz. **Onur'a:** bilgi satırı istenmezse kaldırılır.
 **ÖLÇÜLEMEDİ:** macOS CI · Python 3.11/3.13 · gerçek `dubious ownership` · sembolik bağ (Win yetkisiz; P3.1 + H21 halleri Linux'ta ölçüldü) · `autocrlf=input` · LFS · şablon v0.3.0 · claude.ai (O26).
+**CI payı (`618fd08`):** `readme_kapisi` 20→40 dk + `python -u` (CI #137 Win iptal).
 **Sıradaki:** Onur push → CI (+1 iş) → Cowork kabulü. Açılış: `hafiza-kur · O30 · başla`.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
