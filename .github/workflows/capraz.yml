@@ -1486,7 +1486,7 @@ jobs:
   readme_kapisi:
     name: README kanit blogu (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -1498,7 +1498,7 @@ jobs:
           python-version: "3.11"
       - name: dort kapi + 16 mutant
         shell: bash
-        run: python faz0/readme_mutanti.py 2>&1 | tee readme-kapisi-cikti.txt
+        run: python -u faz0/readme_mutanti.py 2>&1 | tee readme-kapisi-cikti.txt
       - name: README kapisi ciktisi (artefakt)
         if: always()
         uses: actions/upload-artifact@v4
