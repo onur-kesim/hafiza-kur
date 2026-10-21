@@ -3256,9 +3256,9 @@ jobs:
   #     izlenmeyen yol satir basar; cikis kodu DEGISMEZ) ve H9 `git kokte degil` dali UC AYRI cumle
   #     (binary yok / depo yok / kok degil). Bagimsiz dogrulama (3 ajan) ek buldu: ustte hayalet/bozuk `.git`
   #     varken 'depo yok' yanlis teshisi, ust deponun COMMIT'SIZ `.gitattributes`i, `.gitignore` yanlis alarmi,
-  #     sayilarin dogrulanmamasi, OKUNAMADI dalinin mutantsizligi. ON SEKIZ HAL (+1 sembolik bag):
+  #     sayilarin dogrulanmamasi, OKUNAMADI dalinin mutantsizligi. ON DOKUZ HAL (+1 sembolik bag):
   #     ALT_KORUMALI · ALT_KORUMASIZ · ALT_UST_KORUMA · ALT_UST_KOMITSUZ · ALT_ARA_KOMITSUZ · ALT_ANA_ICINDE · ALT_KARISIK_KORUMALI ·
-  #     ALT_IGNORE · ALT_BOZUK_UST · ALT_HAYALET · KOK_BOZUK_GIT · DEPO_DEGIL · IZLENMEYEN · KARISIK · EKSIK_YOL · BINARY_YOK ·
+  #     ALT_IGNORE · ALT_BOZUK_UST · ALT_HAYALET · ALT_BOS_GIT · KOK_BOZUK_GIT · DEPO_DEGIL · IZLENMEYEN · KARISIK · EKSIK_YOL · BINARY_YOK ·
   #     BINARY_YOK_UST · KOK_KORUMALI (+ ALT_BAGLI: sembolik bagli --kok, yalniz bag kurulabilen platformda) BIR KEZ kurulur; saglam
   #     motorda YESIL, YIRMI BIR sabotajin her biri YALNIZ KENDI dalinda KIRMIZI (kirilan (hal, kategori) kumesi beklenene TAM ESIT;
   #     motoru cokerten sabotaj isirdi sayilmaz): M-S1 · M-S2 · M-S3 · M-S3b · M-S4 · M-IGNORE · M-UST-KOMITSUZ · M-UST-SINIR ·
@@ -3279,7 +3279,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: H21 hicbir dalda sessiz degil ve H9 ayri cumleler (on sekiz hal, yirmi bir sabotaj)
+      - name: H21 hicbir dalda sessiz degil ve H9 ayri cumleler (on dokuz hal, yirmi bir sabotaj)
         shell: bash
         run: python faz0/h21_sessizlik_mutanti.py 2>&1 | tee h21-sessizlik-cikti.txt
       - name: h21 sessizlik mutanti ciktisi (artefakt)

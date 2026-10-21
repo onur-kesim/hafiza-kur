@@ -592,7 +592,7 @@ işaretçisi dahil). En önemlileri:
   H21 eksik yollar için uyarır (ölçüldü) ve çözüm bloğu silip `kur`u yeniden koşmaktır · deseni güvenle yazılamayan yol (boşluk/özel karakter) `ATLANDI` diye beyan edilir. Ölçüm:
   `faz0/ikinci_klon_kapisi.py` (GERÇEK ikinci klon, `core.autocrlf=true`: tabanda KIRMIZI, düzeltmede YEŞİL; CI windows-latest) ·
   `faz0/gitattributes_muhur_mutanti.py` (12 hal, 10 sabotaj) · `faz0/gitattributes_uyari_mutanti.py` (5 hal, 4 sabotaj) ·
-  `faz0/h21_sessizlik_mutanti.py` (18 hal [+1 sembolik bağ, POSIX/yetkili Windows], 21 sabotaj: M-S1 · M-S2 · M-S3 · M-S3b · M-S4 · M-IGNORE · M-UST-KOMITSUZ · M-UST-SINIR · M-UST-ARA · M-UST-REAL · M-SAYI · M-BILGI-SAYI · M-UST-YOL · M-OLC-HATA · M-BIN-UST · M-OKU-H21 · M-OKU-H9 · M-OKU-SINIF · M-H9alt · M-H9depo · M-H9bin; her biri YALNIZ kendi dalını bozar).
+  `faz0/h21_sessizlik_mutanti.py` (19 hal [+1 sembolik bağ, POSIX/yetkili Windows], 21 sabotaj: M-S1 · M-S2 · M-S3 · M-S3b · M-S4 · M-IGNORE · M-UST-KOMITSUZ · M-UST-SINIR · M-UST-ARA · M-UST-REAL · M-SAYI · M-BILGI-SAYI · M-UST-YOL · M-OLC-HATA · M-BIN-UST · M-OKU-H21 · M-OKU-H9 · M-OKU-SINIF · M-H9alt · M-H9depo · M-H9bin; her biri YALNIZ kendi dalını bozar).
 
 - **H21 hiçbir dalda sessiz değil + H9 üç ayrı cümle (20 Eki 2026, Onur: "h21 düzeltmesini yapalım").** Ölçüm (Cowork, Windows 11, motor 3085c1a):
   (S1) proje bir deponun ALT dizininde ⇒ `kur` `alt\.gitattributes` yazdı ama `kapi` H21 satırı YOK ve **H9 "git YOK"** diyordu (git VAR, depo VAR —

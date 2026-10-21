@@ -30,6 +30,7 @@ kodu 0 (UYARI/OLCULEMEDI exit'i degistirmez; EKSIK_YOL'da eksik defter H10'u kir
     ALT_IGNORE         ust depo `.gitignore: alt/`, alt'ta koruma yok                  -> `klona girecek muhurlu yol YOK · T yol .gitignore'da` (YANLIS ALARM yok)
     ALT_BOZUK_UST      ust dizinde `.git` = cop gitfile                             -> `H21: OLCULEMEDI (git deposu OKUNAMADI: ... ust dizinde .git var ...)`; H9 OKUNAMADI
     ALT_HAYALET        ust dizinde `.git` = var olmayan gitdir'e isaret              -> AYNI (git "not a git repository" der ama depo YOK degil: "ust dizinlerde de yok" DENMEZ)
+    ALT_BOS_GIT        ust dizinde `.git` = BOS DIZIN (HEAD'siz)                    -> AYNI (git `.git`i gecersiz sayip yukari bakar ve "not a git repository (or any of the parent directories)" der; Linux/Win/macOS ORTAK: M-OKU-SINIF'in platformlar arasi kancasi)
     KOK_BOZUK_GIT      KOKTE `.git` = cop gitfile                                   -> `H21: OLCULEMEDI (git cikis 128/128: fatal: ...)` (check-attr hata dali; tani git'in stderr'ini tasir)
     DEPO_DEGIL         git deposu degil (S2)                                        -> TEK `· H21: OLCULEMEDI (git deposu degil) ...`; H9 "bu dizin bir git deposu degil"
     IZLENMEYEN         depo, hic commit yok, koruma yok (S3)                        -> `... (izlenen 0, izlenmeyen T); T'inde ...` (izlenme sarti YOK); H9 "HENUZ COMMIT YOK" aynen
@@ -78,11 +79,12 @@ KOK = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VARSAYILAN_MOTOR = os.path.join(KOK, "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 84
 HALLER = ["ALT_KORUMALI", "ALT_KORUMASIZ", "ALT_UST_KORUMA", "ALT_UST_KOMITSUZ", "ALT_ARA_KOMITSUZ", "ALT_ANA_ICINDE", "ALT_KARISIK_KORUMALI", "ALT_IGNORE",
-          "ALT_BOZUK_UST", "ALT_HAYALET", "KOK_BOZUK_GIT", "DEPO_DEGIL", "IZLENMEYEN", "KARISIK", "EKSIK_YOL", "BINARY_YOK", "BINARY_YOK_UST", "KOK_KORUMALI"]
+          "ALT_BOZUK_UST", "ALT_HAYALET", "ALT_BOS_GIT", "KOK_BOZUK_GIT", "DEPO_DEGIL", "IZLENMEYEN", "KARISIK", "EKSIK_YOL", "BINARY_YOK", "BINARY_YOK_UST", "KOK_KORUMALI"]
 ALT_BILGI = ["ALT_KORUMALI", "ALT_UST_KORUMA", "ALT_ANA_ICINDE", "ALT_KARISIK_KORUMALI", "ALT_IGNORE"]                 # korumali/ignore: bilgi satiri
 KOMITSUZ_UYARI = ["ALT_UST_KOMITSUZ", "ALT_ARA_KOMITSUZ"]                                                          # (+ ALT_BAGLI): ust/ara `.gitattributes` commit'siz
 ALT_OLCULEN = ["ALT_KORUMALI", "ALT_KORUMASIZ", "ALT_UST_KORUMA", "ALT_UST_KOMITSUZ", "ALT_ARA_KOMITSUZ", "ALT_ANA_ICINDE", "ALT_KARISIK_KORUMALI", "ALT_IGNORE"]
-ALT_OKUNAMAYAN = ["ALT_BOZUK_UST", "ALT_HAYALET"]
+ALT_OKUNAMAYAN = ["ALT_BOZUK_UST", "ALT_HAYALET", "ALT_BOS_GIT"]
+SINIF_ADAYLARI = ["ALT_HAYALET", "ALT_BOS_GIT"]       # M-OKU-SINIF: git bu hallerde "not a git repository" diyorsa (platforma gore DEGISIR: Win/macOS hayalet gitfile icin "gitfile does not point to a valid repository")
 BINARY_HALLERI = ["BINARY_YOK", "BINARY_YOK_UST"]
 CIKIS_IZIN = {"EKSIK_YOL": (0, 1)}                                                           # eksik defter H10'u kirmizi yakabilir
 
@@ -147,22 +149,24 @@ def yaz(yol, metin):
         f.write(metin)
 
 
-def alt_dizin(motor, taban, ortam, ad, ust_ga=None, ust_gitignore=None, ga_sil=False, komitle_mi=True, ust_git=None, ara=None):
+def alt_dizin(motor, taban, ortam, ad, ust_ga=None, ust_gitignore=None, ga_sil=False, komitle_mi=True, ust_git=None, ara=None, ust_git_dizin=False):
     """Deponun ALT dizininde proje. -> (alt kok, ust depo kok). `ust_git`: ust dizindeki `.git`i bozuk bir DOSYAYLA degistirir (OKUNAMADI halleri).
-    `ara`: proje `repo/<ara>/alt` altindadir (ara dizin)."""
+    `ara`: proje `repo/<ara>/alt` altindadir (ara dizin). `ust_git_dizin`: ust `.git` BOS DIZIN olur (git bunu gecersiz sayip yukari bakar)."""
     repo = os.path.join(taban, ad)
     alt = os.path.join(repo, ara, "alt") if ara else os.path.join(repo, "alt")
     os.makedirs(alt)
-    if ust_git is None:
+    if ust_git_dizin:
+        os.makedirs(os.path.join(repo, ".git"))
+    elif ust_git is None:
         git(ortam, repo, "init", "-q")
     else:
         yaz(os.path.join(repo, ".git"), ust_git)
     if ust_gitignore is not None:
         yaz(os.path.join(repo, ".gitignore"), ust_gitignore)
-    if ust_ga is not None and ust_git is None:
+    if ust_ga is not None and ust_git is None and not ust_git_dizin:
         yaz(os.path.join(repo, ".gitattributes"), ust_ga)
     kur(motor, ortam, alt, ga_sil=ga_sil)
-    if ust_git is None and komitle_mi:
+    if ust_git is None and not ust_git_dizin and komitle_mi:
         komitle(ortam, repo)
     return alt, repo
 
@@ -214,6 +218,7 @@ def haller_kur(motor, taban):
     h["ALT_BOZUK_UST"] = alt_dizin(motor, taban, ortam, "alt_bozuk", ust_git="bu gecerli bir gitfile degil — duz metin cop\n")
     hayalet = os.path.join(taban, "hic_olmayan_gitdir").replace("\\", "/")
     h["ALT_HAYALET"] = alt_dizin(motor, taban, ortam, "alt_hayalet", ust_git="gitdir: %s\n" % hayalet)
+    h["ALT_BOS_GIT"] = alt_dizin(motor, taban, ortam, "alt_bos_git", ust_git_dizin=True)
     k = os.path.join(taban, "kok_bozuk")
     os.makedirs(k)
     kur(motor, ortam, k)
@@ -373,6 +378,7 @@ def ihlaller(g, haller, t_ref=None):
     beklenen9 = {
         "ALT_BOZUK_UST": "? H9: git deposu OKUNAMADI: ",
         "ALT_HAYALET": "? H9: git deposu OKUNAMADI: ",
+        "ALT_BOS_GIT": "? H9: git deposu OKUNAMADI: ",
         "KOK_BOZUK_GIT": "? H9: git deposu OKUNAMADI",
         "DEPO_DEGIL": "? H9: bu dizin bir git deposu degil (ust dizinlerde de yok)",
         "IZLENMEYEN": "? H9: git deposu var ama HENUZ COMMIT YOK",
@@ -393,7 +399,14 @@ def P(halleri, kat):
     return {(h, kat) for h in halleri}
 
 
-def mutantlar(haller):
+def git_cumlesi(ortam, kok):
+    """`kok`te `git rev-parse --show-toplevel`in ilk stderr satiri (LC_ALL=C) — M-OKU-SINIF hangi halde `not a git repository` dalina GIRILDIGINI OLCER."""
+    e = dict(ortam, LC_ALL="C", LANGUAGE="C")
+    r = subprocess.run(["git", "-C", kok, "rev-parse", "--show-toplevel"], capture_output=True, text=True, encoding="utf-8", errors="replace", env=e, stdin=subprocess.DEVNULL, timeout=30)
+    return ((r.stderr or "").strip().splitlines() or [""])[0]
+
+
+def mutantlar(haller, sinif_halleri=None):
     """ad, aciklama, beklenen kirilan (hal, kategori) kumesi, gerek ('' | 'baglanti'), [(eski, yeni)]. `eski` motorda TAM 1 kez gecmelidir.
     ALT_BAGLI yalniz sembolik bag kurulabildiyse beklenene katilir."""
     bag = ["ALT_BAGLI"] if haller.get("ALT_BAGLI") else []
@@ -439,7 +452,7 @@ def mutantlar(haller):
          [("    N.append(\"H21: OLCULEMEDI (git deposu OKUNAMADI: %s)", "    _x = (\"H21: OLCULEMEDI (git deposu OKUNAMADI: %s)")]),
         ("M-OKU-H9 OKUNAMADI ESKI CUMLEYE", "git yanitsizsa H9 `git YOK` der (yanlis teshis)", P(ALT_OKUNAMAYAN, "H9"), "",
          [("        return \"H9: git deposu OKUNAMADI: %s\" % ayr\n", "        return \"H9: git YOK\" + _H9_SONEK   # MUTANT\n")]),
-        ("M-OKU-SINIF UST .GIT GOZETMENI KALKAR", "ustte `.git` VARKEN `not a git repository` => `depo yok` (hayalet gitdir)", P(["ALT_HAYALET"], "H21") | P(["ALT_HAYALET"], "H9"), "",
+        ("M-OKU-SINIF UST .GIT GOZETMENI KALKAR", "ustte `.git` VARKEN `not a git repository` => `depo yok` (git'in o cumleyi uretti hal/ler: platformdan OLCULUR)", P(sinif_halleri or [], "H21") | P(sinif_halleri or [], "H9"), "sinif",
          [(" and \"dubious ownership\" not in hata and iz is None:\n", " and \"dubious ownership\" not in hata:   # MUTANT\n")]),
         ("M-H9alt ALT DIZIN ESKI CUMLEYE", "kok degil dali `H9: git YOK` der (yanlis teshis)", P(ALT_OLCULEN + bag, "H9"), "",
          [("        return \"H9: git deposunun KOKU degil (ust depo: %s)%s\" % (ayr, _H9_SONEK)\n",
@@ -509,8 +522,16 @@ def main():
         mt = _UYARI.match(g["IZLENMEYEN"][1][0]) if len(g["IZLENMEYEN"][1]) == 1 else None
         t_ref = int(mt.group("t")) if mt else None
         isirdi, kacti, olculemedi, atlandi = [], [], [], []
-        liste = mutantlar(haller)
+        sinif_olcum = {x: git_cumlesi(ortam, haller[x][0]) for x in SINIF_ADAYLARI if haller.get(x)}
+        sinif_halleri = [x for x, c in sinif_olcum.items() if "not a git repository" in c.lower() and "dubious ownership" not in c]
+        for x, c in sinif_olcum.items():
+            print("  (M-OKU-SINIF kancasi %-12s git: %s%s)" % (x, c[:96], "" if x in sinif_halleri else "  => bu platformda `not a git repository` DEGIL, kanca disi"))
+        liste = mutantlar(haller, sinif_halleri)
         for ad, aciklama, beklenen, gerek, degisim in liste:
+            if gerek == "sinif" and not beklenen:
+                olculemedi.append(ad)
+                print("  ?  %-46s OLCULEMEDI  (platform: git `not a git repository` dalini hicbir halde uretmiyor — %s)" % (ad, " · ".join("%s: %s" % (x, sinif_olcum[x]) for x in SINIF_ADAYLARI)))
+                continue
             if gerek == "baglanti" and not haller.get("ALT_BAGLI"):
                 atlandi.append(ad)
                 print("  -  %-46s ATLANDI     (sembolik bag kurulamadi)" % ad)
