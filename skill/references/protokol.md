@@ -8,7 +8,7 @@
 2. **Kapıyı koş.** `hafiza.py kapi`. **YEŞİL görmeden işe başlama.** Kırmızıysa önce onu
    çöz; kırmızıyla çalışmak "normalleşmiş kırmızı" üretir ve bir süre sonra gerçek bir
    bozukluk da aynı görünür.
-3. **`git status`** temiz mi bak (varsa).
+3. **`git --no-optional-locks status --porcelain`** temiz mi bak (varsa; düz `git status` kalıcı `.git/index.lock` bırakabilir).
 4. **`SONRAKİ ADIM`'dan devam et.** Yeni bir iş açma; yarım kalanı bitir.
 5. **Yazmadan önce tasarımı onaylat.** Kod/içerik üretmeden önce planı işaretlenebilir
    şıklarla sun, kapsamı ve kararları kullanıcıya kilitlet.

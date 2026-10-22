@@ -218,7 +218,7 @@ bloğun kaynağı bellidir, ve "bu tur hiçbir şey kaydedilmedi" ölçülebilir
 ### Açılış
 1. `PROJE_HAFIZA.md`'yi baştan sona oku. **Sohbet geçmişini hafıza sayma.**
 2. `hafiza.py kapi` koş. **YEŞİL görmeden işe başlama.** Kırmızıysa önce onu çöz.
-3. `git status` temiz mi bak.
+3. `git --no-optional-locks status --porcelain` temiz mi bak (düz `git status` kalıcı `.git/index.lock` bırakabilir).
 4. `SONRAKİ ADIM`'daki ilk işten devam et.
 5. Kod/içerik yazmadan **önce** tasarımı işaretlenebilir şıklarla sun, kapsamı onaylat.
 
