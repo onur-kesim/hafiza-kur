@@ -3,11 +3,11 @@
 Son güncelleme: 20 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
 ## O29 (20 Eki) — H21 SESSİZLİK + H9 AYRI CÜMLELER BİTTİ (yerelde) · PUSH Onur'da
-Taban `3085c1a`; 5 commit. Tam tur (Win) 81 OK/9 bilinen KIRMIZI/2 SKIP, exit farkı 0; WSL: kapı 21/21, `gitfile` 10/10, `uyari` 4/4, `sabotaj.py` 67/0.
+Taban `3085c1a`; 5 commit. Tam tur (Win) 81 OK/9 bilinen KIRMIZI/2 SKIP, exit farkı 0; WSL kapı 21/21, `sabotaj.py` 67/0.
 **SEÇİM:** alt dizinde `check-attr` ÖLÇÜLÜR; korumalı ALT dizinde tek bilgi satırı, korumalı KÖK'te sessiz. **Onur'a:** bilgi satırı istenmezse kaldırılır.
-**ÖLÇÜLEMEDİ:** macOS CI · Python 3.11/3.13 · gerçek `dubious ownership` · sembolik bağ (Win yetkisiz) · `autocrlf=input` · LFS · şablon v0.3.0 · claude.ai (O26).
-**CI payı (`618fd08`):** `readme_kapisi` 20→40 dk + `python -u` (CI #137 Win iptal).
-**M-OKU-SINIF (21 Eki, `f98aa91`):** CI #138 Win/macOS KACTI → hal `ALT_BOS_GIT` (boş üst `.git` dizini) + kanca git cümlesinden ÖLÇÜLÜR, üretilmezse OLCULEMEDI; Win 20/0/0/1, tam tur taban=son; macOS/runner'ı CI ölçer.
+**ÖLÇÜLEMEDİ:** macOS CI · Python 3.11/3.13 · `dubious ownership` · sembolik bağ (Win) · `autocrlf=input` · LFS · şablon v0.3.0 · claude.ai.
+**M-OKU-SINIF (`f98aa91`):** CI #138 KACTI → hal `ALT_BOS_GIT`, kanca git cümlesinden ÖLÇÜLÜR (yoksa OLCULEMEDI); Win 20/0/0/1; macOS'u CI ölçer.
+**git status mayını (22 Eki, `069ba50`):** SKILL.md:221 · protokol.md:11 · sablonlar.md:20 düz `git status` → `git --no-optional-locks status --porcelain`; motor DOKUNULMADI (`hafiza.py:1533` şablonu AYNI düz öneriyi basar, AÇIK).
 **Sıradaki:** Onur push → CI (+1 iş) → Cowork kabulü. Açılış: `hafiza-kur · O30 · başla`.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
