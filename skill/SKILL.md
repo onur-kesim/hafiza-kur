@@ -25,7 +25,7 @@ bütünlük, kendi kapısını koşan araçlar, mutant kanıtı) ve sektörün o
 > günlüğü" · "ADR" · "karar kaydı" · "emekliye ayır" · "hafızayı derle" · "hafıza kapısı" ·
 > "kapıyı koş" · "devir notu" · "oturum protokolü" · "dosyalar şişti" · "hangi dosya nereye" ·
 > "eski sürümleri arşivle" — YA DA kullanıcı istediğinde ya da şablonlu projede (`DURUM.md` +
-> `CLAUDE.md`) KUR'da hafiza-kur seçildiğinde; mevcut defterli projede `devral`. `.hafizarc`'ın
+> `CLAUDE.md`) proje şablonunun kurulum adımında hafiza-kur seçildiğinde; mevcut defterli projede `devral`. `.hafizarc`'ın
 > yokluğu tek başına tetik DEĞİLDİR. Her oturum AÇILIŞINDA ve KAPANIŞINDA protokolü uygula.
 
 ---
@@ -64,7 +64,7 @@ Kararsızsan: **kod varsa KAPILI, yoksa HAFİF.** Hafif'ten Kapılı'ya sonradan
 | Yeni / boş | `kur` |
 | İlerlemiş, hafıza sistemi **yok** | **`devral`** |
 | İlerlemiş, **başka bir hafıza sistemi var** | önce **`devral --kesif`**, sonra `devral --esle …` |
-| Şablonlu proje (`DURUM.md` + `CLAUDE.md`, şablon v0.3.0) | **`devral --esle canli=DURUM.md`** — şablon bölümleri hazır getirir, `bolum-kur` gerekmez (Cowork ölçümü, 18 Eki 2026; şablon burada ölçülmedi). `kapi` `[H6]`/`[H17]` "bölüm yok" derse `bolum-kur` |
+| Şablonlu proje (`DURUM.md` + `CLAUDE.md`) | **`devral --esle canli=DURUM.md`** — şablon bölümleri hazır getirir, `bolum-kur` gerekmez. `kapi` `[H6]`/`[H17]` "bölüm yok" derse `bolum-kur` |
 
 > ⛔ **Mevcut hafıza sistemi olan bir projede `kur` KOŞMA.** Ölçüldü: zinciri kırar,
 > ikinci çıpa doğurur ve eski sistemin dizin kapısını kırmızıya düşürür.
@@ -138,11 +138,11 @@ KOPYALAR ve kopya üzerinde ÖLÇER; bağ/symlink kurmaz. Kopyalanan küme BEYAZ
 (silmez; yedek `skills/` altında OLAMAZ — Claude Code orada SKILL.md bulan her klasörü yükler).
 > **`skill-kur` çıkış kodları:** `0` kuruldu / zaten kurulu · `1` kurulum ölçümü tutmadı
 > (kurulmadı) · `2` kullanım hatası, kaynakta dizin bağlantısı ya da hedefte FARKLI bir kurulum var · `3` dosya sistemi
-> yazmaya izin vermedi (engel olan yer gösterilir) ya da beklenmeyen hata (hüküm yok). Cowork ve
+> yazmaya izin vermedi (engel olan yer gösterilir) ya da beklenmeyen hata (hüküm yok).
 > claude.ai bu klasörü OKUMAZ; orada `python hafiza.py paket` ile paketi üret (aşağıda).
 > Kapı: `faz0/skill_kur_mutanti.py`.
 
-### Skill'i Cowork / claude.ai'ye paketleme (`paket`)
+### Skill'i claude.ai'ye paketleme (`paket`)
 
 `python hafiza.py paket [--cikti <yol>]` — `skill/` dizininden `hafiza-kur.skill` (zip) üretir
 (varsayılan `<depo>/hafiza-kur.skill`); bash ve `zip` GEREKMEZ (stdlib `zipfile`). Kaynak ve BEYAZ LİSTE

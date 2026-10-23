@@ -204,7 +204,7 @@ hüküm sınıfı ve çıkış kodu aynı): `H9: git YOK (git programi PATH'te b
 (ust dizinlerde de yok)` · `H9: git deposunun KOKU degil (ust depo: <top>)` (proje bir deponun ALT dizininde); git yanıt
 vermezse (ya da ustte bozuk/hayalet `.git` varken git `not a git repository` derse) `H9: git deposu OKUNAMADI: …`. Aynı günden **H21**
 (`.gitattributes` mührü uyarısı) hiçbir dalda sessiz değildir: depo değil / git yok / git yanıtsız / izlenmeyen yol satır basar, alt
-dizinde `check-attr` gerçekten ölçülür (korumalıysa tek bilgi satırı; üst deponun commit'siz `.gitattributes`'i uyarılır).
+dizinde `check-attr` gerçekten ölçülür (korumasızsa UYARI, korumalıysa kökle aynı şekilde sessiz; üst deponun commit'siz `.gitattributes`'i uyarılır).
 
 **Neden:** Depo-içi zincirin ötesinde gerçek bir içerik-adresli tarih yalnız git'tir.
 Ama `.gitignore`'a takılmış bir zincir git'te **yok** demektir; o zaman zincir tarih

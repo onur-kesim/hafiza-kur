@@ -12225,7 +12225,7 @@ def _h21_olc(kok, y):
 
 
 def _h21_satir(kok, top, deger, izlenen, var, yok):
-    """Olcumden H21 satiri -> metin | None (korumali kok depoda sessiz; alt dizinde TEK bilgi satiri)."""
+    """Olcumden H21 satiri -> metin | None (korumali kok depoda VE korumali alt dizinde sessiz; alt dizinde yalniz `klona girecek muhurlu yol YOK` bilgisi basar)."""
     nerede = (" (alt dizin: ust depo %s)" % top) if top else ""
     acik = [p for p in var if deger.get(p, "unspecified") != "unset"]
     cdizin = _h21_commitsiz_dizin(kok, top) if (izlenen and not acik) else None
@@ -12238,13 +12238,10 @@ def _h21_satir(kok, top, deger, izlenen, var, yok):
         ad = _GA_AD if os.path.normcase(os.path.realpath(cdizin)) == os.path.normcase(os.path.realpath(kok)) else os.path.join(cdizin, _GA_AD).replace("\\", "/")
         return ("H21: %s commit'lenmemis (izlenmiyor ya da HEAD'den farkli) — `-text` korumasi KLONDA GORUNMEZ; `git add %s` ve commit "
                 "(.gitignore'daysa `git add -f`)" % (ad, ad))
-    if top:
+    if top and not var:
         ign = (" · %d yol .gitignore'da (klona girmez)" % len(yok)) if yok else ""
-        if not var:
-            return "H21: alt dizin (ust depo %s) — klona girecek muhurlu yol YOK%s" % (top, ign)
-        return ("H21: alt dizin (ust depo %s) — calisma agacinda `text` unset: %d muhurlu yolun hepsi%s "
-                "(`.git/info/attributes` ve `core.attributesFile` klona TASINMAZ, OLCULMEZ)" % (top, len(var), ign))
-    return None
+        return "H21: alt dizin (ust depo %s) — klona girecek muhurlu yol YOK%s" % (top, ign)
+    return None   # korumali (kok ya da alt dizin): SESSIZ (23 Eki 2026 Onur kilidi: alt dizindeki bilgi satiri gurultuydu)
 
 
 def _kapi_h21(N, kok, y):
@@ -12254,7 +12251,7 @@ def _kapi_h21(N, kok, y):
     (core.autocrlf) o dosyayi ikinci klonda bozabilir; satir izlenen/izlenmeyen sayisini AYRI verir (izlenme sarti YOK: koruma yoklugu ilk
     commit'e kadar gizlenmez). Koruma calisma agacinda GORUNUYOR ama `.gitattributes` (projenin ya da, alt dizinde, ust deponun) izlenmiyor/HEAD'den
     farkliysa (klon yalniz COMMIT'li dosyayi tasir) ayri satir. Hicbir dalda SESSIZ DEGIL: depo degil / git calistirilamiyor / git yanitsiz / sorgu
-    basarisiz => OLCULEMEDI (sessiz PASS yok); alt dizin OLCULUR ve korumali olsa da TEK bilgi satiri basar (koruma kaynagi ust depo olabilir)."""
+    basarisiz => OLCULEMEDI (sessiz PASS yok); alt dizin OLCULUR: korumasizsa UYARI, korumaliysa (kokle ayni) SESSIZ — koruma kaynagi `.git/info/attributes`/`core.attributesFile` ise kokteki gibi gorunmez."""
     olculur, top = _h21_nerede(N, kok)
     if not olculur:
         return

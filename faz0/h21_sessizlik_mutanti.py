@@ -14,19 +14,19 @@ NEDEN VAR (OLCULDU, Cowork 20 Eki 2026, Windows 11, motor 3085c1a1)
   kaynaklar icin ASIRI IDDIA idi (satir artik "calisma agacinda `text` unset" der ve sinirini soyler).
 
 SECIM (rapora gerekce): alt dizinde `check-attr` GERCEKTEN OLCULUR (isin tercihi). Neden: motor `git -C <kok> check-attr/ls-files` ile kok'e GORELI yollar sorar; git ust
-  deponun `.gitattributes`ini de hesaba katar; ikinci klon ust deponun klonudur ve `alt/.gitattributes` orada gecerlidir. Korumali alt dizin TEK bilgi satiri basar (koruma
+  deponun `.gitattributes`ini de hesaba katar; ikinci klon ust deponun klonudur ve `alt/.gitattributes` orada gecerlidir. Korumali alt dizin SESSIZDIR (23 Eki 2026 Onur kilidi; eskiden TEK bilgi satiri basardi; koruma
   kaynagi ust depo olabilir; "ust depo X" yolu ve sayi gorunur olsun). Korumali KOK depo sessizdir (degismedi).
 
 NE OLCER — haller BIR KEZ kurulur (kurulum yalniz `kur`/`git` kullanir; sabotajlar yalniz `kapi` yolundadir), her motor AYNI hallerde `kapi` ile yargilanir. HER halde cikis
 kodu 0 (UYARI/OLCULEMEDI exit'i degistirmez; EKSIK_YOL'da eksik defter H10'u kirmizi yakabilir: 0|1):
-    ALT_KORUMALI       deponun alt dizininde proje, `kur` + commit                 -> TEK bilgi satiri `· H21: alt dizin (ust depo X) — calisma agacinda `text` unset: N muhurlu yolun hepsi (...)`
+    ALT_KORUMALI       deponun alt dizininde proje, `kur` + commit                 -> SESSIZ (H21 satiri YOK; eskiden TEK bilgi satiriydi)
     ALT_KORUMASIZ      ayni, `alt/.gitattributes` kaldirilmis + commit (S1)        -> TEK `· H21: ... bozabilir (alt dizin: ust depo X) — muhurlu N yol (izlenen N, izlenmeyen 0); N'inde ...`
-    ALT_UST_KORUMA     ayni, ust depoda COMMIT'LI `* -text`, alt'ta yok             -> bilgi satiri (ust deponun korumasi SAYILIR)
+    ALT_UST_KORUMA     ayni, ust depoda COMMIT'LI `* -text`, alt'ta yok             -> SESSIZ (ust deponun korumasi SAYILIR)
     ALT_UST_KOMITSUZ   ust depodaki `* -text` COMMIT'SIZ                            -> TEK `· H21: <ust>/.gitattributes commit'lenmemis ...` (yol TAM dogru)
     ALT_ARA_KOMITSUZ   ust/ara/alt: ARA dizindeki `* -text` COMMIT'SIZ              -> ayni uyari, yol = ara/.gitattributes (ata dongusu ara dizinleri ATLAMAZ)
-    ALT_ANA_ICINDE     dis depo B (commit'siz `.gitattributes`) icinde ic depo A, proje A/alt, A'da commit'li koruma -> bilgi satiri (ust = A); B'nin dosyasi ILGISIZ: uyari YOK
+    ALT_ANA_ICINDE     dis depo B (commit'siz `.gitattributes`) icinde ic depo A, proje A/alt, A'da commit'li koruma -> SESSIZ (ust = A); B'nin dosyasi ILGISIZ: uyari YOK
     ALT_BAGLI          `ALT_UST_KOMITSUZ` projesine SEMBOLIK BAG uzerinden --kok (POSIX / Windows yetkisi varsa) -> ayni uyari (ata yurumesi GERCEK yoldan baslar)
-    ALT_KARISIK_KORUMALI korumali alt dizin + bir muhurlu yol izlenmiyor                -> bilgi satiri N = T (izlenmeyen de sayilir)
+    ALT_KARISIK_KORUMALI korumali alt dizin + bir muhurlu yol izlenmiyor                -> SESSIZ (izlenmeyen de sayilir; sayi satiri kalkti)
     ALT_IGNORE         ust depo `.gitignore: alt/`, alt'ta koruma yok                  -> `klona girecek muhurlu yol YOK · T yol .gitignore'da` (YANLIS ALARM yok)
     ALT_BOZUK_UST      ust dizinde `.git` = cop gitfile                             -> `H21: OLCULEMEDI (git deposu OKUNAMADI: ... ust dizinde .git var ...)`; H9 OKUNAMADI
     ALT_HAYALET        ust dizinde `.git` = var olmayan gitdir'e isaret              -> AYNI (git "not a git repository" der ama depo YOK degil: "ust dizinlerde de yok" DENMEZ)
@@ -80,7 +80,8 @@ VARSAYILAN_MOTOR = os.path.join(KOK, "skill", "scripts", "hafiza.py")
 CIZGI = "-" * 84
 HALLER = ["ALT_KORUMALI", "ALT_KORUMASIZ", "ALT_UST_KORUMA", "ALT_UST_KOMITSUZ", "ALT_ARA_KOMITSUZ", "ALT_ANA_ICINDE", "ALT_KARISIK_KORUMALI", "ALT_IGNORE",
           "ALT_BOZUK_UST", "ALT_HAYALET", "ALT_BOS_GIT", "KOK_BOZUK_GIT", "DEPO_DEGIL", "IZLENMEYEN", "KARISIK", "EKSIK_YOL", "BINARY_YOK", "BINARY_YOK_UST", "KOK_KORUMALI"]
-ALT_BILGI = ["ALT_KORUMALI", "ALT_UST_KORUMA", "ALT_ANA_ICINDE", "ALT_KARISIK_KORUMALI", "ALT_IGNORE"]                 # korumali/ignore: bilgi satiri
+ALT_SESSIZ = ["ALT_KORUMALI", "ALT_UST_KORUMA", "ALT_ANA_ICINDE", "ALT_KARISIK_KORUMALI"]                          # korumali alt dizin: H21 SESSIZ (23 Eki 2026)
+ALT_H21_UYARAN = ["ALT_KORUMASIZ", "ALT_UST_KOMITSUZ", "ALT_ARA_KOMITSUZ", "ALT_IGNORE"]                         # alt dizinde H21 SATIR BASAN haller (M-S1 BURADA isirmali)
 KOMITSUZ_UYARI = ["ALT_UST_KOMITSUZ", "ALT_ARA_KOMITSUZ"]                                                          # (+ ALT_BAGLI): ust/ara `.gitattributes` commit'siz
 ALT_OLCULEN = ["ALT_KORUMALI", "ALT_KORUMASIZ", "ALT_UST_KORUMA", "ALT_UST_KOMITSUZ", "ALT_ARA_KOMITSUZ", "ALT_ANA_ICINDE", "ALT_KARISIK_KORUMALI", "ALT_IGNORE"]
 ALT_OKUNAMAYAN = ["ALT_BOZUK_UST", "ALT_HAYALET", "ALT_BOS_GIT"]
@@ -285,8 +286,6 @@ def gozle(motor, haller, ortam, bos_yol):
 
 _UYARI = re.compile(r"^· H21: satir sonu cevrimi muhurlu dosyayi bozabilir(?: \(alt dizin: ust depo (?P<ust>.+?)\))? — "
                     r"muhurlu (?P<t>\d+) yol \(izlenen (?P<iz>\d+), izlenmeyen (?P<izm>\d+)\); (?P<acik>\d+)'inde `text` unset DEGIL")
-_BILGI = re.compile(r"^· H21: alt dizin \(ust depo (?P<ust>.+?)\) — calisma agacinda `text` unset: (?P<n>\d+) muhurlu yolun hepsi"
-                    r"(?: · (?P<ign>\d+) yol \.gitignore'da \(klona girmez\))? \(`\.git/info/attributes` ve `core\.attributesFile` klona TASINMAZ, OLCULMEZ\)$")
 _BILGI0 = re.compile(r"^· H21: alt dizin \(ust depo (?P<ust>.+?)\) — klona girecek muhurlu yol YOK(?: · (?P<ign>\d+) yol \.gitignore'da \(klona girmez\))?$")
 _KOMITSUZ = re.compile(r"^· H21: (?P<yol>.+?) commit'lenmemis \(izlenmiyor ya da HEAD'den farkli\) — `-text` korumasi KLONDA GORUNMEZ; `git add (?P<yol2>.+?)` ve commit")
 _H9_KOK = re.compile(r"^\? H9: git deposunun KOKU degil \(ust depo: (?P<ust>.+?)\) — ")
@@ -312,18 +311,15 @@ def ihlaller(g, haller, t_ref=None):
             ihlal(hal, "EXIT", "kapi exit %s (UYARI/OLCULEMEDI exit'i DEGISTIRMEZ; %s beklenir)" % (rc, "|".join(map(str, CIKIS_IZIN.get(hal, (0,))))))
     mi = _UYARI.match(g["IZLENMEYEN"][1][0]) if len(g["IZLENMEYEN"][1]) == 1 else None
     t = t_ref if t_ref is not None else (int(mi.group("t")) if mi else None)
-    # --- korumali / ignore: TEK bilgi satiri
-    for hal in ALT_BILGI:
+    # --- korumali alt dizin: SESSIZ (23 Eki 2026) · tum muhurlu yollar .gitignore'da: `klona girecek muhurlu yol YOK` bilgisi KALIR
+    for hal in ALT_SESSIZ:
         s = g[hal][1]
-        if hal == "ALT_IGNORE":
-            m = _BILGI0.match(s[0]) if len(s) == 1 else None
-            if not (m and ayni_yol(m.group("ust"), haller[hal][1]) and m.group("ign") and int(m.group("ign")) == (t or -1)):
-                ihlal(hal, "H21", "tum muhurlu yollar .gitignore'da: `klona girecek muhurlu yol YOK · T yol .gitignore'da` beklenir (T=%s; ust depo yolu DOGRU): %r" % (t, s))
-            continue
-        m = _BILGI.match(s[0]) if len(s) == 1 else None
-        if not (m and ayni_yol(m.group("ust"), haller[hal][1]) and t is not None and int(m.group("n")) == t and not m.group("ign")):
-            ihlal(hal, "H21", "TEK `· H21: alt dizin (ust depo <ust>) — calisma agacinda `text` unset: T muhurlu yolun hepsi ...` bilgi satiri beklenir (T=%s; yol DOGRU; "
-                              "izlenmeyen de sayilir): %r" % (t, s))
+        if s:
+            ihlal(hal, "H21", "korumali alt dizinde H21 SESSIZ beklenir (kokle ayni): %r" % s)
+    s = g["ALT_IGNORE"][1]
+    m = _BILGI0.match(s[0]) if len(s) == 1 else None
+    if not (m and ayni_yol(m.group("ust"), haller["ALT_IGNORE"][1]) and m.group("ign") and int(m.group("ign")) == (t or -1)):
+        ihlal("ALT_IGNORE", "H21", "tum muhurlu yollar .gitignore'da: `klona girecek muhurlu yol YOK · T yol .gitignore'da` beklenir (T=%s; ust depo yolu DOGRU): %r" % (t, s))
     # --- korumasiz alt dizin
     s = g["ALT_KORUMASIZ"][1]
     m = _UYARI.match(s[0]) if len(s) == 1 else None
@@ -411,19 +407,21 @@ def mutantlar(haller, sinif_halleri=None):
     ALT_BAGLI yalniz sembolik bag kurulabildiyse beklenene katilir."""
     bag = ["ALT_BAGLI"] if haller.get("ALT_BAGLI") else []
     return [
-        ("M-S1 ALT DIZIN SESSIZE DONER", "alt dizin dalinda olcum yapilmaz", P(ALT_OLCULEN + bag, "H21"), "",
+        ("M-S1 ALT DIZIN SESSIZE DONER", "alt dizin dalinda olcum yapilmaz (KORLUK KONTROLU: korumali alt dizin artik zaten sessiz, bu sabotaj yalniz korumasiz/commit'siz/ignore alt-dizin hallerinde gorunur)", P(ALT_H21_UYARAN + bag, "H21"), "",
          [("    if hal == \"KOK_DEGIL\":\n        return True, ayr\n", "    if hal == \"KOK_DEGIL\":\n        return False, None   # MUTANT\n")]),
         ("M-S2 DEPO-DEGIL SESSIZE DONER", "depo degilse OLCULEMEDI satiri basilmaz", P(["DEPO_DEGIL"], "H21"), "",
          [("        N.append(\"H21: OLCULEMEDI (git deposu degil)", "        _x = (\"H21: OLCULEMEDI (git deposu degil)")]),
         ("M-S3 IZLENME SUZGECI GERI GELIR", "izlenmeyen yollar sayilmaz (koruma yoklugu ilk commit'e kadar gizlenir)",
-         P(["IZLENMEYEN", "KARISIK", "EKSIK_YOL", "ALT_IGNORE", "ALT_KARISIK_KORUMALI"], "H21"), "",
+         P(["IZLENMEYEN", "KARISIK", "EKSIK_YOL", "ALT_IGNORE"], "H21"), "",
          [("    var = [p for p in yollar if p in izlenen or os.path.lexists(os.path.join(kok, p))]\n",
            "    var = [p for p in yollar if p in izlenen]   # MUTANT\n")]),
         ("M-S3b VAR SUZGECI KALKAR", "diskte OLMAYAN muhurlu yollar da sayilir (sayi yalan soyler)", P(["EKSIK_YOL"], "H21"), "",
          [("    var = [p for p in yollar if p in izlenen or os.path.lexists(os.path.join(kok, p))]\n",
            "    var = list(yollar)   # MUTANT\n")]),
-        ("M-S4 KORUMALI ALT DIZIN SESSIZ", "korumali alt dizinde bilgi satiri basilmaz", P(ALT_BILGI, "H21"), "",
-         [("    if top:\n        ign = (", "    if False:   # MUTANT\n        ign = (")]),
+        ("M-S4 KORUMALI ALT DIZINDE BILGI SATIRI GERI GELIR", "korumali alt dizinde eski bilgi satiri basilir (Onur kilidi 23 Eki: SESSIZ olmali; kok ile ayni)", P(ALT_SESSIZ, "H21"), "",
+         [("    return None   # korumali (kok ya da alt dizin): SESSIZ",
+           "    if top:   # MUTANT\n        return \"H21: alt dizin (ust depo %s) — calisma agacinda `text` unset: %d muhurlu yolun hepsi\" % (top, len(var))\n"
+           "    return None   # korumali (kok ya da alt dizin): SESSIZ")]),
         ("M-IGNORE GITIGNORE SUZGECI YOK", ".gitignore'daki yollar da sayilir (yanlis alarm)", P(["ALT_IGNORE"], "H21"), "",
          [("    yok = _h21_yoksayilan(kok, [p for p in var if p not in izlenen])\n", "    yok = set()   # MUTANT\n")]),
         ("M-UST-KOMITSUZ UST COMMIT DENETIMI YOK", "alt dizinde ust/ara deponun commit'siz `.gitattributes`i gorulmez", P(["ALT_UST_KOMITSUZ", "ALT_ARA_KOMITSUZ"] + bag, "H21"), "",
@@ -438,9 +436,6 @@ def mutantlar(haller, sinif_halleri=None):
            "    d = os.path.abspath(kok)   # MUTANT\n    n = lambda p: os.path.normcase(os.path.realpath(p))\n    while True:\n        if _ga_commitsiz(d):\n")]),
         ("M-SAYI IZLENEN SAYISI BOZULUR", "uyari satirinda `izlenen` hep 0", P(["ALT_KORUMASIZ", "KARISIK"], "H21"), "",
          [("        iz = len([p for p in var if p in izlenen])\n", "        iz = 0   # MUTANT\n")]),
-        ("M-BILGI-SAYI BILGI SATIRI SAYISI BOZULUR", "bilgi satirinda N = len(izlenen) (izlenmeyen sayilmaz)", P(["ALT_KARISIK_KORUMALI"], "H21"), "",
-         [("                \"(`.git/info/attributes` ve `core.attributesFile` klona TASINMAZ, OLCULMEZ)\" % (top, len(var), ign))\n",
-           "                \"(`.git/info/attributes` ve `core.attributesFile` klona TASINMAZ, OLCULMEZ)\" % (top, len(izlenen), ign))   # MUTANT\n")]),
         ("M-UST-YOL UST DEPO YOLU YANLIS", "uyari `ust depo` yerine projenin kendi yolunu yazar", P(["ALT_KORUMASIZ"], "H21"), "",
          [("    nerede = (\" (alt dizin: ust depo %s)\" % top) if top else \"\"\n", "    nerede = (\" (alt dizin: ust depo %s)\" % kok) if top else \"\"\n")]),
         ("M-OLC-HATA CHECK-ATTR HATA SATIRI SUSAR", "olcum hata verince (kokte bozuk .git) H21 sessiz", P(["KOK_BOZUK_GIT"], "H21"), "",
