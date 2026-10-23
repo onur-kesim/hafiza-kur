@@ -3289,3 +3289,35 @@ jobs:
           name: h21-sessizlik-${{ matrix.os }}
           path: h21-sessizlik-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # SABLON GITSTATUS MUTANTI (23 Eki 2026, besli-paket/IS_EMRI_MOTOR_GITSTATUS.md KALEM 1, Onur kilidi sik A)
+  #     `SAB_CANLI` sablonu `kur`/`devral` ile HER yeni projenin canli dosyasina DUZ `git status` yaziyordu; baglı
+  #     klasorde kalici `.git/index.lock` mayini urun tarafindan yayiliyordu. Duzeltme: birebir
+  #     `git --no-optional-locks status --porcelain`. DORT kol: kur/devral x (saglam YESIL · sabotajli = satiri duz
+  #     `git status`a geri cevir -> ISIRDI). Eski projelerde satir YENIDEN YAZILMAZ (olculdu: kur/derle/devral dokunmaz;
+  #     DURUM bilinen sinirlar). UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  sablon_gitstatus_mutanti:
+    name: Sablon git status mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: canli sablon duz git status yazmiyor (kur + devral, saglam + sabotajli)
+        shell: bash
+        run: python -u faz0/sablon_gitstatus_mutanti.py 2>&1 | tee sablon-gitstatus-cikti.txt
+      - name: sablon gitstatus mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sablon-gitstatus-${{ matrix.os }}
+          path: sablon-gitstatus-cikti.txt
+          if-no-files-found: warn

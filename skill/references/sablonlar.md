@@ -17,7 +17,7 @@ böylece sonradan `hafiza.py kur` çalıştırıldığında var olanları bozmaz
 <!-- blok konu="acilis-protokolu" guncel="YYYY-AA-GG" kaynak="-" -->
 1. Bu dosyayı baştan sona oku.
 2. Açılış kapısını koş (betikli kullanımda `hafiza.py kapi`). Yeşil görmeden başlama.
-3. `git --no-optional-locks status --porcelain` temiz mi bak (düz `git status` kalıcı `.git/index.lock` bırakabilir).
+3. `git --no-optional-locks status --porcelain` temiz mi bak.
 4. SONRAKİ ADIM'daki ilk işten devam et.
 5. Yazmadan önce tasarımı işaretlenebilir şıklarla sun, kapsamı onaylat.
 <!-- /blok -->

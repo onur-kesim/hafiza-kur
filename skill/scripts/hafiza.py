@@ -1530,7 +1530,7 @@ SAB_CANLI = """# {ad} — CANLI HAFIZA
 <!-- blok konu="acilis-protokolu" guncel="{t}" kaynak="-" sahip="hafiza-kur" -->
 1. Bu dosyayı baştan sona oku. Sohbet geçmişini hafıza sayma.
 2. `hafiza.py kapi` koş. YEŞİL görmeden işe BAŞLAMA.
-3. `git status` temiz mi bak.
+3. `git --no-optional-locks status --porcelain` temiz mi bak.
 4. SONRAKİ ADIM'daki ilk işten devam et.
 5. Kod/içerik yazmadan ÖNCE tasarımı işaretlenebilir şıklarla sun; kapsamı onaylat.
 6. Her büyük adım sonunda `hafiza.py not` ile fragman yaz (checkpoint).
