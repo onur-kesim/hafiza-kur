@@ -524,6 +524,7 @@ Bunlar gizlenmiyor; `skill/SKILL.md` §9'da tam listesi var (H18 satır atfı, K
 dizini ve ADR durumu, K-GECIS kurulu projede karar dizini keşfi, K-ISARET kural evi → canlı defter
 işaretçisi dahil). En önemlileri:
 
+- **Temiz hesapta doğal tetik ÖLÇÜLEMEDİ** (KESİLDİ, 23 Eki 2026, Onur kilidi): Onur hesabı anayasada adı taşıyor, gizli modda bile kirli; ikinci hesap açılmadı. Kirli hesapta 3/3 şerhli kalır.
 - **Yeniden çıpalama engellenemez, yalnız görünür kılınır.** Dosya tabanlı bir
   şemada yazma erişimi olan bir aktöre karşı bütünlük garantisi matematiksel
   olarak imkânsızdır. Doktrin: *tamper-evidence*, *tamper-proof* değil.
