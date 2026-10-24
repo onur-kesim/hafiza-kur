@@ -6257,7 +6257,7 @@ def _motor_blok_beyan(y, ertele, eklenen, L, bul, yeni, konu, aciklama):
         ertele.append((_konu_kaydet, (konu, aciklama)))
 
 
-def _motor_blogu_esitle(y, rc, L, ertele, eklenen, konu, aciklama, govde, baslik_yok_ust=False):
+def _motor_blogu_esitle(y, rc, L, ertele, eklenen, konu, aciklama, govde, baslik_yok_ust=False, not_ek="sahip=hafiza-kur"):
     """`govde` None ise blok OLMAMALI, liste ise blok BU govdeyle OLMALI -> yeni `L`. Icerik AYNIYSA
     hicbir sey degismez (blok ve `guncel` damgasi oldugu gibi: ayni disk durumunda derle tekrari
     arsive satir YAZMAZ). `ertele` None ise (devral: ilk yazim, cipa'dan ONCE) beyan/arsiv yazilmaz."""
@@ -6278,8 +6278,8 @@ def _motor_blogu_esitle(y, rc, L, ertele, eklenen, konu, aciklama, govde, baslik
     if ertele is not None:
         _motor_blok_beyan(y, ertele, eklenen, L, bul, yeni, konu, aciklama)
     L = (L[:bul[0]] + yeni + L[bul[1] + 1:]) if bul else (L[:i] + [""] + yeni + L[i:])
-    print("  NOT: '%s' blogu %s (motor, sahip=hafiza-kur)"
-          % (konu, ("guncellendi" if yeni else "kaldirildi") if bul else "eklendi"))
+    print("  NOT: '%s' blogu %s (motor, %s)"
+          % (konu, ("guncellendi" if yeni else "kaldirildi") if bul else "eklendi", not_ek))
     return L
 
 
@@ -6295,10 +6295,34 @@ def _atif_blok_govdesi(kayma):
     return g
 
 
+_ACILIS_KONU = "acilis-protokolu"
+_ACILIS_ESKI = "3. `git status` temiz mi bak."
+_ACILIS_YENI = "3. `git --no-optional-locks status --porcelain` temiz mi bak."
+
+
+def _acilis_satir_goc(y, rc, L, ertele, eklenen):
+    """ESKI KURULUM GOCU (besli-paket/IS_EMRI_ACILIS_SATIR_GOCU.md, Onur kilidi sik A, 23 Eki 2026): eski motorla kurulmus projenin
+    `acilis-protokolu` blogundaki BIREBIR `3. `git status` temiz mi bak.` satiri (kalici `.git/index.lock` mayini) yeni lafza cevrilir; baska HICBIR
+    satira dokunulmaz. Muhasebe `_motor_blogu_esitle` yolundan (eski blok arsive, `guncel` damgasi, tek NOT satiri). Tetik: blok VAR ve eski satiri
+    tasiyor, YA DA yeni satiri tasiyor ve kalici-kural isareti YOK (ikinci `derle` ayni-icerik kisa devresine duser: BYTE yazmaz). `sahip`, BOZUK ve
+    KALICI KURAL sureceri `_motor_blogu_esitle`dedir. `kur`/`devral` goc YAPMAZ (devral'da canli varsa dokunmama sozlesmesi)."""
+    bul = _motor_blok_bul(L, _ACILIS_KONU)
+    if not bul or bul == "BOZUK":
+        return L
+    mevcut = L[bul[0] + 1:bul[1]]
+    eskili = _ACILIS_ESKI in mevcut
+    if not (eskili or (_ACILIS_YENI in mevcut and not _motor_blok_kuralli(rc, L, bul))):
+        return L
+    govde = [_ACILIS_YENI if s == _ACILIS_ESKI else s for s in mevcut]
+    return _motor_blogu_esitle(y, rc, L, ertele, eklenen, _ACILIS_KONU, "", govde,
+                               not_ek="tek satir: git status -> --no-optional-locks")
+
+
 def _derle_motor_bloklari(y, rc, L, ertele, eklenen):
     """`cmd_derle`nin TEK cagri noktasi (dal eklemez: `cmd_derle` CC'si degismez). Iki motor blogu:
     `atif-kaymasi` (K-SATIR) ve — `.hafizarc`ta `karar_dizini` KAYITLIYSA — `karar-kaynagi` (K-YOL)."""
     _karar_kesfi(y, rc, ertele)                 # K-GECIS: anahtar HIC yoksa bir kez kesfet (yoksa dokunma)
+    L = _acilis_satir_goc(y, rc, L, ertele, eklenen)   # eski kurulum gocu: tek satir (sik A)
     _n, kayma, _olc = _atif_tara(y.kok, L)
     L = _motor_blogu_esitle(y, rc, L, ertele, eklenen, _ATIF_KONU, _ATIF_KONU_ACIKLAMA,
                             _atif_blok_govdesi(kayma))

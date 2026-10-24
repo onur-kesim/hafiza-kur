@@ -3321,3 +3321,37 @@ jobs:
           name: sablon-gitstatus-${{ matrix.os }}
           path: sablon-gitstatus-cikti.txt
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # ACILIS GOCU MUTANTI (24 Eki 2026, besli-paket/IS_EMRI_ACILIS_SATIR_GOCU.md, Onur kilidi sik A)
+  #     `derle`, ESKI motorla kurulmus projenin sahip="hafiza-kur" `acilis-protokolu` blogundaki BIREBIR duz
+  #     `3. `git status` temiz mi bak.` satirini `--no-optional-locks status --porcelain` lafzina goc ettirir; baska satira dokunmaz,
+  #     idempotent. Fixture GERCEK eski kurulumdur: `git show d05d91c3:skill/scripts/hafiza.py` (SHA256 135eb72c…) ile `kur`
+  #     => `fetch-depth: 0` ZORUNLU (sig klonda obje yok = OLCULEMEDI/exit 2, yesil DEGIL). Yedi vaka (A..G), alti mutant (M-G1..M-G6).
+  #     UC PLATFORM, `continue-on-error` YOK.
+  # ---------------------------------------------------------------------------
+  acilis_gocu_mutanti:
+    name: Acilis gocu mutanti (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: derle eski kurulumda yalniz birebir git status satirini goc ettiriyor (yedi vaka, alti mutant)
+        shell: bash
+        run: python -u faz0/acilis_gocu_mutanti.py 2>&1 | tee acilis-gocu-cikti.txt
+      - name: acilis gocu mutanti ciktisi (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acilis-gocu-${{ matrix.os }}
+          path: acilis-gocu-cikti.txt
+          if-no-files-found: warn
