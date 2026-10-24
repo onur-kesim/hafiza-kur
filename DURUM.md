@@ -1,12 +1,11 @@
 # DURUM — hafiza-kur
-**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin/main = `d05d91c`; yerel main ÖNDE — PUSH Onur'da)
-Son güncelleme: 23 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
+**BİTTİ sayacı: 10 ✅ / 10 — LİSTE KAPALI** (origin/main = `35a34e6`; yerel main ÖNDE — PUSH Onur'da)
+Son güncelleme: 24 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 
-## O30 (22-23 Eki) — YEREL, PUSH Onur'da · taban `d05d91c`
-**Önceki (push edildi):** O29 H21/H9 · `readme_kapisi` 40 dk · M-OKU-SINIF · SKILL belgeleri.
+## O30 (22-24 Eki) — taban `35a34e6` (CI #141 yeşil); YEREL, PUSH Onur'da
 **K1** `SAB_CANLI` `--no-optional-locks status --porcelain` + `sablon_gitstatus_mutanti` (CI işi). **K2** H21 korumalı ALT dizin bilgi satırı KALKTI: M-S4 TERSİNE, M-BILGI-SAYI SÖKÜLDÜ (satır yok), M-S1 korumasız/commit'siz/ignore hallerine daraltıldı, ISIRIYOR. **K3** SKILL.md gövde jargonu (description aynı).
-**Sıradaki:** Onur push → CI (+1 iş) → Cowork kabulü. Açılış: `hafiza-kur · O31 · başla`.
-**AÇIK (E4):** 18 Kas 2026 Cursor ücretsiz kotası; 8 koşum + kör puanlama.
+**Sıradaki:** Onur push → CI (+2 iş) → Cowork kabulü. Açılış: `hafiza-kur · O31 · başla`.
+**AÇIK (E4):** 18 Kas 2026 Cursor kotası; 8 koşum + kör puanlama.
 **KESİLDİ (23 Eki, Onur kilidi):** Temiz hesapta doğal tetik — ÖLÇÜLEMEDİ (Onur hesabı anayasada adı taşıyor, gizli modda bile kirli; ikinci hesap açılmadı). Kirli hesapta 3/3 şerhli kalır.
 
 ## 🔴 SIRADAKİ İŞ — liste 10/10 KAPALI; yeni madde ONUR KİLİDİ ister
@@ -21,7 +20,7 @@ Son güncelleme: 23 Eki 2026 · ≤8 KB · **kapanan bölüm tek satıra iner**
 - 🔴 `isir` exit 0 böl-kur'lu/devral'li projede ULAŞILAMAZ (5 Eki): `kapi --siki` bolum-kur başlıklarını BEYANSIZ sayar → M-H1s KURULAMADI → exit 2 (taban Momentum'da da). M-DEVIR ölçütü canlıda ÖNCEDEN `CAPA DEVRI` varken sabotajı GÖRMEZ · `.kilit` varken M-KILIT `isir`i öldürür.
 - 🔴 `.gitkeep`/autocrlf sınırı (19 Eki): `kur`/`devral` `.gitattributes` `-text` bloğu yazar ⇒ Win `autocrlf=true` ikinci klon YEŞİL; yokluğu/commit'sizliği `kapi` H21 UYARI (exit değişmez). AÇIK: bloğu silme / blok SONRASI genel `text` kuralı (H21 uyarır, `kapi` yazmaz) · blok güncellenmez · `autocrlf=input`, LFS ÖLÇÜLMEDİ
 - 🔴 H14 devralma muafiyeti (20 Eki): AÇIK: ömrü fiilen devral günü (ertesi gün `derle` damgayı ilerletir ⇒ uyuyan projede FAIL döner; çıkış proje dosyasına dokunmak/`gecikme=0`; kalıcı beyan = Onur kilidi) · `kur`'lu ve eski motorla devral'lı proje muafiyet ALMAZ · mühürsüz politika düzenlemesi düşürür (`muhur`) · zincir ANAHTARSIZ · (c) git/mtime'a bağlı.
-- 🔴 Eski projelerde satır elle güncellenir: `kur`/`derle`/`devral` canlı dosyadaki düz `git status`'u yeniden yazmaz (ÖLÇÜLDÜ 23 Eki). Korumalı alt dizinde koruma `.git/info/attributes`'tansa H21 sessiz (kökle aynı sınır).
+- 🔴 Eski projelerde `derle` göçürür (24 Eki, şık A: yalnız hafiza-kur sahipli `acilis-protokolu` blogunda BİREBİR eski satır); kullanıcı değiştirdiyse/sahipsiz/KALICI KURALlı blokta ELLE. `kur`/`devral` göç YAPMAZ; fragmansız `derle` varmaz. Korumalı alt dizinde koruma `.git/info/attributes`'tansa H21 sessiz (kökle aynı sınır).
 - 🔴 H21/H9 (20 Eki): AÇIK: H21 çalışma ağacına bakar — `.git/info/attributes`/`core.attributesFile`/kök altı `.gitattributes` klonda görünmeyebilir, H21 sessiz (taban da) · ilgisiz commit'siz üst `.gitattributes` uyarı verir (gürültü) · +2..6 git sorgusu/kapı · `check-ignore` hata dalı sınanmaz.
 - 🔴 "GERÇEK ORTAMDA OLMAZ" DEMEDEN ÖNCE ORTAMI ÖLÇ (6 Eyl; M-Y2 macOS'ta tam oradaydı). POZİTİF KONTROLSÜZ DÜZELTME KAPANMIŞ SAYILMAZ. Push'u `git ls-remote` ölçer.
 - 🔴 ÖLÇÜM ORTAMI HÜKMÜ ÇARPITIR (6 Eyl): root'ta `fazB_*`/`y4_mutant` SAHTE KIRMIZI ⇒ `olcum` kullanıcısıyla koş (WSL; Windows'ta `t_y42`/`readme_mutanti` KAPI-2 symlink 1314'ten çöker). Ağır doğrulama SOLO (paralel yük `isir`'i 300 sn aştırır).
